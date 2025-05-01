@@ -1,0 +1,16 @@
+{
+  "name": "code-story",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["js"],
+  "description": "Monorepo for code-story project (Python, CLI, GUI)",
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "test": "echo \"No tests defined yet\"",
+    "start:frontend": "cd js && npm start"
+  },
+  "devDependencies": {}
+}
