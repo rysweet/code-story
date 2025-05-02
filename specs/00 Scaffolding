@@ -1,0 +1,59 @@
+## 00 Scaffolding (P0)
+
+### 1 Purpose
+
+Create a reproducible mono‑repo skeleton for Python 3.12 + TypeScript 5.4, containerised with Docker Compose and wired for CI. All later components depend on this foundation.
+
+### 2 Directory Layout
+
+```text
+code-story/
+├─ .devcontainer/            # VS Code & Codespaces
+├─ .github/workflows/        # CI pipelines
+├─ cli/                      # Typer + Rich CLI (added P6)
+├─ docs/                     # MkDocs site (added P9)
+├─ gui/                      # React/Redux app (added P7)
+├─ infra/                    # Docker, compose, Bicep (added P8)
+├─ prompts/                  # Prompty templates
+├─ specs/                    # Markdown specifications
+├─ src/                      # Python package root
+│  └─ codestory/
+└─ tests/                    # pytest + testcontainers
+```
+
+### 3 Toolchain Versions
+
+| Area       | Tool              | Version | Purpose                   |
+| ---------- | ----------------- | ------- | ------------------------- |
+| Python     | Poetry            | ^1.8    | Dependency & venv manager |
+|            | Ruff              | latest  | Lint + format             |
+|            | mypy              | latest  | Static typing (–strict)   |
+| JS / TS    | pnpm              | latest  | Workspace manager         |
+| Containers | Docker Engine     | ≥ 24    | Runtime                   |
+| CI         | GitHub Actions    | n/a     | Lint + tests              |
+| Dev        | devcontainer spec | 0.336   | Unified IDE env           |
+
+### 4 Configuration Conventions
+
+Priority: `.env` > `.codestory.toml` > code defaults.
+`src/codestory/config.py` exposes `settings: Settings` (Pydantic BaseSettings).
+
+### 5 Implementation Steps
+
+| #  | Action                                                                               |
+| -- | ------------------------------------------------------------------------------------ |
+| 1  | `git init code-story && cd code-story`                                               |
+| 2  | `poetry new src/codestory --name codestory`                                          |
+| 3  | `poetry add pydantic rich typer[all] testcontainers pytest pytest-asyncio ruff mypy` |
+| 4  | `pnpm init -y && pnpm add -w vite typescript @types/node`                            |
+| 5  | Add `.env.example` placeholders (`OPENAI_API_KEY=` …)                                |
+| 6  | Create `.pre-commit-config.yaml` – Ruff + mypy                                       |
+| 7  | Add `.github/workflows/ci.yml` – setup, lint, test                                   |
+| 8  | Root `docker-compose.yaml` with Neo4j & Redis stubs                                  |
+| 9  | `.devcontainer/devcontainer.json` referencing compose                                |
+| 10 | Commit & push – CI green                                                             |
+
+### 6 Testing & Acceptance
+
+* `pytest` ≥ 90 % coverage, `ruff` & `mypy --strict` clean.
+* `docker compose up -d` starts Neo4j & Redis healthy.
