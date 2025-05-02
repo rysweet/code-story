@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  neo4j:
+    image: neo4j:5
+    container_name: code-story-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/test
+
+  backend:
+    image: python:3.10-slim
+    container_name: code-story-backend
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: poetry run code-story
+    depends_on:
+      - neo4j
+
+  frontend:
+    image: node:16-alpine
+    container_name: code-story-frontend
+    working_dir: /app
+    volumes:
+      - ./js:/app
+    command: sh -c "pnpm install && pnpm start"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

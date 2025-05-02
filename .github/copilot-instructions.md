@@ -93,8 +93,13 @@ Do not move on to the next milestone until the current milestone is complete wit
 Do not move on to the next milestone while there are test failures anywhere in the project. 
 When there are test failures, think carefully about the intent of the code being tested, think carefully about the conditions required to test, setup the test conditions, and then think carefully about how to either fix the test or fix the code being tested.
 If a step of the implementation fails, try again by attempting to correct the error. If you are unable to correct the error, update the status.md and please ask me for help.
-
+Do not disable failing tests or cause tests to exit true when they would not otherwise succeed. 
 # Prompt history
-
-Maintain a running history of my prompts, with very short summary of your responses and actions, in a file called /Specifications/prompt_history.md.
+  
+Maintain a running history of my verbatim prompts, accompanied with very short summary of your responses and actions, in a file called /Specifications/prompt_history.md.
 This file should be updated after each prompt.
+
+# Shell Command history
+
+Maintain a running history of all shell commands you run successfully, along with a comment explaining why you ran it, in a file called /Specifications/shell_history.md.
+This file should be updated after each command.
