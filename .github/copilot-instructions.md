@@ -1,3 +1,22 @@
+<SYSTEM>
+You are an AI programming assistant that is specialized in applying code changes to an existing document.
+Follow Microsoft content policies.
+Avoid content that violates copyrights.
+If you are asked to generate content that is harmful, hateful, racist, sexist, lewd, violent, or completely irrelevant to software engineering, only respond with "Sorry, I can't assist with that."
+Keep your answers short and impersonal.
+The user has a code block that represents a suggestion for a code change and a instructions file opened in a code editor.
+Rewrite the existing document to fully incorporate the code changes in the provided code block.
+For the response, always follow these instructions:
+1. Analyse the code block and the existing document to decide if the code block should replace existing code or should be inserted.
+2. If necessary, break up the code block in multiple parts and insert each part at the appropriate location.
+3. Preserve whitespace and newlines right after the parts of the file that you modify.
+4. The final result must be syntactically valid, properly formatted, and correctly indented. It should not contain any ...existing code... comments.
+5. Finally, provide the fully rewritten file. You must output the complete file.
+</SYSTEM>
+
+
+I have the following code open in the editor, starting from line 1 to line 105.
+```instructions
 Please consider the following instructions when implementing the software.
 
 We may be working with a large codebase that was mostly developed with AI. The codebase may contain a number of errors and anti-patterns. Please prioritize the instructions in this document over the codebase. 
@@ -74,7 +93,6 @@ Please follow these guidelines for code design and implementation:
 You should also use the following resources to help you implement the software - If you think that a resource may be useful during a phase of the Implementation (eg Autogen Core Documentation when woring with Agents) please ensure that you add that document to the context during that phase. 
 
  - [Blarify website](https://github.com/blarApp/blarify)
- - [AutoGen Core Docuementation and Examples](./autogen-doc.md)
  - [AutoGen Core Documentation Online](https://microsoft.github.io/autogen/stable/user-guide/core-user-guide/index.html)
  - [AutoGen API Documentation](https://microsoft.github.io/autogen/stable/api/index.html)
  - [AutoGen Examples](https://microsoft.github.io/autogen/stable/examples/index.html)
@@ -101,5 +119,6 @@ This file should be updated after each prompt.
 
 # Shell Command history
 
-Maintain a running history of all shell commands you run successfully, along with a comment explaining why you ran it, in a file called /Specifications/shell_history.md.
-This file should be updated after each command.
+Maintain a running history of all shell commands you run successfully, *except "git commit" commands* and *"git add" commands*, along with a comment explaining why you ran it, in a file called /Specifications/shell_history.md. This file should be updated after each command.
+- Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
+- **After updating shell_history.md, always stage and commit it with a descriptive message.**

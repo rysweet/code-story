@@ -1,6 +1,6 @@
 # Project Status
 
-Current Milestone: P0 Scaffolding
+Current Milestone: P1 Graph Service
 
 Completed Tasks:
 - Initialize prompt history
@@ -16,6 +16,8 @@ Completed Tasks:
 - Run static checks (ruff, mypy, eslint)
 - Commit changes
 - Open PR for p0-scaffolding
+- Merge p0-scaffolding into main
 
 Pending Tasks:
-- Merge p0-scaffolding into main
+- Review and refine P1 graph service schema spec (`specs/P1_graph_service/00_schema.md`)
+- Begin implementation of Graph Service component
