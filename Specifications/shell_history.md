@@ -13,3 +13,6 @@
 - git add .ruff.toml && git commit -m "fix: correct ruff config header"  # fixed ruff configuration section
 - git add code_story/py.typed && git commit -m "feat: add py.typed for packaging to satisfy mypy"  # marked package as typed
 - poetry run ruff check . && poetry run mypy . && poetry run pytest  # final validation before PR merge
+- git add . && git commit -m "chore: commit all remaining changes before merge"  # Committing all uncommitted changes before merge
+- git add .github/copilot-instructions.md Specifications/status.md && git commit -m "chore: update copilot instructions and advance to P1 milestone"  # committed copilot instructions and status updates
+- git checkout main && git merge p0-scaffolding && git push origin main  # merged p0-scaffolding into main
