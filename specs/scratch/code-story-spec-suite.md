@@ -1,4 +1,4 @@
-<!-- code-story – Specification Suite (v0.3) -->
+<!-- code-story – Specification Suite (v0.4) -->
 
 # code-story – Overview & Architecture
 
@@ -45,7 +45,6 @@ Convert any codebase into a richly‑linked knowledge graph plus natural‑langu
 7. Ingestion Pipeline - Celery task queue and workers for running the ingestion pipeline.
 8. MCP Adapter - use https://github.com/neo4j-contrib/mcp-neo4j/tree/main/servers/mcp-neo4j-cypher to expose the graph database as a MCP service.
 
-
 All services run under `docker-compose` network; Azure Container Apps deployment mirrors this layout with container scaling.
 
 ## 5. Cross‑Cutting Concerns
@@ -54,20 +53,49 @@ All services run under `docker-compose` network; Azure Container Apps deployment
 * **Observability**: OpenTelemetry traces, Prometheus metrics from every service, Grafana dashboard template in `infra/`.
 * **Extensibility**: Ingestion steps are plug‑in entry‑points; GUI dynamically reflects new step types; prompts in `prompts/` folder can be customised.
 
+## 6. Project Specifications and Development Methodology
 
-## 00 Scaffolding (P0)
+The project is built using a spec driven modular approach. 
+The specifications start with this document. Each major component then will have its own specification directory with more detailed specifications that are co-created with LLMs using this document. Each module shall be broken down into small enough components (individual specifications) that the entire component can be regenerated from its specification in a single inference. When there are changes to code the specification must also be updated and the code regenerated from the specification.
+The specifications shall include detailed descriptions, architectural notes, dependencies, technical stack, detailed user stories, test criteria, example of api usage for each module or component, and enough instructions to allow the one shot cogeneration of the entire component or module from a single LLM prompt.
+The project will be built folowing these steps:
 
-\### 1 Purpose
+1. Break down this specification into derived specifications for each major module.
+2. Each derived specification will be broken down into smaller specifications for each sub-module or component. 
+3. If necessary, each sub-module or component will be broken down into smaller specifications, until each specification captures a single component that can be generated in a single LLM inference.
+4. We will then walk through the specifications and generate the code for each component in the order of the required dependencies. 
+5. During each generation stage we will run the tests for each component and ensure that all tests pass before moving on to the next component.
+6. We will also run the tests for the entire project after each component is generated to ensure that all components work together as expected.
+7. Each component will have its own documentation generated to facilitate understanding and usage. 
+
+## 7. Coding Guidelines
+
+- Use the lastest stable versions of each language and framework where possible. 
+- Follow the conventions for each language WRT code formatting, linting, and testing.
+- Where possible use tools for linting and formatting checks. 
+- Ensure that all tests are run and pass before merging any changes. 
+- Use pre-commit hooks to ensure that all code is linted and formatted before committing.
+- Use continuous integration tools to automate testing and ensure code quality.
+
+# 00 Scaffolding (P0)
+
+## 1 Purpose
 Create a reproducible mono‑repo skeleton for Python 3.12 + TypeScript 5.4 development, containerised with Docker Compose and wired for CI. All later components depend on this foundation.
 
-\### 2 Directory Layout
+## Using github
+
+1. the github repo is https://github.com/rysweet/code-story
+2. Make use of the gh cli to manage the repo, PRs, and issues.
+3. 
+
+## 2 Directory Layout
 
 ```text
 code-story/
 ├─ .devcontainer/            # VS Code & Codespaces
 ├─ .github/workflows/        # CI pipelines
-├─ cli/                      # Typer + Rich CLI (added P6)
-├─ docs/                     # MkDocs site (added P9)
+├─ cli/                      # Rich CLI
+├─ docs/                     # Sphinx
 ├─ gui/                      # React/Redux app (added P7)
 ├─ infra/                    # Docker, compose, Bicep (added P8)
 ├─ prompts/                  # Prompty templates
@@ -93,7 +121,7 @@ code-story/
 
 | File                | Role                     | Precedence |
 | ------------------- | ------------------------ | ---------- |
-| `.env`              | secrets & host specifics |  1         |
+| `.env` and `.env-template`              | secrets & host specifics |  1         |
 | `.codestory.toml`   | project defaults         |  2         |
 | hard‑coded defaults | safe fallbacks           |  3         |
 
