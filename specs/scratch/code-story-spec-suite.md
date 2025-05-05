@@ -1,5 +1,60 @@
 <!-- code-story – Specification Suite (v0.3) -->
 
+# code-story – Overview & Architecture
+
+## 1. Mission
+
+Convert any codebase into a richly‑linked knowledge graph plus natural‑language summaries that LLM agents can query through **Model Context Protocol (MCP)**.
+
+## 3. Components and Data Flow
+
+1. **CLI or GUI** triggers *Ingestion* of a codebase (local or git). Alternatively queries or displays the graph or nodes/edges/metadata from the graph. 
+   - *CLI* is a rich command line interface using [Rich](https://github.com/Textualize/rich-cli). 
+   - *GUI* is a React + Redux web application that uses the 3D force graph library to display the graph and allows users to interact with it.
+   - *CLI* and *GUI* are both built using the same codebase and consume the same API from the **Code-Story Service**.
+2. *Code-Story Service* python service runs in a container and handles the API calls and manages the ingestion pipeline or queries the graph service.
+   - *Ingestion Pipeline* is a Celery task queue and workers for running the ingestion pipeline.
+   - *Graph Service* is a Neo4j graph database and semantic indexing service that stores the graph and semantic index.
+   - *OpenAI Client* is an Azure OpenAI client for LLM inference.
+3. *Ingestion Pipeline* runs all of the steps in the ingestion workflow. Each step is a plug‑in. System can be extended by adding new plugins.
+   - *BlarifyStep* runs [Blarify](https://github.com/blarApp/blarify) to parse the codebase and store the raw AST in the **Graph Service**.
+   - *Summariser* computes a DAG of code dependencies and walks from leaf nodes to the top and computes summaries for each module using the Azure AI model endpoints and stores them in the **Graph Service**.
+   - *FileSystemStep* creates a graph of the filesystem layout of the codebase and links it to the AST nodes.
+   - *DocumentationGrapher* creates a knowledge graph of the documentation and links it to the relevant AST, Filesystem, and Summary nodes.
+4. *MCP Adapter* exposes the graph service to LLM agents [secured by Entra ID](https://den.dev/blog/auth-modelcontextprotocol-entra-id/) using the [mcp-neo4j-cypher](https://github.com/neo4j-contrib/mcp-neo4j/tree/main/servers/mcp-neo4j-cypher) adapter. Also see 
+5. *Graph Service* stores the graph and semantic index.
+   - uses Neo4j 5.x with the native vector store and semantic indexing.
+   - uses [APOC](https://neo4j.com/labs/apoc/)
+   - One layer of the graph is the AST and its symbol bindings, created with blarify. 
+   - Another layer of the graph is the filesystem layout of the codebase.
+   - Another layer of the graph is the Summary of all the modules in the codebase.
+   - The semantic index is a vector database of the codebase - see [Neo4j Blog on Semantic indexes](https://neo4j.com/blog/developer/knowledge-graph-structured-semantic-search/)
+   - The graph and semantic index are used to answer queries from LLM agents.
+6. External agents or the **CLI/GUI** call MCP tools to query code understanding.
+7. *OpenAI Client* handles the OpenAI API calls for LLM inference. Will use ```az login --scope https://cognitiveservices.azure.com/.default``` with bearer token auth in the AzureOpenAI package to authenticate and use the Azure OpenAI API. The client will be a thin wrapper around the Azure OpenAI API and will handle the authentication and request/response handling, as well as backoff/throttling strategies. The client will also support asynchronous requests to improve performance and scalability. 
+8. Docs - use Sphinx to generate docs from the codebase and its docstrings. There will also be Markdown documentation for each of the modules and components. 
+
+## 4. Deployment Topology (local dev)
+
+1. Neo4J Graph Service - runs in a container - Neo4j graph database and semantic indexing.
+2. Blarify container - linux container running blarify to parse the codebase and populate the graph database.
+3. Code-Story Service - Hosts the APIs for the core functionality of Ingestion and Querying the graph database.
+4. CLI - Rich CLI for interacting with the code-story service.
+5. GUI - React + Redux GUI for interacting with the code-story service.
+6. OpenAI Client - Azure OpenAI client for LLM inference.
+7. Ingestion Pipeline - Celery task queue and workers for running the ingestion pipeline.
+8. MCP Adapter - use https://github.com/neo4j-contrib/mcp-neo4j/tree/main/servers/mcp-neo4j-cypher to expose the graph database as a MCP service.
+
+
+All services run under `docker-compose` network; Azure Container Apps deployment mirrors this layout with container scaling.
+
+## 5. Cross‑Cutting Concerns
+
+* **Auth**: MCP endpoints protected by Entra ID bearer JWT; local mode can bypass with `--no-auth` flag.
+* **Observability**: OpenTelemetry traces, Prometheus metrics from every service, Grafana dashboard template in `infra/`.
+* **Extensibility**: Ingestion steps are plug‑in entry‑points; GUI dynamically reflects new step types; prompts in `prompts/` folder can be customised.
+
+
 ## 00 Scaffolding (P0)
 
 \### 1 Purpose
