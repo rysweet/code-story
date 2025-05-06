@@ -1421,35 +1421,486 @@ The following steps outline the implementation of the GUI, ensuring that all use
 
 ## 15.1 Purpose
 
-Provide infrastructure‑as‑code for local Docker‑Compose **and** Azure Container Apps deployment.
+Provide infrastructure-as-code for both local development (Docker Compose) and cloud deployment (Azure Container Apps). This module ensures consistent deployment across environments, manages service configuration and networking, and coordinates container lifecycle. The infrastructure design prioritizes developer experience for local development while establishing a deployment pattern that scales in production.
 
-## 15.2 Deliverables
+## 15.2 Responsibilities
 
-* simple script for starting everything locally
-* `azd` setup for deploying to azure
-* `docker-compose.yaml` (services: neo4j, redis, worker, mcp, gui)
-* `Dockerfile` for Python services; `Dockerfile.gui`
-* `bicep/*.bicep` template deploying services + secrets mapping
-* `devcontainer.json` for Codespaces/local VS Code
+- Define container configurations for all services (Neo4j, Redis, Code Story Service, Celery workers, MCP adapter, GUI)
+- Provide networking to allow inter-service communication
+- Manage persistent volumes for stateful services (Neo4j, Redis)
+- Configure authentication and security for service-to-service communication
+- Enable health checks and restart policies for service resilience
+- Support both local development and cloud deployment scenarios
+- Facilitate secrets management across environments
+- Enable observability with logging, metrics, and tracing
 
-## 15.3 Implementation Steps
+## 15.3 Architecture and Code Structure
 
-__TODO__
+The infrastructure module consists of several key components:
 
-### 15.4 Acceptance Criteria
+```
+infra/
+├── docker/                        # Docker-related files
+│   ├── Dockerfile.service         # Multi-stage build for Python services
+│   ├── Dockerfile.gui             # Build for React GUI
+│   ├── Dockerfile.mcp             # Build for MCP adapter
+│   └── docker-compose.override.yml  # Local development overrides
+├── scripts/                       # Helper scripts
+│   ├── start.sh                   # Start local development environment
+│   ├── stop.sh                    # Stop local development environment
+│   └── healthcheck.sh             # Verify service health
+├── azure/                         # Azure deployment files
+│   ├── main.bicep                 # Main Bicep template
+│   ├── modules/                   # Modular Bicep files
+│   │   ├── container-apps.bicep   # Container Apps Environment
+│   │   ├── neo4j.bicep            # Neo4j database deployment
+│   │   ├── redis.bicep            # Redis cache deployment
+│   │   ├── service.bicep          # Code Story service deployment
+│   │   ├── mcp.bicep              # MCP adapter deployment
+│   │   └── gui.bicep              # GUI deployment
+│   └── parameters/                # Environment-specific parameters
+│       ├── dev.parameters.json    # Development parameters
+│       └── prod.parameters.json   # Production parameters
+├── .devcontainer/                 # Dev container configuration
+│   └── devcontainer.json          # VS Code dev container config
+├── azure.yaml                     # AZD configuration
+└── docker-compose.yaml            # Main compose file
+```
 
-* `azd up` succeeds.
-__TODO__
+### 15.3.1 Docker Compose Structure
 
+The `docker-compose.yaml` file defines the following services:
+
+```yaml
+services:
+  neo4j:
+    image: neo4j:5.x
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+      - ./plugins:/plugins
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+    ports:
+      - "8000:8000"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_URI=redis://redis:6379
+    depends_on:
+      - neo4j
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      target: worker
+    command: celery -A codestory.ingestion_pipeline.celery_app worker -l info
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_URI=redis://redis:6379
+    depends_on:
+      - neo4j
+      - redis
+      - service
+
+  mcp:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.mcp
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_URL=http://service:8000
+    depends_on:
+      - service
+
+  gui:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.gui
+    ports:
+      - "5173:80"
+    environment:
+      - API_URL=http://localhost:8000
+      - MCP_URL=http://localhost:8001
+    depends_on:
+      - service
+      - mcp
+
+volumes:
+  neo4j_data:
+  redis_data:
+```
+
+### 15.3.2 Azure Container Apps Deployment
+
+Azure deployment uses the Azure Developer CLI (AZD) for streamlined infrastructure provisioning:
+
+```
+# azure.yaml
+name: code-story
+services:
+  service:
+    project: ./src/codestory
+    language: python
+    host: containerapp
+  mcp:
+    project: ./src/codestory_mcp
+    language: python
+    host: containerapp
+  gui:
+    project: ./gui
+    language: typescript
+    host: containerapp
+```
+
+The Bicep templates define Azure resources including:
+- Container Apps Environment with Log Analytics
+- Azure Container Registry for image storage
+- Managed Identity for service-to-service authentication
+- Azure Cache for Redis
+- Azure Container Apps for each service with appropriate scaling rules
+
+## 15.4 Implementation Steps
+
+1. **Set up Docker Compose environment**
+   - Create base `docker-compose.yaml` with all required services
+   - Configure environment variables and port mappings for local development
+   - Define volumes for persistent data (Neo4j, Redis)
+   - Create Dockerfiles for each service with appropriate base images
+
+2. **Implement multi-stage builds**
+   - Create `Dockerfile.service` with development and production stages
+   - Optimize Python and Node.js dependencies installation
+   - Configure appropriate ENTRYPOINT and CMD for each service
+   - Add health checks for container orchestration
+
+3. **Create startup and management scripts**
+   - Implement `start.sh` to handle first-time setup and service startup
+   - Create `stop.sh` for graceful shutdown and cleanup
+   - Add `healthcheck.sh` to verify all services are running correctly
+   - Ensure scripts work cross-platform (bash with Windows compatibility)
+
+4. **Configure VS Code devcontainer**
+   - Create `.devcontainer/devcontainer.json` for consistent dev environment
+   - Define required VS Code extensions for Python, TypeScript, Docker
+   - Configure environment variables and mount points
+   - Set up appropriate port forwards
+
+5. **Implement Azure deployment with AZD**
+   - Create `azure.yaml` defining service projects
+   - Implement main Bicep template with resource grouping
+   - Create modular Bicep files for each component
+   - Configure environment-specific parameters
+
+6. **Set up Azure Container Apps**
+   - Configure Container Apps Environment with appropriate settings
+   - Define ingress and networking rules for services
+   - Set up scaling rules based on metrics
+   - Configure service-to-service communication
+
+7. **Implement secrets management**
+   - Create KeyVault for secure storage
+   - Configure secret references in Container Apps
+   - Implement managed identity for authentication
+   - Add environment-specific secret management
+
+8. **Add observability configuration**
+   - Configure Log Analytics workspace
+   - Set up Application Insights for telemetry
+   - Add Prometheus scraping endpoints
+   - Configure OpenTelemetry for distributed tracing
+
+9. **Create CI/CD workflows**
+   - Implement GitHub Actions for build and test
+   - Add deployment workflows for Azure
+   - Configure environment-based promotions
+   - Add infrastructure validation checks
+
+10. **Document infrastructure usage**
+    - Create detailed README with setup instructions
+    - Document environment variables and configuration options
+    - Add troubleshooting guides for common issues
+    - Include architecture diagrams for better understanding
+
+## 15.5 User Stories and Acceptance Criteria
+
+| User Story | Acceptance Criteria |
+|------------|---------------------|
+| As a developer, I want to quickly start all services locally so that I can test changes in a complete environment. | • Running `./infra/scripts/start.sh` brings up all services.<br>• Services are accessible on expected ports.<br>• Environment variables are correctly configured.<br>• Persistent data is maintained between restarts. |
+| As a developer, I want to deploy the entire application to Azure so that I can run it in a production-like environment. | • `azd up` successfully deploys all services to Azure.<br>• Services are correctly configured and connected.<br>• Secrets are stored securely in KeyVault.<br>• Services are accessible via public endpoints. |
+| As an operator, I want proper health checks for all services so that I can ensure system reliability. | • Each container has appropriate health checks configured.<br>• Unhealthy containers are automatically restarted.<br>• Health status is exposed via monitoring endpoints.<br>• Health check failures trigger appropriate alerts. |
+| As a security engineer, I want secure service-to-service communication so that the system maintains data confidentiality. | • Services use managed identities for authentication in Azure.<br>• Communication between services uses secure protocols.<br>• Secrets are not exposed in configuration files.<br>• Network access is restricted to required paths only. |
+| As a developer, I want consistent development environments so that code works the same locally and in CI/CD. | • Dev containers provide consistent tooling and dependencies.<br>• Docker Compose configuration matches production service relationships.<br>• Environment variables can be overridden for local testing.<br>• Local services can be individually restarted for development. |
+| As an operator, I want scalable infrastructure so the system can handle varying loads. | • Azure Container Apps are configured with appropriate scaling rules.<br>• Stateless services can scale horizontally.<br>• Database and cache services have appropriate resource allocations.<br>• Performance metrics are available for capacity planning. |
+| As a developer, I want to see logs and metrics from all services so that I can troubleshoot issues. | • Logs are centralized in Log Analytics.<br>• Metrics are available via Prometheus endpoints.<br>• Distributed traces connect requests across services.<br>• Query tools are available for log analysis. |
+| As a developer, I want to extend the infrastructure with new services so that I can add features to the system. | • Infrastructure code is modular and well-documented.<br>• Adding new services requires minimal changes to existing code.<br>• Documentation explains the process for adding services.<br>• Templates exist for common service types. |
+
+## 15.6 Testing Strategy
+
+- **Local Validation** - Verify all services start correctly using Docker Compose and can communicate with each other.
+- **Azure Deployment Testing** - Deploy to a test environment in Azure and validate service connectivity and functionality.
+- **Load Testing** - Test system behavior under load to validate scaling configurations.
+- **Security Testing** - Verify secret management and service-to-service authentication.
+- **Chaos Testing** - Simulate service failures to ensure resilience and proper recovery.
+
+## 15.7 Acceptance Criteria
+
+- `./infra/scripts/start.sh` successfully starts all services locally with proper networking and volume mounts.
+- `azd up` successfully deploys all components to Azure Container Apps with proper configuration.
+- Local environment and Azure deployment have functional parity for all services.
+- Secrets are securely managed in both local and cloud environments.
+- Observability tools provide visibility into system health and performance.
+- Services recover automatically from temporary failures.
+- Documentation clearly explains how to use and extend the infrastructure.
 
 ---
-
-# 16.0 Docs
+# 16.0 Documentation
 
 ## 16.1 Purpose
 
-Generate Sphinx documentation from code docstrings and Markdown files in `docs/` folder.
+Provide comprehensive documentation for all aspects of the Code Story project, enabling users, developers, and contributors to understand, use, extend, and maintain the system effectively. Documentation includes API references generated from code docstrings, user guides for CLI and GUI interfaces, developer guides for extending the system, and architecture documentation for understanding the overall design.
 
-__TODO__
+## 16.2 Responsibilities
 
+- Generate API documentation from code docstrings using Sphinx with Markdown support
+- Provide user-facing guides for CLI and GUI usage
+- Document architectural decisions and system design
+- Include tutorials and examples for common workflows
+- Maintain installation and deployment guides for different environments
+- Document contribution processes and guidelines
+- Ensure documentation stays in sync with code changes
+
+## 16.3 Documentation Structure
+
+```
+docs/
+├── _build/                        # Generated documentation output
+├── _static/                       # Static assets (images, CSS)
+├── _templates/                    # Custom Sphinx templates
+├── conf.py                        # Sphinx configuration with Markdown support
+├── index.md                       # Main documentation entry point
+├── architecture/                  # System architecture documentation
+│   ├── index.md                   # Architecture overview
+│   ├── components.md              # Component interaction diagrams
+│   ├── data_flow.md               # Data flow documentation
+│   └── design_decisions.md        # Explanation of key design choices
+├── user_guides/                   # End-user documentation
+│   ├── index.md                   # User guides overview
+│   ├── installation.md            # Installation instructions
+│   ├── cli_guide.md               # CLI usage documentation
+│   ├── gui_guide.md               # GUI usage documentation
+│   └── workflows/                 # Common user workflows
+│       ├── ingesting_repo.md      # How to ingest a repository
+│       ├── querying_graph.md      # How to query the graph
+│       └── configuration.md       # How to configure the system
+├── developer_guides/              # Developer-focused documentation
+│   ├── index.md                   # Developer guides overview
+│   ├── environment_setup.md       # Development environment setup
+│   ├── extending/                 # Extension documentation
+│   │   ├── pipeline_steps.md      # Creating custom pipeline steps
+│   │   ├── mcp_tools.md           # Adding new MCP tools
+│   │   └── api_endpoints.md       # Adding new API endpoints
+│   └── testing.md                 # Testing guidelines and procedures
+├── api/                           # Auto-generated API documentation
+│   ├── index.md                   # API documentation overview
+│   ├── config.md                  # Configuration module API
+│   ├── graphdb.md                 # Graph database service API
+│   ├── ingestion_pipeline.md      # Ingestion pipeline API
+│   ├── code_story_service.md      # Code Story service API
+│   └── mcp_adapter.md             # MCP adapter API
+├── deployment/                    # Deployment documentation
+│   ├── index.md                   # Deployment overview
+│   ├── local.md                   # Local deployment with Docker Compose
+│   └── azure.md                   # Azure Container Apps deployment
+└── contributing.md                # Contribution guidelines
+```
+
+## 16.4 Documentation Toolchain
+
+### 16.4.1 Core Documentation Tools
+
+- **Sphinx** - Primary documentation generator
+- **myst-parser** - Markdown parser for Sphinx
+- **sphinx-autodoc** - For API documentation from docstrings
+- **sphinx-rtd-theme** - ReadTheDocs theme for consistent styling
+- **sphinxcontrib-mermaid** - For sequence and architecture diagrams
+- **sphinx-copybutton** - For copy buttons on code blocks
+- **sphinx-design** - For responsive UI components and cards
+- **sphinx-tabs** - For tabbed content (e.g., different OS instructions)
+
+### 16.4.2 Documentation Build Process
+
+1. Documentation is generated from:
+   - Code docstrings (Google style format)
+   - Dedicated Markdown files in `docs/` directory
+   - README files from various components
+
+2. CI/CD pipeline automatically:
+   - Builds documentation on every commit
+   - Checks for broken links and references
+   - Deploys to GitHub Pages on main branch changes
+
+3. Local build process:
+   ```bash
+   cd docs
+   make html      # Build HTML documentation
+   make linkcheck # Verify links are valid
+   make clean     # Clean build artifacts
+   ```
+
+## 16.5 Docstring Standards
+
+All code in the project follows Google-style docstrings for consistency:
+
+```python
+def function_with_types_in_docstring(param1: int, param2: str) -> bool:
+    """Example function with PEP 484 type annotations.
+    
+    Args:
+        param1: The first parameter.
+        param2: The second parameter.
+        
+    Returns:
+        The return value. True for success, False otherwise.
+        
+    Raises:
+        ValueError: If param1 is negative.
+    
+    Example:
+        >>> function_with_types_in_docstring(1, '2')
+        True
+    """
+    if param1 < 0:
+        raise ValueError("param1 must be non-negative.")
+    return param1 < len(param2)
+```
+
+## 16.6 Documentation Types
+
+### 16.6.1 API Reference
+
+Generated automatically from docstrings in Python code and TypeScript/JavaScript using appropriate tools:
+- Python API docs via sphinx-autodoc
+- TypeScript/JavaScript API docs via TypeDoc
+
+### 16.6.2 User Guides
+
+Written in Markdown to explain how to use the system:
+- CLI command reference and examples
+- GUI interface walkthrough
+- Configuration options and management
+- Troubleshooting common issues
+
+### 16.6.3 Developer Guides
+
+Written in Markdown to explain how to extend or modify the system:
+- Architecture overviews and component interactions
+- Development environment setup
+- Testing procedures and guidelines
+- Code organization and conventions
+- Extending the system (new pipeline steps, API endpoints, etc.)
+
+### 16.6.4 Tutorials and Examples
+
+Step-by-step guides in Markdown for common tasks:
+- Ingesting a new repository
+- Querying and exploring the graph
+- Asking natural language questions
+- Creating visualizations
+- Extending with custom processing steps
+
+## 16.7 Implementation Steps
+
+1. **Set up documentation framework**
+   - Configure Sphinx with myst-parser for Markdown support
+   - Set up documentation directory structure
+   - Create base templates and index pages
+
+2. **Configure API documentation generation**
+   - Set up autodoc to extract docstrings
+   - Configure TypeDoc for JavaScript/TypeScript documentation
+   - Define appropriate groups and categories
+
+3. **Write core documentation pages**
+   - Create installation guides in Markdown
+   - Write architecture overview using Mermaid diagrams
+   - Document key components and their interactions
+
+4. **Create user guides**
+   - Document CLI commands and options
+   - Create GUI usage walkthrough with screenshots
+   - Write configuration guide
+
+5. **Develop developer documentation**
+   - Document code organization
+   - Create extension guidelines
+   - Write contribution workflow
+
+6. **Set up documentation CI/CD**
+   - Configure automatic builds in GitHub Actions
+   - Set up GitHub Pages deployment
+   - Add documentation status checks to PRs
+
+7. **Create interactive examples**
+   - Add runnable code examples where possible
+   - Create tutorial notebooks for complex workflows
+   - Include sample outputs and screenshots
+
+8. **Review and refine**
+   - Perform technical review of all documentation
+   - Check for consistency across sections
+   - Validate examples and commands
+   - Ensure cross-linking between related sections
+
+## 16.8 User Stories and Acceptance Criteria
+
+| User Story | Acceptance Criteria |
+|------------|---------------------|
+| As a new user, I want to quickly understand how to install and use the system so I can get started right away. | • Documentation includes clear installation instructions.<br>• Quick start guide covers the basic workflow.<br>• Prerequisites and system requirements are clearly stated.<br>• Common issues have troubleshooting guidance. |
+| As a CLI user, I want comprehensive command reference documentation so I can use all available features. | • All CLI commands are documented with syntax and examples.<br>• Command options and flags are explained.<br>• Common command combinations are illustrated in examples.<br>• Output formats are explained with example outputs. |
+| As a GUI user, I want interface documentation so I can navigate and use all GUI features effectively. | • Each GUI screen has annotated screenshots.<br>• Interactive elements are explained.<br>• Common workflows are documented with step-by-step instructions.<br>• Configuration options in the GUI are documented. |
+| As a developer, I want clear API documentation so I can understand and use the codebase. | • All public APIs have complete docstring-generated documentation.<br>• Classes, methods, and functions include parameter descriptions.<br>• Return values and exceptions are documented.<br>• Examples show typical usage patterns. |
+| As a contributor, I want to understand the architecture so I can effectively extend the system. | • Architecture documentation includes component diagrams.<br>• Data flow between components is explained.<br>• Design patterns and decisions are documented.<br>• Extension points are clearly identified. |
+| As a developer, I want to know how to create custom pipeline steps so I can extend the ingestion process. | • Step-by-step guide for creating custom pipeline steps exists.<br>• Interface requirements are clearly documented.<br>• Examples of custom steps are provided.<br>• Testing approach for custom steps is explained. |
+| As a system administrator, I want deployment documentation so I can set up the system in different environments. | • Local deployment with Docker Compose is documented.<br>• Azure Container Apps deployment instructions are clear.<br>• Environment variables and configuration options are explained.<br>• Scaling considerations are documented. |
+| As a user, I want searchable documentation so I can quickly find what I need. | • Documentation includes a search feature.<br>• Content is properly indexed for searching.<br>• Related topics are cross-linked.<br>• Navigation structure is intuitive. |
+
+## 16.9 Testing Strategy
+
+- **Link Validation** - Ensure all internal and external links are valid
+- **Example Testing** - Verify that code examples execute correctly
+- **Cross-Browser Testing** - Documentation site works in major browsers
+- **Mobile Responsiveness** - Documentation site is usable on mobile devices
+- **Search Functionality** - Test search feature works correctly
+
+## 16.10 Acceptance Criteria
+
+- Documentation builds without errors or warnings
+- API reference is complete and accurate for all public interfaces
+- User guides cover all CLI and GUI features
+- Developer guides provide clear instructions for extending the system
+- All links in the documentation are valid
+- Documentation is searchable and well-organized
+- Examples and code snippets are correct and tested
+- Documentation is accessible online and can be built locally
+- Documentation stays in sync with code changes through CI/CD process
 ---
