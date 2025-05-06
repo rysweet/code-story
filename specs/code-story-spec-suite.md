@@ -1,12 +1,12 @@
 <!-- code-story – Specification Suite (v0.4) -->
 
-# code-story – Overview & Architecture
+# 1.0 Overview & Architecture
 
-## 1. Mission
+## 1.1 Mission
 
 Convert any codebase into a richly‑linked knowledge graph plus natural‑language summaries that developers can query through a CLI or GUI and which LLM agents can query through **Model Context Protocol (MCP)**.
 
-## 3. Components and Data Flow
+## 1.2 Components and Data Flow
 
 1. Configuration Module - manages the configuration of the application based on a .env file or Azure KeyVault.
 2. **CLI or GUI** triggers *Ingestion* of a codebase (local or git). Alternatively queries or displays the graph or nodes/edges/metadata from the graph. 
@@ -35,7 +35,7 @@ Convert any codebase into a richly‑linked knowledge graph plus natural‑langu
 8. *OpenAI Client* handles the OpenAI API calls for LLM inference. Will use ```az login --scope https://cognitiveservices.azure.com/.default``` with bearer token auth in the AzureOpenAI package to authenticate and use the Azure OpenAI API. The client will be a thin wrapper around the Azure OpenAI API and will handle the authentication and request/response handling, as well as backoff/throttling strategies. The client will also support asynchronous requests to improve performance and scalability. 
 9. Docs - use Sphinx to generate docs from the codebase and its docstrings. There will also be Markdown documentation for each of the modules and components. 
 
-## 4. Deployment Topology (local dev)
+## 1.3 Deployment Topology (local dev)
 
 1. Neo4J Graph Service - runs in a container - Neo4j graph database and semantic indexing.
 2. Blarify container - linux container running blarify to parse the codebase and populate the graph database.
@@ -48,13 +48,13 @@ Convert any codebase into a richly‑linked knowledge graph plus natural‑langu
 
 All services run under `docker-compose` network; Azure Container Apps deployment mirrors this layout with container scaling.
 
-## 5. Cross‑Cutting Concerns
+## 1.4 Cross‑Cutting Concerns
 
 * **Auth**: MCP endpoints protected by Entra ID bearer JWT; local mode can bypass with `--no-auth` flag.
 * **Observability**: OpenTelemetry traces, Prometheus metrics from every service, Grafana dashboard template in `infra/`.
 * **Extensibility**: Ingestion steps are plug‑in entry‑points; GUI dynamically reflects new step types; prompts in `prompts/` folder can be customised.
 
-## 6. Project Specifications and Development Methodology
+## 1.5 Project Specifications and Development Methodology
 
 The project is built using a spec driven modular approach. 
 The specifications start with this document. Each major component then will have its own specification directory with more detailed specifications that are co-created with LLMs using this document. Each module shall be broken down into small enough components (individual specifications) that the entire component can be regenerated from its specification in a single inference. When there are changes to code the specification must also be updated and the code regenerated from the specification.
@@ -71,7 +71,7 @@ The project will be built folowing these steps:
 8. We will also run the tests for the entire project after each component is generated to ensure that all components work together as expected.
 9. Each component will have its own documentation generated to facilitate understanding and usage. 
 
-## 7. Coding Guidelines
+## 1.6 Coding Guidelines
 
 - Use the lastest stable versions of each language and framework where possible. 
 - Follow the conventions for each language WRT code formatting, linting, and testing.
@@ -80,19 +80,19 @@ The project will be built folowing these steps:
 - Use pre-commit hooks to ensure that all code is linted and formatted before committing.
 - Use continuous integration tools to automate testing and ensure code quality.
 
-## Using github
+## 1.7 Using github
 
 1. the github repo is https://github.com/rysweet/code-story
 2. Make use of the gh cli to manage the repo, PRs, and issues.
 3. Each stage of the project should progress on a separate branch of the repo and upon completion be merged as a PR to the main branch.
 4. Each PR should be reviewed and approved before merging.
 
-# 00 Scaffolding
+# 2.0 Scaffolding
 
-## 1 Purpose
+## 2.1 Purpose
 Create a reproducible mono‑repo skeleton for Python 3.12 + TypeScript 5.4 development, containerised with Docker Compose and wired for CI. All later components depend on this foundation.
 
-## 2 Directory Layout
+## 2.2 Directory Layout
 
 ```text
 code-story/                  # Project root
@@ -122,7 +122,7 @@ code-story/                  # Project root
 └─ tests/                    # pytest + testcontainers
 ```
 
-## 3 Toolchain Versions
+## 2.3 Toolchain Versions
 
 | Area       | Tool              | Version | Purpose                   |
 | ---------- | ----------------- | ------- | ------------------------- |
@@ -134,7 +134,7 @@ code-story/                  # Project root
 | CI         | GitHub Actions    | n/a     | Lint + tests              |
 | Dev        | devcontainer spec | 0.336.0 | Unified IDE env           |
 
-## 4 Configuration Conventions
+## 2.4 Configuration Conventions
 
 | File                | Role                     | Precedence |
 | ------------------- | ------------------------ | ---------- |
@@ -144,7 +144,7 @@ code-story/                  # Project root
 
 `src/codestory/config.py` exposes a singleton `settings: Settings` (Pydantic BaseSettings).
 
-## 5 Implementation Steps
+## 2.5 Implementation Steps
 
 | #  | Action                                                                               |
 | -- | ------------------------------------------------------------------------------------ |
@@ -161,7 +161,7 @@ code-story/                  # Project root
 
 A helper script `scripts/bootstrap.sh` may automate steps 1‑9.
 
-## 6 Testing & Acceptance
+## 2.6 Testing & Acceptance
 
 * **Unit** – pytest; verify config precedence & validation.
 * **Lint** – Ruff, mypy (strict).
@@ -173,13 +173,13 @@ A helper script `scripts/bootstrap.sh` may automate steps 1‑9.
 
 ---
 
-# Configuration Module
+# 3.0 Configuration Module
 
-## 1 Purpose
+## 3.1 Purpose
 
 The configuration module is a singleton that loads the configuration from the `.env` file and exposes it to the rest of the application. Configuration variables are in the form of key-value pairs formatted like bash shell environment variables so that they can be evaluated across languages. There is a python module that reads and writes the configuration to the `.env` file. The configuration module is used by all other modules in the application to access the configuration values. The .env file is not committed to the repository and is used to store secrets and environment-specific values. There will be a .env-template that is checked in and contains the default values. The configuration module also provides a way to override the default values with environment variables. Secrets can also be read from an Azure KeyVault if so configured. 
 
-## 2 Responsibilities
+## 3.2 Responsibilities
 
 - Load the configuration from the `.env` file and expose it to the rest of the application.
 - Provide a way to override the default values with environment variables.
@@ -187,7 +187,7 @@ The configuration module is a singleton that loads the configuration from the `.
 - Ensure that the configuration module is a singleton.
 - Provide a way to configure an Azure KeyVault to read secrets from the KeyVault.
 
-## User Stories and Acceptance Criteria
+## 3.3 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
 |------------|---------------------|
@@ -197,20 +197,20 @@ The configuration module is a singleton that loads the configuration from the `.
 
 ---
 
-# Graph Database Service
+# 4.0 Graph Database Service
 
-## 1 Purpose
+## 4.1 Purpose
 
 Provide a self‑hosted **Neo4j 5.x** backend with semantic index and vector search, APOC, capable of running in a container locally or in Azure Container Apps, with mounted `plugins/` (APOC, n10s). Data persisted in named volume `neo4j_data`.
 
-## 2 Responsibilities
+## 4.2 Responsibilities
 
 * Create and adapt the db schema, constraints, and indexes.
 * Expose a Neo4JConector module that can be used by other components to connect to the Neo4j database plus APOC Core and perform graph operations and cypher queries. 
 * Docker container and compose file to run the Neo4j database and expose the graph service.
 * Start and Stop scripts for Neo4J and its supporting services.
 
-## 3 Code Structure
+## 4.3 Code Structure
 
 ```text
 src/codestory/graphdb/
@@ -219,7 +219,7 @@ src/codestory/graphdb/
 ├── schema.py             # DDL + constraints
 ```
 
-## 4 Data Model (abridged)
+## 4.4 Data Model (abridged)
 
 The schema needs to be dynamic as new graph nodes and relationships are added by the ingestion pipeline. Key types of information that the graphmust store include:
 
@@ -230,12 +230,12 @@ The schema needs to be dynamic as new graph nodes and relationships are added by
 * **Semantic Index** (full‑text + vector) for combined structured + similarity search
 * Edges between nodes to represent relationships between the nodes.
 
-## 5 Testing Strategy
+## 4.5 Testing Strategy
 
 * **Unit** - ensure that the full api of the Neo4J Connector module is correct and functioning. Ensure that the schema can be initialized successfully. 
 * **Integration** - ensure that the Neo4J database can be stopped and started successfully. Ensure that the schema can be initialized successfully. Ensure that the Neo4J database can be queried successfully. Ensure that the Neo4J database can be queried with cypher queries successfully.
 
-## 6 User Stories and Acceptance Criteria
+## 4.6 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
 |------------|---------------------|
@@ -246,17 +246,17 @@ The schema needs to be dynamic as new graph nodes and relationships are added by
 | As a developer, I want to be able to run the Neo4J database with a mounted volume so that I can persist data across runs. | • The Neo4J database data persists between container restarts. |
 | As a developer, I want to be able to use advanced search capabilities with the graph database. | • The Neo4J database can be queried using the semantic index.<br>• The Neo4J database can be queried using the vector search index. |
 
-## 7 Implementation Steps
+## 4.7 Implementation Steps
 
 __TODO__
 
-# AI Client
+# 5.0 AI Client
 
-## 1 Purpose
+## 5.1 Purpose
 
 Using the Azure OpenAI Library and bearer-token authentication, provide low‑level async/sync access to Azure OpenAI completions, embeddings, and chat—with retry, throttling back‑off, and metrics. Domain summarisation logic lives elsewhere.  Allow for multiple models to be used for different tasks. Allow the same code to use either chat completion or reasoning models. Support at least o1/o3 reasoning, gpt‑4o chat, and `text‑embedding‑3-small` embeddings.
 
-## 2 Responsibilities
+## 5.2 Responsibilities
 
 \| OC‑R1 | Bearer‑token auth via `AZURE_OAI_KEY`, `AZURE_OAI_ENDPOINT`. |
 \| OC‑R2 | Support o1/o3 reasoning, gpt‑4o chat, `text‑embedding‑3-small`. |
@@ -268,7 +268,7 @@ Using the Azure OpenAI Library and bearer-token authentication, provide low‑le
 \| OC‑R8 | Support both async and sync requests. |
 
 
-## 3 Architecture
+## 5.3 Architecture
 
 ```
 src/codestory/llm/
@@ -278,13 +278,13 @@ src/codestory/llm/
 └── backoff.py
 ```
 
-## 4 Implementation Steps
+## 5.4 Implementation Steps
 
 1. `poetry add openai azure-core prompty tenacity prometheus-client`
 2. Implement each code file
 3. Ensure all components are integrated and functioning as expected.
 
-## 5 Example Code
+## 5.5 Example Code
 
 ```python
 from codestory.llm.client import OpenAIClient
@@ -307,13 +307,13 @@ Note that reasoning models do not have max_tokens or temperature parameters but 
 
 ---
 
-# Ingestion Pipeline
+# 6.0 Ingestion Pipeline
 
-## 1 Purpose
+## 6.1 Purpose
 
 **Ingestion Pipeline** is a library that can be embedded into the a service such as the code-story service that runs all of the steps in the ingestion workflow. Each step is a plug‑in. System can be extended by adding new plugins.  Each step in the workflow is an independent module that is not part of the ingestion pipeline. The order of execution is governed by a configuration file. Ingestion module workflow steps are python modules that implement the `PipelineStep` interface. The pipeline is a Celery task queue and workers for running the ingestion pipeline. The pipeline will run in a container locally or in Azure Container Apps.
 
-## 2 Responsibilities
+## 6.2 Responsibilities
 
 - When a new ingestion job is started, the pipeline will run all of the steps in the ingestion workflow in the order specified in the configuration file.
 - The Ingestion Pipeline library will have methods for starting, stopping, and managing the status of ingestion jobs.
@@ -323,12 +323,12 @@ Note that reasoning models do not have max_tokens or temperature parameters but 
 - Workflow steps can optionally have an "Ingestion Update" mode that will update the graph with the results of the step without running the entire pipeline.
 - Each workflow step will log its execution status and any errors encountered during processing.
 
-## 3 Architecture and Code Structure
+## 6.3 Architecture and Code Structure
 
 * uses Celery for task queue and workers
 __TODO__
 
-## Ingestion Pipeline Workflow Steps
+## 6.4 Ingestion Pipeline Workflow Steps
 
 The following steps are the default workflow of the ingestion pipeline but are separate modules, not part of the Ingestion Pipeline module. 
 
@@ -337,7 +337,7 @@ The following steps are the default workflow of the ingestion pipeline but are s
    - *FileSystemStep* creates a graph of the filesystem layout of the codebase and links it to the AST nodes.
    - *DocumentationGrapher* creates a knowledge graph of the documentation and links it to the relevant AST, Filesystem, and Summary nodes.
 
-## Workflow Steps API
+## 6.5 Workflow Steps API
 
 Each workflow step must implement the following operations, inherited from the `PipelineStep` interface:
 - `run(repository)`: Run the workflow step with the specified configuration and input data (location of the repo, neo4j connection information, etc.). The operation returns an identifier for the job that can be used to check the status of the job.
@@ -346,11 +346,11 @@ Each workflow step must implement the following operations, inherited from the `
 - `cancel(job_id)`: Cancel the workflow step. The operation returns the current status of the job (e.g., running, completed, failed).
 - `ingestion_update(repository)`: Update the graph with the results of the workflow step without running the entire pipeline. The operation returns a job_id that can be used to check the status of the job.
 
-## Code Example of calling the Ingestion Pipeline
+## 6.6 Code Example of calling the Ingestion Pipeline
 
 __TODO__
 
-## User Stories and Acceptance Criteria
+## 6.7 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
 |------------|---------------------|
@@ -363,24 +363,24 @@ __TODO__
 
 ---
 
-# Blarify Workflow Step
+# 7.0 Blarify Workflow Step
 
-## 1 Purpose
+## 7.1 Purpose
 
 **BlarifyStep** is a workflow step in the ingestion pipeline that runs [Blarify](https://github.com/blarApp/blarify) in a linux container to parse the codebase and store the raw AST in the **Graph Service** with bindings to the symbol table derived from LSPs by blarify. Blarify directly parses the codebase and generates a graph of the codebase in neo4j. Thus the Blarify Step depends upon the Neo4J Graph Database Service. The BlarifyStep will run in Docker locally or in Azure Container Apps. 
 
-## 2 Responsibilities
+## 7.2 Responsibilities
 
 - Implement the `PipelineStep` interface.
 - Run the Blarify tool in a linux container to parse the codebase and store the raw AST and symbol bindings in the **Graph Service**.
 - The BlarifyStep will run in a container locally or in Azure Container Apps.
 - Estimate the status of the job based on the progress of the Blarify tool.
 
-## 3 Code Structure
+## 7.3 Code Structure
 
 ___TODO___
 
-## Testing strategy
+## 7.4 Testing strategy
 
 - **Unit** - unit tests for each method of the BlarifyStep class.
 - **Integration** - integration tests depend on the actual database and Blarify tool. Ensure that the BlarifyStep can be started and stopped successfully. Ensure that the BlarifyStep can be queried successfully. Ensure that the resulting data in the graph database is correct. Use a small known repository for the ingestion testing. 
@@ -388,9 +388,9 @@ ___TODO___
 
 ---
 
-# FileSystem Workflow Step
+# 8.0 FileSystem Workflow Step
 
-## 1 Purpose
+## 8.1 Purpose
 
 **FileSystemStep** is a workflow step in the ingestion pipeline that creates a graph of the filesystem layout of the codebase and links it to the AST+symbol nodes. Its operation is very simple:
 - Obtain the filesystem layout of the codebase, and create a corresponding graph of the filesystem layout in Neo4J
@@ -398,20 +398,20 @@ ___TODO___
 
 The FileSystemStep depends upon the Neo4J Graph Database Service, the BlarifyStep, and the Ingestion Pipeline.
 
-## 2 Responsibilities
+## 8.2 Responsibilities
 - Implement the `PipelineStep` interface.
 - Create a graph of the filesystem layout of the codebase and link it to the AST+symbol nodes in the **Graph Service**.
 - Estimate the status of the job based on the progress of the filesystem graph creation process.
 
 ---
 
-# Summarizer Workflow Step
+# 9.0 Summarizer Workflow Step
 
-## 1 Purpose
+## 9.1 Purpose
 
 **Summarizer** is a workflow step in the ingestion pipeline that computes a DAG of code dependencies and walks from leaf nodes to the top and computes natural language English summaries for each AST or filesystem node using an LLM (from the ai module) and stores them in the **Graph Service** with links to the nodes they describe. Each directory or larger module of the code base should have an overall summary as well, along with a top level summary of the whole repository. The Summarizer will run in a container locally or in Azure Container Apps.  Every leaf node shall be processed in parallel up to a configurable limit (default = 5), and the DAG will be traversed in parallel as well. 
 
-## 2 Responsibilities
+## 9.2 Responsibilities
 
 - Implement the `PipelineStep` interface.
 - Using the contents of the code, compute natural language English summaries or explanations for each AST or filesystem node.
@@ -421,32 +421,32 @@ The FileSystemStep depends upon the Neo4J Graph Database Service, the BlarifySte
 - Compute a summary for each directory or larger module of the code base.
 - Estimate the status of the job based on the progress of the summarization process.
 
-## Architecture and Code Structure
+## 9.3 Architecture and Code Structure
 
 __TODO__
 
-## 4 Testing strategy
+## 9.4 Testing strategy
 - **Unit** - unit tests for each method of the Summarizer class.
 - **Integration** - integration tests depend on the actual database and OpenAI API. Ensure that the Summarizer can be started and stopped successfully. Ensure that the Summarizer can be queried successfully. Ensure that the resulting data in the graph database is correct. Use a small known repository for the ingestion testing.
 
 ---
 
-# Documentation Grapher Workflow Step
+# 10.0 Documentation Grapher Workflow Step
 
-## 1 Purpose
+## 10.1 Purpose
 
 **DocumentationGrapher** is a workflow step in the ingestion pipeline that creates a knowledge graph of the documentation and links it to the relevant AST, Filesystem, and Summary nodes. It searches the repository for any documentation files (e.g., README, markdown files, etc.) and parses them to extract relevant information. The extracted information is then stored in the **Graph Service** with links to the parts of the software that they describe. 
 
-## 2 Responsibilities
+## 10.2 Responsibilities
 - Implement the `PipelineStep` interface.
 - Search the repository for any documentation files (e.g., README, markdown files, etc.) and parse them to extract relevant information.
 - Create a knowledge graph of the documentation and link it to the relevant AST, Filesystem, and Summary nodes in the **Graph Service**.
 
-## 3 Code Structure
+## 10.3 Code Structure
 
 ___TODO___
 
-## 4 Testing strategy
+## 10.4 Testing strategy
 - **Unit** - unit tests for each method of the DocumentationGrapher class.
 - **Integration** - integration tests depend on the actual database and OpenAI API. Ensure that the DocumentationGrapher can be started and stopped successfully. Ensure that the DocumentationGrapher can be queried successfully. Ensure that the resulting data in the graph database is correct. Use a small known repository for the ingestion testing.
 
@@ -454,13 +454,13 @@ ___TODO___
 
 
 
-# Code Story Service
+# 11.0 Code Story Service
 
-## 1 Purpose
+## 11.1 Purpose
 
 Provide a self‑hosted API service that is responsible for running the ingestion pipeline and exposing the graph service to the CLI, GUI, and MCP adapter. It will also handle the OpenAI API calls for LLM inference.  This will depend upon other components such as the Graph Database Service, Ingestion Pipeline, and OpenAI Client.  It will run in a container locally or in Azure Container Apps. The code-story service uses the **Ingestion Pipeline** library to run the ingestion pipeline and the **Graph Database Service** to query the graph database. The code-story service will also handle authentication and authorization for the REST API using Entra-ID or tokens embedded in the environment when in local dev mode. 
 
-## 2 Responsibilities
+## 11.2 Responsibilities
 
 - Expose a REST API for the MCP, CLI, and GUI to interact with the graph service. Including:
   - support for querying and managing graph data
@@ -474,15 +474,15 @@ Provide a self‑hosted API service that is responsible for running the ingestio
 - Docker container and compose file to run the service and its dependencies.
 - Start and Stop scripts for the service and its supporting services.
 
-## 3 Architecture and Code Structure
+## 11.3 Architecture and Code Structure
 
 __TODO__
 
-## 4 API Endpoints
+## 11.4 API Endpoints
 
 __TODO__
 
-## 5 User Stories and Acceptance Criteria
+## 11.5 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
 |------------|---------------------|
@@ -498,12 +498,12 @@ __TODO__
 | As a developer, I want a local development mode with token authentication passed through the environment so that I can easily test the service locally. | • Local development mode can be enabled via configuration.<br>• Authentication tokens are correctly passed and validated in local mode. |
 
 
-## 6 Testing Strategy
+## 11.6 Testing Strategy
 
 - **Unit** - unit tests for each method of API
 - **Integration** - integration tests depend on the actual database and OpenAI API. Ensure that the service can be started and stopped successfully. Ensure that the service can be queried successfully. Ensure that the service can be queried with cypher queries successfully. Validate all acceptance criteria.
 
-## 7 Implementation Steps
+## 11.7 Implementation Steps
 
 1. install dependencies __TODO__
 2. implement each code file
@@ -512,13 +512,13 @@ __TODO__
 5. ensure all acceptance criteria are met
 
 ---
-# MCP Adapter
+# 12.0 MCP Adapter
 
-## 1 Purpose
+## 12.1 Purpose
 
 *MCP Adapter* exposes the graph service to LLM agents [secured by Entra ID](https://den.dev/blog/auth-modelcontextprotocol-entra-id/) using the [mcp-neo4j-cypher](https://github.com/neo4j-contrib/mcp-neo4j/tree/main/servers/mcp-neo4j-cypher) adapter. 
 
-## 2 Responsibilities
+## 12.2 Responsibilities
 
 | ID     | Description                                                                                                                                                                                                                |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -526,7 +526,7 @@ __TODO__
 | MCP-R2 | Secure endpoints with Microsoft Entra ID (MSAL) using auth flow described in [https://den.dev/blog/auth-modelcontextprotocol-entra-id/](https://den.dev/blog/auth-modelcontextprotocol-entra-id/) (bearer JWT validation). |
 | MCP-R3 | Map high‑level MCP tool names to Cypher queries and vector searches: `searchGraph`, `summarizeNode`, `pathTo`, `similarCode`.                                                                                              |
 | MCP-R4 | Provide usage quota & basic analytics (requests, latency) exposed via Prometheus. |                                                                                                             
-### 6 Testing Strategy
+### 12.3 Testing Strategy
 
 * **Unit** – mock GraphSCode Story Service; test each tool handler returns expected payload.
 * **Auth** – generate signed JWT with test key; ensure `auth.verify` accepts valid token and rejects invalid scope.
@@ -534,9 +534,9 @@ __TODO__
 
 ---
 
-# CLI
+# 13.0 CLI
 
-## 1 Purpose
+## 13.1 Purpose
 
 Offer a **Rich -based** command‑line interface enabling developers to:
 
@@ -553,7 +553,7 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 * Output an HTML visualization of the graph database with a color-coded key and a 3D force-directed graph visualization.
 * Is just a wrapper around the code-story service API and MCP adapter, so it does not need to know about the details of the implementation of the code-story service or the MCP adapter.
 
-## Commands
+## 13.2 Commands
 
 | Command                          | Alias    | Description                                                |
 | -------------------------------- | -------- | ---------------------------------------------------------- |
@@ -570,7 +570,7 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 | `codestory config show`          | `cs cfs` | Display current configuration settings.                    |
 | `codestory visualize`            | `cs vz`  | Output an HTML visualization of the graph database with a color-coded key and a 3D force-directed graph visualization. |
 
-## 3 Implementation Steps
+## 13.3 Implementation Steps
 
 1. `poetry add rich rich-markdown rich-click`
 2. Create `cli/__main__.py` registering Typer app.
@@ -578,12 +578,12 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 4. Implement config TUI via `rich.prompt` + TOML editing.
 5. Package entry‑point in `pyproject.toml` → `console_scripts = { codestory = 'codestory.cli:app' }`.
 
-## 4 Testing
+## 13.4 Testing
 
 - **Unit** - ensure cli commands parse and invoke the correct methods
 - **Integration** - run CLI commands against a real Code-story instance; validate output format and data integrity.
 
-## 5 Acceptance Criteria
+## 13.5 Acceptance Criteria
 
 - Typing `cs in .` on fresh repo prints colored progress and ends with green “Completed”.
 - `cs q "MATCH (n) RETURN count(n)"` returns Rich table.
@@ -604,13 +604,13 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 
 ---
 
-# 07 GUI
+# 14.0 GUI
 
-## 1 Purpose
+## 14.1 Purpose
 
 Provide a **React + Redux** single‑page application that visualises the Neo4j graph in 3‑D (using `3d-force-graph`), lets users control ingestion runs, query graph data, and edit configuration.  Users may also ask natural language questions about the graph and get answers back. The GUI will run in a container locally or in Azure Container Apps.  The GUI will be a wrapper around the code-story service API and MCP adapter, so it does not need to know about the details of the implementation of the code-story service or the MCP adapter.
 
-## 2 Key Features
+## 14.2 Key Features
 
 * 3‑D force‑directed graph view with Neo4j integration, showing node/edge metadata and data on hover/click. 
 * Ingestion dashboard: start run, show progress per step.
@@ -622,18 +622,18 @@ Provide a **React + Redux** single‑page application that visualises the Neo4j 
 * Uses the code-story service API and MCP adapter to interact with the graph database and ingestion pipeline. Does not use the CLI for any of its functionality.
 * Uses the `@vasturiano/force-graph` library to render the graph in 3D.
 
-## 3 Tech Stack
+## 14.3 Tech Stack
 
 * Typescript + React
 * Redux Toolkit + RTK Query
 * Mantine UI components; `3d-force-graph` for visualisation
 * Axios for API calls; WebSocket for live progress
 
-## Code Structure
+## 14.4 Code Structure
 
 __TODO__
 
-## 4 Implementation Steps
+## 14.5 Implementation Steps
 
 1. `pnpm create vite gui --template react-ts`
 2. Add deps: `redux toolkit`, `react-redux`, `mantine`, `@vasturiano/force-graph`, `three`, `axios`.
@@ -643,7 +643,7 @@ __TODO__
 6. Config editor writes JSON to `/v1/config` which CLI & services read.
 7. Deploy dev server on port 5173; include Dockerfile `gui.Dockerfile` for production build.
 
-## 5 User Stories and Acceptance Criteria
+## 14.6 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
 |------------|---------------------|
@@ -656,13 +656,13 @@ __TODO__
 
 ---
 
-# Infra Module
+# 15.0 Infra Module
 
-## 1 Purpose
+## 15.1 Purpose
 
 Provide infrastructure‑as‑code for local Docker‑Compose **and** Azure Container Apps deployment.
 
-## 2 Deliverables
+## 15.2 Deliverables
 
 * simple script for starting everything locally
 * `azd` setup for deploying to azure
@@ -671,11 +671,11 @@ Provide infrastructure‑as‑code for local Docker‑Compose **and** Azure Cont
 * `bicep/*.bicep` template deploying services + secrets mapping
 * `devcontainer.json` for Codespaces/local VS Code
 
-## 3 Implementation Steps
+## 15.3 Implementation Steps
 
 __TODO__
 
-### 4 Acceptance Criteria
+### 15.4 Acceptance Criteria
 
 * `azd up` succeeds.
 __TODO__
@@ -683,9 +683,9 @@ __TODO__
 
 ---
 
-# Docs
+# 16.0 Docs
 
-## 1 Purpose
+## 16.1 Purpose
 
 Generate Sphinx documentation from code docstrings and Markdown files in `docs/` folder.
 
