@@ -1204,7 +1204,6 @@ embeddings = await get_embedding_async()
 - **Integration Tests**
   - Test with actual Azure OpenAI endpoints (in test environment)
   - Verify embedding dimensions and formats
-  - Test performance under various load conditions
   - Verify authentication and error handling with real API
 
 ## 5.8 Implementation Steps
