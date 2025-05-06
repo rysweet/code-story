@@ -248,7 +248,43 @@ The schema needs to be dynamic as new graph nodes and relationships are added by
 
 ## 4.7 Implementation Steps
 
-__TODO__
+1. **Docker Compose Integration**  
+   - Define a `neo4j` service in `docker-compose.yaml` using the official Neo4j 5.x image.  
+   - Configure `NEO4J_AUTH` (e.g., `neo4j/yourPassword`), mount a `neo4j_data` volume for persistence, and map a `plugins/` directory for APOC, n10s, and the native vector store.
+
+2. **Connector Module**  
+   - Create `src/codestory/graphdb/neo4j_connector.py`.  
+   - Implement a `Neo4jConnector` class wrapping the official Neo4j Python driver, accepting URI, username, password, and optional TLS settings from environment variables.
+
+3. **Schema Definition**  
+   - Remember that the schema is dynamic and will be updated by the ingestion pipeline.
+   - In `src/codestory/graphdb/schema.py`, declare your graph schema:
+     - **Node labels** (e.g. `:File`, `:Class`, `:Function`).
+     - **Relationship types** (e.g. `:CONTAINS`, `:DEPENDS_ON`).
+     - **Constraints** (e.g. `CREATE CONSTRAINT ON (n:File) ASSERT n.path IS UNIQUE`).
+     - **Indexes** (full-text for metadata fields like `name`, `content`).
+
+4. **Plugin & Vector Store Setup**  
+   - Ensure APOC and the native vector store are enabled in `neo4j.conf`.  
+   - Verify plugin availability by running a test Cypher call (e.g. `CALL apoc.help('apoc')`).
+
+5. **Lifecycle Scripts**  
+   - Add simple helper scripts under `scripts/`:  
+     - `start-neo4j.sh` → `docker compose up -d neo4j`  
+     - `stop-neo4j.sh`  → `docker compose stop neo4j`
+
+6. **Testing & Validation**  
+   - Write unit tests in `tests/graphdb/` using Testcontainers (or an in-memory fixture) to:  
+     1. Instantiate `Neo4jConnector` and open a session.  
+     2. Execute schema-initialization routines.  
+     3. Run sample Cypher queries to confirm index and constraint behavior.
+
+7. **Documentation**  
+   - Update the **Graph Database Service** subsection in the project README:  
+     - List required environment variables (`NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`).  
+     - Show CLI commands or scripts for service startup, schema initialization, and basic sanity checks.
+
+---
 
 # 5.0 AI Client
 
@@ -300,7 +336,7 @@ print(response)
 
 Note that reasoning models do not have max_tokens or temperature parameters but instead have different parameters. The client should be able to handle this automatically based on the model type.
 
-### 6 Testing & Acceptance
+## 5.6 Testing & Acceptance
 
 * Unit mock for retry; branch coverage ≥ 95 %.
 * Integration with real Azure OpenAI;
@@ -325,8 +361,100 @@ Note that reasoning models do not have max_tokens or temperature parameters but 
 
 ## 6.3 Architecture and Code Structure
 
-* uses Celery for task queue and workers
-__TODO__
+The Ingestion Pipeline orchestrates standalone “step” modules—discovered via entry points—and uses Redis-backed Celery for task management. Steps live in separate plugin packages, allowing extensibility without modifying the core pipeline.
+
+1. **Pipeline Manager**  
+   - **Location**: `src/codestory/ingestion_pipeline/manager.py`  
+   - **Responsibilities**:  
+     - Load `pipeline_config.yml` (at project root) defining the ordered list of step names and per-step options (concurrency, retries).  
+     - Discover registered steps via the `codestory.pipeline.steps` entry-point group declared by each plugin.  
+     - Invoke each step’s Celery task, passing the repository path and config.  
+     - Aggregate step statuses and expose overall pipeline status to the Code Story Service.
+
+2. **Plugin Discovery & Step Modules**  
+   - **Entry-Point Registration** (in each plugin’s `pyproject.toml`):  
+     ```toml
+     [project.entry-points."codestory.pipeline.steps"]
+     blarify = "codestory_blarify.step:BlarifyStep"
+     filesystem = "codestory_filesystem.step:FileSystemStep"
+     summarizer = "codestory_summarizer.step:SummarizerStep"
+     documentation_grapher = "codestory_docgrapher.step:DocumentationGrapherStep"
+     ```  
+   - **Plugin Packages** (examples):  
+     - `src/codestory_blarify/step.py`  
+     - `src/codestory_filesystem/step.py`  
+     - `src/codestory_summarizer/step.py`  
+     - `src/codestory_docgrapher/step.py`
+
+3. **Redis-Backed Celery Integration**  
+   - **Docker Compose** (`docker-compose.yaml` snippet):  
+     ```yaml
+     services:
+       redis:
+         image: redis:7-alpine
+         ports:
+           - "6379:6379"
+     ```  
+   - **Celery App** (`src/codestory/ingestion_pipeline/celery_app.py`):  
+     ```python
+     from celery import Celery
+
+     app = Celery(
+         'ingestion_pipeline',
+         broker='redis://redis:6379/0',
+         backend='redis://redis:6379/1',
+     )
+     app.autodiscover_tasks()  # Discovers tasks in all installed apps
+     ```  
+   - **Task Definition** (example in plugin):  
+     ```python
+     from ingestion_pipeline.celery_app import app
+     from codestory_blarify.step import BlarifyStep
+
+     @app.task(name="codestory.pipeline.steps.blarify.run", bind=True)
+     def run(self, repository_path, config):
+         return BlarifyStep().run(repository_path, **config)
+     ```
+
+4. **Configuration File**  
+   - `pipeline_config.yml`:  
+     ```yaml
+     steps:
+       - name: blarify
+         concurrency: 1
+       - name: filesystem
+         concurrency: 1
+       - name: summarizer
+         concurrency: 5
+       - name: documentation_grapher
+         concurrency: 2
+     retry:
+       max_retries: 3
+       back_off_seconds: 10
+     ```
+
+5. **Directory Layout**  
+   ```text
+   src/
+   ├── codestory/ingestion_pipeline/
+   │   ├── manager.py           # Orchestration logic
+   │   ├── celery_app.py        # Celery instance & Redis settings
+   │   └── utils.py             # Shared helpers (logging, metrics)
+   ├── codestory_blarify/       # Blarify plugin package
+   │   └── step.py              # BlarifyStep implementation
+   ├── codestory_filesystem/    # FileSystem plugin package
+   │   └── step.py              # FileSystemStep implementation
+   ├── codestory_summarizer/    # Summarizer plugin package
+   │   └── step.py              # SummarizerStep implementation
+   └── codestory_docgrapher/    # DocumentationGrapher plugin package
+       └── step.py              # DocumentationGrapherStep implementation
+   ```
+	
+6.	Error Handling & Observability
+	•	Celery’s retry and back-off configured via pipeline_config.yml.
+	•	Each step logs to the centralized logger (OpenTelemetry → Prometheus).
+	•	A health-check endpoint (/v1/ingest/health) in the Code Story Service verifies Redis connectivity and worker status.
+
 
 ## 6.4 Ingestion Pipeline Workflow Steps
 
@@ -540,8 +668,6 @@ The documentation graphing process follows these steps:
 - **Integration** - integration tests depend on the actual database and OpenAI API. Ensure that the DocumentationGrapher can be started and stopped successfully. Ensure that the DocumentationGrapher can be queried successfully. Ensure that the resulting data in the graph database is correct. Use a small known repository for the ingestion testing.
 
 ---
-
-
 
 # 11.0 Code Story Service
 
