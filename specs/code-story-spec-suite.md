@@ -1,6 +1,6 @@
 <!-- code-story – Specification Suite (v0.5) -->
 
-# 1.0 Overview & Architecture
+# 1.0 Overview of Code Story
 
 ## 1.1 Mission
 
@@ -54,7 +54,64 @@ All services run under `docker-compose` network; Azure Container Apps deployment
 * **Observability**: OpenTelemetry traces, Prometheus metrics from every service, Grafana dashboard template in `infra/`.
 * **Extensibility**: Ingestion steps are plug‑in entry‑points; GUI dynamically reflects new step types; prompts in `prompts/` folder can be customised.
 
-## 1.5 Project Specifications and Development Methodology
+# 1.5 Architecture Overview
+
+The following diagram illustrates the major components of the system and their interactions:
+
+```mermaid
+graph TD
+    subgraph "User Interfaces"
+        CLI["CLI (Rich)"]
+        GUI["GUI (React + Redux)"]
+    end
+
+    subgraph "API Layer"
+        CS["Code Story Service (FastAPI)"]
+        MCP["MCP Adapter"]
+    end
+
+    subgraph "Data Processing"
+        IP["Ingestion Pipeline"]
+        CELERY["Celery Workers"]
+        
+        subgraph "Pipeline Steps"
+            BS["BlarifyStep"]
+            FS["FileSystemStep"]
+            SS["Summarizer"]
+            DG["Documentation Grapher"]
+        end
+    end
+
+    subgraph "Storage & Services"
+        NEO4J["Neo4j Graph Database"]
+        REDIS["Redis"]
+        OAI["OpenAI Client"]
+    end
+
+    CLI --> CS
+    GUI --> CS
+    GUI --> MCP
+    MCP --> CS
+    CS --> IP
+    IP --> CELERY
+    CELERY --> BS & FS & SS & DG
+    BS & FS & SS & DG --> NEO4J
+    CS --> NEO4J
+    IP --> REDIS
+    CS --> REDIS
+    SS --> OAI
+    DG --> OAI
+    CS --> OAI
+    
+    %% External interactions
+    AGENT[("External LLM Agents")] --> MCP
+```
+
+This architecture enables Code Story to handle large codebases efficiently while providing multiple interfaces for developers to interact with the knowledge graph, whether through direct queries, natural language questions, or programmatic MCP tools.
+
+--
+
+# Project Specifications and Development Methodology
 
 The project is built using a spec driven modular approach. 
 The specifications start with this document. Each major component then will have its own specification directory with more detailed specifications that are co-created with LLMs using this document. Each module shall be broken down into small enough components (individual specifications) that the entire component can be regenerated from its specification in a single inference. When there are changes to code the specification must also be updated and the code regenerated from the specification.
@@ -67,7 +124,7 @@ The project will be built folowing these steps:
 4. Each final specification will include a detailed prompt for the LLM to use to generate the code for that component. 
 5. We will then walk through the specifications and generate the code for each component in the order of the required dependencies. 
 6. During each generation stage we will run the tests for each component and ensure that all tests pass before moving on to the next component.
-7. The AI Agent will also take the role of a reviewer and will review the generated code for each component and ensure that it meets the specifications, coding guidelines, and best practices.
+7. The AI Agent will also take the role of a reviewer and will review the generated code for each component and ensure that it meets the specifications, coding guidelines, and best practices before moving on to the next component.
 8. We will also run the tests for the entire project after each component is generated to ensure that all components work together as expected.
 9. Each component will have its own documentation generated to facilitate understanding and usage. 
 
@@ -82,7 +139,7 @@ The project will be built folowing these steps:
 
 ## 1.7 Using github
 
-1. the github repo is https://github.com/rysweet/code-story
+1. The github repo is https://github.com/rysweet/code-story
 2. Make use of the gh cli to manage the repo, PRs, and issues.
 3. Each stage of the project should progress on a separate branch of the repo and upon completion be merged as a PR to the main branch.
 4. Each PR should be reviewed and approved before merging.
