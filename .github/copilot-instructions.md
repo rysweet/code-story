@@ -14,8 +14,6 @@ For the response, always follow these instructions:
 5. Finally, provide the fully rewritten file. You must output the complete file.
 </SYSTEM>
 
-
-I have the following code open in the editor, starting from line 1 to line 105.
 ```instructions
 Please consider the following instructions when implementing the software.
 
@@ -76,17 +74,19 @@ Please follow these guidelines for code design and implementation:
 - Use dependency injection to make components testable
 - Maintain test coverage during refactoring
 - Integration tests should not use mocks for the components they are testing
+- Do not mark tests as skipped or expected to fail
+- Do not disable tests or cause tests to exit true when they would not otherwise succeed
 
 ### Code Organization
 
 - Group related functionality in dedicated modules and packages
 - Use a consistent file structure within modules
 - Place interfaces in base.py files at the package root
-- Follow the established project structure:
-  - skwaq.shared: Common utilities and data models
-  - skwaq.ingestion: Data ingestion pipelines
-  - skwaq.utils: General utility functions
-  - skwaq.db: Database access and schema
+- Use __init__.py files to expose public APIs
+- Follow established naming conventions for files and directories
+- Use clear and consistent naming for modules and packages
+- Organize tests in a parallel structure to the codebase
+- Use descriptive names for test files and classes
 
 ## Resources
 
@@ -111,14 +111,25 @@ Do not move on to the next milestone until the current milestone is complete wit
 Do not move on to the next milestone while there are test failures anywhere in the project. 
 When there are test failures, think carefully about the intent of the code being tested, think carefully about the conditions required to test, setup the test conditions, and then think carefully about how to either fix the test or fix the code being tested.
 If a step of the implementation fails, try again by attempting to correct the error. If you are unable to correct the error, update the status.md and please ask me for help.
-Do not disable failing tests or cause tests to exit true when they would not otherwise succeed. 
-# Prompt history
-  
-Maintain a running history of my verbatim prompts, accompanied with very short summary of your responses and actions, in a file called /Specifications/prompt_history.md.
-This file should be updated after each prompt.
+
+# Prompt History - MANDATORY REQUIREMENT
+
+IMPORTANT: You MUST maintain a running history of all user prompts with brief summaries of your responses in the file `/Specifications/prompt-history.md`.
+
+Requirements for maintaining prompt history:
+- Update the file AFTER EVERY USER INTERACTION before responding to the next prompt
+- Follow the format: "## Prompt N (current date)" followed by:
+  - "**Prompt**: [exact user request]" 
+  - "**Response**: [3-7 bullet points summarizing your actions]"
+- Use bullet points for the response summary
+- Keep summaries concise but comprehensive
+- Increment the prompt number sequentially
+- Include the current date
+
+This is a critical requirement for project documentation and continuity. Failure to maintain this file correctly will impact project tracking.
 
 # Shell Command history
 
 Maintain a running history of all shell commands you run successfully, *except "git commit" commands* and *"git add" commands*, along with a comment explaining why you ran it, in a file called /Specifications/shell_history.md. This file should be updated after each command.
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
-- **After updating shell_history.md, always stage and commit it with a descriptive message.**
+- **After updating shell_history.md, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.
