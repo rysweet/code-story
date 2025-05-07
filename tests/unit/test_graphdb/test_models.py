@@ -1,27 +1,26 @@
 """Tests for graph database models."""
 
-import pytest
 from datetime import datetime
 
 from src.codestory.graphdb.models import (
-    NodeType,
-    RelationshipType,
     BaseNode,
     BaseRelationship,
-    FileNode,
-    DirectoryNode,
+    CallsRelationship,
     ClassNode,
+    ContainsRelationship,
+    DirectoryNode,
+    DocumentationNode,
+    DocumentedByRelationship,
+    FileNode,
     FunctionNode,
+    ImportsRelationship,
+    InheritsFromRelationship,
     MethodNode,
     ModuleNode,
-    SummaryNode,
-    DocumentationNode,
-    ContainsRelationship,
-    ImportsRelationship,
-    CallsRelationship,
-    InheritsFromRelationship,
-    DocumentedByRelationship,
+    NodeType,
+    RelationshipType,
     SummarizedByRelationship,
+    SummaryNode,
 )
 
 
@@ -56,7 +55,7 @@ def test_base_node():
     assert node.properties == {}
     assert isinstance(node.created_at, datetime)
     assert isinstance(node.last_modified, datetime)
-    
+
     # Create with custom args
     custom_time = datetime(2025, 1, 1)
     node = BaseNode(
@@ -71,7 +70,7 @@ def test_base_node():
     assert node.properties == {"test": "value"}
     assert node.created_at == custom_time
     assert node.last_modified == custom_time
-    
+
     # Test to_dict method
     node_dict = node.to_dict()
     assert "id" not in node_dict
@@ -94,7 +93,7 @@ def test_base_relationship():
     assert rel.end_node_id == "node2"
     assert rel.properties == {}
     assert isinstance(rel.created_at, datetime)
-    
+
     # Create with custom args
     custom_time = datetime(2025, 1, 1)
     rel = BaseRelationship(
@@ -109,7 +108,7 @@ def test_base_relationship():
     assert rel.type == "TEST"
     assert rel.properties == {"test": "value"}
     assert rel.created_at == custom_time
-    
+
     # Test to_dict method
     rel_dict = rel.to_dict()
     assert "id" not in rel_dict
@@ -129,7 +128,7 @@ def test_file_node():
     assert file_node.path == "/test/file.py"
     assert file_node.name == "file.py"
     assert NodeType.FILE.value in file_node.labels
-    
+
     # Create with all args
     file_node = FileNode(
         path="/test/file.py",
@@ -143,7 +142,7 @@ def test_file_node():
     assert file_node.size == 1024
     assert file_node.content == "print('Hello world')"
     assert file_node.content_hash == "abc123"
-    
+
     # Test to_dict method
     file_dict = file_node.to_dict()
     assert file_dict["path"] == "/test/file.py"
@@ -174,7 +173,7 @@ def test_class_node():
     assert class_node.methods == []
     assert class_node.base_classes == []
     assert NodeType.CLASS.value in class_node.labels
-    
+
     # Create with all args
     class_node = ClassNode(
         name="TestClass",
@@ -204,7 +203,7 @@ def test_function_node():
     assert func_node.name == "test_function"
     assert func_node.parameters == []
     assert NodeType.FUNCTION.value in func_node.labels
-    
+
     # Create with all args
     func_node = FunctionNode(
         name="test_function",
@@ -245,7 +244,7 @@ def test_module_node():
     assert module_node.name == "test_module"
     assert module_node.imports == []
     assert NodeType.MODULE.value in module_node.labels
-    
+
     # Create with all args
     module_node = ModuleNode(
         name="test_module",
@@ -264,7 +263,7 @@ def test_summary_node():
     assert summary_node.embedding is None
     assert summary_node.summary_type == "general"
     assert NodeType.SUMMARY.value in summary_node.labels
-    
+
     # Create with all args
     summary_node = SummaryNode(
         text="This is a summary",
@@ -285,7 +284,7 @@ def test_documentation_node():
     assert doc_node.doc_type == "inline"
     assert doc_node.embedding is None
     assert NodeType.DOCUMENTATION.value in doc_node.labels
-    
+
     # Create with all args
     doc_node = DocumentationNode(
         content="This is documentation",
@@ -327,7 +326,7 @@ def test_calls_relationship():
     )
     assert rel.type == RelationshipType.CALLS.value
     assert rel.call_line is None
-    
+
     # Create with all args
     rel = CallsRelationship(
         start_node_id="func1",
