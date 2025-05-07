@@ -12,7 +12,7 @@ pydantic = "^2.7.0"
 pydantic-settings = "^2.2.1"
 rich = "^13.7.1"
 typer = {extras = ["all"], version = "^0.9.4"}
-fastapi = "^0.111.0"
+fastapi = "~0.110.0"
 uvicorn = "^0.29.0"
 celery = "^5.4.0"
 redis = "^5.0.3"
