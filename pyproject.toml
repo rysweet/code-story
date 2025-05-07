@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "codestory"
+version = "0.1.0"
+description = "A system to convert codebases into richly-linked knowledge graphs with natural-language summaries"
+authors = ["Code Story Team"]
+readme = "README.md"
+packages = [{include = "codestory", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+pydantic = "^2.7.0"
+rich = "^13.7.1"
+typer = {extras = ["all"], version = "^0.9.4"}
+fastapi = "^0.111.0"
+uvicorn = "^0.29.0"
+celery = "^5.4.0"
+redis = "^5.0.3"
+neo4j = "^5.22.0"
+openai = "^1.35.0"
+tenacity = "^8.2.3"
+prometheus-client = "^0.20.0"
+structlog = "^24.1.0"
+opentelemetry-sdk = "^1.26.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+pytest-asyncio = "^0.23.5"
+pytest-cov = "^4.1.0"
+testcontainers = "^3.7.1"
+ruff = "^0"
+mypy = "^1.8.0"
+httpx = "^0.27.0"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
