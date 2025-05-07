@@ -32,3 +32,5 @@ chmod +x scripts/bootstrap.sh
 # END
 ```# Purpose: Installed pydantic-settings to resolve BaseSettings import error for Pydantic v2+ compatibility.
 poetry add pydantic-settings
+# Purpose: Added pytest.ini and set asyncio_default_fixture_loop_scope to function to resolve pytest-asyncio deprecation warning.
+Created pytest.ini and set asyncio_default_fixture_loop_scope = function
