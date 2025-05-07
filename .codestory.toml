@@ -1,39 +1,71 @@
 [general]
-project_name = "code-story"
+app_name = "code-story"
 description = "A system to convert codebases into richly-linked knowledge graphs with natural-language summaries"
 version = "0.1.0"
-
-[services]
-service_host = "0.0.0.0"
-service_port = 8000
-worker_concurrency = 4
-log_level = "INFO"
-enable_telemetry = true
 environment = "development"
+log_level = "INFO"
+auth_enabled = false
 
 [neo4j]
-uri = "bolt://neo4j:7687"
+uri = "bolt://localhost:7687"
+username = "neo4j"
 database = "neo4j"
+connection_timeout = 30
+max_connection_pool_size = 50
+connection_acquisition_timeout = 60
 
 [redis]
-uri = "redis://redis:6379"
+uri = "redis://localhost:6379"
 
 [openai]
-model = "gpt-4o-2024-05-13"
+endpoint = "https://api.openai.com/v1"
+embedding_model = "text-embedding-3-small"
+chat_model = "gpt-4o"
+reasoning_model = "gpt-4o"
+max_retries = 3
+retry_backoff_factor = 2.0
 temperature = 0.1
 max_tokens = 4096
 
 [azure_openai]
 deployment_id = "gpt-4o"
 api_version = "2024-05-01"
+embedding_model = "text-embedding-3-small"
+chat_model = "gpt-4o"
+reasoning_model = "gpt-4o"
+
+[service]
+host = "0.0.0.0"
+port = 8000
+workers = 4
+log_level = "INFO"
+environment = "development"
+enable_telemetry = true
+worker_concurrency = 4
 
 [ingestion]
+config_path = "pipeline_config.yml"
 chunk_size = 1024
 chunk_overlap = 200
-embedding_model = "text-embedding-3-large"
-embedding_dimensions = 3072
-retry_attempts = 3
-retry_backoff = 2.0
+embedding_model = "text-embedding-3-small"
+embedding_dimensions = 1536
+max_retries = 3
+retry_backoff_factor = 2.0
+concurrency = 5
+
+[ingestion.steps.blarify]
+timeout = 300
+docker_image = "codestory/blarify:latest"
+
+[ingestion.steps.filesystem]
+ignore_patterns = ["node_modules/", ".git/", "__pycache__/"]
+
+[ingestion.steps.summarizer]
+max_concurrency = 5
+max_tokens_per_file = 8000
+
+[ingestion.steps.docgrapher]
+enabled = true
 
 [plugins]
 enabled = ["blarify", "filesystem", "summarizer", "docgrapher"]
@@ -44,3 +76,12 @@ metrics_port = 9090
 metrics_endpoint = "/metrics"
 trace_sample_rate = 1.0
 log_format = "json"
+
+[interface]
+theme = "dark"
+default_view = "graph"
+graph_layout = "force"
+max_nodes = 1000
+max_edges = 5000
+auto_refresh = true
+refresh_interval = 30

@@ -2,10 +2,11 @@
 
 import os
 from functools import lru_cache
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, Any, List, Literal, Optional, ClassVar, Type, Tuple, Callable
 
 import tomli
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,9 +14,12 @@ class Neo4jSettings(BaseModel):
     """Neo4j database connection settings."""
 
     uri: str = Field(..., description="Neo4j connection URI")
-    user: str = Field(..., description="Neo4j username")
-    password: str = Field(..., description="Neo4j password")
+    username: str = Field("neo4j", description="Neo4j username")
+    password: SecretStr = Field(..., description="Neo4j password")
     database: str = Field("neo4j", description="Neo4j database name")
+    connection_timeout: int = Field(30, description="Connection timeout in seconds")
+    max_connection_pool_size: int = Field(50, description="Maximum connection pool size")
+    connection_acquisition_timeout: int = Field(60, description="Connection acquisition timeout in seconds")
 
 
 class RedisSettings(BaseModel):
@@ -27,8 +31,13 @@ class RedisSettings(BaseModel):
 class OpenAISettings(BaseModel):
     """OpenAI API settings."""
 
-    api_key: str = Field(..., description="OpenAI API key")
-    model: str = Field("gpt-4o-2024-05-13", description="OpenAI model to use")
+    api_key: SecretStr = Field(..., description="OpenAI API key")
+    endpoint: str = Field("https://api.openai.com/v1", description="OpenAI API endpoint")
+    embedding_model: str = Field("text-embedding-3-small", description="OpenAI embedding model to use")
+    chat_model: str = Field("gpt-4o", description="OpenAI chat model to use")
+    reasoning_model: str = Field("gpt-4o", description="OpenAI model for reasoning tasks")
+    max_retries: int = Field(3, description="Maximum number of retries")
+    retry_backoff_factor: float = Field(2.0, description="Backoff factor between retries")
     temperature: float = Field(0.1, description="Temperature for generation")
     max_tokens: int = Field(4096, description="Maximum tokens per request")
 
@@ -36,10 +45,13 @@ class OpenAISettings(BaseModel):
 class AzureOpenAISettings(BaseModel):
     """Azure OpenAI API settings."""
 
-    api_key: Optional[str] = Field(None, description="Azure OpenAI API key")
+    api_key: Optional[SecretStr] = Field(None, description="Azure OpenAI API key")
     endpoint: Optional[str] = Field(None, description="Azure OpenAI endpoint")
     deployment_id: str = Field("gpt-4o", description="Azure OpenAI deployment ID")
     api_version: str = Field("2024-05-01", description="Azure OpenAI API version")
+    embedding_model: str = Field("text-embedding-3-small", description="Azure OpenAI embedding model to use")
+    chat_model: str = Field("gpt-4o", description="Azure OpenAI chat model to use")
+    reasoning_model: str = Field("gpt-4o", description="Azure OpenAI model for reasoning tasks")
 
 
 class ServiceSettings(BaseModel):
@@ -47,21 +59,49 @@ class ServiceSettings(BaseModel):
 
     host: str = Field("0.0.0.0", description="Service host")
     port: int = Field(8000, description="Service port")
+    workers: int = Field(4, description="Number of worker processes")
     log_level: str = Field("INFO", description="Logging level")
-    environment: str = Field("development", description="Deployment environment")
+    environment: Literal["development", "testing", "production"] = Field(
+        "development", description="Deployment environment"
+    )
     enable_telemetry: bool = Field(True, description="Enable OpenTelemetry")
     worker_concurrency: int = Field(4, description="Celery worker concurrency")
+
+    @field_validator("log_level")
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log level is a valid logging level."""
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if v.upper() not in valid_levels:
+            raise ValueError(f"Log level must be one of {valid_levels}")
+        return v.upper()
 
 
 class IngestionSettings(BaseModel):
     """Ingestion pipeline settings."""
 
+    config_path: str = Field("pipeline_config.yml", description="Path to pipeline configuration file")
     chunk_size: int = Field(1024, description="Text chunk size for processing")
     chunk_overlap: int = Field(200, description="Overlap between text chunks")
-    embedding_model: str = Field("text-embedding-3-large", description="Model for embeddings")
-    embedding_dimensions: int = Field(3072, description="Dimensions in embedding vectors")
-    retry_attempts: int = Field(3, description="Number of retry attempts")
-    retry_backoff: float = Field(2.0, description="Backoff multiplier between retries")
+    embedding_model: str = Field("text-embedding-3-small", description="Model for embeddings")
+    embedding_dimensions: int = Field(1536, description="Dimensions in embedding vectors")
+    max_retries: int = Field(3, description="Number of retry attempts")
+    retry_backoff_factor: float = Field(2.0, description="Backoff multiplier between retries")
+    concurrency: int = Field(5, description="Default concurrency for ingestion tasks")
+    steps: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict, description="Step-specific configuration"
+    )
+
+    @model_validator(mode="after")
+    def ensure_default_steps(self) -> "IngestionSettings":
+        """Ensure default steps configuration exists."""
+        if "steps" not in self.__dict__ or not self.steps:
+            self.steps = {
+                "blarify": {"timeout": 300, "docker_image": "codestory/blarify:latest"},
+                "filesystem": {"ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]},
+                "summarizer": {"max_concurrency": 5, "max_tokens_per_file": 8000},
+                "docgrapher": {"enabled": True},
+            }
+        return self
 
 
 class PluginSettings(BaseModel):
@@ -90,24 +130,60 @@ class TelemetrySettings(BaseModel):
         return v
 
 
+class InterfaceSettings(BaseModel):
+    """Interface settings for GUI and CLI."""
+
+    theme: str = Field("dark", description="Default theme (dark/light)")
+    default_view: str = Field("graph", description="Default view (graph/list)")
+    graph_layout: str = Field("force", description="Default graph layout algorithm")
+    max_nodes: int = Field(1000, description="Maximum nodes to display at once")
+    max_edges: int = Field(5000, description="Maximum edges to display at once")
+    auto_refresh: bool = Field(True, description="Auto-refresh views")
+    refresh_interval: int = Field(30, description="Refresh interval in seconds")
+
+
 class AzureSettings(BaseModel):
     """Azure settings."""
 
     keyvault_name: Optional[str] = Field(None, description="Azure KeyVault name")
-    client_id: Optional[str] = Field(None, description="Azure client ID")
-    client_secret: Optional[str] = Field(None, description="Azure client secret")
     tenant_id: Optional[str] = Field(None, description="Azure tenant ID")
+    client_id: Optional[str] = Field(None, description="Azure client ID")
+    client_secret: Optional[SecretStr] = Field(None, description="Azure client secret")
+
+
+def get_project_root() -> Path:
+    """Return the path to the project root directory."""
+    # This assumes the config module is at src/codestory/config/settings.py
+    return Path(__file__).parent.parent.parent.parent
 
 
 class Settings(BaseSettings):
-    """Main settings class with layered configuration."""
+    """Main settings class with layered configuration.
+    
+    Loads settings with the following precedence:
+    1. Environment variables
+    2. .env file
+    3. .codestory.toml
+    4. Default values
+    
+    Environment variables are expected to be uppercase and can use double underscore
+    as a separator for nested settings, e.g., NEO4J__PASSWORD for neo4j.password.
+    """
 
-    project_name: str = Field("code-story", description="Project name")
-    version: str = Field("0.1.0", description="Project version")
+    # Core settings
+    app_name: str = Field("code-story", description="Application name")
+    version: str = Field("0.1.0", description="Application version")
     description: str = Field(
         "A system to convert codebases into richly-linked knowledge graphs with natural-language summaries",
-        description="Project description",
+        description="Application description",
     )
+    environment: Literal["development", "testing", "production"] = Field(
+        "development", description="Deployment environment"
+    )
+    log_level: str = Field("INFO", description="Logging level")
+    
+    # Authentication
+    auth_enabled: bool = Field(False, description="Enable authentication")
     
     # Component settings
     neo4j: Neo4jSettings
@@ -118,7 +194,11 @@ class Settings(BaseSettings):
     ingestion: IngestionSettings
     plugins: PluginSettings
     telemetry: TelemetrySettings
+    interface: InterfaceSettings
     azure: AzureSettings
+
+    _CONFIG_FILE: ClassVar[str] = ".codestory.toml"
+    _ENV_FILE: ClassVar[str] = ".env"
 
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
@@ -126,29 +206,118 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
         case_sensitive=False,
         extra="ignore",
+        validate_default=True,
     )
 
-    def __init__(self, **kwargs):
-        """Initialize settings with layered configuration."""
-        # Load settings from .codestory.toml if it exists
-        toml_settings = {}
-        if os.path.exists(".codestory.toml"):
-            with open(".codestory.toml", "rb") as f:
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: Dict[str, Any],
+        env_settings: Dict[str, Any],
+        dotenv_settings: Dict[str, Any],
+        file_secret_settings: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], ...]:
+        """Customize settings sources with explicit precedence.
+        
+        Environment variables > Init settings > .env file > .codestory.toml > Default values
+        """
+        toml_settings = cls._load_from_toml() or {}
+        
+        # Return sources in order of precedence
+        return (
+            env_settings,          # 1. Environment variables
+            init_settings,         # 2. Init settings
+            dotenv_settings,       # 3. .env file
+            file_secret_settings,  # 4. File secrets
+            toml_settings,         # 5. TOML config
+        )
+
+    @classmethod
+    def _load_from_toml(cls) -> Dict[str, Any]:
+        """Load settings from .codestory.toml file."""
+        project_root = get_project_root()
+        toml_path = project_root / cls._CONFIG_FILE
+        
+        if not toml_path.exists():
+            return {}
+        
+        try:
+            with open(toml_path, "rb") as f:
                 toml_data = tomli.load(f)
-                toml_settings = flatten_dict(toml_data)
+                # Flatten the dictionary for Pydantic
+                return flatten_dict(toml_data)
+        except Exception as e:
+            print(f"Error loading {cls._CONFIG_FILE}: {e}")
+            return {}
+
+    def _load_secrets_from_keyvault(self) -> None:
+        """Load sensitive settings from Azure KeyVault if configured."""
+        if not self.azure.keyvault_name:
+            return
         
-        # Convert toml settings to environment variables format
-        env_dict = {f"{k.upper()}": str(v) for k, v in toml_settings.items()}
+        try:
+            from azure.identity import DefaultAzureCredential
+            from azure.keyvault.secrets import SecretClient
+            
+            credential = DefaultAzureCredential()
+            client = SecretClient(
+                vault_url=f"https://{self.azure.keyvault_name}.vault.azure.net/",
+                credential=credential
+            )
+            
+            # Load Neo4j password if needed
+            if not self.neo4j.password.get_secret_value():
+                try:
+                    secret = client.get_secret("neo4j-password")
+                    self.neo4j.password = SecretStr(secret.value)
+                except Exception:
+                    pass
+            
+            # Load OpenAI API key if needed
+            if not self.openai.api_key.get_secret_value():
+                try:
+                    secret = client.get_secret("openai-api-key")
+                    self.openai.api_key = SecretStr(secret.value)
+                except Exception:
+                    pass
+            
+            # Load Azure OpenAI API key if needed
+            if self.azure_openai.api_key is None or not self.azure_openai.api_key.get_secret_value():
+                try:
+                    secret = client.get_secret("azure-openai-api-key")
+                    self.azure_openai.api_key = SecretStr(secret.value)
+                except Exception:
+                    pass
+            
+            # Load Azure client secret if needed
+            if self.azure.client_secret is None or not self.azure.client_secret.get_secret_value():
+                try:
+                    secret = client.get_secret("azure-client-secret")
+                    self.azure.client_secret = SecretStr(secret.value)
+                except Exception:
+                    pass
+                
+        except ImportError:
+            print("Azure SDK not installed. Skipping KeyVault integration.")
+        except Exception as e:
+            print(f"Error loading secrets from KeyVault: {e}")
+
+    def __init__(self, **data: Any) -> None:
+        """Initialize settings with layered configuration."""
+        super().__init__(**data)
         
-        # Environment variables take precedence over TOML
-        env_dict.update({k: v for k, v in os.environ.items() if k.startswith(("CODESTORY_", "NEO4J_", "REDIS_", "OPENAI_", "AZURE_", "SERVICE_"))})
-        
-        # Pass the combined settings to pydantic
-        super().__init__(**kwargs, **env_dict)
+        # Load secrets from KeyVault if configured
+        if self.azure.keyvault_name:
+            self._load_secrets_from_keyvault()
 
 
-def flatten_dict(d: Dict, parent_key: str = "", sep: str = "__") -> Dict:
-    """Flatten nested dictionary with separator in keys."""
+def flatten_dict(d: Dict[str, Any], parent_key: str = "", sep: str = "__") -> Dict[str, Any]:
+    """Flatten nested dictionary with separator in keys.
+    
+    Example:
+        {"neo4j": {"uri": "bolt://localhost:7687"}} -> {"neo4j__uri": "bolt://localhost:7687"}
+    """
     items = []
     for k, v in d.items():
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
@@ -161,5 +330,20 @@ def flatten_dict(d: Dict, parent_key: str = "", sep: str = "__") -> Dict:
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Return cached settings instance."""
+    """Return cached settings instance.
+    
+    This function creates a singleton instance of Settings that is cached
+    for the life of the application.
+    
+    Returns:
+        Settings: The global settings instance.
+    """
     return Settings()
+
+
+def refresh_settings() -> None:
+    """Refresh the settings from all sources.
+    
+    This clears the cache and forces a reload of all settings.
+    """
+    get_settings.cache_clear()
