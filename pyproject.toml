@@ -44,6 +44,12 @@ pytest-mock = "^3.14.0"
 [tool.poetry.scripts]
 codestory = "codestory.cli.main:app"
 
+[tool.poetry.plugins."codestory.pipeline.steps"]
+filesystem = "codestory_filesystem.step:FileSystemStep"
+blarify = "codestory_blarify.step:BlarifyStep"
+summarizer = "codestory_summarizer.step:SummarizerStep"
+documentation_grapher = "codestory_docgrapher.step:DocumentationGrapherStep"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
