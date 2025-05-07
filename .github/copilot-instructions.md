@@ -110,6 +110,7 @@ Please follow these guidelines for code design and implementation:
 - Integration tests should not use mocks for the components they are testing
 - Do not mark tests as skipped or expected to fail
 - Do not disable tests or cause tests to exit true when they would not otherwise succeed
+- Always ensure that all tests and CI pass before moving on to the next milestone
 
 ### Code Organization
 
