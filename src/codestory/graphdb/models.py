@@ -1,0 +1,261 @@
+"""Data models for graph database entities.
+
+This module defines Pydantic models for various node and relationship types
+in the knowledge graph.
+"""
+
+from datetime import datetime
+from enum import Enum
+from typing import Dict, List, Optional, Union, Any
+
+from pydantic import BaseModel, Field
+
+
+class NodeType(str, Enum):
+    """Enumeration of node types in the knowledge graph."""
+    
+    FILE = "File"
+    DIRECTORY = "Directory"
+    CLASS = "Class"
+    FUNCTION = "Function"
+    METHOD = "Method"
+    MODULE = "Module"
+    SUMMARY = "Summary"
+    DOCUMENTATION = "Documentation"
+
+
+class RelationshipType(str, Enum):
+    """Enumeration of relationship types in the knowledge graph."""
+    
+    CONTAINS = "CONTAINS"
+    IMPORTS = "IMPORTS"
+    CALLS = "CALLS"
+    INHERITS_FROM = "INHERITS_FROM"
+    DOCUMENTED_BY = "DOCUMENTED_BY"
+    SUMMARIZED_BY = "SUMMARIZED_BY"
+
+
+class BaseNode(BaseModel):
+    """Base model for all node types."""
+    
+    id: Optional[str] = None
+    labels: List[str] = Field(default_factory=list)
+    properties: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_modified: datetime = Field(default_factory=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the node to a dictionary suitable for Neo4j.
+        
+        Returns:
+            Dictionary representation of the node
+        """
+        result = self.model_dump(exclude={"id"})
+        result.update(self.properties)
+        return result
+
+
+class BaseRelationship(BaseModel):
+    """Base model for all relationship types."""
+    
+    id: Optional[str] = None
+    type: str
+    start_node_id: str
+    end_node_id: str
+    properties: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the relationship to a dictionary suitable for Neo4j.
+        
+        Returns:
+            Dictionary representation of the relationship
+        """
+        result = self.model_dump(exclude={"id", "start_node_id", "end_node_id"})
+        result.update(self.properties)
+        return result
+
+
+class FileNode(BaseNode):
+    """Represents a file in the repository."""
+    
+    path: str
+    name: str
+    extension: Optional[str] = None
+    size: Optional[int] = None
+    content: Optional[str] = None
+    content_hash: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    
+    def __init__(self, **data):
+        """Initialize FileNode with the File label."""
+        super().__init__(**data)
+        if NodeType.FILE.value not in self.labels:
+            self.labels.append(NodeType.FILE.value)
+
+
+class DirectoryNode(BaseNode):
+    """Represents a directory in the repository."""
+    
+    path: str
+    name: str
+    
+    def __init__(self, **data):
+        """Initialize DirectoryNode with the Directory label."""
+        super().__init__(**data)
+        if NodeType.DIRECTORY.value not in self.labels:
+            self.labels.append(NodeType.DIRECTORY.value)
+
+
+class CodeNode(BaseNode):
+    """Base model for code-related nodes (Class, Function, Method, Module)."""
+    
+    name: str
+    module: Optional[str] = None
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
+    documentation: Optional[str] = None
+    code: Optional[str] = None
+
+
+class ClassNode(CodeNode):
+    """Represents a class definition."""
+    
+    methods: List[str] = Field(default_factory=list)
+    base_classes: List[str] = Field(default_factory=list)
+    
+    def __init__(self, **data):
+        """Initialize ClassNode with the Class label."""
+        super().__init__(**data)
+        if NodeType.CLASS.value not in self.labels:
+            self.labels.append(NodeType.CLASS.value)
+
+
+class FunctionNode(CodeNode):
+    """Represents a function definition."""
+    
+    signature: Optional[str] = None
+    parameters: List[Dict[str, Any]] = Field(default_factory=list)
+    return_type: Optional[str] = None
+    
+    def __init__(self, **data):
+        """Initialize FunctionNode with the Function label."""
+        super().__init__(**data)
+        if NodeType.FUNCTION.value not in self.labels:
+            self.labels.append(NodeType.FUNCTION.value)
+
+
+class MethodNode(FunctionNode):
+    """Represents a method (function inside a class)."""
+    
+    class_name: str
+    
+    def __init__(self, **data):
+        """Initialize MethodNode with the Method label."""
+        super().__init__(**data)
+        if NodeType.METHOD.value not in self.labels:
+            self.labels.append(NodeType.METHOD.value)
+
+
+class ModuleNode(CodeNode):
+    """Represents a module or package."""
+    
+    imports: List[str] = Field(default_factory=list)
+    
+    def __init__(self, **data):
+        """Initialize ModuleNode with the Module label."""
+        super().__init__(**data)
+        if NodeType.MODULE.value not in self.labels:
+            self.labels.append(NodeType.MODULE.value)
+
+
+class SummaryNode(BaseNode):
+    """Contains natural language summaries generated by LLMs."""
+    
+    text: str
+    embedding: Optional[List[float]] = None
+    summary_type: str = "general"  # general, function, class, etc.
+    
+    def __init__(self, **data):
+        """Initialize SummaryNode with the Summary label."""
+        super().__init__(**data)
+        if NodeType.SUMMARY.value not in self.labels:
+            self.labels.append(NodeType.SUMMARY.value)
+
+
+class DocumentationNode(BaseNode):
+    """Represents documentation content."""
+    
+    content: str
+    doc_type: str = "inline"  # inline, docstring, markdown, etc.
+    embedding: Optional[List[float]] = None
+    
+    def __init__(self, **data):
+        """Initialize DocumentationNode with the Documentation label."""
+        super().__init__(**data)
+        if NodeType.DOCUMENTATION.value not in self.labels:
+            self.labels.append(NodeType.DOCUMENTATION.value)
+
+
+# Relationship models
+
+class ContainsRelationship(BaseRelationship):
+    """Represents a CONTAINS relationship between nodes."""
+    
+    def __init__(self, **data):
+        """Initialize ContainsRelationship with the CONTAINS type."""
+        if "type" not in data:
+            data["type"] = RelationshipType.CONTAINS.value
+        super().__init__(**data)
+
+
+class ImportsRelationship(BaseRelationship):
+    """Represents an IMPORTS relationship between modules."""
+    
+    def __init__(self, **data):
+        """Initialize ImportsRelationship with the IMPORTS type."""
+        if "type" not in data:
+            data["type"] = RelationshipType.IMPORTS.value
+        super().__init__(**data)
+
+
+class CallsRelationship(BaseRelationship):
+    """Represents a CALLS relationship between functions/methods."""
+    
+    call_line: Optional[int] = None
+    
+    def __init__(self, **data):
+        """Initialize CallsRelationship with the CALLS type."""
+        if "type" not in data:
+            data["type"] = RelationshipType.CALLS.value
+        super().__init__(**data)
+
+
+class InheritsFromRelationship(BaseRelationship):
+    """Represents an INHERITS_FROM relationship between classes."""
+    
+    def __init__(self, **data):
+        """Initialize InheritsFromRelationship with the INHERITS_FROM type."""
+        if "type" not in data:
+            data["type"] = RelationshipType.INHERITS_FROM.value
+        super().__init__(**data)
+
+
+class DocumentedByRelationship(BaseRelationship):
+    """Represents a DOCUMENTED_BY relationship."""
+    
+    def __init__(self, **data):
+        """Initialize DocumentedByRelationship with the DOCUMENTED_BY type."""
+        if "type" not in data:
+            data["type"] = RelationshipType.DOCUMENTED_BY.value
+        super().__init__(**data)
+
+
+class SummarizedByRelationship(BaseRelationship):
+    """Represents a SUMMARIZED_BY relationship."""
+    
+    def __init__(self, **data):
+        """Initialize SummarizedByRelationship with the SUMMARIZED_BY type."""
+        if "type" not in data:
+            data["type"] = RelationshipType.SUMMARIZED_BY.value
+        super().__init__(**data)
