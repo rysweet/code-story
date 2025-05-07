@@ -30,4 +30,5 @@ echo '# Purpose: Added docs structure (index.md, architecture.md, user_guide.md,
 chmod +x scripts/bootstrap.sh
 
 # END
-```
+```# Purpose: Installed pydantic-settings to resolve BaseSettings import error for Pydantic v2+ compatibility.
+poetry add pydantic-settings
