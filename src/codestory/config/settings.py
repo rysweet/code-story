@@ -31,15 +31,19 @@ class RedisSettings(BaseModel):
 class OpenAISettings(BaseModel):
     """OpenAI API settings."""
 
-    api_key: SecretStr = Field(..., description="OpenAI API key")
+    api_key: Optional[SecretStr] = Field(None, description="OpenAI API key (for direct API key auth)")
     endpoint: str = Field("https://api.openai.com/v1", description="OpenAI API endpoint")
+    tenant_id: Optional[str] = Field(None, description="Azure AD tenant ID for authentication")
+    subscription_id: Optional[str] = Field(None, description="Azure subscription ID")
     embedding_model: str = Field("text-embedding-3-small", description="OpenAI embedding model to use")
     chat_model: str = Field("gpt-4o", description="OpenAI chat model to use")
     reasoning_model: str = Field("gpt-4o", description="OpenAI model for reasoning tasks")
+    api_version: str = Field("2025-03-01-preview", description="API version (for Azure OpenAI)")
     max_retries: int = Field(3, description="Maximum number of retries")
     retry_backoff_factor: float = Field(2.0, description="Backoff factor between retries")
     temperature: float = Field(0.1, description="Temperature for generation")
     max_tokens: int = Field(4096, description="Maximum tokens per request")
+    timeout: float = Field(60.0, description="Timeout in seconds for API requests")
 
 
 class AzureOpenAISettings(BaseModel):
