@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  neo4j:
+    image: neo4j:5.19
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    environment:
+      NEO4J_AUTH: "neo4j/test"
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "test", "RETURN 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  codestory_service:
+    build: ./src/codestory_service
+    depends_on:
+      - neo4j
+      - redis
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+  celery_worker:
+    build: ./src/codestory_service
+    command: celery -A codestory_service.celery_app worker --loglevel=info
+    depends_on:
+      - codestory_service
+      - redis
+  gui:
+    build: ./gui
+    ports:
+      - "5173:5173"
+    depends_on:
+      - codestory_service
+  mcp_adapter:
+    build: ./src/codestory_mcp_adapter
+    ports:
+      - "8080:8080"
+    depends_on:
+      - codestory_service

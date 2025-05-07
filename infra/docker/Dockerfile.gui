@@ -1,0 +1,8 @@
+# Dockerfile for GUI
+FROM node:20-alpine
+WORKDIR /app
+COPY gui/package.json gui/pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY gui ./gui
+WORKDIR /app/gui
+CMD ["pnpm", "run", "dev", "--", "--host"]

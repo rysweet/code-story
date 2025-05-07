@@ -1,0 +1,18 @@
+# .codestory.toml - Project configuration defaults
+[general]
+project_name = "Code Story"
+log_level = "INFO"
+
+[neo4j]
+uri = "bolt://neo4j:7687"
+user = "neo4j"
+password = ""
+
+[redis]
+url = "redis://redis:6379/0"
+
+[openai]
+api_key = ""
+
+[azure]
+keyvault_name = ""

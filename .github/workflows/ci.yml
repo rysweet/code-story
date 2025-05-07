@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, msft-* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:5.19
+        ports: [7687:7687, 7474:7474]
+        env:
+          NEO4J_AUTH: "neo4j/test"
+      redis:
+        image: redis:7.2-alpine
+        ports: [6379:6379]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install
+      - name: Lint with Ruff
+        run: poetry run ruff check .
+      - name: Type check with mypy
+        run: poetry run mypy --strict src/
+      - name: Run tests
+        run: poetry run pytest --cov=src --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: true
