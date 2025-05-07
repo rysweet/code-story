@@ -33,4 +33,3 @@ convention = "google"
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
-EOF < /dev/null
