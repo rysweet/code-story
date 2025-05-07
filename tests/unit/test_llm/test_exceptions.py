@@ -1,15 +1,14 @@
 """Tests for OpenAI client exceptions."""
 
-import pytest
 
 from src.codestory.llm.exceptions import (
-    OpenAIError,
     AuthenticationError,
-    RateLimitError,
+    ContextLengthError,
     InvalidRequestError,
+    OpenAIError,
+    RateLimitError,
     ServiceUnavailableError,
     TimeoutError,
-    ContextLengthError,
 )
 
 

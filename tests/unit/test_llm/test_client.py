@@ -1,24 +1,21 @@
 """Tests for OpenAI client implementation."""
 
-import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import openai
+import pytest
 
 from src.codestory.llm.client import OpenAIClient, create_client
-from src.codestory.llm.models import (
-    ChatMessage,
-    ChatRole,
-    CompletionResponse,
-    ChatCompletionResponse,
-    EmbeddingResponse,
-    UsageInfo,
-)
 from src.codestory.llm.exceptions import (
     AuthenticationError,
     InvalidRequestError,
-    RateLimitError,
-    OpenAIError,
+)
+from src.codestory.llm.models import (
+    ChatCompletionResponse,
+    ChatMessage,
+    ChatRole,
+    CompletionResponse,
+    EmbeddingResponse,
 )
 
 

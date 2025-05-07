@@ -1,23 +1,21 @@
 """Tests for OpenAI client retry and backoff logic."""
 
-import pytest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, patch
+
 import openai
-import functools
+import pytest
 
 from src.codestory.llm.backoff import (
-    get_retry_after,
     before_retry_callback,
+    get_retry_after,
     retry_on_openai_errors,
     retry_on_openai_errors_async,
 )
 from src.codestory.llm.exceptions import (
+    ContextLengthError,
     RateLimitError,
     ServiceUnavailableError,
     TimeoutError,
-    ContextLengthError,
-    InvalidRequestError,
-    AuthenticationError,
 )
 from src.codestory.llm.metrics import OperationType
 

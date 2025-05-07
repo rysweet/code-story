@@ -1,22 +1,21 @@
 """Tests for OpenAI client models."""
 
-import pytest
 
 from src.codestory.llm.models import (
-    ChatRole,
-    ChatMessage,
-    ChatFunctionCall,
-    ChatResponseMessage,
-    ChatResponseChoice,
-    CompletionChoice,
-    EmbeddingData,
-    UsageInfo,
-    CompletionRequest,
     ChatCompletionRequest,
-    EmbeddingRequest,
-    CompletionResponse,
     ChatCompletionResponse,
+    ChatFunctionCall,
+    ChatMessage,
+    ChatResponseChoice,
+    ChatResponseMessage,
+    ChatRole,
+    CompletionChoice,
+    CompletionRequest,
+    CompletionResponse,
+    EmbeddingData,
+    EmbeddingRequest,
     EmbeddingResponse,
+    UsageInfo,
 )
 
 

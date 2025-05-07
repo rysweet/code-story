@@ -1,22 +1,21 @@
 """Tests for OpenAI client metrics collection."""
 
-import time
+from unittest.mock import MagicMock, call, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, call
 
 from src.codestory.llm.metrics import (
-    OperationType,
-    record_request,
-    record_error,
-    record_retry,
-    instrument_request,
-    instrument_async_request,
-    REQUEST_COUNT,
     ERROR_COUNT,
-    RETRY_COUNT,
+    REQUEST_COUNT,
     REQUEST_DURATION,
+    RETRY_COUNT,
     TOKEN_USAGE,
-    CURRENT_REQUESTS,
+    OperationType,
+    instrument_async_request,
+    instrument_request,
+    record_error,
+    record_request,
+    record_retry,
 )
 
 
