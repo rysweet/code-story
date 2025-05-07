@@ -2,11 +2,12 @@
 
 import os
 import subprocess
-import pytest
-from typing import Dict, Any, Optional
+from typing import Any
 
-from src.codestory.llm.client import OpenAIClient, create_client
+import pytest
+
 from src.codestory.config.settings import get_settings, refresh_settings
+from src.codestory.llm.client import OpenAIClient, create_client
 
 
 def pytest_addoption(parser):
@@ -35,13 +36,12 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session")
-def openai_credentials() -> Dict[str, Any]:
+def openai_credentials() -> dict[str, Any]:
     """Get OpenAI credentials from environment variables."""
     # Try to refresh settings
-    try:
+    import contextlib
+    with contextlib.suppress(Exception):
         refresh_settings()
-    except Exception:
-        pass
     
     # First try loading from settings
     try:
@@ -68,10 +68,13 @@ def openai_credentials() -> Dict[str, Any]:
     if not endpoint:
         pytest.skip("No OpenAI API endpoint found in environment")
     
+    sub_id = (os.environ.get("OPENAI__SUBSCRIPTION_ID") or 
+              os.environ.get("AZURE_SUBSCRIPTION_ID"))
+    
     return {
         "endpoint": endpoint,
         "tenant_id": os.environ.get("OPENAI__TENANT_ID") or os.environ.get("AZURE_TENANT_ID"),
-        "subscription_id": os.environ.get("OPENAI__SUBSCRIPTION_ID") or os.environ.get("AZURE_SUBSCRIPTION_ID"),
+        "subscription_id": sub_id,
         "embedding_model": os.environ.get("OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"),
         "chat_model": os.environ.get("OPENAI__CHAT_MODEL", "gpt-4o"),
         "reasoning_model": os.environ.get("OPENAI__REASONING_MODEL", "gpt-4o"),

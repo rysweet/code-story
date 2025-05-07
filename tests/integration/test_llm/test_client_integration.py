@@ -4,14 +4,11 @@ These tests use real OpenAI API access and require valid credentials to be succe
 They are skipped by default unless the --run-openai option is provided to pytest.
 """
 
-import os
 import pytest
-from typing import Dict, Any, Optional
 
-from src.codestory.llm.client import OpenAIClient, create_client
+from src.codestory.config.settings import get_settings
+from src.codestory.llm.client import create_client
 from src.codestory.llm.models import ChatMessage, ChatRole
-from src.codestory.config.settings import get_settings, refresh_settings
-
 
 # Mark all tests to be skipped unless explicitly enabled
 pytestmark = [
@@ -63,7 +60,10 @@ def test_chat_completion(client):
     """
     # Prepare a simple chat message
     messages = [
-        ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant that answers concisely."),
+        ChatMessage(
+            role=ChatRole.SYSTEM, 
+            content="You are a helpful assistant that answers concisely."
+        ),
         ChatMessage(role=ChatRole.USER, content="What is 2+2?")
     ]
     
@@ -117,7 +117,10 @@ async def test_chat_async(client):
     """
     # Prepare a simple chat message
     messages = [
-        ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant that answers concisely."),
+        ChatMessage(
+            role=ChatRole.SYSTEM, 
+            content="You are a helpful assistant that answers concisely."
+        ),
         ChatMessage(role=ChatRole.USER, content="What is the capital of France?")
     ]
     
