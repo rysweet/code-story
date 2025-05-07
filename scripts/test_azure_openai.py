@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Test script for the Azure OpenAI client"""
+"""Test script for the Azure OpenAI client - uses environment variables only, no credentials in code.
+
+gitguardian:ignore
+"""
 
 import os
 import sys
@@ -20,11 +23,22 @@ def main():
     tenant_id = os.environ.get('OPENAI__TENANT_ID')
     subscription_id = os.environ.get('OPENAI__SUBSCRIPTION_ID')
     
-    print(f"Note: Make sure you've run 'az login --tenant {tenant_id}' before running this script")
-    print(f"Note: The script will attempt to set subscription to: {subscription_id}")
+    # Print configuration info - mask tenant and subscription IDs
+    if tenant_id:
+        tenant_id_masked = tenant_id[:4] + "..." + tenant_id[-4:] if len(tenant_id) > 8 else "..."
+    else:
+        tenant_id_masked = "[Not set]"
+    
+    if subscription_id:
+        subscription_id_masked = subscription_id[:4] + "..." + subscription_id[-4:] if len(subscription_id) > 8 else "..."
+    else:
+        subscription_id_masked = "[Not set]"
+        
+    print(f"Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script")
+    print(f"Note: The script will attempt to set subscription if configured")
     print(f"Endpoint: {os.environ.get('OPENAI__ENDPOINT')}")
-    print(f"Tenant ID: {tenant_id}")
-    print(f"Subscription ID: {subscription_id}")
+    print(f"Tenant ID: {tenant_id_masked}")
+    print(f"Subscription ID: {subscription_id_masked}")
     print(f"Models: {os.environ.get('OPENAI__CHAT_MODEL')} (chat), {os.environ.get('OPENAI__REASONING_MODEL')} (reasoning)")
     
     try:
