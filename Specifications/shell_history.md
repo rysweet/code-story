@@ -9,3 +9,4 @@ Created foundational directories and .gitkeep files as per scaffolding spec.
 # Purpose: Added JS/TS dependencies to gui directory using pnpm as per scaffolding spec.
 # Purpose: Added .devcontainer/devcontainer.json for VS Code/Codespaces support.
 # Purpose: Added docs structure (index.md, architecture.md, user_guide.md, developer_guide.md).
+# Purpose: Added Dockerfiles for codestory_service, celery_worker, gui, and mcp_adapter.

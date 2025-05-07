@@ -1,0 +1,7 @@
+# Dockerfile for celery_worker
+FROM python:3.12-slim
+WORKDIR /app
+COPY pyproject.toml poetry.lock* ./
+RUN pip install poetry && poetry install --no-root --no-interaction
+COPY src/codestory_service ./src/codestory_service
+CMD ["poetry", "run", "celery", "-A", "codestory_service.celery_app", "worker", "--loglevel=info"]
