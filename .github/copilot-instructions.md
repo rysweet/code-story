@@ -12,7 +12,7 @@ For the response, always follow these instructions:
 3. Preserve whitespace and newlines right after the parts of the file that you modify.
 4. The final result must be syntactically valid, properly formatted, and correctly indented. It should not contain any ...existing code... comments.
 5. Finally, provide the fully rewritten file. You must output the complete file.
-
+</SYSTEM>
 
 ```instructions
 Please consider the following instructions when implementing the software.
@@ -168,4 +168,3 @@ Maintain a running history of all shell commands you run successfully, *except "
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
 - **After updating shell_history.md, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.
 ```
-</SYSTEM>
