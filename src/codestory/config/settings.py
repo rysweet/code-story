@@ -1,6 +1,9 @@
 from functools import lru_cache
-from typing import Any, Dict, Optional, Literal
-from pydantic import BaseSettings, SecretStr, Field
+from typing import Any, Literal
+
+from pydantic_settings import BaseSettings
+from pydantic import Field, SecretStr
+
 
 class Neo4jSettings(BaseSettings):
     uri: str = "bolt://localhost:7687"
@@ -21,7 +24,7 @@ class OpenAISettings(BaseSettings):
 
 class IngestionSettings(BaseSettings):
     config_path: str = "pipeline_config.yml"
-    steps: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    steps: dict[str, dict[str, Any]] = Field(default_factory=dict)
     max_retries: int = 3
     concurrency: int = 5
 
@@ -43,9 +46,9 @@ class Settings(BaseSettings):
     neo4j: Neo4jSettings = Neo4jSettings()
     redis: RedisSettings = RedisSettings()
     auth_enabled: bool = False
-    azure_tenant_id: Optional[str] = None
-    azure_client_id: Optional[str] = None
-    azure_keyvault_name: Optional[str] = None
+    azure_tenant_id: str | None = None
+    azure_client_id: str | None = None
+    azure_keyvault_name: str | None = None
     openai: OpenAISettings = OpenAISettings(api_key=SecretStr(""))
     ingestion: IngestionSettings = IngestionSettings()
     interface: InterfaceSettings = InterfaceSettings()
@@ -77,7 +80,7 @@ class Settings(BaseSettings):
             # TODO: Implement KeyVault loading
             return {}
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Return a cached instance of the Settings."""
     return Settings()
