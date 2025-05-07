@@ -167,11 +167,11 @@ This is a critical requirement for project documentation and continuity. Failure
 
 Maintain a running history of all shell commands you run successfully, *except "git commit" commands* and *"git add" commands*, along with a comment explaining why you ran it, in a file called /Specifications/shell_history.md. This file should be updated after each command.
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
-- log the exact command you ran, including any flags or options.
+- Always log the exact command you ran, including any flags or options.
 - Include a comment explaining the purpose of the command.
 - Use a consistent format for each entry, e.g.:
 ```bash
 # Purpose: <brief explanation of why you ran it>
-# Command: <command>
+<command>
 ```
 - **After updating shell_history.md, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.

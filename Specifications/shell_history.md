@@ -8,3 +8,4 @@ Created foundational directories and .gitkeep files as per scaffolding spec.
 # Purpose: Initialized Poetry and added all required dependencies as per scaffolding spec.
 # Purpose: Added JS/TS dependencies to gui directory using pnpm as per scaffolding spec.
 # Purpose: Added .devcontainer/devcontainer.json for VS Code/Codespaces support.
+# Purpose: Added docs structure (index.md, architecture.md, user_guide.md, developer_guide.md).
