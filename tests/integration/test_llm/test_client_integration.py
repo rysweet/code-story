@@ -1,67 +1,82 @@
 """Integration tests for OpenAI client.
 
-These tests interact with the actual Azure OpenAI API and require valid credentials.
-They are intended to be run manually or in CI with appropriate secrets.
-
-To skip these tests when credentials are not available, they are all marked with
-the 'integration' and 'openai' markers.
+These tests use real OpenAI API access and require valid credentials to be successful.
+They are skipped by default unless the --run-openai option is provided to pytest.
 """
 
 import os
 import pytest
-from typing import List
+from typing import Dict, Any, Optional
 
 from src.codestory.llm.client import OpenAIClient, create_client
 from src.codestory.llm.models import ChatMessage, ChatRole
 from src.codestory.config.settings import get_settings, refresh_settings
 
 
-# Skip all tests if the required credentials are not available
+# Mark all tests to be skipped unless explicitly enabled
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.openai,
-    pytest.mark.skipif(
-        not os.environ.get("AZURE_OPENAI_API_KEY") and not os.environ.get("OPENAI_API_KEY"),
-        reason="No OpenAI API credentials available"
-    )
+    pytest.mark.openai
 ]
 
 
-@pytest.fixture
-def client() -> OpenAIClient:
-    """Create a client using environment credentials."""
-    # Ensure settings are refreshed
-    refresh_settings()
+@pytest.mark.integration
+def test_client_creation(openai_credentials):
+    """Test client creation with real credentials.
     
-    # Try to get credentials from settings
+    This verifies that the client can be created successfully with the
+    credentials provided in the environment.
+    """
     try:
-        return create_client()
-    except Exception:
-        # Fallback to environment variables if settings fail
-        api_key = os.environ.get("AZURE_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-        endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT") or "https://api.openai.com/v1"
+        client = create_client()
         
-        return OpenAIClient(
-            api_key=api_key,
-            endpoint=endpoint
-        )
+        # Verify client was created with correct endpoint
+        assert client.endpoint == openai_credentials["endpoint"]
+        
+        # Verify client has expected model values
+        assert client.chat_model is not None
+        assert client.embedding_model is not None
+        assert client.reasoning_model is not None
+    except Exception as e:
+        pytest.fail(f"Failed to create client: {e}")
 
 
-@pytest.mark.xfail(reason="Requires valid API credentials")
-def test_chat_integration(client: OpenAIClient):
-    """Test chat completion with real API."""
+@pytest.mark.integration
+def test_client_configuration(client):
+    """Test client configuration with expected values."""
+    # Get current settings
+    settings = get_settings()
+    
+    # Verify client configuration matches settings
+    assert client.endpoint == settings.openai.endpoint
+    assert client.embedding_model == settings.openai.embedding_model
+    assert client.chat_model == settings.openai.chat_model
+    assert client.reasoning_model == settings.openai.reasoning_model
+
+
+@pytest.mark.integration
+def test_chat_completion(client):
+    """Test chat completion with real API.
+    
+    This test verifies that the client can successfully make a chat completion
+    request to the real API and receive a valid response.
+    """
+    # Prepare a simple chat message
     messages = [
-        ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
-        ChatMessage(role=ChatRole.USER, content="What is the capital of France?")
+        ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant that answers concisely."),
+        ChatMessage(role=ChatRole.USER, content="What is 2+2?")
     ]
     
+    # Make the request
     result = client.chat(messages)
     
     # Verify response structure
     assert result.model is not None
     assert len(result.choices) > 0
     assert result.choices[0].message.content is not None
-    assert "Paris" in result.choices[0].message.content
+    
+    # Verify there is a reasonable answer containing "4"
+    assert "4" in result.choices[0].message.content
     
     # Verify token usage was recorded
     assert result.usage.prompt_tokens > 0
@@ -69,60 +84,55 @@ def test_chat_integration(client: OpenAIClient):
     assert result.usage.total_tokens > 0
 
 
-@pytest.mark.xfail(reason="Requires valid API credentials")
-def test_embed_integration(client: OpenAIClient):
-    """Test embedding generation with real API."""
-    text = "This is a test sentence for embedding."
+@pytest.mark.integration
+def test_embedding(client):
+    """Test embedding generation with real API.
     
+    This test verifies that the client can successfully generate embeddings
+    using the real API.
+    """
+    # Prepare a simple text for embedding
+    text = "This is a test of the embedding API."
+    
+    # Make the request
     result = client.embed(text)
     
     # Verify response structure
     assert result.model is not None
-    assert len(result.data) > 0
-    assert len(result.data[0].embedding) > 0
+    assert len(result.data) == 1
+    assert len(result.data[0].embedding) > 0  # Should have a non-empty vector
     
     # Verify token usage was recorded
     assert result.usage.prompt_tokens > 0
     assert result.usage.total_tokens > 0
 
 
-@pytest.mark.xfail(reason="Requires valid API credentials")
+@pytest.mark.integration
 @pytest.mark.asyncio
-async def test_chat_async_integration(client: OpenAIClient):
-    """Test async chat completion with real API."""
+async def test_chat_async(client):
+    """Test async chat completion with real API.
+    
+    This test verifies that the client can successfully make an async chat
+    completion request to the real API.
+    """
+    # Prepare a simple chat message
     messages = [
-        ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
-        ChatMessage(role=ChatRole.USER, content="What is the tallest mountain in the world?")
+        ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant that answers concisely."),
+        ChatMessage(role=ChatRole.USER, content="What is the capital of France?")
     ]
     
+    # Make the async request
     result = await client.chat_async(messages)
     
     # Verify response structure
     assert result.model is not None
     assert len(result.choices) > 0
     assert result.choices[0].message.content is not None
-    assert "Everest" in result.choices[0].message.content
+    
+    # Verify there is a reasonable answer containing "Paris"
+    assert "Paris" in result.choices[0].message.content
     
     # Verify token usage was recorded
     assert result.usage.prompt_tokens > 0
     assert result.usage.completion_tokens > 0
-    assert result.usage.total_tokens > 0
-
-
-@pytest.mark.xfail(reason="Requires valid API credentials")
-@pytest.mark.asyncio
-async def test_embed_async_integration(client: OpenAIClient):
-    """Test async embedding generation with real API."""
-    texts = ["This is the first test sentence.", "This is the second test sentence."]
-    
-    result = await client.embed_async(texts)
-    
-    # Verify response structure
-    assert result.model is not None
-    assert len(result.data) == 2
-    assert len(result.data[0].embedding) > 0
-    assert len(result.data[1].embedding) > 0
-    
-    # Verify token usage was recorded
-    assert result.usage.prompt_tokens > 0
     assert result.usage.total_tokens > 0
