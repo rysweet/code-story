@@ -1,7 +1,9 @@
+"""Unit tests for codestory.config.settings module."""
 from codestory.config.settings import get_settings
 
 
 def test_settings_defaults():
+    """Test that default settings are loaded and have expected structure."""
     settings = get_settings()
     assert settings.app_name == "code-story"
     assert settings.environment in ("development", "testing", "production")

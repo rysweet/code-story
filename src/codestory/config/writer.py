@@ -1,3 +1,5 @@
+"""Helpers for updating and persisting configuration files for Code Story."""
+
 import os
 from typing import Any
 

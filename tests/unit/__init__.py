@@ -1,1 +1,1 @@
-# Unit test package marker
+"""Unit test package marker for Code Story tests."""

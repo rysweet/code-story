@@ -1,3 +1,9 @@
+# Purpose: Ran Ruff autofix to resolve all remaining lint errors in config, writer, and test files.
+poetry run ruff check . --fix
+# Purpose: Ran Ruff to confirm all lint checks pass after autofix and manual fixes.
+poetry run ruff check .
+# Purpose: Ran all tests to confirm configuration module and tests pass after linting and syntax fixes.
+pytest --maxfail=1 --disable-warnings -q
 # Purpose: Ran ruff and mypy to verify linting and type checking as required by scaffolding acceptance criteria.
 poetry run ruff check . && poetry run mypy --strict .
 # Purpose: Ran pytest to verify that the scaffolding passes the test suite as required by acceptance criteria.

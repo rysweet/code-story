@@ -1,11 +1,16 @@
+
+
+"""Settings and configuration models for Code Story."""
 from functools import lru_cache
 from typing import Any, Literal
 
-from pydantic_settings import BaseSettings
 from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings
 
 
 class Neo4jSettings(BaseSettings):
+    """Settings for Neo4j graph database connection."""
+
     uri: str = "bolt://localhost:7687"
     username: str = "neo4j"
     password: SecretStr = SecretStr("password")
@@ -13,7 +18,11 @@ class Neo4jSettings(BaseSettings):
     max_connection_pool_size: int = 50
     connection_acquisition_timeout: int = 60
 
+
+
 class OpenAISettings(BaseSettings):
+    """Settings for OpenAI API integration."""
+
     endpoint: str = "https://api.openai.com/v1"
     api_key: SecretStr
     embedding_model: str = "text-embedding-3-small"
@@ -22,24 +31,44 @@ class OpenAISettings(BaseSettings):
     max_retries: int = 3
     retry_backoff_factor: float = 2.0
 
+
+
 class IngestionSettings(BaseSettings):
+    """Settings for the ingestion pipeline."""
+
     config_path: str = "pipeline_config.yml"
     steps: dict[str, dict[str, Any]] = Field(default_factory=dict)
     max_retries: int = 3
     concurrency: int = 5
 
+
+
 class RedisSettings(BaseSettings):
+    """Settings for Redis connection."""
+
     uri: str = "redis://localhost:6379/0"
 
+
+
 class InterfaceSettings(BaseSettings):
-    pass  # Extend as needed
+    """Settings for interface configuration (extend as needed)."""
+
+    pass
+
+
 
 class ServiceSettings(BaseSettings):
+    """Settings for the main service (API server)."""
+
     host: str = "0.0.0.0"
     port: int = 8000
     workers: int = 4
 
+
+
 class Settings(BaseSettings):
+    """Top-level application settings for Code Story."""
+
     app_name: str = "code-story"
     environment: Literal["development", "testing", "production"] = "development"
     log_level: str = "INFO"
@@ -55,6 +84,8 @@ class Settings(BaseSettings):
     service: ServiceSettings = ServiceSettings()
 
     class Config:
+        """Pydantic config for environment and file loading."""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"
@@ -62,6 +93,7 @@ class Settings(BaseSettings):
 
         @classmethod
         def customise_sources(cls, init_settings, env_settings, file_secret_settings):
+            """Customize the order of config sources for Pydantic settings."""
             return (
                 env_settings,
                 init_settings,
@@ -72,11 +104,13 @@ class Settings(BaseSettings):
 
         @classmethod
         def _toml_config(cls, settings):
+            """Load settings from TOML config file."""
             # TODO: Implement TOML loading
             return {}
 
         @classmethod
         def _keyvault_settings(cls, settings):
+            """Load settings from Azure KeyVault."""
             # TODO: Implement KeyVault loading
             return {}
 
