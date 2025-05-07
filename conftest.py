@@ -1,7 +1,8 @@
-# conftest.py for Code Story
-"""Pytest configuration for Code Story project."""
+"""Pytest configuration for Code Story project.
 
-# Set the default fixture loop scope for pytest-asyncio to 'function' to resolve deprecation warning
+This file sets the default fixture loop scope for pytest-asyncio to 'function'.
+"""
+
 pytest_plugins = []
 
 def pytest_configure(config):

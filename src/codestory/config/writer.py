@@ -1,4 +1,8 @@
-"""Helpers for updating and persisting configuration files for Code Story."""
+
+"""Helpers for updating and persisting configuration files for Code Story.
+
+This module provides functions to update .env and .toml files and persist configuration changes.
+"""
 
 import os
 from typing import Any

@@ -1,4 +1,9 @@
-"""Unit tests for codestory.config.settings module."""
+
+"""Unit tests for codestory.config.settings module.
+
+This module tests the default settings and structure of the configuration system.
+"""
+
 from codestory.config.settings import get_settings
 
 

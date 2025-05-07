@@ -1,6 +1,10 @@
 
 
-"""Settings and configuration models for Code Story."""
+"""Settings and configuration models for Code Story.
+
+This module defines the Pydantic settings models and configuration loading logic.
+"""
+
 from functools import lru_cache
 from typing import Any, Literal
 
