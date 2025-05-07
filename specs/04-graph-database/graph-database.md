@@ -1,0 +1,437 @@
+# 4.0 Graph Database Service
+
+**Previous:** [Configuration Module](../03-configuration/configuration.md) | **Next:** [AI Client](../05-ai-client/ai-client.md)
+
+**Dependencies:** 
+- [Scaffolding](../02-scaffolding/scaffolding.md)
+- [Configuration Module](../03-configuration/configuration.md)
+
+**Used by:**
+- [Blarify Workflow Step](../07-blarify-step/blarify-step.md)
+- [FileSystem Workflow Step](../08-filesystem-step/filesystem-step.md)
+- [Summarizer Workflow Step](../09-summarizer-step/summarizer-step.md)
+- [Documentation Grapher Step](../10-docgrapher-step/docgrapher-step.md)
+- [Code Story Service](../11-code-story-service/code-story-service.md)
+
+## 4.1 Purpose
+
+Provide a self‑hosted **Neo4j 5.x** backend with semantic index and vector search capability for storing and querying the code knowledge graph. The service is designed to run in a container locally or in Azure Container Apps, with mounted `plugins/` directory for APOC and vector search extensions, and persistent data storage in a named volume `neo4j_data`.
+
+## 4.2 Responsibilities
+
+- Create, initialize, and maintain the Neo4j database schema, constraints, and indexes
+- Provide a unified `Neo4jConnector` interface with connection pooling and error handling for other components
+- Support both synchronous and asynchronous query execution patterns
+- Enable efficient storage and retrieval of various node types (AST, filesystem, documentation, summaries)
+- Support semantic search through vector indexes and embeddings
+- Manage connection lifecycle and provide retry mechanisms for transient failures
+- Expose metrics for monitoring database performance and connection health
+- Facilitate Docker-based local development and Azure Container Apps deployment
+
+## 4.3 Architecture and Code Structure
+
+```text
+src/codestory/graphdb/
+├── __init__.py                  # Exports Neo4jConnector
+├── neo4j_connector.py           # Primary connector interface with pooling, async and vector search
+├── schema.py                    # Schema definitions and initialization
+├── exceptions.py                # Graph-specific exception classes
+├── models.py                    # Data models for graph entities
+└── metrics.py                   # Prometheus metrics for Neo4j operations
+```
+
+### 4.3.1 Neo4jConnector Interface
+
+The `Neo4jConnector` class provides a unified interface for interacting with Neo4j, supporting both synchronous and asynchronous operations:
+
+```python
+class Neo4jConnector:
+    def __init__(self, uri=None, username=None, password=None, **config_options):
+        """Initialize connector with connection parameters from env vars or args."""
+        
+    # Synchronous methods
+    def execute_query(self, query, params=None, write=False, retry_count=3):
+        """Execute a Cypher query with automatic connection management."""
+        
+    def execute_many(self, queries, params_list=None, write=False):
+        """Execute multiple queries in a single transaction."""
+    
+    # Asynchronous methods
+    async def execute_query_async(self, query, params=None, write=False):
+        """Execute a Cypher query asynchronously."""
+        
+    async def check_connection_async(self):
+        """Check database connectivity asynchronously."""
+        
+    async def close_async(self):
+        """Close connections asynchronously."""
+    
+    # Schema management
+    def initialize_schema(self):
+        """Create constraints, indexes, and schema elements."""
+        
+    def create_vector_index(self, label, property_name, dimensions, similarity="cosine"):
+        """Create a vector index for semantic search."""
+    
+    # Vector search
+    def semantic_search(self, query_embedding, node_label, limit=10):
+        """Perform vector similarity search using the provided embedding."""
+    
+    # Connection management
+    def check_connection(self):
+        """Check if database is accessible and return basic info."""
+        
+    def close(self):
+        """Close all connections in the pool."""
+        
+    # Context manager support
+    def __enter__(self):
+        """Support for context manager protocol."""
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Clean up resources when exiting context."""
+```
+
+## 4.4 Data Model and Schema
+
+The graph database stores multiple types of interlinked nodes representing different aspects of the codebase:
+
+### 4.4.1 Core Node Types
+
+- **File** - Represents a file in the repository (properties: path, size, content, etc.)
+- **Directory** - Represents a directory in the repository (properties: path, etc.)
+- **Class** - Represents a class definition (properties: name, documentation, etc.)
+- **Function/Method** - Represents a function or method (properties: name, signature, documentation, etc.)
+- **Module** - Represents a module or package (properties: name, path, etc.)
+- **Summary** - Contains natural language summaries generated by LLMs (properties: text, embedding)
+- **Documentation** - Represents documentation content (properties: content, type, embedding)
+
+### 4.4.2 Relationship Types
+
+- **CONTAINS** - Directory contains files/subdirectories, file contains classes/functions
+- **IMPORTS** - Module imports another module
+- **CALLS** - Function calls another function
+- **INHERITS_FROM** - Class inherits from another class
+- **DOCUMENTED_BY** - Code element is documented by a Documentation node
+- **SUMMARIZED_BY** - Code element is summarized by a Summary node
+
+### 4.4.3 Constraints and Indexes
+
+```cypher
+// Unique constraints
+CREATE CONSTRAINT IF NOT EXISTS ON (f:File) ASSERT f.path IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS ON (d:Directory) ASSERT d.path IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS ON (c:Class) ASSERT (c.name, c.module) IS UNIQUE;
+
+// Full-text indexes
+CREATE FULLTEXT INDEX file_content IF NOT EXISTS FOR (f:File) ON EACH [f.content];
+CREATE FULLTEXT INDEX code_name IF NOT EXISTS FOR (n:Class|Function|Module) ON EACH [n.name];
+
+// Vector indexes (for semantic search)
+CREATE VECTOR INDEX summary_embedding IF NOT EXISTS FOR (s:Summary) 
+ON s.embedding
+OPTIONS {indexConfig: {
+  `vector.dimensions`: 1536, 
+  `vector.similarity_function`: "cosine"
+}};
+
+CREATE VECTOR INDEX documentation_embedding IF NOT EXISTS FOR (d:Documentation) 
+ON d.embedding
+OPTIONS {indexConfig: {
+  `vector.dimensions`: 1536, 
+  `vector.similarity_function`: "cosine"
+}};
+```
+
+## 4.5 Connection Management
+
+The `Neo4jConnector` implements smart connection pooling with these features:
+
+- **Dynamic Pool Sizing** - Scales connections based on load with configurable min/max size
+- **Connection Validation** - Checks connection health before returning from pool
+- **Automatic Retry** - Exponential backoff for transient failures
+- **Metrics Collection** - Tracks connection usage and query performance
+- **Transaction Management** - Ensures proper transaction handling for write operations
+- **Resource Cleanup** - Graceful connection closure on service shutdown
+
+Configuration parameters are integrated with the global settings pattern from section 3.0:
+
+```python
+from codestory.config.settings import get_settings
+
+def create_connector():
+    settings = get_settings()
+    
+    connector = Neo4jConnector(
+        uri=settings.neo4j.uri,
+        username=settings.neo4j.username,
+        password=settings.neo4j.password.get_secret_value(),
+        max_connection_pool_size=settings.neo4j.max_connection_pool_size,
+        connection_timeout=settings.neo4j.connection_timeout,
+        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time
+    )
+    
+    return connector
+```
+
+## 4.6 Vector Search Implementation
+
+Vector search is implemented directly in the `Neo4jConnector` class using Neo4j 5.x's native vector index capabilities:
+
+```python
+def semantic_search(self, query_embedding, node_label, limit=10):
+    """
+    Perform vector similarity search using the provided embedding.
+    
+    Args:
+        query_embedding: The vector embedding to search against
+        node_label: The node label to search within
+        limit: Maximum number of results
+        
+    Returns:
+        List of nodes with similarity scores
+    """
+    cypher = f"""
+    MATCH (n:{node_label})
+    WHERE n.embedding IS NOT NULL
+    WITH n, gds.similarity.cosine(n.embedding, $embedding) AS score
+    ORDER BY score DESC
+    LIMIT $limit
+    RETURN n, score
+    """
+    
+    return self.execute_query(
+        cypher, 
+        {"embedding": query_embedding, "limit": limit}
+    )
+```
+
+## 4.7 Error Handling Strategy
+
+The connector implements a comprehensive error handling strategy:
+
+- **Categorized Exceptions** - Custom exception hierarchy for different error types
+- **Automatic Retries** - Configurable retry policy for transient failures
+- **Detailed Logging** - Structured logging of all errors with context
+- **Graceful Degradation** - Fallback mechanisms for non-critical failures
+- **Circuit Breaking** - Protection against cascading failures during outages
+
+Error hierarchy:
+
+```python
+class Neo4jError(Exception):
+    """Base exception for all Neo4j-related errors."""
+    
+class ConnectionError(Neo4jError):
+    """Error establishing connection to Neo4j."""
+    
+class QueryError(Neo4jError):
+    """Error executing a Cypher query."""
+    
+class SchemaError(Neo4jError):
+    """Error with graph schema operation."""
+    
+class TransactionError(Neo4jError):
+    """Error in transaction management."""
+```
+
+## 4.8 Usage Examples
+
+### 4.8.1 Basic Query Execution
+
+```python
+from codestory.graphdb import Neo4jConnector
+
+# Using context manager for automatic resource cleanup
+with Neo4jConnector() as connector:
+    # Simple query
+    result = connector.execute_query(
+        "MATCH (f:File) WHERE f.path CONTAINS $keyword RETURN f.path",
+        {"keyword": "README"}
+    )
+    
+    # Print results
+    for record in result:
+        print(record["f.path"])
+```
+
+### 4.8.2 Transaction Management
+
+```python
+# Multiple operations in a single transaction
+def create_class_hierarchy(connector, base_class, derived_classes):
+    queries = []
+    params_list = []
+    
+    # Create base class
+    queries.append("CREATE (c:Class {name: $name, module: $module})")
+    params_list.append({"name": base_class["name"], "module": base_class["module"]})
+    
+    # Create derived classes with inheritance relationships
+    for derived in derived_classes:
+        queries.append("""
+        MATCH (base:Class {name: $base_name, module: $base_module})
+        CREATE (derived:Class {name: $derived_name, module: $derived_module})
+        CREATE (derived)-[:INHERITS_FROM]->(base)
+        """)
+        params_list.append({
+            "base_name": base_class["name"], 
+            "base_module": base_class["module"],
+            "derived_name": derived["name"],
+            "derived_module": derived["module"]
+        })
+    
+    # Execute all in one transaction
+    connector.execute_many(queries, params_list, write=True)
+```
+
+### 4.8.3 Async Usage with FastAPI
+
+```python
+from fastapi import FastAPI, Depends
+from codestory.graphdb import Neo4jConnector
+
+app = FastAPI()
+connector = Neo4jConnector()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await connector.close_async()
+
+@app.get("/files/{path}")
+async def get_file_info(path: str):
+    query = "MATCH (f:File {path: $path}) RETURN f"
+    result = await connector.execute_query_async(query, {"path": path})
+    
+    if not result:
+        return {"error": "File not found"}
+    
+    return {"file": dict(result[0]["f"])}
+```
+
+## 4.9 Docker Configuration
+
+The Neo4j database runs in a Docker container with the following configuration:
+
+```yaml
+neo4j:
+  image: neo4j:5.11
+  ports:
+    - "7474:7474"  # HTTP for browser access
+    - "7687:7687"  # Bolt protocol
+  environment:
+    - NEO4J_AUTH=neo4j/password  # Default credentials
+    - NEO4J_apoc_export_file_enabled=true
+    - NEO4J_apoc_import_file_enabled=true
+    - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+    - NEO4J_dbms_memory_heap_initial__size=1G
+    - NEO4J_dbms_memory_heap_max__size=2G
+  volumes:
+    - neo4j_data:/data  # Persistent data
+    - ./plugins:/plugins  # Custom plugins
+  healthcheck:
+    test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7474"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+```
+
+## 4.10 User Stories and Acceptance Criteria
+
+| User Story | Acceptance Criteria |
+|------------|---------------------|
+| As a developer, I want to be able to run the Neo4j database in a container so that I can develop and test the graph service locally. | • The Neo4j database can be started and stopped using the provided scripts.<br>• The Neo4j database can be queried using the Neo4j Connector module.<br>• Data persists between container restarts via volume mounting. |
+| As a developer, I want to be able to run the Neo4j database in Azure Container Apps so that I can deploy the graph service in Azure. | • The Neo4j database can be deployed to Azure Container Apps.<br>• The Neo4j database can be securely accessed from other Azure services.<br>• Data is persistently stored in Azure. |
+| As a developer, I want to easily execute Cypher queries against the graph service so that I can retrieve and manipulate graph data. | • The Neo4j Connector provides intuitive methods for executing queries.<br>• Query parameters are properly sanitized to prevent injection.<br>• Results are returned in a consistent, easy-to-use format. |
+| As a developer, I want reliable connection handling so that transient database issues don't crash my application. | • Connection failures are automatically retried with backoff.<br>• Connection pooling optimizes resource usage.<br>• Clear error messages are provided when retries are exhausted. |
+| As a developer, I want to access advanced APOC features so that I can use the graph service to its full potential. | • APOC plugins are properly installed and configured.<br>• The Neo4j Connector provides methods to utilize APOC features.<br>• APOC functions can be called securely from queries. |
+| As a developer, I want to use vector search for semantic similarity so that I can find related code elements by meaning. | • Vector indexes are properly configured for embedding properties.<br>• The Neo4j Connector provides methods for vector similarity search.<br>• Search performance is optimized for large numbers of embeddings. |
+| As a developer, I want transaction management so I can perform multiple operations atomically. | • The Neo4j Connector provides methods for transaction management.<br>• Transactions are automatically retried on transient failures.<br>• Nested transactions are properly handled. |
+| As a developer, I want to observe database performance metrics so I can identify and address bottlenecks. | • The Neo4j Connector exposes Prometheus metrics for query performance.<br>• Connection pool utilization is tracked.<br>• Error rates and types are monitored. |
+| As a developer, I want to use the Neo4j browser interface for debugging so I can visually inspect the graph. | • The Neo4j browser is accessible at http://localhost:7474.<br>• Authentication works with configured credentials.<br>• Graph visualization aids in understanding complex relationships. |
+| As a developer, I want async-compatible database access so I can use it with FastAPI endpoints. | • The Neo4jConnector class provides non-blocking database operations through async methods.<br>• Async operations have equivalent functionality to sync operations.<br>• Resource management works correctly in async contexts. |
+
+## 4.11 Testing Strategy
+
+- **Unit Tests**
+  - Test Neo4jConnector methods with mocked driver
+  - Test error handling and retry logic
+  - Test vector search functionality
+  - Test async connector operations
+
+- **Integration Tests**
+  - Use Neo4j Testcontainers to spin up actual database
+  - Test schema initialization
+  - Test data persistence between connections
+  - Test connection pooling behavior under load
+  - Test vector index creation and search
+
+## 4.12 Implementation Steps
+
+1. **Set up Neo4j container configuration**
+   - Configure Neo4j image in docker-compose.yaml
+   - Set up volume mounting for data persistence
+   - Configure environment variables for plugins and settings
+   - Add health check for container orchestration
+
+2. **Implement core Neo4jConnector class**
+   - Create base connector with connection pooling
+   - Implement query execution methods (both sync and async)
+   - Add transaction management
+   - Set up retry logic for transient failures
+   - Integrate with configuration system
+   - Implement vector search capabilities
+
+3. **Create schema initialization**
+   - Implement constraint and index creation
+   - Set up vector indexes for embeddings
+   - Create utility for schema verification
+   - Design schema update mechanism for migrations
+
+4. **Add monitoring and metrics**
+   - Implement Prometheus metrics for query performance
+   - Track connection pool statistics
+   - Add logging for query execution and errors
+   - Create health check endpoint
+
+5. **Create helper scripts**
+   - Add database initialization script
+   - Create backup/restore utilities
+   - Implement schema migration tool
+   - Add data export/import utilities
+
+6. **Write comprehensive tests**
+   - Unit tests for all connector methods
+   - Integration tests with testcontainers
+   - Performance benchmarks for critical operations
+   - Chaos testing for resilience verification
+
+7. **Document API and usage**
+   - Add detailed docstrings to all public methods
+   - Create usage examples
+   - Document error handling strategies
+   - Create visualization of database schema
+
+8. **Finalize deployment configurations**
+   - Optimize container settings for production
+   - Configure Azure Container Apps deployment
+   - Set up backup and monitoring in cloud environment
+   - Document production deployment best practices
+
+9. **Verification and Review**
+   - Run all unit, integration, and performance tests to ensure correct functionality
+   - Verify test coverage meets or exceeds target thresholds
+   - Conduct chaos testing to verify resilience and recovery capabilities
+   - Run linting and static analysis on all code
+   - Perform thorough code review against requirements and design principles
+   - Test all error handling paths and connection failure scenarios
+   - Verify proper initialization of constraints and indexes in Neo4j
+   - Test vector search functionality with real embeddings
+   - Validate connection pooling behavior under load
+   - Make necessary adjustments based on findings
+   - Re-run all tests after changes
+   - Document issues found and their resolutions
+   - Create detailed PR for final review
+
+---
+
