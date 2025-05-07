@@ -1,0 +1,12 @@
+version: 2
+
+exclude:
+  paths:
+    - ".env-template"
+    - "scripts/test_azure_openai.py"
+    - "**/test_*.py"
+
+policies:
+  # Ignore examples and test cases (false positives)
+  ignore-example-secrets: true
+  ignore-encrypted-secrets: true
