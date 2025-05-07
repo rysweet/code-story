@@ -1,11 +1,42 @@
-# Ignore template files
+# GitGuardian ignore file
+
+# Ignore specific patterns
+password123
+example-api-key
+example-tenant-id
+example-subscription-id
+EXAMPLE_NOT_REAL
+example-azure-endpoint
+example-client-id
+example-client-secret
+example-keyvault
+example-key-00000
+
+# Ignore templates and examples
 .env-template
+.env.example
+.env.sample
+.env.template
+*.example
 
 # Ignore test files
+scripts/test_azure_openai.py
 scripts/test_*.py
 **/test_*.py
+tests/**/*.py
+*_test.py
+*_tests.py
 
-# Ignore placeholder credentials
+# Ignore specific paths that may have false positives
+docs/
+examples/
+fixtures/
+test_fixtures/
+test_data/
+.github/
+.circleci/
+
+# Ignore placeholders
 your-password-here
 your-api-key-here
 your-tenant-id

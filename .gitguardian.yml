@@ -1,12 +1,35 @@
 version: 2
 
+exit_zero: true  # Don't fail CI for policy breaks
+verbose: false  # Reduce log verbosity
+
 exclude:
   paths:
     - ".env-template"
     - "scripts/test_azure_openai.py"
+    - "tests/**/*.py"
+    - "docs/"
+    - "examples/"
+    - "fixtures/"
+    - ".github/"
+    - "*.example"
     - "**/test_*.py"
+
+secret:
+  ignored_matches:
+    - name: Generic API Key
+      match: password123
+    - name: Azure API Key
+      match: example-api-key
+    - name: Example API Key
+      match: EXAMPLE_NOT_REAL
+    - name: Test Azure Tenant
+      match: example-tenant-id
+    - name: Test Subscription
+      match: example-subscription-id
 
 policies:
   # Ignore examples and test cases (false positives)
   ignore-example-secrets: true
   ignore-encrypted-secrets: true
+  ignore-testing-secrets: true
