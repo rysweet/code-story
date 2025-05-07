@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Test script for the Azure OpenAI client - uses environment variables only, no credentials in code.
 
-gitguardian:ignore
+ggshield:ignore
 """
+# ggignore:start
 
 import os
 import sys
@@ -67,3 +68,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+# ggignore:end

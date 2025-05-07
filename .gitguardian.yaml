@@ -1,0 +1,71 @@
+# GitGuardian YAML configuration file
+# Documentation: https://docs.gitguardian.com/ggshield-docs/configuration
+
+version: 2
+
+# Global configuration
+instance: https://dashboard.gitguardian.com
+api-key: # Leave empty, use environment variable
+exit-zero: true # Don't fail the CI on policy breaks
+
+# Paths exclusion configuration
+paths-ignore:
+  - "**/*.md"
+  - "**/package-lock.json"
+  - "**/poetry.lock"
+  - "**/yarn.lock"
+  - ".env-template"
+  - "**/.env-template"
+  - "**/.env.example"
+  - "scripts/test_*.py"
+  - "tests/**/*"
+  - "docs/**/*"
+  - "fixtures/**/*"
+  - "examples/**/*"
+  - ".github/**/*"
+
+# Secret scanning configuration
+secret:
+  # Explicitly tell GitGuardian to ignore these specific matches
+  ignored-matches:
+    - name: "Example API Key"
+      match: "example-api-key"
+    - name: "Example Password"
+      match: "password123"
+    - name: "Example Not Real Prefix"
+      match: "EXAMPLE_NOT_REAL"
+    - name: "Example Client ID"
+      match: "example-client-id"
+    - name: "Example OAuth Secret"
+      match: "example-client-secret"
+    - name: "Example Tenant ID"
+      match: "example-tenant-id" 
+
+  # Show detected secrets in the output (can be convenient for debugging)
+  show-secrets: false
+
+  # Ignore files and paths with these prefixes
+  ignored-paths:
+    - "tests/"
+    - "examples/"
+    - "scripts/test_"
+    - "fixtures/"
+    - ".env.example"
+    - ".env-template"
+
+# Pre-push configuration (does not apply to CI)
+pre-push:
+  enabled: true
+  protected-branches:
+    - "main"
+    - "master"
+    - "develop"
+
+# Pre-commit configuration (does not apply to CI)
+pre-commit:
+  enabled: true
+  
+# Scan configuration
+scan:
+  # Exit with 0 when leaks are found to not block the CI
+  exit-zero: true

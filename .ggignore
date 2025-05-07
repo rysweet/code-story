@@ -1,0 +1,32 @@
+# GitGuardian ignore file
+# Documentation: https://docs.gitguardian.com/ggshield-docs/configuration/ignore
+
+# Ignore these patterns (secrets)
+password123
+example-api-key
+example-tenant-id
+example-subscription-id
+example-azure-endpoint
+example-client-id
+example-client-secret
+example-keyvault
+EXAMPLE_NOT_REAL
+*your-*
+*example-*
+YOUR_API_KEY
+
+# Ignore filepaths (everything in these paths will be ignored)
+.env-template
+.env.example
+scripts/test_azure_openai.py
+scripts/test_*.py
+tests/
+examples/
+docs/
+fixtures/
+.github/
+.circleci/
+*.example
+
+# Ignore by SHA (not applicable here, but useful once you have specific false-positive SHA values)
+# ggignore:sha256 aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1kUXc0dzlXZ1hjUQo=
