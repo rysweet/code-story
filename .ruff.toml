@@ -1,5 +1,7 @@
 line-length = 100
 target-version = "py312"
+
+[lint]
 select = [
     "E",   # pycodestyle errors
     "F",   # pyflakes
@@ -18,15 +20,15 @@ ignore = [
     "D212",  # multi-line-summary-first-line
 ]
 
-[per-file-ignores]
+[lint.per-file-ignores]
 "tests/**/*.py" = ["D", "S101"]
 "**/__init__.py" = ["F401"]
 
-[isort]
+[lint.isort]
 known-first-party = ["codestory"]
 known-third-party = ["fastapi", "pydantic", "celery", "neo4j", "openai"]
 
-[pydocstyle]
+[lint.pydocstyle]
 convention = "google"
 
 [format]
