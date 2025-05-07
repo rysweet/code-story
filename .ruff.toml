@@ -1,4 +1,3 @@
-[tool.ruff]
 line-length = 100
 target-version = "py312"
 select = [
@@ -19,18 +18,19 @@ ignore = [
     "D212",  # multi-line-summary-first-line
 ]
 
-[tool.ruff.per-file-ignores]
+[per-file-ignores]
 "tests/**/*.py" = ["D", "S101"]
 "**/__init__.py" = ["F401"]
 
-[tool.ruff.isort]
+[isort]
 known-first-party = ["codestory"]
 known-third-party = ["fastapi", "pydantic", "celery", "neo4j", "openai"]
 
-[tool.ruff.pydocstyle]
+[pydocstyle]
 convention = "google"
 
-[tool.ruff.format]
+[format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+EOF < /dev/null
