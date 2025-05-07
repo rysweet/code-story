@@ -32,7 +32,7 @@ async def health_check():
 async def root():
     """Root endpoint."""
     return {
-        "name": settings.project_name,
+        "name": settings.app_name,
         "version": settings.version,
         "description": settings.description,
     }

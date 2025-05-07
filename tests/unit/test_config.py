@@ -149,16 +149,27 @@ def test_settings_override_from_env(mock_env):
 
 def test_get_settings_cache():
     """Test that get_settings caches the result."""
+    # To test caching, we need to clear the cache first
+    get_settings.cache_clear()
+    
+    # Mock the Settings class
     with patch("src.codestory.config.settings.Settings") as mock_settings_cls:
+        # Create a mock settings instance
         mock_settings = MagicMock()
         mock_settings_cls.return_value = mock_settings
         
+        # Call get_settings twice
         settings1 = get_settings()
         settings2 = get_settings()
         
-        # Should be called only once due to caching
+        # Verify Settings was instantiated exactly once
         mock_settings_cls.assert_called_once()
+        
+        # Verify both calls returned the same cached instance
         assert settings1 is settings2
+        
+    # Clean up by clearing the cache again
+    get_settings.cache_clear()
 
 
 def test_refresh_settings():

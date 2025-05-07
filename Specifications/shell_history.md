@@ -18,3 +18,22 @@
 - `python -m pytest` - Running all tests in the project
 - `python -m pytest tests/unit/` - Running all unit tests in the project
 - `mkdir -p src/codestory/graphdb` - Creating the graphdb directory for the Graph Database module
+- `mkdir -p tests/unit/test_graphdb` - Creating the directory for graph database unit tests
+- `mkdir -p tests/integration/test_graphdb` - Creating the directory for graph database integration tests
+- `mkdir -p config` - Creating directory for configuration files like prometheus.yml
+- `mkdir -p benchmarks` - Creating directory for benchmark scripts
+- `chmod +x scripts/setup_test_db.sh` - Making the test database setup script executable
+- `chmod +x scripts/backup_neo4j.sh scripts/restore_neo4j.sh scripts/import_neo4j.sh` - Making database management scripts executable
+- `chmod +x scripts/deploy_azure.sh` - Making Azure deployment script executable
+- `chmod +x benchmarks/benchmark_neo4j.py` - Making benchmark script executable
+- `mkdir -p docs` - Creating directory for documentation files
+- `docker ps | grep neo4j` - Checking if Neo4j container is running
+- `ls -la /Users/ryan/src/msec/code-story/scripts` - Checking available scripts in the scripts directory
+- `cd /Users/ryan/src/msec/code-story && scripts/setup_test_db.sh` - Running the setup script for Neo4j test database
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_graphdb/test_neo4j_integration.py -v` - Running Neo4j integration tests
+- `cd /Users/ryan/src/msec/code-story && docker-compose -f docker-compose.test.yml down` - Stopping Neo4j test container
+- `cd /Users/ryan/src/msec/code-story && docker volume rm code-story_neo4j_test_data code-story_neo4j_test_logs` - Removing Neo4j test volumes
+- `chmod +x /Users/ryan/src/msec/code-story/scripts/stop_test_db.sh` - Making the stop_test_db.sh script executable
+- `cd /Users/ryan/src/msec/code-story && ./scripts/stop_test_db.sh` - Running script to stop the Neo4j test container
+- `python -m pytest tests/unit/test_graphdb/test_schema.py -v` - Running Neo4j schema unit tests
+- `python -m pytest tests/unit/test_graphdb tests/integration/test_graphdb -v` - Running all Neo4j tests
