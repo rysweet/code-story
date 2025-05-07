@@ -1,0 +1,16 @@
+{
+  "name": "Code Story DevContainer",
+  "dockerComposeFile": ["../docker-compose.yaml"],
+  "service": "codestory_service",
+  "workspaceFolder": "/workspaces/code-story",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "ms-python.python",
+    "ms-azuretools.vscode-docker",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next"
+  ],
+  "postCreateCommand": "poetry install && pnpm install --dir gui"
+}
