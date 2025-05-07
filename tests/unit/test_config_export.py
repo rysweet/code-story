@@ -27,12 +27,15 @@ def mock_settings():
     settings.app_name = "code-story"
     settings.version = "0.1.0"
     settings.environment = "development"
+    settings.log_level = "INFO"
+    settings.auth_enabled = False
     
     # Mock neo4j settings
     settings.neo4j = MagicMock()
     settings.neo4j.uri = "bolt://localhost:7687"
     settings.neo4j.username = "neo4j"
     settings.neo4j.password = SecretStr("password")
+    settings.neo4j.database = "neo4j"
     
     # Mock redis settings
     settings.redis = MagicMock()
@@ -42,21 +45,56 @@ def mock_settings():
     settings.openai = MagicMock()
     settings.openai.api_key = SecretStr("test-key")
     settings.openai.embedding_model = "text-embedding-3-small"
+    settings.openai.chat_model = "gpt-4o"
+    settings.openai.reasoning_model = "gpt-4o"
+    settings.openai.endpoint = "https://api.openai.com/v1"
+    
+    # Mock azure_openai settings
+    settings.azure_openai = MagicMock()
+    settings.azure_openai.deployment_id = "gpt-4o"
+    settings.azure_openai.api_version = "2024-05-01"
     
     # Mock service settings
     settings.service = MagicMock()
     settings.service.host = "0.0.0.0"
     settings.service.port = 8000
     
+    # Mock ingestion settings
+    settings.ingestion = MagicMock()
+    settings.ingestion.config_path = "pipeline_config.yml"
+    settings.ingestion.chunk_size = 1024
+    
+    # Mock plugins settings
+    settings.plugins = MagicMock()
+    settings.plugins.enabled = ["blarify", "filesystem", "summarizer", "docgrapher"]
+    
+    # Mock telemetry settings
+    settings.telemetry = MagicMock()
+    settings.telemetry.metrics_port = 9090
+    settings.telemetry.log_format = "json"
+    
+    # Mock interface settings
+    settings.interface = MagicMock()
+    settings.interface.theme = "dark"
+    settings.interface.default_view = "graph"
+    
+    # Mock azure settings
+    settings.azure = MagicMock()
+    settings.azure.keyvault_name = "test-keyvault"
+    settings.azure.tenant_id = "test-tenant"
+    
     # Model dump method
     settings.model_dump.return_value = {
         "app_name": "code-story",
         "version": "0.1.0",
         "environment": "development",
+        "log_level": "INFO",
+        "auth_enabled": False,
         "neo4j": {
             "uri": "bolt://localhost:7687",
             "username": "neo4j",
             "password": "password",
+            "database": "neo4j",
         },
         "redis": {
             "uri": "redis://localhost:6379",
@@ -64,10 +102,36 @@ def mock_settings():
         "openai": {
             "api_key": "test-key",
             "embedding_model": "text-embedding-3-small",
+            "chat_model": "gpt-4o",
+            "reasoning_model": "gpt-4o",
+            "endpoint": "https://api.openai.com/v1",
+        },
+        "azure_openai": {
+            "deployment_id": "gpt-4o",
+            "api_version": "2024-05-01",
         },
         "service": {
             "host": "0.0.0.0",
             "port": 8000,
+        },
+        "ingestion": {
+            "config_path": "pipeline_config.yml",
+            "chunk_size": 1024,
+        },
+        "plugins": {
+            "enabled": ["blarify", "filesystem", "summarizer", "docgrapher"],
+        },
+        "telemetry": {
+            "metrics_port": 9090,
+            "log_format": "json",
+        },
+        "interface": {
+            "theme": "dark",
+            "default_view": "graph",
+        },
+        "azure": {
+            "keyvault_name": "test-keyvault",
+            "tenant_id": "test-tenant",
         },
     }
     
@@ -178,8 +242,9 @@ def test_export_to_toml(mock_settings):
         assert "openai" in toml_str
         
         # Assert sensitive values are redacted
-        assert "password = " not in toml_str
-        assert "********" in toml_str
+        assert 'password="********"' in toml_str.replace(" ", "")
+        assert 'api_key="********"' in toml_str.replace(" ", "")
+        assert 'client_secret="********"' not in toml_str.replace(" ", "")  # Not present in mock
         
         # Test with output to file
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -193,8 +258,8 @@ def test_export_to_toml(mock_settings):
                 content = f.read()
             
             # Assert sensitive values are not redacted
-            assert 'password = "password"' in content.replace(" ", "")
-            assert 'api_key = "test-key"' in content.replace(" ", "")
+            assert 'password="password"' in content.replace(" ", "")
+            assert 'api_key="test-key"' in content.replace(" ", "")
         finally:
             # Clean up
             if os.path.exists(tmp_path):
