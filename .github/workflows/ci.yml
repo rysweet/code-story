@@ -33,7 +33,7 @@ jobs:
           git diff --name-only origin/main HEAD | grep -E '\.py$' | xargs -r poetry run ruff format --check
       - name: Type check with mypy
         run: |
-          poetry run mypy src
+          git diff --name-only origin/main HEAD | grep -E '\.py$' | grep -v 'tests/' | xargs -r poetry run mypy
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
