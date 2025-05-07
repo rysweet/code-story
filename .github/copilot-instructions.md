@@ -48,6 +48,7 @@ The project will be built folowing these steps:
 
 1. The github repo is https://github.com/rysweet/code-story
 2. Make use of the `gh` cli to manage the repo, PRs, and issues.
+   - For troubleshooting CI failures, use `gh run view` to inspect the logs of the most recent or specific GitHub Actions runs. This command provides detailed logs and failure reasons directly in your terminal, making it easier to diagnose and resolve CI issues efficiently.
 3. Each stage of the project should progress on a separate branch of the repo and upon completion be merged as a PR to the main branch.
 4. Each PR should be reviewed and approved before merging.
 
