@@ -276,9 +276,17 @@ The configuration module implements this priority chain and provides a singleton
 | 12 | Create `infra/docker/` Dockerfiles for each service component |
 | 13 | Add basic documentation structure in `docs/` |
 | 14 | Set up configuration module with precedence as defined in 2.4 |
-| 15 | Commit & push – ensure CI passes |
+| 15 | **Verification and Review** - Comprehensively verify all steps have been completed correctly:
+    - Run all tests to ensure the implementation meets requirements
+    - Run linting and type checking to confirm code quality
+    - Verify that all services start correctly and are functional 
+    - Perform thorough code review against all requirements
+    - Make necessary adjustments based on review findings
+    - Run tests again after any changes to ensure continued compliance
+    - Document any issues encountered and their resolutions |
+| 16 | Commit & push – ensure CI passes |
 
-A helper script `scripts/bootstrap.sh` automates steps 1-14.
+A helper script `scripts/bootstrap.sh` automates steps 1-14, but steps 15-16 should be performed manually.
 
 ## 2.6 Testing & Acceptance
 
@@ -641,6 +649,18 @@ workers = 4
    - Generate API documentation
    - Create usage examples
    - Document error handling strategies
+
+10. **Verification and Review**
+   - Run all unit and integration tests to ensure complete functionality
+   - Verify test coverage meets targets (≥90% for critical modules)
+   - Run linting and type checking (`ruff check` and `mypy --strict`) 
+   - Perform thorough code review against all requirements and user stories
+   - Validate configuration loading from all sources
+   - Test edge cases and error handling
+   - Make necessary adjustments based on review findings
+   - Re-run all tests after any changes
+   - Document any discovered issues and their resolutions
+   - Create detailed PR for final review
 ---
 
 # 4.0 Graph Database Service
@@ -1050,6 +1070,21 @@ neo4j:
    - Set up backup and monitoring in cloud environment
    - Document production deployment best practices
 
+9. **Verification and Review**
+   - Run all unit, integration, and performance tests to ensure correct functionality
+   - Verify test coverage meets or exceeds target thresholds
+   - Conduct chaos testing to verify resilience and recovery capabilities
+   - Run linting and static analysis on all code
+   - Perform thorough code review against requirements and design principles
+   - Test all error handling paths and connection failure scenarios
+   - Verify proper initialization of constraints and indexes in Neo4j
+   - Test vector search functionality with real embeddings
+   - Validate connection pooling behavior under load
+   - Make necessary adjustments based on findings
+   - Re-run all tests after changes
+   - Document issues found and their resolutions
+   - Create detailed PR for final review
+
 ---
 
 # 5.0 AI Client
@@ -1309,6 +1344,21 @@ embeddings = await get_embedding_async()
    - Create usage examples
    - Document error handling strategies
    - Create visualization of database schema
+
+10. **Verification and Review**
+    - Run all unit and integration tests to ensure complete functionality
+    - Verify test coverage meets targets for all methods
+    - Test with actual Azure OpenAI endpoints in test environment
+    - Run linting and type checking on all code
+    - Perform thorough code review against requirements and user stories
+    - Test error handling and retry mechanisms with simulated failures
+    - Verify proper handling of rate limits and other API errors
+    - Validate authentication and token handling
+    - Check embedding dimensions and format consistency
+    - Make necessary adjustments based on review findings
+    - Re-run all tests after any changes
+    - Document any discovered issues and their resolutions
+    - Create detailed PR for final review
 
 ---
 
@@ -2181,10 +2231,26 @@ Standard HTTP codes: `400` validation, `401/403` auth, `404` missing,
     - Verify Azure Container Apps compatibility
     - Ensure proper secret handling in both environments
 
-16. **Acceptance criteria validation**
+16. **Verification and Review**
+    - Run all unit, integration, and end-to-end tests
+    - Verify test coverage meets targets (≥90% for critical components) 
+    - Run linting and type checking on all code
+    - Start the service and verify all endpoints function correctly
+    - Test WebSocket functionality for real-time updates
+    - Verify authentication works in both development and production modes
+    - Test all error paths and failure scenarios
+    - Perform thorough code review against requirements and design principles
+    - Validate handling of concurrent requests and connection lifecycles
+    - Test performance under load, especially for graph operations
+    - Make necessary adjustments based on review findings
+    - Re-run all tests after any changes
+    - Document discovered issues and their resolutions
+
+17. **Acceptance criteria validation**
     - Verify all user stories in section 11.5 are satisfied
     - Run a full system test covering all endpoints
     - Document any limitations or known issues
+    - Create detailed PR for final review
 
 ---
 
@@ -2614,6 +2680,21 @@ mcp:
    - Create usage examples for different agent types
    - Document authentication flow and token acquisition
 
+10. **Verification and Review**
+    - Run all unit, integration, and agent integration tests
+    - Verify test coverage meets targets for all components
+    - Run linting and static analysis on all code
+    - Test with actual MCP clients (Claude Code, GitHub Copilot)
+    - Perform thorough code review against requirements and MCP specification
+    - Test all error handling paths and authentication flows
+    - Verify security of token handling and authentication
+    - Test performance of tool calls with realistic queries
+    - Validate compatibility with different agent frameworks
+    - Make necessary adjustments based on review findings
+    - Re-run all tests after any changes
+    - Document discovered issues and their resolutions
+    - Create detailed PR for final review
+
 ---
 
 # 13.0 CLI
@@ -2659,6 +2740,20 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 3. Use Rich live progress: subscribe to Redis `status::<run_id>`.
 4. Implement config TUI via `rich.prompt` + TOML editing.
 5. Package entry‑point in `pyproject.toml` → `console_scripts = { codestory = 'codestory.cli:app' }`.
+6. **Verification and Review**
+   - Run all unit tests to verify command parsing and execution
+   - Run integration tests against a real Code-story instance
+   - Test each command to ensure it functions as specified
+   - Verify proper formatting and display of Rich UI elements
+   - Test error handling for all edge cases
+   - Run linting and type checking on all code
+   - Perform thorough code review against requirements
+   - Verify that all commands in section 13.2 are implemented
+   - Test CLI in both interactive and non-interactive modes
+   - Make necessary adjustments based on review findings
+   - Re-run all tests after any changes
+   - Document discovered issues and their resolutions
+   - Create detailed PR for final review
 
 ## 13.4 Testing
 
@@ -2896,7 +2991,24 @@ The following steps outline the implementation of the GUI, ensuring that all use
     - Add accessibility testing and improvements
     - Optimize performance and bundle size
 
-16. **Acceptance testing**
+16. **Verification and Review**
+    - Run all unit and integration tests to ensure correct functionality
+    - Run tests against all components and hooks
+    - Verify API integration with mock services
+    - Test all user interface flows and interactions
+    - Run linting and type checking on all code
+    - Perform thorough code review against requirements and design principles
+    - Test across different browsers and screen sizes
+    - Verify responsive design and mobile usability
+    - Test WebSocket connections for real-time updates
+    - Check accessibility compliance
+    - Validate proper error handling for all edge cases
+    - Make necessary adjustments based on review findings
+    - Re-run all tests after any changes
+    - Document issues found and their resolutions
+    - Create detailed PR for final review
+
+17. **Acceptance testing**
     - Verify all user stories in section 14.6 are satisfied
     - Test across different browsers and devices
     - Validate integration with Code Story Service API
@@ -3149,6 +3261,22 @@ The Bicep templates define Azure resources including:
     - Add troubleshooting guides for common issues
     - Include architecture diagrams for better understanding
 
+11. **Verification and Review**
+    - Run all infrastructure components in a test environment
+    - Verify all services start correctly and can communicate
+    - Test deployment to Azure and validate functionality
+    - Verify proper secret management in all environments
+    - Test scaling and resilience under load
+    - Simulate service failures to test recovery
+    - Verify observability tools provide adequate visibility
+    - Run security checks on all infrastructure components
+    - Perform thorough code review against requirements
+    - Validate documentation accuracy with test deployments
+    - Make necessary adjustments based on review findings
+    - Re-test infrastructure after any changes
+    - Document issues found and their resolutions
+    - Create detailed PR for final review
+
 ## 15.5 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
@@ -3378,6 +3506,23 @@ Step-by-step guides in Markdown for common tasks:
    - Check for consistency across sections
    - Validate examples and commands
    - Ensure cross-linking between related sections
+
+9. **Verification and Review**
+   - Build the complete documentation and test all navigation paths
+   - Verify that all API references are accurate and complete
+   - Test all examples and code snippets to ensure they work as documented
+   - Check that command examples and parameters match actual implementation
+   - Verify all links are functional, both internal and external
+   - Test documentation on different devices and screen sizes
+   - Ensure search functionality works correctly
+   - Verify documentation matches the current code state
+   - Test that API documentation is properly generated from docstrings
+   - Perform thorough review against all user stories and acceptance criteria
+   - Test the documentation CI/CD pipeline
+   - Make necessary adjustments based on review findings
+   - Re-test documentation after any changes
+   - Document issues found and their resolutions
+   - Create detailed PR for final review
 
 ## 16.8 User Stories and Acceptance Criteria
 
