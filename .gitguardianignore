@@ -1,0 +1,18 @@
+# Ignore template files
+.env-template
+
+# Ignore test files
+scripts/test_*.py
+**/test_*.py
+
+# Ignore placeholder credentials
+your-password-here
+your-api-key-here
+your-tenant-id
+your-subscription-id
+your-azure-endpoint-here
+your-azure-api-key-here
+your-keyvault-name
+your-azure-tenant-id
+your-azure-client-id
+your-azure-client-secret
