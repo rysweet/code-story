@@ -12,7 +12,13 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-import pkg_resources
+# Use importlib.metadata instead of pkg_resources (which is deprecated)
+try:
+    from importlib.metadata import entry_points
+except ImportError:
+    # Fallback for Python < 3.8
+    import pkg_resources
+    
 from prometheus_client import Counter, Histogram, Gauge
 
 from .step import PipelineStep, StepStatus
@@ -114,19 +120,45 @@ def discover_pipeline_steps() -> Dict[str, Type[PipelineStep]]:
     entry_point_group = "codestory.pipeline.steps"
     
     try:
-        for entry_point in pkg_resources.iter_entry_points(entry_point_group):
-            step_name = entry_point.name
-            step_class = entry_point.load()
-            
-            # Validate that it's a PipelineStep subclass
-            if not issubclass(step_class, PipelineStep):
-                logger.warning(
-                    f"Entry point {step_name} does not provide a PipelineStep subclass, skipping"
-                )
-                continue
-            
-            steps[step_name] = step_class
-            logger.info(f"Discovered pipeline step: {step_name}")
+        # Use importlib.metadata if available, otherwise fall back to pkg_resources
+        if "entry_points" in globals():
+            # Python 3.8+ with importlib.metadata
+            eps = entry_points(group=entry_point_group)
+            try:
+                # Python 3.10+ API
+                entry_points_list = list(eps)
+            except TypeError:
+                # Python 3.8-3.9 API
+                entry_points_list = eps.get(entry_point_group, [])
+                
+            for entry_point in entry_points_list:
+                step_name = entry_point.name
+                step_class = entry_point.load()
+                
+                # Validate that it's a PipelineStep subclass
+                if not issubclass(step_class, PipelineStep):
+                    logger.warning(
+                        f"Entry point {step_name} does not provide a PipelineStep subclass, skipping"
+                    )
+                    continue
+                
+                steps[step_name] = step_class
+                logger.info(f"Discovered pipeline step: {step_name}")
+        else:
+            # Python < 3.8 with pkg_resources
+            for entry_point in pkg_resources.iter_entry_points(entry_point_group):
+                step_name = entry_point.name
+                step_class = entry_point.load()
+                
+                # Validate that it's a PipelineStep subclass
+                if not issubclass(step_class, PipelineStep):
+                    logger.warning(
+                        f"Entry point {step_name} does not provide a PipelineStep subclass, skipping"
+                    )
+                    continue
+                
+                steps[step_name] = step_class
+                logger.info(f"Discovered pipeline step: {step_name}")
     except Exception as e:
         logger.error(f"Error discovering pipeline steps: {e}")
     

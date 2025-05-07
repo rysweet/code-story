@@ -8,8 +8,20 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from src.codestory.ingestion_pipeline.manager import PipelineManager
+# Mock the Celery app to avoid requiring an actual Celery instance
+import sys
+from unittest.mock import MagicMock
+
+# Create mock modules
+mock_celery = MagicMock()
+mock_app = MagicMock()
+mock_celery.Celery.return_value = mock_app
+sys.modules['celery'] = mock_celery
+sys.modules['celery.result'] = MagicMock()
+
+# Now we can import our modules
 from src.codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+from src.codestory.ingestion_pipeline.manager import PipelineManager
 
 
 class TestPipelineManager:
