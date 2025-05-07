@@ -3,7 +3,7 @@
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Any, List, Literal, Optional, ClassVar, Type, Tuple, Callable
+from typing import Dict, Any, List, Literal, Optional, ClassVar
 
 import tomli
 from pydantic import BaseModel, Field, field_validator, SecretStr, model_validator
@@ -209,47 +209,26 @@ class Settings(BaseSettings):
         validate_default=True,
     )
 
-    @classmethod
-    def settings_customise_sources(
-        cls,
-        settings_cls: Type[BaseSettings],
-        init_settings: Dict[str, Any],
-        env_settings: Dict[str, Any],
-        dotenv_settings: Dict[str, Any],
-        file_secret_settings: Dict[str, Any],
-    ) -> Tuple[Dict[str, Any], ...]:
-        """Customize settings sources with explicit precedence.
+    def __init__(self, **data: Any) -> None:
+        """Initialize settings with layered configuration."""
+        # Load settings from .codestory.toml if it exists
+        toml_settings = {}
+        if os.path.exists(self._CONFIG_FILE):
+            try:
+                with open(self._CONFIG_FILE, "rb") as f:
+                    toml_data = tomli.load(f)
+                    toml_settings = flatten_dict(toml_data)
+            except Exception as e:
+                print(f"Error loading {self._CONFIG_FILE}: {e}")
         
-        Environment variables > Init settings > .env file > .codestory.toml > Default values
-        """
-        toml_settings = cls._load_from_toml() or {}
+        # Merge settings, with environment variables taking precedence
+        merged_settings = {**toml_settings, **data}
         
-        # Return sources in order of precedence
-        return (
-            env_settings,          # 1. Environment variables
-            init_settings,         # 2. Init settings
-            dotenv_settings,       # 3. .env file
-            file_secret_settings,  # 4. File secrets
-            toml_settings,         # 5. TOML config
-        )
-
-    @classmethod
-    def _load_from_toml(cls) -> Dict[str, Any]:
-        """Load settings from .codestory.toml file."""
-        project_root = get_project_root()
-        toml_path = project_root / cls._CONFIG_FILE
+        super().__init__(**merged_settings)
         
-        if not toml_path.exists():
-            return {}
-        
-        try:
-            with open(toml_path, "rb") as f:
-                toml_data = tomli.load(f)
-                # Flatten the dictionary for Pydantic
-                return flatten_dict(toml_data)
-        except Exception as e:
-            print(f"Error loading {cls._CONFIG_FILE}: {e}")
-            return {}
+        # Load secrets from KeyVault if configured
+        if hasattr(self, 'azure') and self.azure.keyvault_name:
+            self._load_secrets_from_keyvault()
 
     def _load_secrets_from_keyvault(self) -> None:
         """Load sensitive settings from Azure KeyVault if configured."""
@@ -302,14 +281,6 @@ class Settings(BaseSettings):
             print("Azure SDK not installed. Skipping KeyVault integration.")
         except Exception as e:
             print(f"Error loading secrets from KeyVault: {e}")
-
-    def __init__(self, **data: Any) -> None:
-        """Initialize settings with layered configuration."""
-        super().__init__(**data)
-        
-        # Load secrets from KeyVault if configured
-        if self.azure.keyvault_name:
-            self._load_secrets_from_keyvault()
 
 
 def flatten_dict(d: Dict[str, Any], parent_key: str = "", sep: str = "__") -> Dict[str, Any]:

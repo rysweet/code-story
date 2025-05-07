@@ -13,6 +13,7 @@ import tomli_w
 from dotenv import load_dotenv, set_key
 from pydantic import SecretStr
 
+from .exceptions import SettingNotFoundError
 from .settings import get_project_root, get_settings, refresh_settings
 
 
@@ -147,13 +148,13 @@ def update_config(
     
     # Check if the section exists
     if not hasattr(settings, section):
-        raise ValueError(f"Settings section '{section}' does not exist")
+        raise SettingNotFoundError(setting_path)
     
     section_obj = getattr(settings, section)
     
     # Check if the key exists in the section
     if not hasattr(section_obj, key):
-        raise ValueError(f"Setting '{key}' does not exist in section '{section}'")
+        raise SettingNotFoundError(setting_path)
     
     # Handle SecretStr values
     current_value = getattr(section_obj, key)
@@ -189,6 +190,7 @@ def get_config_value(setting_path: str) -> Any:
     
     Raises:
         ValueError: If the setting_path is invalid
+        SettingNotFoundError: If the setting doesn't exist
     """
     section, key = parse_setting_path(setting_path)
     
@@ -197,13 +199,13 @@ def get_config_value(setting_path: str) -> Any:
     
     # Check if the section exists
     if not hasattr(settings, section):
-        raise ValueError(f"Settings section '{section}' does not exist")
+        raise SettingNotFoundError(setting_path)
     
     section_obj = getattr(settings, section)
     
     # Check if the key exists in the section
     if not hasattr(section_obj, key):
-        raise ValueError(f"Setting '{key}' does not exist in section '{section}'")
+        raise SettingNotFoundError(setting_path)
     
     # Return the value
     value = getattr(section_obj, key)
