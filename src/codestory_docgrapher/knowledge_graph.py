@@ -8,7 +8,7 @@ import logging
 import time
 from typing import Dict, List, Optional, Set, Tuple
 
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 from .models import DocumentationEntity, DocumentationFile
 from .models import DocumentationGraph, DocumentationRelationship
 from .models import EntityType, RelationType

@@ -12,9 +12,9 @@ from typing import Any
 
 from celery import shared_task
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
 from .document_finder import DocumentFinder
 from .knowledge_graph import KnowledgeGraph

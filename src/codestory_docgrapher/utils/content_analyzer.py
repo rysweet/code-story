@@ -8,8 +8,8 @@ import logging
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
-from src.codestory.llm.client import create_client
-from src.codestory.llm.models import ChatMessage, ChatRole
+from codestory.llm.client import create_client
+from codestory.llm.models import ChatMessage, ChatRole
 
 from ..models import DocumentationEntity, EntityType
 

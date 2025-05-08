@@ -9,7 +9,7 @@ import os
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 logger = logging.getLogger(__name__)
 

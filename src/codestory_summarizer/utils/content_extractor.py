@@ -8,7 +8,7 @@ import logging
 import os
 from typing import Dict, List, Optional, Union
 
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 from ..models import NodeData, NodeType
 
 # Set up logging

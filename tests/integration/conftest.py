@@ -70,6 +70,9 @@ def load_env_vars():
     if "NEO4J_DATABASE" not in os.environ:
         os.environ["NEO4J_DATABASE"] = "codestory-test"
         
+    # Override the NEO4J__URI in environment to match the test container port
+    os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+        
     # Set default Redis variables if not already set
     if "REDIS_URI" not in os.environ:
         os.environ["REDIS_URI"] = "redis://localhost:6379/0"

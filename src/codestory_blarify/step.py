@@ -14,9 +14,9 @@ import docker
 from celery import shared_task
 from docker.errors import DockerException
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
 # Set up logging
 logger = logging.getLogger(__name__)

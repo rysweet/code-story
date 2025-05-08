@@ -15,11 +15,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from celery import shared_task
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.ingestion_pipeline.step import PipelineStep, StepStatus
-from src.codestory.llm.client import create_client
-from src.codestory.llm.models import ChatMessage, ChatRole
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+from codestory.llm.client import create_client
+from codestory.llm.models import ChatMessage, ChatRole
 
 from .dependency_analyzer import DependencyAnalyzer
 from .models import DependencyGraph, NodeData, NodeType, ProcessingStatus, SummaryData

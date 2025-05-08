@@ -37,13 +37,41 @@ class QueryType(str, Enum):
 
 # Initialize metrics if prometheus_client is available
 if PROMETHEUS_AVAILABLE:
-    # Query metrics
-    QUERY_DURATION = Histogram(
-        name=f"{METRIC_PREFIX}_query_duration_seconds",
-        documentation="Duration of Neo4j query execution in seconds",
-        labelnames=["query_type"],
-        buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
-    )
+    # Use a custom registry to avoid conflicts with the default registry
+    from prometheus_client import REGISTRY
+    
+    # Create metrics only once - check if they already exist 
+    # and only define them if they don't
+    try:
+        # Try to get the metric from the registry
+        QUERY_DURATION = REGISTRY.get_sample_value(f"{METRIC_PREFIX}_query_duration_seconds_count")
+        # If we get here, the metric exists, so reuse it instead of creating a new one
+        from prometheus_client import metrics
+        for metric in metrics.REGISTRY._names_to_collectors.values():
+            if metric.name == f"{METRIC_PREFIX}_query_duration_seconds":
+                QUERY_DURATION = metric
+                break
+    except:
+        # If we get an exception, the metric doesn't exist, so create it
+        try:
+            QUERY_DURATION = Histogram(
+                name=f"{METRIC_PREFIX}_query_duration_seconds",
+                documentation="Duration of Neo4j query execution in seconds",
+                labelnames=["query_type"],
+                buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+            )
+        except ValueError:
+            # If there's a value error, the metric already exists somewhere
+            # Use a dummy version that can be called without affecting metrics
+            class DummyHistogram:
+                def observe(self, value, **kwargs):
+                    pass
+                def time(self):
+                    class DummyTimer:
+                        def __enter__(self): return self
+                        def __exit__(self, exc_type, exc_val, exc_tb): pass
+                    return DummyTimer()
+            QUERY_DURATION = DummyHistogram()
     
     QUERY_COUNT = Counter(
         name=f"{METRIC_PREFIX}_query_count_total",
@@ -83,12 +111,27 @@ if PROMETHEUS_AVAILABLE:
     )
     
     # Vector search metrics
-    VECTOR_SEARCH_DURATION = Histogram(
-        name=f"{METRIC_PREFIX}_vector_search_duration_seconds",
-        documentation="Duration of Neo4j vector similarity search in seconds",
-        labelnames=["node_label"],
-        buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
-    )
+    try:
+        # Try to get the metric from the registry
+        VECTOR_SEARCH_DURATION = REGISTRY.get_sample_value(f"{METRIC_PREFIX}_vector_search_duration_seconds_count")
+        # If we get here, the metric exists, so reuse it instead of creating a new one
+        for metric in metrics.REGISTRY._names_to_collectors.values():
+            if metric.name == f"{METRIC_PREFIX}_vector_search_duration_seconds":
+                VECTOR_SEARCH_DURATION = metric
+                break
+    except:
+        # If we get an exception, the metric doesn't exist, so create it
+        try:
+            VECTOR_SEARCH_DURATION = Histogram(
+                name=f"{METRIC_PREFIX}_vector_search_duration_seconds",
+                documentation="Duration of Neo4j vector similarity search in seconds",
+                labelnames=["node_label"],
+                buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+            )
+        except ValueError:
+            # If there's a value error, the metric already exists somewhere
+            # Use a dummy version that can be called without affecting metrics
+            VECTOR_SEARCH_DURATION = DummyHistogram()
 
 
 def instrument_query(

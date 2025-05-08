@@ -39,8 +39,31 @@ print_header "Stopping Code Story Project"
 
 # Stop Celery workers
 print_info "Stopping Celery workers..."
-if pgrep -f "celery" > /dev/null; then
-  pkill -f "celery"
+CELERY_PID_FILE="$(pwd)/.celery.pid"
+
+# First try to stop using the PID file (cleaner)
+if [[ -f "$CELERY_PID_FILE" ]]; then
+  CELERY_PID=$(cat "$CELERY_PID_FILE")
+  if kill -0 $CELERY_PID 2>/dev/null; then
+    print_info "Shutting down Celery worker with PID $CELERY_PID..."
+    kill -TERM $CELERY_PID
+    sleep 2
+    # Check if process still exists
+    if ! kill -0 $CELERY_PID 2>/dev/null; then
+      print_success "Celery worker stopped successfully"
+    else
+      print_info "Celery worker didn't respond to TERM signal, using KILL..."
+      kill -9 $CELERY_PID 2>/dev/null || true
+    fi
+    rm -f "$CELERY_PID_FILE"
+  else
+    print_info "PID file exists but process is not running"
+    rm -f "$CELERY_PID_FILE"
+  fi
+# Fallback to process search
+elif pgrep -f "celery.*codestory.ingestion_pipeline" > /dev/null; then
+  print_info "Found Celery workers without PID file, stopping them..."
+  pkill -f "celery.*codestory.ingestion_pipeline"
   print_success "Celery workers stopped"
 else
   print_info "No Celery workers found running"
@@ -48,11 +71,25 @@ fi
 
 # Stop Neo4j containers
 print_info "Stopping Neo4j containers..."
-if docker ps | grep -q "codestory-neo4j"; then
-  docker-compose -f docker-compose.test.yml down
-  print_success "Neo4j containers stopped"
+if docker ps | grep -q "codestory-neo4j-test"; then
+  # First try the docker-compose way
+  docker-compose -f docker-compose.test.yml down -v
+  print_success "Neo4j containers stopped via docker-compose"
 else
-  print_info "No Neo4j containers found running"
+  # Check if there's any stopped container with this name and remove it
+  if docker ps -a | grep -q "codestory-neo4j-test"; then
+    print_info "Found stopped Neo4j container, removing it..."
+    docker rm -f codestory-neo4j-test
+    print_success "Removed stopped Neo4j container"
+  else
+    print_info "No Neo4j containers found"
+  fi
+fi
+
+# Clean up any volumes that might be left
+if docker volume ls | grep -q "code-story_neo4j_test"; then
+  print_info "Removing Neo4j volumes..."
+  docker volume rm code-story_neo4j_test_data code-story_neo4j_test_logs 2>/dev/null || true
 fi
 
 # Stop Redis
