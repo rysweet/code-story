@@ -9,13 +9,13 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from celery import shared_task
 
-from src.codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.config.settings import get_settings
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.config.settings import get_settings
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class FileSystemStep(PipelineStep):
     def __init__(self):
         """Initialize the filesystem step."""
         self.settings = get_settings()
-        self.active_jobs: Dict[str, Dict[str, Any]] = {}
+        self.active_jobs: dict[str, dict[str, Any]] = {}
     
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the filesystem step.
@@ -39,9 +39,9 @@ class FileSystemStep(PipelineStep):
         Args:
             repository_path: Path to the repository to process
             **config: Additional configuration parameters
-                - ignore_patterns: List of glob patterns to ignore
+                - ignore_patterns: list of glob patterns to ignore
                 - max_depth: Maximum directory depth to traverse
-                - include_extensions: List of file extensions to include
+                - include_extensions: list of file extensions to include
                 
         Returns:
             str: Job ID that can be used to check the status
@@ -71,14 +71,14 @@ class FileSystemStep(PipelineStep):
         
         return job_id
     
-    def status(self, job_id: str) -> Dict[str, Any]:
+    def status(self, job_id: str) -> dict[str, Any]:
         """Check the status of a job.
         
         Args:
             job_id: Identifier for the job
             
         Returns:
-            Dict[str, Any]: Status information
+            dict[str, Any]: Status information
             
         Raises:
             ValueError: If the job ID is not found
@@ -130,14 +130,14 @@ class FileSystemStep(PipelineStep):
         
         return job_info
     
-    def stop(self, job_id: str) -> Dict[str, Any]:
+    def stop(self, job_id: str) -> dict[str, Any]:
         """Stop a running job.
         
         Args:
             job_id: Identifier for the job
             
         Returns:
-            Dict[str, Any]: Status information
+            dict[str, Any]: Status information
             
         Raises:
             ValueError: If the job ID is not found
@@ -162,14 +162,14 @@ class FileSystemStep(PipelineStep):
         
         return job_info
     
-    def cancel(self, job_id: str) -> Dict[str, Any]:
+    def cancel(self, job_id: str) -> dict[str, Any]:
         """Cancel a job.
         
         Args:
             job_id: Identifier for the job
             
         Returns:
-            Dict[str, Any]: Status information
+            dict[str, Any]: Status information
             
         Raises:
             ValueError: If the job ID is not found
@@ -200,23 +200,23 @@ def process_filesystem(
     self, 
     repository_path: str, 
     job_id: str, 
-    ignore_patterns: Optional[List[str]] = None,
-    max_depth: Optional[int] = None,
-    include_extensions: Optional[List[str]] = None,
+    ignore_patterns: list[str] | None = None,
+    max_depth: int | None = None,
+    include_extensions: list[str] | None = None,
     **config: Any
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Process the filesystem of a repository.
     
     Args:
         repository_path: Path to the repository to process
         job_id: Identifier for the job
-        ignore_patterns: List of glob patterns to ignore
+        ignore_patterns: list of glob patterns to ignore
         max_depth: Maximum directory depth to traverse
-        include_extensions: List of file extensions to include
+        include_extensions: list of file extensions to include
         **config: Additional configuration parameters
         
     Returns:
-        Dict[str, Any]: Result information
+        dict[str, Any]: Result information
     """
     start_time = time.time()
     logger.info(f"Processing filesystem for {repository_path}")
