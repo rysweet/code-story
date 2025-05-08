@@ -52,11 +52,35 @@ class FileSystemStep(PipelineStep):
         # Generate a job ID
         job_id = generate_job_id()
         
-        # Call the Celery task
+        print(f"*** STEP DEBUG: Running FileSystemStep.run ***")
+        print(f"Generated job_id: {job_id}")
+        print(f"Repository path: {repository_path}")
+        print(f"Config: {config}")
+        
+        # Import Celery app and celery logger for better debugging
+        from codestory.ingestion_pipeline.celery_app import app as celery_app
+        from celery.utils.log import get_task_logger
+        celery_logger = get_task_logger(__name__)
+        
+        # Log worker and queue status
+        print(f"Celery active queues: {celery_app.control.inspect().active_queues()}")
+        print(f"Celery registered tasks: {celery_app.control.inspect().registered()}")
+        
+        # Call the Celery task with explicit queue
         task = process_filesystem.apply_async(
             args=[repository_path, job_id],
-            kwargs=config
+            kwargs=config,
+            queue="ingestion"  # Explicitly set the queue here too
         )
+        
+        print(f"Celery task ID: {task.id}")
+        print(f"Celery task status: {task.status}")
+        
+        # Try to get task info
+        from celery.result import AsyncResult
+        result = AsyncResult(task.id, app=celery_app)
+        print(f"Celery AsyncResult state: {result.state}")
+        print(f"Celery AsyncResult info: {result.info}")
         
         # Store job information
         self.active_jobs[job_id] = {
@@ -68,6 +92,7 @@ class FileSystemStep(PipelineStep):
         }
         
         logger.info(f"Started filesystem step job {job_id} for {repository_path}")
+        print(f"*** END STEP DEBUG ***")
         
         return job_id
     
@@ -89,11 +114,16 @@ class FileSystemStep(PipelineStep):
         job_info = self.active_jobs[job_id]
         task_id = job_info["task_id"]
         
+        print(f"*** STATUS DEBUG: checking status for job_id={job_id}, task_id={task_id} ***")
+        
         from celery.result import AsyncResult
-        from src.codestory.ingestion_pipeline.celery_app import app
+        from codestory.ingestion_pipeline.celery_app import app
         
         # Get status from Celery
         result = AsyncResult(task_id, app=app)
+        print(f"Celery result status: {result.status}")
+        print(f"Celery result ready: {result.ready()}")
+        print(f"Celery result info: {result.info}")
         
         status_info = {
             "status": StepStatus.RUNNING,
@@ -103,23 +133,35 @@ class FileSystemStep(PipelineStep):
         }
         
         if result.ready():
+            print(f"Task is ready. Successful: {result.successful()}")
             if result.successful():
-                task_result = result.get()
-                status_info.update({
-                    "status": StepStatus.COMPLETED,
-                    "message": f"Processed {task_result.get('file_count', 0)} files",
-                    "progress": 100.0,
-                    "result": task_result,
-                })
+                try:
+                    task_result = result.get()
+                    print(f"Task result: {task_result}")
+                    status_info.update({
+                        "status": StepStatus.COMPLETED,
+                        "message": f"Processed {task_result.get('file_count', 0)} files",
+                        "progress": 100.0,
+                        "result": task_result,
+                    })
+                except Exception as e:
+                    print(f"Error getting result: {e}")
+                    status_info.update({
+                        "status": StepStatus.FAILED,
+                        "error": f"Error retrieving result: {str(e)}",
+                    })
             else:
+                print(f"Task failed. Result: {result.result}")
                 status_info.update({
                     "status": StepStatus.FAILED,
                     "error": str(result.result),
                 })
         else:
             # Still running
+            print(f"Task still running. State: {result.state}")
             if isinstance(result.info, dict):
                 # If the task reported progress
+                print(f"Task reported progress: {result.info}")
                 status_info.update({
                     "progress": result.info.get("progress"),
                     "message": result.info.get("message"),
@@ -127,6 +169,8 @@ class FileSystemStep(PipelineStep):
         
         # Update job info with latest status
         job_info.update(status_info)
+        print(f"Final status info: {status_info}")
+        print(f"*** END STATUS DEBUG ***")
         
         return job_info
     
@@ -149,7 +193,7 @@ class FileSystemStep(PipelineStep):
         task_id = job_info["task_id"]
         
         from celery.result import AsyncResult
-        from src.codestory.ingestion_pipeline.celery_app import app
+        from codestory.ingestion_pipeline.celery_app import app
         
         # Stop the task
         app.control.revoke(task_id, terminate=True)
@@ -195,7 +239,11 @@ class FileSystemStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(name="codestory.pipeline.steps.filesystem.run", bind=True)
+@shared_task(
+    name="codestory.pipeline.steps.filesystem.run", 
+    bind=True,
+    queue="ingestion"  # Explicitly set the queue
+)
 def process_filesystem(
     self, 
     repository_path: str, 
@@ -219,6 +267,16 @@ def process_filesystem(
         dict[str, Any]: Result information
     """
     start_time = time.time()
+    print(f"*** CELERY DEBUG: Starting task process_filesystem ***")
+    print(f"Repository path: {repository_path}")
+    print(f"Job ID: {job_id}")
+    print(f"Ignore patterns: {ignore_patterns}")
+    print(f"Other config: {config}")
+    
+    # Log additional info about the task
+    task_id = self.request.id if hasattr(self, 'request') else "Unknown"
+    print(f"Celery task ID: {task_id}")
+    
     logger.info(f"Processing filesystem for {repository_path}")
     
     # Default ignore patterns if not provided

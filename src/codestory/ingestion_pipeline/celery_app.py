@@ -32,6 +32,7 @@ def create_celery_app() -> Celery:
     app.conf.task_routes = {
         "codestory.ingestion_pipeline.tasks.*": {"queue": "ingestion"},
         "codestory_*.step.*": {"queue": "ingestion"},
+        "codestory.pipeline.steps.*": {"queue": "ingestion"},  # Match the task name in the decorator
     }
     
     # Set concurrency from settings

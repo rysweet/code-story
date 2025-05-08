@@ -430,6 +430,91 @@ class Neo4jConnector:
                 cause=e,
             )
     
+    def create_node(
+        self,
+        label: str,
+        properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create a node in the Neo4j database.
+        
+        Args:
+            label: The node label
+            properties: Node properties
+            
+        Returns:
+            Dict: The created node data
+        """
+        query = f"CREATE (n:{label} $props) RETURN n"
+        result = self.execute_query(
+            query,
+            params={"props": properties},
+            write=True
+        )
+        return result[0]["n"] if result else None
+    
+    def find_node(
+        self,
+        label: str,
+        properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Find a node with the given label and properties.
+        
+        Args:
+            label: The node label
+            properties: Node properties to match
+            
+        Returns:
+            Dict: The found node data or None if not found
+        """
+        # Create a match condition for each property
+        match_conditions = " AND ".join([f"n.{key} = ${key}" for key in properties.keys()])
+        
+        query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
+        result = self.execute_query(
+            query,
+            params=properties
+        )
+        return result[0]["n"] if result else None
+        
+    def create_relationship(
+        self,
+        start_node: Dict[str, Any],
+        end_node: Dict[str, Any],
+        rel_type: str,
+        properties: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """Create a relationship between two nodes.
+        
+        Args:
+            start_node: The start node
+            end_node: The end node
+            rel_type: The relationship type
+            properties: Optional relationship properties
+            
+        Returns:
+            Dict: The created relationship data
+        """
+        # Use internal node IDs to create the relationship
+        props = properties or {}
+        query = f"""
+        MATCH (start), (end)
+        WHERE ID(start) = $start_id AND ID(end) = $end_id
+        CREATE (start)-[r:{rel_type}]->(end)
+        SET r = $props
+        RETURN r
+        """
+        
+        result = self.execute_query(
+            query,
+            params={
+                "start_id": start_node.id if hasattr(start_node, "id") else start_node["id"],
+                "end_id": end_node.id if hasattr(end_node, "id") else end_node["id"],
+                "props": props
+            },
+            write=True
+        )
+        return result[0]["r"] if result else None
+    
     def semantic_search(
         self,
         query_embedding: List[float],

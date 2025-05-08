@@ -104,11 +104,22 @@ Integration testing of the full ingestion pipeline
 
 ## In Progress Tasks
 - Integration testing of the full ingestion pipeline
-  - Testing step dependencies and execution order
-  - Verifying progress tracking across multiple steps
-  - Testing error handling and recovery
-  - Validating Neo4j data consistency across steps
-  - Ensuring proper cleanup and resource management
+  - Created environment setup scripts (start_project.sh and stop_project.sh)
+  - Set up Neo4j with non-standard ports to avoid conflicts
+  - Fixed Celery worker configuration using relative paths
+  - Added Azure SDK dependencies to support KeyVault integration
+  - Debugging Celery worker startup issues
+  - Preparing to run filesystem step integration tests
+  - Remaining work:
+    - Fix Celery worker that's failing due to missing Azure dependencies
+    - Run the integration tests for the filesystem step
+    - Fix any issues found in the integration tests
+    - Document any changes made to fix the integration tests
+    - Test step dependencies and execution order
+    - Verify progress tracking across multiple steps
+    - Test error handling and recovery
+    - Validate Neo4j data consistency across steps
+    - Ensure proper cleanup and resource management
 
 ## Pending Tasks
 - Implement Code Story Service (Section 11.0)

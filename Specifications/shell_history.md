@@ -50,3 +50,10 @@
 - `python -m pytest tests/integration/test_ingestion_pipeline/test_blarify_integration.py -v` - Running Blarify integration tests
 - `python -m pytest tests/integration/test_ingestion_pipeline/test_docgrapher_integration.py -v` - Running Documentation Grapher integration tests
 - `python -m pytest tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py -v` - Running full pipeline integration tests
+
+## May 8, 2025
+- `cd /Users/ryan/src/msec/code-story && ls scripts && pwd` - Checking available scripts and current directory
+- `cd /Users/ryan/src/msec/code-story && chmod +x scripts/start_project.sh && ./scripts/start_project.sh` - Making start_project.sh executable and running it to set up the environment 
+- `cd /Users/ryan/src/msec/code-story && poetry install -E azure` - Installing the Azure extras to fix missing dependencies
+- `cat /Users/ryan/src/msec/code-story/scripts/run_celery.sh` - Examining the Celery worker script
+- `cd /Users/ryan/src/msec/code-story && chmod +x scripts/run_celery.sh` - Making the run_celery.sh script executable
