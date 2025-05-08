@@ -1,3 +1,17 @@
+# Purpose: Ran Ruff to automatically fix lint/style errors in the graphdb module before manual review and further fixes.
+ruff check src/codestory/graphdb/ --fix
+# Purpose: Re-ran Ruff to verify that all lint/style errors are now fixed in the graphdb module after patching.
+ruff check src/codestory/graphdb/
+# Purpose: Ran Ruff autofix again to apply all autofixable lint/style errors in the graphdb module.
+ruff check src/codestory/graphdb/ --fix
+# Purpose: Ran Ruff to verify all lint/style errors are resolved in the graphdb module after manual and automated changes.
+ruff check src/codestory/graphdb/
+# Purpose: Ran pytest on unit tests to ensure the graphdb module changes did not break any functionality and all tests pass before proceeding.
+pytest tests/unit/ --maxfail=3 --disable-warnings -q
+# Purpose: Ran all tests to ensure the entire project is passing after the graphdb module fixes.
+pytest --maxfail=3 --disable-warnings -q
+# Purpose: Ran mypy type checking on the graphdb module to ensure type correctness after all lint and test fixes.
+mypy src/codestory/graphdb/
 # Purpose: Ran Ruff autofix to resolve all remaining lint errors in config, writer, and test files.
 poetry run ruff check . --fix
 # Purpose: Ran Ruff to confirm all lint checks pass after autofix and manual fixes.

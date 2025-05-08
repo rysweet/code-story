@@ -96,7 +96,12 @@ class Settings(BaseSettings):
         case_sensitive = False
 
         @classmethod
-        def customise_sources(cls, init_settings, env_settings, file_secret_settings):
+        def customise_sources(
+            cls,
+            init_settings: Any,
+            env_settings: Any,
+            file_secret_settings: Any
+        ) -> tuple[Any, ...]:
             """Customize the order of config sources for Pydantic settings."""
             return (
                 env_settings,
@@ -107,18 +112,18 @@ class Settings(BaseSettings):
             )
 
         @classmethod
-        def _toml_config(cls, settings):
+        def _toml_config(cls, settings: Any) -> dict[str, Any]:
             """Load settings from TOML config file."""
             # TODO: Implement TOML loading
             return {}
 
         @classmethod
-        def _keyvault_settings(cls, settings):
+        def _keyvault_settings(cls, settings: Any) -> dict[str, Any]:
             """Load settings from Azure KeyVault."""
             # TODO: Implement KeyVault loading
             return {}
 
 @lru_cache
-def get_settings() -> Settings:
+def get_settings() -> "Settings":
     """Return a cached instance of the Settings."""
     return Settings()

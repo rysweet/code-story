@@ -35,6 +35,7 @@ ruff = "^0.11.8"
 mypy = "^1.15.0"
 httpx = "^0.28.1"
 pytest-mock = "^3.14.0"
+testcontainers-neo4j = "^0.0.1rc1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
