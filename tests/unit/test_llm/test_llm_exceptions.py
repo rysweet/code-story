@@ -12,7 +12,7 @@ from src.codestory.llm.exceptions import (
 )
 
 
-def test_openai_error_base():
+def test_llm_openai_error_base():
     """Test OpenAIError instantiation."""
     # Test basic error
     error = OpenAIError("Test message")
@@ -34,14 +34,14 @@ def test_openai_error_base():
     assert "caused by: Original error" in str(error)
 
 
-def test_authentication_error():
+def test_llm_authentication_error():
     """Test AuthenticationError."""
     error = AuthenticationError("Invalid API key")
     assert isinstance(error, OpenAIError)
     assert str(error) == "Invalid API key"
 
 
-def test_rate_limit_error():
+def test_llm_rate_limit_error():
     """Test RateLimitError."""
     # Basic rate limit error
     error = RateLimitError("Rate limit exceeded")
@@ -53,28 +53,28 @@ def test_rate_limit_error():
     assert error.retry_after == 30
 
 
-def test_invalid_request_error():
+def test_llm_invalid_request_error():
     """Test InvalidRequestError."""
     error = InvalidRequestError("Invalid model name")
     assert isinstance(error, OpenAIError)
     assert str(error) == "Invalid model name"
 
 
-def test_service_unavailable_error():
+def test_llm_service_unavailable_error():
     """Test ServiceUnavailableError."""
     error = ServiceUnavailableError("Service is currently unavailable")
     assert isinstance(error, OpenAIError)
     assert str(error) == "Service is currently unavailable"
 
 
-def test_timeout_error():
+def test_llm_timeout_error():
     """Test TimeoutError."""
     error = TimeoutError("Request timed out after 60s")
     assert isinstance(error, OpenAIError)
     assert str(error) == "Request timed out after 60s"
 
 
-def test_context_length_error():
+def test_llm_context_length_error():
     """Test ContextLengthError."""
     # Basic error
     error = ContextLengthError("Context length exceeded")

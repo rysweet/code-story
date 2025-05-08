@@ -19,7 +19,7 @@ from src.codestory.llm.models import (
 )
 
 
-def test_chat_role_enum():
+def test_llm_chat_role_enum():
     """Test ChatRole enum values."""
     assert ChatRole.SYSTEM == "system"
     assert ChatRole.USER == "user"
@@ -28,7 +28,7 @@ def test_chat_role_enum():
     assert ChatRole.TOOL == "tool"
 
 
-def test_chat_message():
+def test_llm_chat_message():
     """Test ChatMessage model."""
     # Basic message
     message = ChatMessage(role=ChatRole.USER, content="Hello")
@@ -52,7 +52,7 @@ def test_chat_message():
     assert message.content == "You are a helpful assistant."
 
 
-def test_chat_function_call():
+def test_llm_chat_function_call():
     """Test ChatFunctionCall model."""
     func_call = ChatFunctionCall(
         name="get_weather",
@@ -62,7 +62,7 @@ def test_chat_function_call():
     assert func_call.arguments == '{"location": "New York", "unit": "celsius"}'
 
 
-def test_chat_response_message():
+def test_llm_chat_response_message():
     """Test ChatResponseMessage model."""
     # Simple message
     message = ChatResponseMessage(role=ChatRole.ASSISTANT, content="Hello there!")
@@ -85,7 +85,7 @@ def test_chat_response_message():
     assert message.function_call.name == "get_weather"
 
 
-def test_chat_response_choice():
+def test_llm_chat_response_choice():
     """Test ChatResponseChoice model."""
     message = ChatResponseMessage(role=ChatRole.ASSISTANT, content="Hello there!")
     choice = ChatResponseChoice(
@@ -98,7 +98,7 @@ def test_chat_response_choice():
     assert choice.finish_reason == "stop"
 
 
-def test_completion_choice():
+def test_llm_completion_choice():
     """Test CompletionChoice model."""
     choice = CompletionChoice(
         text="Paris is the capital of France.",
@@ -111,7 +111,7 @@ def test_completion_choice():
     assert choice.logprobs is None
 
 
-def test_embedding_data():
+def test_llm_embedding_data():
     """Test EmbeddingData model."""
     data = EmbeddingData(
         embedding=[0.1, 0.2, 0.3, 0.4],
@@ -122,7 +122,7 @@ def test_embedding_data():
     assert data.object == "embedding"
 
 
-def test_usage_info():
+def test_llm_usage_info():
     """Test UsageInfo model."""
     usage = UsageInfo(
         prompt_tokens=100,
@@ -134,7 +134,7 @@ def test_usage_info():
     assert usage.total_tokens == 150
 
 
-def test_completion_request():
+def test_llm_completion_request():
     """Test CompletionRequest model."""
     # Basic request
     request = CompletionRequest(
@@ -163,7 +163,7 @@ def test_completion_request():
     assert request.stop == ["\n\n"]
 
 
-def test_chat_completion_request():
+def test_llm_chat_completion_request():
     """Test ChatCompletionRequest model."""
     messages = [
         ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
@@ -195,7 +195,7 @@ def test_chat_completion_request():
     assert request.response_format == {"type": "json_object"}
 
 
-def test_embedding_request():
+def test_llm_embedding_request():
     """Test EmbeddingRequest model."""
     # String input
     request = EmbeddingRequest(
@@ -223,7 +223,7 @@ def test_embedding_request():
     assert request.dimensions == 256
 
 
-def test_completion_response():
+def test_llm_completion_response():
     """Test CompletionResponse model."""
     choice = CompletionChoice(
         text="Paris is the capital of France.",
@@ -252,7 +252,7 @@ def test_completion_response():
     assert response.usage.total_tokens == 18
 
 
-def test_chat_completion_response():
+def test_llm_chat_completion_response():
     """Test ChatCompletionResponse model."""
     message = ChatResponseMessage(role=ChatRole.ASSISTANT, content="Hello there!")
     choice = ChatResponseChoice(
@@ -282,7 +282,7 @@ def test_chat_completion_response():
     assert response.usage.prompt_tokens == 15
 
 
-def test_embedding_response():
+def test_llm_embedding_response():
     """Test EmbeddingResponse model."""
     data1 = EmbeddingData(
         embedding=[0.1, 0.2, 0.3, 0.4],
