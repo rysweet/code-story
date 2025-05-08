@@ -37,3 +37,16 @@
 - `cd /Users/ryan/src/msec/code-story && ./scripts/stop_test_db.sh` - Running script to stop the Neo4j test container
 - `python -m pytest tests/unit/test_graphdb/test_schema.py -v` - Running Neo4j schema unit tests
 - `python -m pytest tests/unit/test_graphdb tests/integration/test_graphdb -v` - Running all Neo4j tests
+- `chmod +x scripts/run_openai_tests.sh` - Making OpenAI test script executable
+- `./scripts/run_openai_tests.sh` - Running comprehensive OpenAI client tests
+- `mkdir -p docs/developer_guides` - Creating directory for developer guides
+- `chmod +x scripts/test_azure_openai.py` - Making Azure OpenAI test script executable
+- `chmod +x scripts/test_openai_client_comprehensive.py` - Making comprehensive OpenAI client test script executable
+- `mkdir -p src/codestory_filesystem` - Creating directory for FileSystem workflow step
+- `chmod +x scripts/test_ingestion_pipeline.py` - Making ingestion pipeline test script executable
+- `mkdir -p tests/integration/test_ingestion_pipeline` - Creating directory for ingestion pipeline integration tests
+- `mkdir -p tests/integration/test_ingestion_pipeline/test_summarizer_integration.py` - Creating integration test for the summarizer step
+- `mkdir -p src/codestory_docgrapher/parsers src/codestory_docgrapher/utils` - Creating subdirectories for Documentation Grapher step
+- `python -m pytest tests/integration/test_ingestion_pipeline/test_blarify_integration.py -v` - Running Blarify integration tests
+- `python -m pytest tests/integration/test_ingestion_pipeline/test_docgrapher_integration.py -v` - Running Documentation Grapher integration tests
+- `python -m pytest tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py -v` - Running full pipeline integration tests
