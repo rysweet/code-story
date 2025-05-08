@@ -52,6 +52,10 @@ pnpm-debug.log*
 # Docker
 docker-volumes/
 
+# Runtime files
+.celery.pid
+.pypath_check
+
 # Other
 .tmp/
 tmp/
