@@ -11,4 +11,3 @@ try:
 except ImportError:
     # The step module may not be available during testing
     __all__ = []
-EOF < /dev/null

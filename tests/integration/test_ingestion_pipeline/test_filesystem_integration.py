@@ -65,7 +65,7 @@ def neo4j_connector():
     )
     
     # Clear the database before each test
-    connector.run_query("MATCH (n) DETACH DELETE n")
+    connector.execute_query("MATCH (n) DETACH DELETE n")
     
     yield connector
     
@@ -100,11 +100,15 @@ def test_filesystem_step_run(sample_repo, neo4j_connector):
     
     # Verify that the repository structure was stored in Neo4j
     # 1. Check that a Repository node was created
-    repo_node = neo4j_connector.find_node("Repository", {"name": os.path.basename(sample_repo)})
-    assert repo_node is not None, "Repository node not found"
+    repo_query = neo4j_connector.execute_query(
+        "MATCH (r:Repository {name: $name}) RETURN r",
+        parameters={"name": os.path.basename(sample_repo)},
+        fetch_one=True
+    )
+    assert repo_query is not None, "Repository node not found"
     
     # 2. Check that Directory nodes were created
-    directories = neo4j_connector.run_query(
+    directories = neo4j_connector.execute_query(
         "MATCH (d:Directory) RETURN d.path as path",
         fetch_all=True
     )
@@ -117,7 +121,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector):
     assert "docs" in directory_paths, "docs directory not found"
     
     # 3. Check that File nodes were created
-    files = neo4j_connector.run_query(
+    files = neo4j_connector.execute_query(
         "MATCH (f:File) RETURN f.path as path",
         fetch_all=True
     )
@@ -130,15 +134,21 @@ def test_filesystem_step_run(sample_repo, neo4j_connector):
     assert "docs/index.md" in file_paths, "docs/index.md file not found"
     
     # 4. Check that ignored patterns were actually ignored
-    git_dir = neo4j_connector.find_node("Directory", {"path": ".git"})
+    git_dir = neo4j_connector.execute_query(
+        "MATCH (d:Directory {path: '.git'}) RETURN d",
+        fetch_one=True
+    )
     assert git_dir is None, ".git directory was not ignored"
     
-    pycache_dir = neo4j_connector.find_node("Directory", {"path": "src/__pycache__"})
+    pycache_dir = neo4j_connector.execute_query(
+        "MATCH (d:Directory {path: 'src/__pycache__'}) RETURN d",
+        fetch_one=True
+    )
     assert pycache_dir is None, "__pycache__ directory was not ignored"
     
     # 5. Check relationships between nodes
     # Repository -> Directory relationships
-    repo_contains = neo4j_connector.run_query(
+    repo_contains = neo4j_connector.execute_query(
         """
         MATCH (r:Repository)-[:CONTAINS]->(d:Directory)
         WHERE r.name = $repo_name
@@ -152,7 +162,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector):
     assert "docs" in top_level_dirs, "Repository not connected to docs directory"
     
     # Directory -> File relationships
-    dir_files = neo4j_connector.run_query(
+    dir_files = neo4j_connector.execute_query(
         """
         MATCH (d:Directory)-[:CONTAINS]->(f:File)
         WHERE d.path = 'src/main'
@@ -212,5 +222,8 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector):
     assert status["status"] == "COMPLETED", f"Step failed: {status.get('error')}"
     
     # Verify that the new file was added to the database
-    new_file = neo4j_connector.find_node("File", {"path": "src/main/new_file.py"})
+    new_file = neo4j_connector.execute_query(
+        "MATCH (f:File {path: 'src/main/new_file.py'}) RETURN f",
+        fetch_one=True
+    )
     assert new_file is not None, "New file was not added to the database"
