@@ -7,7 +7,7 @@ log_level = "INFO"
 auth_enabled = false
 
 [neo4j]
-uri = "bolt://localhost:7687"
+uri = "bolt://localhost:7689"
 username = "neo4j"
 database = "neo4j"
 connection_timeout = 30

@@ -5,8 +5,8 @@ services:
     image: neo4j:5.18.0
     container_name: codestory-neo4j
     ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
+      - "7476:7474"  # HTTP - using different port to avoid conflicts
+      - "7689:7687"  # Bolt - using different port to avoid conflicts
     environment:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
