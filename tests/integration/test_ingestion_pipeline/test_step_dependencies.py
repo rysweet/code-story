@@ -7,7 +7,9 @@ and executes steps in the proper order.
 import os
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +26,7 @@ pytestmark = [pytest.mark.integration]
 
 
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> Generator[str, None, None]:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -36,24 +38,28 @@ def sample_repo():
         (repo_dir / "docs").mkdir()
 
         # Create a README file
-        (repo_dir / "README.md").write_text("""
+        (repo_dir / "README.md").write_text(
+            """
 # Sample Repository
 
 This is a sample repository for testing the step dependencies.
-""")
+"""
+        )
 
         # Create a Python file
-        (repo_dir / "src" / "sample.py").write_text("""
+        (repo_dir / "src" / "sample.py").write_text(
+            """
 def hello_world():
     \"\"\"Return a greeting.\"\"\"
     return "Hello, World!"
-""")
+"""
+        )
 
         yield str(repo_dir)
 
 
 @pytest.fixture
-def mock_steps():
+def mock_steps() -> Generator[dict[str, Any], None, None]:
     """Mock all pipeline steps for dependency testing."""
     # Track execution order
     execution_order = []
@@ -63,22 +69,24 @@ def mock_steps():
         patch.object(FileSystemStep, "run", autospec=True) as mock_fs_run,
         patch.object(BlarifyStep, "run", autospec=True) as mock_blarify_run,
         patch.object(SummarizerStep, "run", autospec=True) as mock_summarizer_run,
-        patch.object(DocumentationGrapherStep, "run", autospec=True) as mock_docgrapher_run,
+        patch.object(
+            DocumentationGrapherStep, "run", autospec=True
+        ) as mock_docgrapher_run,
     ):
         # Setup side effects to track execution order
-        def fs_side_effect(self, repository_path, **kwargs):
+        def fs_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("filesystem")
             return "fs-job-id"
 
-        def blarify_side_effect(self, repository_path, **kwargs):
+        def blarify_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("blarify")
             return "blarify-job-id"
 
-        def summarizer_side_effect(self, repository_path, **kwargs):
+        def summarizer_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("summarizer")
             return "summarizer-job-id"
 
-        def docgrapher_side_effect(self, repository_path, **kwargs):
+        def docgrapher_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("documentation_grapher")
             return "docgrapher-job-id"
 
@@ -91,7 +99,9 @@ def mock_steps():
         with (
             patch.object(FileSystemStep, "status", autospec=True) as mock_fs_status,
             patch.object(BlarifyStep, "status", autospec=True) as mock_blarify_status,
-            patch.object(SummarizerStep, "status", autospec=True) as mock_summarizer_status,
+            patch.object(
+                SummarizerStep, "status", autospec=True
+            ) as mock_summarizer_status,
             patch.object(
                 DocumentationGrapherStep, "status", autospec=True
             ) as mock_docgrapher_status,
@@ -132,7 +142,7 @@ def mock_steps():
 
 
 @pytest.fixture
-def test_pipeline_config():
+def test_pipeline_config() -> Generator[str, None, None]:
     """Create a test pipeline configuration file."""
     config_content = """
 steps:
@@ -182,8 +192,12 @@ retry:
     ],
 )
 def test_step_dependency_resolution(
-    sample_repo, mock_steps, test_pipeline_config, target_step, expected_dependencies
-):
+    sample_repo: str,
+    mock_steps: dict[str, Any],
+    test_pipeline_config: str,
+    target_step: str,
+    expected_dependencies: list[str],
+) -> None:
     """Test that step dependencies are correctly resolved and executed."""
     # We create the pipeline manager for reference only, but won't use it directly
     _ = PipelineManager(config_path=test_pipeline_config)
@@ -192,7 +206,7 @@ def test_step_dependency_resolution(
     # since we need to test that the right dependencies would be executed
 
     # Define a function to execute a step and its dependencies
-    def execute_step_with_deps(step_name):
+    def execute_step_with_deps(step_name: str) -> None:
         if step_name == "filesystem":
             # Filesystem has no dependencies
             mock_steps["mocks"]["filesystem"](None, repository_path=sample_repo)
@@ -208,7 +222,9 @@ def test_step_dependency_resolution(
         elif step_name == "documentation_grapher":
             # Documentation grapher depends on filesystem
             execute_step_with_deps("filesystem")
-            mock_steps["mocks"]["documentation_grapher"](None, repository_path=sample_repo)
+            mock_steps["mocks"]["documentation_grapher"](
+                None, repository_path=sample_repo
+            )
 
     # Execute the target step (which will recursively execute its dependencies)
     execute_step_with_deps(target_step)
@@ -217,12 +233,14 @@ def test_step_dependency_resolution(
     execution_order = mock_steps["execution_order"]
 
     # Verify that all expected dependencies were executed
-    assert set(execution_order) == set(expected_dependencies), (
-        f"Expected steps {expected_dependencies} to be executed, but got {execution_order}"
-    )
+    assert set(execution_order) == set(
+        expected_dependencies
+    ), f"Expected steps {expected_dependencies} to be executed, but got {execution_order}"
 
 
-def test_step_execution_order(sample_repo, mock_steps, test_pipeline_config):
+def test_step_execution_order(
+    sample_repo: str, mock_steps: dict[str, Any], test_pipeline_config: str
+) -> None:
     """Test that steps are executed in the correct order when running the full pipeline."""
     # We create the pipeline manager for reference only, but won't use it directly
     _ = PipelineManager(config_path=test_pipeline_config)
@@ -236,22 +254,24 @@ def test_step_execution_order(sample_repo, mock_steps, test_pipeline_config):
 
     # Verify the execution order follows dependencies
     # Check filesystem comes before blarify
-    assert execution_order.index("filesystem") < execution_order.index("blarify"), (
-        "FileSystemStep should execute before BlarifyStep"
-    )
+    assert execution_order.index("filesystem") < execution_order.index(
+        "blarify"
+    ), "FileSystemStep should execute before BlarifyStep"
 
     # Check blarify comes before summarizer
-    assert execution_order.index("blarify") < execution_order.index("summarizer"), (
-        "BlarifyStep should execute before SummarizerStep"
-    )
+    assert execution_order.index("blarify") < execution_order.index(
+        "summarizer"
+    ), "BlarifyStep should execute before SummarizerStep"
 
     # Check filesystem comes before documentation_grapher
-    assert execution_order.index("filesystem") < execution_order.index("documentation_grapher"), (
-        "FileSystemStep should execute before DocumentationGrapherStep"
-    )
+    assert execution_order.index("filesystem") < execution_order.index(
+        "documentation_grapher"
+    ), "FileSystemStep should execute before DocumentationGrapherStep"
 
 
-def test_parallel_execution_where_possible(sample_repo, mock_steps, test_pipeline_config):
+def test_parallel_execution_where_possible(
+    sample_repo: str, mock_steps: dict[str, Any], test_pipeline_config: str
+) -> None:
     """Test that steps without dependencies on each other can run in parallel."""
     # This test will verify that steps with different dependency chains could run in parallel
     # In our example, documentation_grapher only depends on filesystem, while summarizer
@@ -270,14 +290,14 @@ def test_parallel_execution_where_possible(sample_repo, mock_steps, test_pipelin
     }
 
     # Define a function to get all dependencies recursively
-    def get_all_dependencies(step_name):
+    def get_all_dependencies(step_name: str) -> set[str]:
         deps = set(dependency_tree[step_name])
         for dep in dependency_tree[step_name]:
             deps.update(get_all_dependencies(dep))
         return deps
 
     # Check if two steps can run in parallel
-    def can_run_in_parallel(step1, step2):
+    def can_run_in_parallel(step1: str, step2: str) -> bool:
         # A step cannot run in parallel with itself
         if step1 == step2:
             return False
@@ -291,13 +311,13 @@ def test_parallel_execution_where_possible(sample_repo, mock_steps, test_pipelin
 
     # Verify documentation_grapher and summarizer can run in parallel
     # after their common dependency (filesystem) is complete
-    assert not can_run_in_parallel("filesystem", "documentation_grapher"), (
-        "filesystem and documentation_grapher should not run in parallel"
-    )
+    assert not can_run_in_parallel(
+        "filesystem", "documentation_grapher"
+    ), "filesystem and documentation_grapher should not run in parallel"
 
-    assert can_run_in_parallel("documentation_grapher", "blarify"), (
-        "documentation_grapher and blarify should be able to run in parallel"
-    )
+    assert can_run_in_parallel(
+        "documentation_grapher", "blarify"
+    ), "documentation_grapher and blarify should be able to run in parallel"
 
     # Create reference to how Celery would handle this in the pipeline manager
     with (
@@ -323,8 +343,12 @@ def test_parallel_execution_where_possible(sample_repo, mock_steps, test_pipelin
     ],
 )
 def test_only_necessary_steps_run(
-    sample_repo, mock_steps, test_pipeline_config, target_step, should_run
-):
+    sample_repo: str,
+    mock_steps: dict[str, Any],
+    test_pipeline_config: str,
+    target_step: str,
+    should_run: bool,
+) -> None:
     """Test that only necessary steps run (explicitly requested ones and their dependencies)."""
     # We create the pipeline manager for reference only, but won't use it directly
     _ = PipelineManager(config_path=test_pipeline_config)
@@ -338,7 +362,7 @@ def test_only_necessary_steps_run(
 
     # Simulate running only the summarizer with dependencies
     # Define a function to execute a step and its dependencies
-    def execute_step_with_deps(step_name):
+    def execute_step_with_deps(step_name: str) -> None:
         if step_name == "filesystem":
             # Filesystem has no dependencies
             mock_steps["mocks"]["filesystem"](None, repository_path=sample_repo)
@@ -357,7 +381,9 @@ def test_only_necessary_steps_run(
         elif step_name == "documentation_grapher":
             # Documentation grapher depends on filesystem
             execute_step_with_deps("filesystem")
-            mock_steps["mocks"]["documentation_grapher"](None, repository_path=sample_repo)
+            mock_steps["mocks"]["documentation_grapher"](
+                None, repository_path=sample_repo
+            )
             mock_steps["mocks"]["documentation_grapher"].called = True
 
     # Execute only the summarizer step (which will execute its dependencies)
@@ -372,7 +398,9 @@ def test_only_necessary_steps_run(
         assert not mock_step_run.called, f"{target_step} should NOT have been run"
 
 
-def test_error_handling_in_dependency_chain(sample_repo, test_pipeline_config):
+def test_error_handling_in_dependency_chain(
+    sample_repo: str, test_pipeline_config: str
+) -> None:
     """Test that failures in a dependency properly fail the dependent steps."""
     # Create the pipeline manager with the test config
     manager = PipelineManager(config_path=test_pipeline_config)
@@ -395,7 +423,9 @@ def test_error_handling_in_dependency_chain(sample_repo, test_pipeline_config):
         # We need to mock the _prepare_step_configs method to return only the blarify step
         with patch.object(PipelineManager, "_prepare_step_configs") as mock_prepare:
             # Get the blarify step config
-            blarify_config = next(s for s in manager.config["steps"] if s["name"] == "blarify")
+            blarify_config = next(
+                s for s in manager.config["steps"] if s["name"] == "blarify"
+            )
             mock_prepare.return_value = [blarify_config]
 
             # Run a step that depends on the failing step
@@ -405,10 +435,12 @@ def test_error_handling_in_dependency_chain(sample_repo, test_pipeline_config):
         time.sleep(1)
 
         # Verify that blarify step wasn't run due to filesystem failure
-        assert not mock_blarify_run.called, (
-            "BlarifyStep should not run when its dependency (FileSystemStep) fails"
-        )
+        assert (
+            not mock_blarify_run.called
+        ), "BlarifyStep should not run when its dependency (FileSystemStep) fails"
 
         # Verify the overall job status
         status = manager.status(job_id)
-        assert status["status"] == StepStatus.FAILED, "Job should fail when a dependency fails"
+        assert (
+            status["status"] == StepStatus.FAILED
+        ), "Job should fail when a dependency fails"
