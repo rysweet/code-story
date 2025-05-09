@@ -240,7 +240,7 @@ class FileSystemStep(PipelineStep):
 
 
 @shared_task(
-    name="codestory.pipeline.steps.filesystem.run", 
+    name="filesystem.run", 
     bind=True,
     queue="ingestion"  # Explicitly set the queue
 )
@@ -267,7 +267,7 @@ def process_filesystem(
         dict[str, Any]: Result information
     """
     start_time = time.time()
-    print(f"*** CELERY DEBUG: Starting task process_filesystem ***")
+    print(f"*** CELERY DEBUG: Starting task process_filesystem (DEBUGGING) ***")
     print(f"Repository path: {repository_path}")
     print(f"Job ID: {job_id}")
     print(f"Ignore patterns: {ignore_patterns}")
@@ -327,11 +327,21 @@ def process_filesystem(
         )
         
         # Process the repository
+        print(f"Starting to walk repository: {repository_path}")
+        print(f"Repository exists? {os.path.exists(repository_path)}")
+        print(f"Repository is directory? {os.path.isdir(repository_path)}")
+        print(f"Repository contents: {os.listdir(repository_path)}")
+        
         for current_dir, dirs, files in os.walk(repository_path):
+            print(f"Walking directory: {current_dir} (relative: {os.path.relpath(current_dir, repository_path)})")
+            print(f"  Contains directories: {dirs}")
+            print(f"  Contains files: {files}")
+            
             # Check depth limit
             if max_depth is not None:
                 rel_path = os.path.relpath(current_dir, repository_path)
                 if rel_path != "." and rel_path.count(os.sep) >= max_depth:
+                    print(f"  Skipping directory due to depth limit: {rel_path}")
                     dirs.clear()  # Don't descend further
                     continue
             
@@ -340,6 +350,7 @@ def process_filesystem(
             for d in dirs:
                 if any(d.startswith(pat.rstrip("/")) or d == pat.rstrip("/") 
                        for pat in ignore_patterns if pat.endswith("/")):
+                    print(f"  Ignoring directory {d} due to pattern match")
                     dirs_to_remove.append(d)
             
             for d in dirs_to_remove:
@@ -351,13 +362,19 @@ def process_filesystem(
                 # This is the repository root
                 dir_node = repo_node
             else:
-                dir_node = neo4j.create_node(
-                    label="Directory",
-                    properties={
-                        "name": os.path.basename(current_dir),
-                        "path": rel_dir_path,
-                    }
-                )
+                print(f"  Creating directory node: {rel_dir_path}")
+                try:
+                    dir_node = neo4j.create_node(
+                        label="Directory",
+                        properties={
+                            "name": os.path.basename(current_dir),
+                            "path": rel_dir_path,
+                        }
+                    )
+                    print(f"  Directory node created successfully: {dir_node}")
+                except Exception as e:
+                    print(f"  Error creating directory node: {e}")
+                    raise
                 
                 # Link to parent directory
                 parent_path = os.path.dirname(rel_dir_path)
@@ -399,16 +416,22 @@ def process_filesystem(
                 if rel_dir_path == ".":
                     file_path = file
                 
-                file_node = neo4j.create_node(
-                    label="File",
-                    properties={
-                        "name": file,
-                        "path": file_path,
-                        "extension": os.path.splitext(file)[1].lstrip(".") or None,
-                        "size": os.path.getsize(os.path.join(current_dir, file)),
-                        "modified": os.path.getmtime(os.path.join(current_dir, file)),
-                    }
-                )
+                print(f"  Creating file node: {file_path}")
+                try:
+                    file_node = neo4j.create_node(
+                        label="File",
+                        properties={
+                            "name": file,
+                            "path": file_path,
+                            "extension": os.path.splitext(file)[1].lstrip(".") or None,
+                            "size": os.path.getsize(os.path.join(current_dir, file)),
+                            "modified": os.path.getmtime(os.path.join(current_dir, file)),
+                        }
+                    )
+                    print(f"  File node created successfully: {file_node}")
+                except Exception as e:
+                    print(f"  Error creating file node: {e}")
+                    raise
                 
                 # Link to directory
                 neo4j.create_relationship(
