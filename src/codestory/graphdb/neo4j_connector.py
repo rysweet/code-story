@@ -498,7 +498,7 @@ class Neo4jConnector:
         props = properties or {}
         query = f"""
         MATCH (start), (end)
-        WHERE ID(start) = $start_id AND ID(end) = $end_id
+        WHERE elementId(start) = $start_id AND elementId(end) = $end_id
         CREATE (start)-[r:{rel_type}]->(end)
         SET r = $props
         RETURN r
@@ -507,8 +507,8 @@ class Neo4jConnector:
         result = self.execute_query(
             query,
             params={
-                "start_id": start_node.id if hasattr(start_node, "id") else start_node["id"],
-                "end_id": end_node.id if hasattr(end_node, "id") else end_node["id"],
+                "start_id": start_node.element_id if hasattr(start_node, "element_id") else start_node["id"],
+                "end_id": end_node.element_id if hasattr(end_node, "element_id") else end_node["id"],
                 "props": props
             },
             write=True
