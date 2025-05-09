@@ -140,10 +140,13 @@ class TestGraphServiceAdapter:
         assert adapter.metrics is mock_metrics
         assert adapter.client is mock_client
     
-    def test_init_with_custom_url(self, mock_metrics, mock_client):
+    def test_init_with_custom_url(self, mock_settings, mock_metrics, mock_client):
         """Test initialization with custom URL."""
+        # Set a default value for code_story_service_url in settings
+        mock_settings.code_story_service_url = "http://default:8000"
+
         adapter = GraphServiceAdapter(base_url="http://custom:8000")
-        
+
         assert adapter.base_url == "http://custom:8000"
         assert adapter.metrics is mock_metrics
         assert adapter.client is mock_client

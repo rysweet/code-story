@@ -15,8 +15,24 @@ from fastapi import HTTPException, status
 import redis.asyncio as redis
 
 from codestory.config.settings import get_settings as get_core_settings
-from codestory.config.export import export_settings
-from codestory.config.writer import ConfigWriter
+from codestory.config.export import export_to_json, export_to_toml, create_env_template
+from codestory.config.writer import update_config, update_env, update_toml, get_config_value
+
+# Wrapper class to maintain compatibility
+class ConfigWriter:
+    """Wrapper for configuration writing functions."""
+
+    def update_config(self, setting_path: str, value: Any, persist_to: Optional[str] = None) -> None:
+        """Update a configuration setting."""
+        update_config(setting_path, value, persist_to)
+
+    def update_env(self, key: str, value: str, env_file: Optional[str] = None) -> None:
+        """Update a value in the .env file."""
+        update_env(key, value, env_file)
+
+    def update_toml(self, section: str, key: str, value: Any, toml_file: Optional[str] = None) -> None:
+        """Update a value in the .codestory.toml file."""
+        update_toml(section, key, value, toml_file)
 
 from ..domain.config import (
     ConfigDump,
@@ -144,8 +160,8 @@ class ConfigService:
             ConfigDump with all configuration values and metadata
         """
         # Export settings to a dictionary structure
-        settings_export = export_settings(self.core_settings)
-        service_export = export_settings(self.service_settings)
+        settings_export = self.core_settings.model_dump(by_alias=False, exclude_none=True)
+        service_export = self.service_settings.model_dump(by_alias=False, exclude_none=True)
 
         # Combine core and service settings
         settings_export.update(service_export)

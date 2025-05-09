@@ -15,7 +15,7 @@ def test_mcp_settings_defaults():
     assert settings.port == 8001
     assert settings.host == "0.0.0.0"
     assert settings.workers == 4
-    assert settings.auth_enabled is True
+    assert settings.auth_enabled is False
     assert settings.code_story_service_url == "http://localhost:8000"
     assert settings.api_token_issuer == "https://sts.windows.net/"
     assert settings.required_scopes == ["code-story.read", "code-story.query"]

@@ -12,7 +12,7 @@ import structlog
 from fastapi import status
 
 from codestory.llm.client import OpenAIClient
-from codestory.llm.models import ChatMessage, ChatRequest
+from codestory.llm.models import ChatMessage, ChatCompletionRequest
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.metrics import get_metrics
 
@@ -96,7 +96,7 @@ class OpenAIServiceAdapter:
             )
             
             # Create request
-            request = ChatRequest(
+            request = ChatCompletionRequest(
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=0.3,  # Lower temperature for more focused, deterministic responses
@@ -189,7 +189,7 @@ class OpenAIServiceAdapter:
             ]
             
             # Create request
-            request = ChatRequest(
+            request = ChatCompletionRequest(
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=0.3,

@@ -7,11 +7,23 @@ for ingestion pipeline operations.
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, ClassVar
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from codestory.ingestion_pipeline.step import StepStatus
+
+
+class JobStatus(str, Enum):
+    """Enumeration of job statuses."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    UNKNOWN = "unknown"
+    CANCELLING = "cancelling"
 
 
 class IngestionSourceType(str, Enum):
@@ -45,6 +57,22 @@ class IngestionRequest(BaseModel):
     config: Optional[Dict[str, Any]] = Field(
         None,
         description="Additional configuration for ingestion",
+    )
+    options: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Additional options for ingestion",
+    )
+    created_by: Optional[str] = Field(
+        None,
+        description="User or system that created the request",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="Description of the ingestion job",
+    )
+    tags: Optional[List[str]] = Field(
+        None,
+        description="Tags for categorizing the ingestion job",
     )
 
     @field_validator("source")
@@ -116,10 +144,12 @@ class IngestionStarted(BaseModel):
     """Response for a successful ingestion job start."""
 
     job_id: str = Field(..., description="Unique job identifier")
-    status: str = Field(StepStatus.RUNNING, description="Initial job status")
+    status: str = Field(JobStatus.RUNNING, description="Initial job status")
     source: str = Field(..., description="Source being ingested")
     started_at: datetime = Field(default_factory=datetime.now, description="Start time")
     steps: List[str] = Field(..., description="Steps to be executed")
+    message: Optional[str] = Field(None, description="Status message")
+    eta: Optional[int] = Field(None, description="Estimated time of start (unix timestamp)")
 
     class Config:
         """Model configuration."""
@@ -146,19 +176,23 @@ class IngestionJob(BaseModel):
     """Model for ingestion job details."""
 
     job_id: str = Field(..., description="Unique job identifier")
-    status: StepStatus = Field(..., description="Overall job status")
-    source: str = Field(..., description="Source being ingested")
-    source_type: IngestionSourceType = Field(
-        ..., description="Type of ingestion source"
+    status: JobStatus = Field(..., description="Overall job status")
+    source: Optional[str] = Field(None, description="Source being ingested")
+    source_type: Optional[IngestionSourceType] = Field(
+        None, description="Type of ingestion source"
     )
     branch: Optional[str] = Field(None, description="Branch name if applicable")
     progress: float = Field(..., description="Overall progress percentage (0-100)")
-    started_at: datetime = Field(..., description="Start time")
+    created_at: Optional[int] = Field(None, description="Creation timestamp")
+    updated_at: Optional[int] = Field(None, description="Last update timestamp")
+    started_at: Optional[datetime] = Field(None, description="Start time")
     completed_at: Optional[datetime] = Field(None, description="Completion time")
     duration: Optional[float] = Field(None, description="Duration in seconds")
-    steps: Dict[str, StepProgress] = Field(..., description="Progress by step")
+    steps: Optional[Dict[str, StepProgress]] = Field(None, description="Progress by step")
+    current_step: Optional[str] = Field(None, description="Current step name")
     message: Optional[str] = Field(None, description="Status message")
     error: Optional[str] = Field(None, description="Error message if applicable")
+    result: Optional[Any] = Field(None, description="Job result data")
 
     @model_validator(mode="after")
     def calculate_derived_fields(self) -> "IngestionJob":
@@ -171,14 +205,14 @@ class IngestionJob(BaseModel):
         if self.started_at and self.completed_at:
             self.duration = (self.completed_at - self.started_at).total_seconds()
         elif self.started_at and self.status in (
-            StepStatus.RUNNING,
-            StepStatus.WAITING,
+            JobStatus.RUNNING,
+            JobStatus.PENDING,
         ):
             # Calculate elapsed time for running jobs
             self.duration = (datetime.now() - self.started_at).total_seconds()
 
         # Calculate overall progress as weighted average of step progress
-        if self.steps:
+        if self.steps and isinstance(self.steps, dict):
             # Only include steps that have started
             active_steps = {
                 name: step
@@ -198,7 +232,7 @@ class IngestionJob(BaseModel):
 
             # If any step has failed, set overall status to failed
             if any(step.status == StepStatus.FAILED for step in self.steps.values()):
-                self.status = StepStatus.FAILED
+                self.status = JobStatus.FAILED
 
                 # Find the first error message
                 for step in self.steps.values():
@@ -237,6 +271,7 @@ class PaginatedResponse(BaseModel):
     total: int = Field(..., description="Total number of items")
     offset: int = Field(..., description="Offset used in the query")
     limit: int = Field(..., description="Limit used in the query")
+    has_more: bool = Field(False, description="Whether there are more items available")
 
     class Config:
         """Model configuration."""
