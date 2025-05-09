@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.codestory.config import get_settings
+from codestory.config.settings import get_settings
 
 settings = get_settings()
 

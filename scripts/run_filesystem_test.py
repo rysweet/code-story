@@ -9,10 +9,9 @@ import tempfile
 import time
 from pathlib import Path
 
-# Add src to Python path
+# Add project root to Python path
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-src_dir = os.path.join(current_dir, "src")
-sys.path.insert(0, src_dir)
+sys.path.insert(0, current_dir)
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector

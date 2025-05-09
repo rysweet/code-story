@@ -22,9 +22,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 load_dotenv()
 
-from src.codestory.llm.client import create_client, OpenAIClient
-from src.codestory.llm.models import ChatMessage, ChatRole
-from src.codestory.llm.exceptions import InvalidRequestError
+from codestory.llm.client import create_client, OpenAIClient
+from codestory.llm.models import ChatMessage, ChatRole
+from codestory.llm.exceptions import InvalidRequestError
 
 
 def test_chat_completion(client: OpenAIClient) -> None:

@@ -3,7 +3,7 @@
 import typer
 from rich.console import Console
 
-from src.codestory.config.cli import app as config_app
+from codestory.config.cli import app as config_app
 
 app = typer.Typer(
     name="codestory",
@@ -26,7 +26,7 @@ def callback():
 @app.command("version")
 def version():
     """Show the version of Code Story."""
-    from src.codestory import __version__
+    from codestory import __version__
     console.print(f"Code Story version {__version__}")
 
 

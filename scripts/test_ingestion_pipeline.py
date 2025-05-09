@@ -14,8 +14,9 @@ from pathlib import Path
 # Add the source directory to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.codestory.ingestion_pipeline import PipelineManager, StepStatus
-from src.codestory.config.settings import get_settings
+from codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.ingestion_pipeline.step import StepStatus
+from codestory.config.settings import get_settings
 
 
 def main():

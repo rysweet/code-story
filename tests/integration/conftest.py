@@ -78,11 +78,10 @@ def load_env_vars():
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
     load_dotenv(env_path)
 
-    # Ensure src directory is in Python path
+    # Ensure project root is in Python path for proper imports
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    src_dir = os.path.join(project_root, "src")
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
     # Set default Neo4j test variables if not already set
     # The setup_test_db.sh script should set these, but this is a fallback

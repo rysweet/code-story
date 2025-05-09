@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 load_dotenv()
 
-from src.codestory.llm.client import create_client
-from src.codestory.llm.models import ChatMessage, ChatRole
+from codestory.llm.client import create_client
+from codestory.llm.models import ChatMessage, ChatRole
 
 def main():
     print("Testing Azure OpenAI client...")

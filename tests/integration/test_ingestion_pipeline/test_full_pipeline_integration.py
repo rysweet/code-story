@@ -4,22 +4,27 @@ These tests verify that the complete ingestion pipeline can process a
 repository through all workflow steps correctly.
 """
 
-import os
 import tempfile
 import time
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.ingestion_pipeline.manager import PipelineManager
-from src.codestory.llm.models import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage, ChatRole, Usage
-from src.codestory_filesystem.step import FileSystemStep
-from src.codestory_blarify.step import BlarifyStep
-from src.codestory_summarizer.step import SummarizerStep
-from src.codestory_docgrapher.step import DocumentationGrapherStep
+import pytest
 
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.llm.models import (
+    ChatCompletionResponse,
+    ChatCompletionResponseChoice,
+    ChatMessage,
+    ChatRole,
+    Usage,
+)
+from codestory_blarify.step import BlarifyStep
+from codestory_docgrapher.step import DocumentationGrapherStep
+from codestory_filesystem.step import FileSystemStep
+from codestory_summarizer.step import SummarizerStep
 
 # Mark these tests as integration tests
 pytestmark = [
@@ -31,7 +36,7 @@ pytestmark = [
 @pytest.fixture
 def mock_llm_client():
     """Mock the LLM client to avoid making actual API calls during tests."""
-    with patch('src.codestory.llm.client.create_client') as mock_create_client:
+    with patch('codestory.llm.client.create_client') as mock_create_client:
         # Create a mock client with a chat method that returns a predefined response
         mock_client = MagicMock()
         

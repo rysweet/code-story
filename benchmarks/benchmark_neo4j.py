@@ -22,7 +22,7 @@ import numpy as np
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.codestory.graphdb import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
 class Neo4jBenchmark:

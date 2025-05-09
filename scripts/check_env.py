@@ -12,7 +12,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.codestory.config.settings import get_settings, refresh_settings
+from codestory.config.settings import get_settings, refresh_settings
 
 
 required_env_vars = {

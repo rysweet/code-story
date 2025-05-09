@@ -4,7 +4,7 @@ import os
 
 from celery import Celery
 
-from src.codestory.config import get_settings
+from codestory.config.settings import get_settings
 
 settings = get_settings()
 
@@ -17,7 +17,7 @@ app = Celery(
 
 # Configure task routes
 app.conf.task_routes = {
-    "src.codestory.ingestion_pipeline.tasks.*": {"queue": "ingestion"},
+    "codestory.ingestion_pipeline.tasks.*": {"queue": "ingestion"},
 }
 
 # Set concurrency from settings
