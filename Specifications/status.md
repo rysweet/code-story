@@ -1,7 +1,7 @@
 # Project Implementation Status
 
 ## Current Task
-Implement MCP Adapter (Section 12.0)
+Implement CLI (Section 13.0)
 
 ## Completed Tasks
 - Created claude-1st-impl branch
@@ -144,17 +144,37 @@ Implement MCP Adapter (Section 12.0)
   - Added Prometheus metrics for observability
   - Created comprehensive tests for all components
   - Implemented JSON:API compliant response format
+- Completed MCP Adapter implementation (Section 12.0)
+  - Created MCP server foundation with HTTP endpoints
+  - Implemented authentication with Microsoft Entra ID
+  - Created scope verification for authorization
+  - Implemented four core MCP tools:
+    - searchGraph: Search the code graph for specific elements
+    - summarizeNode: Get a natural language summary of code
+    - pathTo: Find paths between code elements
+    - similarCode: Find semantically similar code
+  - Created Code Story Service adapter for API integration
+  - Added OpenAI Service adapter for LLM operations
+  - Implemented serializers for graph data conversion
+  - Added metrics and logging for observability
+  - Created Docker container configuration
+  - Added multi-stage Docker build for efficient images
+  - Integrated with docker-compose for easy deployment
+  - Wrote comprehensive unit tests for all components
+  - Added integration tests for API endpoints
+  - Created developer documentation on agent integration
+  - Added examples for Claude Code and GitHub Copilot
+  - Implemented CLI entry point for standalone usage
 
 ## In Progress Tasks
-- Implement MCP Adapter (Section 12.0)
-  - Design adapter architecture
-  - Implement conversions between MCP and Code Story API
-  - Add authentication handling
-  - Implement webhook integration
-  - Create comprehensive testing
+- Implement CLI (Section 13.0)
+  - Design CLI architecture and commands
+  - Implement core CLI functionality
+  - Add authentication and configuration management
+  - Create local caching mechanisms
+  - Implement interactive mode
 
 ## Pending Tasks
-- Implement CLI (Section 13.0)
 - Implement GUI (Section 14.0)
 - Implement Infrastructure (Section 15.0)
 - Implement Documentation (Section 16.0)

@@ -45,6 +45,7 @@ pytest-timeout = "^2.4.0"
 
 [tool.poetry.scripts]
 codestory = "codestory.cli.main:app"
+codestory-mcp = "codestory_mcp.main:main"
 
 [tool.poetry.plugins."codestory.pipeline.steps"]
 filesystem = "codestory_filesystem.step:FileSystemStep"
