@@ -57,3 +57,17 @@
 - `cd /Users/ryan/src/msec/code-story && poetry install -E azure` - Installing the Azure extras to fix missing dependencies
 - `cat /Users/ryan/src/msec/code-story/scripts/run_celery.sh` - Examining the Celery worker script
 - `cd /Users/ryan/src/msec/code-story && chmod +x scripts/run_celery.sh` - Making the run_celery.sh script executable
+
+## May 9, 2025
+- `mkdir -p /Users/ryan/src/msec/code-story/src/codestory_service/domain` - Creating domain directory for Code Story Service
+- `mkdir -p /Users/ryan/src/msec/code-story/src/codestory_service/infrastructure` - Creating infrastructure directory for Code Story Service
+- `mkdir -p /Users/ryan/src/msec/code-story/src/codestory_service/application` - Creating application directory for Code Story Service
+- `mkdir -p /Users/ryan/src/msec/code-story/src/codestory_service/api` - Creating API directory for Code Story Service
+- `python -m pytest tests/unit/test_llm/test_client.py -v` - Examining existing OpenAI client tests for reference
+- `python -m pytest tests/unit/test_graphdb/test_connector.py -v` - Examining existing Neo4j connector tests for reference
+- `mypy src/codestory_service` - Type checking the Code Story Service code
+- `black src/codestory_service` - Formatting the Code Story Service code
+- `isort src/codestory_service` - Sorting imports in Code Story Service
+- `flake8 src/codestory_service` - Linting the Code Story Service code
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service` - Running unit tests for Code Story Service
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_service.py -v` - Running integration tests for Code Story Service
