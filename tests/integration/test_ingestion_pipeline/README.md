@@ -75,6 +75,8 @@ These tests cover:
 
 2. **Pipeline Manager Integration**: Tests that the PipelineManager can orchestrate workflow steps, manage job status, and handle errors.
 
+3. **Step Dependencies and Execution Order**: Tests that steps are executed in the correct order based on their dependency relationships.
+
 The tests create a temporary repository structure and use it to verify that:
 
 - Files and directories are correctly identified
@@ -82,3 +84,21 @@ The tests create a temporary repository structure and use it to verify that:
 - Ignored patterns are respected
 - Incremental updates work correctly
 - The pipeline can be stopped and restarted
+- Steps are executed in the correct order based on their dependencies
+
+## Testing Step Dependencies and Execution Order
+
+The approach for testing step dependencies is to observe the execution order of steps during pipeline runs:
+
+1. **Dependency Resolution**: When a step with dependencies is requested, all its dependencies should be executed first
+   - Example: When `summarizer` is requested, `filesystem` and `blarify` should be executed first
+   - Example: When `documentation_grapher` is requested, only `filesystem` should be executed first
+
+2. **Execution Order**: Steps should be executed in an order that respects their dependencies
+   - Example: `filesystem` should always execute before `blarify`
+   - Example: `blarify` should always execute before `summarizer`
+
+3. **Error Handling**: When a dependency fails, dependent steps should not be executed
+   - Example: If `filesystem` fails, `blarify` and `summarizer` should not execute
+
+The PipelineManager handles dependencies through the configuration in pipeline_config.yml. The steps are executed in sequential order as defined in the configuration file. Check test_pipeline_integration.py and test_full_pipeline_integration.py for examples of dependency testing.

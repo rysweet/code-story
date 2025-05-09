@@ -290,12 +290,21 @@ def test_full_pipeline_run(sample_repo, neo4j_connector, mock_steps):
 
 @pytest.mark.integration
 def test_pipeline_step_dependencies(sample_repo, neo4j_connector, mock_steps):
-    """Test that the pipeline handles step dependencies correctly."""
+    """Test that the pipeline handles step dependencies correctly.
+
+    This test verifies that:
+    1. Dependencies are automatically resolved - when we request the summarizer step,
+       the pipeline automatically runs the filesystem and blarify steps first
+    2. Steps are executed in the correct order based on dependencies
+    """
     # Create the pipeline manager
     manager = PipelineManager()
-    
+
     # Run only the summarizer step, which depends on filesystem and blarify
-    # This should run the dependencies automatically
+    # This should run the dependencies automatically in the correct order:
+    # 1. filesystem (no dependencies)
+    # 2. blarify (depends on filesystem)
+    # 3. summarizer (depends on filesystem and blarify)
     job_id = manager.start_job(
         repository_path=sample_repo,
         steps=["summarizer"],
@@ -305,25 +314,37 @@ def test_pipeline_step_dependencies(sample_repo, neo4j_connector, mock_steps):
             "use_llm": True
         }
     )
-    
+
     # Wait for the pipeline to complete (poll for status)
     max_wait_time = 120  # seconds
     start_time = time.time()
-    
+
     while time.time() - start_time < max_wait_time:
         status = manager.get_job_status(job_id)
         if status["status"] in ("COMPLETED", "FAILED"):
             break
         time.sleep(2)
-    
+
     # Verify that the pipeline completed successfully
     assert status["status"] == "COMPLETED", f"Pipeline failed: {status.get('error')}"
-    
+
     # Verify that dependent steps were executed
     steps_status = status.get("steps", {})
     assert "filesystem" in steps_status, "FileSystemStep dependency was not executed"
     assert "blarify" in steps_status, "BlarifyStep dependency was not executed"
     assert "summarizer" in steps_status, "SummarizerStep was not executed"
+
+    # Verify the execution order based on the order in the status report
+    # The status report contains steps in the order they were executed
+    step_order = list(steps_status.keys())
+
+    # Verify filesystem comes before blarify
+    assert step_order.index("filesystem") < step_order.index("blarify"), \
+        "FileSystemStep should execute before BlarifyStep"
+
+    # Verify blarify comes before summarizer
+    assert step_order.index("blarify") < step_order.index("summarizer"), \
+        "BlarifyStep should execute before SummarizerStep"
 
 
 @pytest.mark.integration
