@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from src.codestory.config.settings import get_settings, refresh_settings
-from src.codestory.llm.client import OpenAIClient, create_client
+from codestory.config.settings import get_settings, refresh_settings
+from codestory.llm.client import OpenAIClient, create_client
 
 
 def pytest_addoption(parser):

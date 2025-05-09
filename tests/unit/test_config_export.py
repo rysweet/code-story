@@ -8,14 +8,14 @@ from unittest.mock import patch, MagicMock
 import pytest
 from pydantic import SecretStr
 
-from src.codestory.config import (
+from codestory.config import (
     Settings,
     export_to_json,
     export_to_toml,
     create_env_template,
     settings_to_dict,
 )
-from src.codestory.config.export import _redact_secrets
+from codestory.config.export import _redact_secrets
 
 
 @pytest.fixture

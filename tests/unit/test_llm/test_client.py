@@ -5,12 +5,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import openai
 import pytest
 
-from src.codestory.llm.client import OpenAIClient, create_client
-from src.codestory.llm.exceptions import (
+from codestory.llm.client import OpenAIClient, create_client
+from codestory.llm.exceptions import (
     AuthenticationError,
     InvalidRequestError,
 )
-from src.codestory.llm.models import (
+from codestory.llm.models import (
     ChatCompletionResponse,
     ChatMessage,
     ChatRole,

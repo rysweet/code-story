@@ -4,19 +4,24 @@ These tests verify that the DocumentationGrapherStep can correctly process
 a repository, extract documentation entities, and store them in Neo4j.
 """
 
-import os
 import tempfile
 import time
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.llm.models import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage, ChatRole, Usage
-from src.codestory_filesystem.step import FileSystemStep
-from src.codestory_docgrapher.step import DocumentationGrapherStep
+import pytest
 
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.llm.models import (
+    ChatCompletionResponse,
+    ChatCompletionResponseChoice,
+    ChatMessage,
+    ChatRole,
+    Usage,
+)
+from codestory_docgrapher.step import DocumentationGrapherStep
+from codestory_filesystem.step import FileSystemStep
 
 # Mark these tests as integration tests
 pytestmark = [
@@ -28,7 +33,7 @@ pytestmark = [
 @pytest.fixture
 def mock_llm_client():
     """Mock the LLM client to avoid making actual API calls during tests."""
-    with patch('src.codestory.llm.client.create_client') as mock_create_client:
+    with patch('codestory.llm.client.create_client') as mock_create_client:
         # Create a mock client with a chat method that returns a predefined response
         mock_client = MagicMock()
         
@@ -365,7 +370,7 @@ def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         fetch_one=True
     )["count"]
     
-    assert entity_count > 0, f"No DocumentationEntity nodes were created"
+    assert entity_count > 0, "No DocumentationEntity nodes were created"
     
     # Verify relationships between documentation and code
     rel_count = neo4j_connector.run_query(
@@ -376,7 +381,7 @@ def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         fetch_one=True
     )["count"]
     
-    assert rel_count > 0, f"No relationships between documentation and code were created"
+    assert rel_count > 0, "No relationships between documentation and code were created"
     
     # Check specific documentation types
     readme_doc = neo4j_connector.run_query(
@@ -435,4 +440,4 @@ def test_docgrapher_step_with_no_llm(initialized_repo, neo4j_connector):
         fetch_one=True
     )["count"]
     
-    assert entity_count > 0, f"No DocumentationEntity nodes were created"
+    assert entity_count > 0, "No DocumentationEntity nodes were created"

@@ -20,8 +20,8 @@ sys.modules['celery'] = mock_celery
 sys.modules['celery.result'] = MagicMock()
 
 # Now we can import our modules
-from src.codestory.ingestion_pipeline.step import PipelineStep, StepStatus
-from src.codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+from codestory.ingestion_pipeline.manager import PipelineManager
 
 
 class TestPipelineManager:

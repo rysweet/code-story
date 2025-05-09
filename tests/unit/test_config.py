@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from pydantic import SecretStr
 
-from src.codestory.config import (
+from codestory.config import (
     Settings,
     get_settings,
     refresh_settings,
@@ -17,7 +17,7 @@ from src.codestory.config import (
     export_to_json,
     create_env_template,
 )
-from src.codestory.config.exceptions import SettingNotFoundError
+from codestory.config.exceptions import SettingNotFoundError
 
 
 @pytest.fixture
@@ -203,7 +203,7 @@ def test_get_config_value(mock_env):
     mock_settings.azure = MagicMock()
     
     with patch("src.codestory.config.writer.get_settings", return_value=mock_settings):
-        from src.codestory.config.writer import get_config_value
+        from codestory.config.writer import get_config_value
         
         # Get a basic string value
         assert get_config_value("neo4j.uri") == "bolt://localhost:7687"
@@ -237,7 +237,7 @@ def test_update_config():
     
     with patch("src.codestory.config.writer.get_settings", return_value=mock_settings), \
          patch("src.codestory.config.writer.refresh_settings") as mock_refresh:
-        from src.codestory.config.writer import update_config
+        from codestory.config.writer import update_config
         
         # Update a value in memory
         update_config("neo4j.uri", "bolt://neo4j-test:7687")
@@ -285,7 +285,7 @@ def test_export_to_json():
             },
         }
         
-        from src.codestory.config.export import export_to_json
+        from codestory.config.export import export_to_json
         
         # Test exporting to JSON string
         json_str = export_to_json()
@@ -342,7 +342,7 @@ def test_create_env_template():
     }
     
     with patch("src.codestory.config.export.get_settings", return_value=mock_settings):
-        from src.codestory.config.export import create_env_template
+        from codestory.config.export import create_env_template
         
         # Test creating an .env template
         env_template = create_env_template()

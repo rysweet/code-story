@@ -1,7 +1,7 @@
 """Tests for OpenAI client models."""
 
 
-from src.codestory.llm.models import (
+from codestory.llm.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatFunctionCall,

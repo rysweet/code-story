@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from src.codestory.graphdb.models import (
+from codestory.graphdb.models import (
     BaseNode,
     BaseRelationship,
     CallsRelationship,

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from src.codestory.llm.metrics import (
+from codestory.llm.metrics import (
     ERROR_COUNT,
     REQUEST_COUNT,
     REQUEST_DURATION,

@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.codestory_service.main import app
+from codestory_service.main import app
 
 
 @pytest.fixture

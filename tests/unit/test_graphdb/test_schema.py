@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.codestory.graphdb.exceptions import SchemaError
-from src.codestory.graphdb.schema import (
+from codestory.graphdb.exceptions import SchemaError
+from codestory.graphdb.schema import (
     create_custom_vector_index,
     get_all_schema_elements,
     get_schema_initialization_queries,

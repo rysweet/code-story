@@ -5,15 +5,15 @@ import pytest
 import time
 from typing import Dict, List, Any, Generator
 
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.graphdb.exceptions import (
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.exceptions import (
     ConnectionError,
     QueryError,
     SchemaError,
     TransactionError
 )
-from src.codestory.graphdb.schema import initialize_schema, verify_schema
-from src.codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
+from codestory.graphdb.schema import initialize_schema, verify_schema
+from codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
 
 # We don't skip these tests anymore as conftest.py ensures environment variables are set
 # If the test container is not running, the tests will fail with connection error

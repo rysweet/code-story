@@ -4,17 +4,16 @@ These tests verify that the BlarifyStep can correctly process a repository
 and store AST and symbol bindings in the Neo4j database.
 """
 
-import os
 import tempfile
 import time
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory_blarify.step import BlarifyStep
+import pytest
 
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory_blarify.step import BlarifyStep
 
 # Mark these tests as integration tests
 pytestmark = [
@@ -61,7 +60,7 @@ if __name__ == "__main__":
         # Create a test file
         (repo_dir / "src" / "test" / "test_app.py").write_text("""
 import unittest
-from src.main.app import SampleClass
+from main.app import SampleClass
 
 class TestSampleClass(unittest.TestCase):
     def test_greet(self):

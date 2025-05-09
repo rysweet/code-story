@@ -5,19 +5,19 @@ from unittest.mock import MagicMock, patch
 import openai
 import pytest
 
-from src.codestory.llm.backoff import (
+from codestory.llm.backoff import (
     before_retry_callback,
     get_retry_after,
     retry_on_openai_errors,
     retry_on_openai_errors_async,
 )
-from src.codestory.llm.exceptions import (
+from codestory.llm.exceptions import (
     ContextLengthError,
     RateLimitError,
     ServiceUnavailableError,
     TimeoutError,
 )
-from src.codestory.llm.metrics import OperationType
+from codestory.llm.metrics import OperationType
 
 
 class TestRetryFunctions:

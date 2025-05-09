@@ -8,14 +8,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.codestory.graphdb.exceptions import ExportError
-from src.codestory.graphdb.export import (
+from codestory.graphdb.exceptions import ExportError
+from codestory.graphdb.export import (
     export_cypher_script,
     export_graph_data,
     export_to_csv,
     export_to_json,
 )
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
 @pytest.fixture

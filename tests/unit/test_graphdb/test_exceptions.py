@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.codestory.graphdb.exceptions import (
+from codestory.graphdb.exceptions import (
     Neo4jError,
     ConnectionError,
     QueryError,

@@ -6,9 +6,9 @@ They are skipped by default unless the --run-openai option is provided to pytest
 
 import pytest
 
-from src.codestory.config.settings import get_settings
-from src.codestory.llm.client import create_client
-from src.codestory.llm.models import ChatMessage, ChatRole
+from codestory.config.settings import get_settings
+from codestory.llm.client import create_client
+from codestory.llm.models import ChatMessage, ChatRole
 
 # Mark all tests to be skipped unless explicitly enabled
 pytestmark = [

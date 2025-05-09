@@ -1,7 +1,7 @@
 """Tests for OpenAI client exceptions."""
 
 
-from src.codestory.llm.exceptions import (
+from codestory.llm.exceptions import (
     AuthenticationError,
     ContextLengthError,
     InvalidRequestError,

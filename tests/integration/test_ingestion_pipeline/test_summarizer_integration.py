@@ -4,19 +4,24 @@ These tests verify that the SummarizerStep can correctly process a repository
 and generate summaries for code elements in the Neo4j database.
 """
 
-import os
 import tempfile
 import time
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.llm.models import ChatMessage, ChatRole, ChatCompletionResponse, ChatCompletionResponseChoice, Usage
-from src.codestory_filesystem.step import FileSystemStep
-from src.codestory_summarizer.step import SummarizerStep
+import pytest
 
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.llm.models import (
+    ChatCompletionResponse,
+    ChatCompletionResponseChoice,
+    ChatMessage,
+    ChatRole,
+    Usage,
+)
+from codestory_filesystem.step import FileSystemStep
+from codestory_summarizer.step import SummarizerStep
 
 # Mark these tests as integration tests
 pytestmark = [
@@ -28,7 +33,7 @@ pytestmark = [
 @pytest.fixture
 def mock_llm_client():
     """Mock the LLM client to avoid making actual API calls during tests."""
-    with patch('src.codestory.llm.client.create_client') as mock_create_client:
+    with patch('codestory.llm.client.create_client') as mock_create_client:
         # Create a mock client with a chat method that returns a predefined response
         mock_client = MagicMock()
         
@@ -123,7 +128,7 @@ if __name__ == "__main__":
         # Create a test file
         (repo_dir / "src" / "test" / "test_app.py").write_text("""
 import unittest
-from src.main.app import SampleClass
+from main.app import SampleClass
 
 class TestSampleClass(unittest.TestCase):
     def test_greet(self):

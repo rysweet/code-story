@@ -8,13 +8,13 @@ from unittest.mock import patch, mock_open, MagicMock
 import pytest
 import tomli
 
-from src.codestory.config import (
+from codestory.config import (
     update_env,
     update_toml,
     update_config,
     get_config_value,
 )
-from src.codestory.config.exceptions import SettingNotFoundError
+from codestory.config.exceptions import SettingNotFoundError
 
 
 @pytest.fixture

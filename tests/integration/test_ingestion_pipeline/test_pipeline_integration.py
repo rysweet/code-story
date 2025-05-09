@@ -7,13 +7,14 @@ to process a repository and store the results in the Neo4j database.
 import os
 import tempfile
 import time
-import pytest
 from pathlib import Path
 
-from src.codestory.config.settings import get_settings
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.ingestion_pipeline import PipelineManager, StepStatus
+import pytest
 
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.ingestion_pipeline.step import StepStatus
 
 # Mark these tests as integration tests
 pytestmark = [

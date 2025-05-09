@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from typing import Dict, Any, List
 
 from neo4j.exceptions import ServiceUnavailable
-from src.codestory.graphdb.neo4j_connector import Neo4jConnector
-from src.codestory.graphdb.exceptions import (
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.exceptions import (
     ConnectionError, 
     QueryError,
     TransactionError
