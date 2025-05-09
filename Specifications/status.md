@@ -108,14 +108,12 @@ Integration testing of the full ingestion pipeline
   - Set up Neo4j with non-standard ports to avoid conflicts
   - Fixed Celery worker configuration using relative paths
   - Added Azure SDK dependencies to support KeyVault integration
-  - Debugging Celery worker startup issues
-  - Preparing to run filesystem step integration tests
+  - Fixed Celery worker startup issues
+  - Implemented integration tests for the filesystem step
+  - Tested step dependencies and execution order
+  - Fixed linting issues in FileSystemStep
+  - Enhanced test documentation for dependency management
   - Remaining work:
-    - Fix Celery worker that's failing due to missing Azure dependencies
-    - Run the integration tests for the filesystem step
-    - Fix any issues found in the integration tests
-    - Document any changes made to fix the integration tests
-    - Test step dependencies and execution order
     - Verify progress tracking across multiple steps
     - Test error handling and recovery
     - Validate Neo4j data consistency across steps
