@@ -6,7 +6,6 @@ and store its structure in the Neo4j database by directly executing the task.
 
 import os
 import tempfile
-import time
 from pathlib import Path
 
 import pytest

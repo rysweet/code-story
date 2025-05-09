@@ -7,15 +7,13 @@ of directories and files, which can be linked to AST nodes.
 import logging
 import os
 import time
-import uuid
-from pathlib import Path
 from typing import Any
 
 from celery import shared_task
 
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id
-from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -51,17 +49,15 @@ class FileSystemStep(PipelineStep):
         """
         # Generate a job ID
         job_id = generate_job_id()
-        
-        print(f"*** STEP DEBUG: Running FileSystemStep.run ***")
+
+        print("*** STEP DEBUG: Running FileSystemStep.run ***")
         print(f"Generated job_id: {job_id}")
         print(f"Repository path: {repository_path}")
         print(f"Config: {config}")
-        
-        # Import Celery app and celery logger for better debugging
+
+        # Import Celery app for better debugging
         from codestory.ingestion_pipeline.celery_app import app as celery_app
-        from celery.utils.log import get_task_logger
-        celery_logger = get_task_logger(__name__)
-        
+
         # Log worker and queue status
         print(f"Celery active queues: {celery_app.control.inspect().active_queues()}")
         print(f"Celery registered tasks: {celery_app.control.inspect().registered()}")
@@ -92,8 +88,8 @@ class FileSystemStep(PipelineStep):
         }
         
         logger.info(f"Started filesystem step job {job_id} for {repository_path}")
-        print(f"*** END STEP DEBUG ***")
-        
+        print("*** END STEP DEBUG ***")
+
         return job_id
     
     def status(self, job_id: str) -> dict[str, Any]:
@@ -115,8 +111,9 @@ class FileSystemStep(PipelineStep):
         task_id = job_info["task_id"]
         
         print(f"*** STATUS DEBUG: checking status for job_id={job_id}, task_id={task_id} ***")
-        
+
         from celery.result import AsyncResult
+
         from codestory.ingestion_pipeline.celery_app import app
         
         # Get status from Celery
@@ -148,7 +145,7 @@ class FileSystemStep(PipelineStep):
                     print(f"Error getting result: {e}")
                     status_info.update({
                         "status": StepStatus.FAILED,
-                        "error": f"Error retrieving result: {str(e)}",
+                        "error": f"Error retrieving result: {e!s}",
                     })
             else:
                 print(f"Task failed. Result: {result.result}")
@@ -170,8 +167,8 @@ class FileSystemStep(PipelineStep):
         # Update job info with latest status
         job_info.update(status_info)
         print(f"Final status info: {status_info}")
-        print(f"*** END STATUS DEBUG ***")
-        
+        print("*** END STATUS DEBUG ***")
+
         return job_info
     
     def stop(self, job_id: str) -> dict[str, Any]:
@@ -192,7 +189,6 @@ class FileSystemStep(PipelineStep):
         job_info = self.active_jobs[job_id]
         task_id = job_info["task_id"]
         
-        from celery.result import AsyncResult
         from codestory.ingestion_pipeline.celery_app import app
         
         # Stop the task
@@ -245,29 +241,30 @@ class FileSystemStep(PipelineStep):
     queue="ingestion"  # Explicitly set the queue
 )
 def process_filesystem(
-    self, 
-    repository_path: str, 
-    job_id: str, 
+    self,
+    repository_path: str,
+    job_id: str,
     ignore_patterns: list[str] | None = None,
     max_depth: int | None = None,
     include_extensions: list[str] | None = None,
     **config: Any
 ) -> dict[str, Any]:
     """Process the filesystem of a repository.
-    
+
     Args:
+        self: The Celery task instance
         repository_path: Path to the repository to process
         job_id: Identifier for the job
         ignore_patterns: list of glob patterns to ignore
         max_depth: Maximum directory depth to traverse
         include_extensions: list of file extensions to include
         **config: Additional configuration parameters
-        
+
     Returns:
         dict[str, Any]: Result information
     """
     start_time = time.time()
-    print(f"*** CELERY DEBUG: Starting task process_filesystem (DEBUGGING) ***")
+    print("*** CELERY DEBUG: Starting task process_filesystem (DEBUGGING) ***")
     print(f"Repository path: {repository_path}")
     print(f"Job ID: {job_id}")
     print(f"Ignore patterns: {ignore_patterns}")
@@ -307,7 +304,7 @@ def process_filesystem(
         logger.exception(f"Error connecting to Neo4j: {e}")
         return {
             "status": StepStatus.FAILED,
-            "error": f"Neo4j connection error: {str(e)}",
+            "error": f"Neo4j connection error: {e!s}",
             "job_id": job_id,
         }
     
@@ -333,7 +330,8 @@ def process_filesystem(
         print(f"Repository contents: {os.listdir(repository_path)}")
         
         for current_dir, dirs, files in os.walk(repository_path):
-            print(f"Walking directory: {current_dir} (relative: {os.path.relpath(current_dir, repository_path)})")
+            rel_path = os.path.relpath(current_dir, repository_path)
+            print(f"Walking directory: {current_dir} (relative: {rel_path})")
             print(f"  Contains directories: {dirs}")
             print(f"  Contains files: {files}")
             
