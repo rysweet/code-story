@@ -6,16 +6,17 @@ and that the overall pipeline progress is calculated properly.
 
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Dict, List, Generator
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
-from codestory_filesystem.step import FileSystemStep
 from codestory_blarify.step import BlarifyStep
+from codestory_filesystem.step import FileSystemStep
 from codestory_summarizer.step import SummarizerStep
 
 # Mark these tests as integration tests
@@ -56,10 +57,10 @@ def hello_world():
 
 
 @pytest.fixture
-def mock_step_progress() -> Generator[Dict[str, Any], None, None]:
+def mock_step_progress() -> Generator[dict[str, Any], None, None]:
     """Mock pipeline steps to simulate gradual progress updates."""
     # Tracks the progress updates for each step
-    progress_updates: Dict[str, List[Dict[str, Any]]] = {
+    progress_updates: dict[str, list[dict[str, Any]]] = {
         "filesystem": [],
         "blarify": [],
         "summarizer": [],
@@ -125,21 +126,21 @@ def mock_step_progress() -> Generator[Dict[str, Any], None, None]:
         ]
 
         # Create side effect functions to return progress values in sequence
-        def fs_side_effect(self: Any, job_id: str) -> Dict[str, Any]:
+        def fs_side_effect(self: Any, job_id: str) -> dict[str, Any]:
             progress = fs_progress[
                 min(len(progress_updates["filesystem"]), len(fs_progress) - 1)
             ]
             progress_updates["filesystem"].append(progress)
             return progress
 
-        def blarify_side_effect(self: Any, job_id: str) -> Dict[str, Any]:
+        def blarify_side_effect(self: Any, job_id: str) -> dict[str, Any]:
             progress = blarify_progress[
                 min(len(progress_updates["blarify"]), len(blarify_progress) - 1)
             ]
             progress_updates["blarify"].append(progress)
             return progress
 
-        def summarizer_side_effect(self: Any, job_id: str) -> Dict[str, Any]:
+        def summarizer_side_effect(self: Any, job_id: str) -> dict[str, Any]:
             progress = summarizer_progress[
                 min(len(progress_updates["summarizer"]), len(summarizer_progress) - 1)
             ]
@@ -184,7 +185,7 @@ def pipeline_manager() -> Generator[PipelineManager, None, None]:
         manager = PipelineManager()
 
         # Override the status method to use our mock progress
-        def mock_status(job_id: str) -> Dict[str, Any]:
+        def mock_status(job_id: str) -> dict[str, Any]:
             # This will be implemented in the tests
             return {}
 
@@ -194,7 +195,7 @@ def pipeline_manager() -> Generator[PipelineManager, None, None]:
 
 
 def test_step_progress_reporting(
-    sample_repo: str, mock_step_progress: Dict[str, Any]
+    sample_repo: str, mock_step_progress: dict[str, Any]
 ) -> None:
     """Test that individual steps correctly report progress."""
     # Create step instances
@@ -278,7 +279,7 @@ def test_pipeline_overall_progress(
     current_idx = [0]
 
     # Create a function to override the manager's status method
-    def calculate_pipeline_progress(job_id: str) -> Dict[str, Any]:
+    def calculate_pipeline_progress(job_id: str) -> dict[str, Any]:
         idx = min(current_idx[0], len(fs_statuses) - 1)
 
         # Get current status for each step
@@ -365,7 +366,7 @@ def test_pipeline_overall_progress(
         job_id = "test-job-id"
 
     # Check pipeline progress multiple times
-    progress_readings: List[float] = []
+    progress_readings: list[float] = []
     for _ in range(5):  # Make 5 status checks
         # Get the current pipeline status
         status = pipeline_manager.status(job_id)
@@ -423,7 +424,7 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
     current_idx = [0]
 
     # Create a mock status implementation
-    def mock_status(self: Any, job_id: str) -> Dict[str, Any]:
+    def mock_status(self: Any, job_id: str) -> dict[str, Any]:
         idx = min(current_idx[0], len(blarify_progress) - 1)
         current_idx[0] += 1
         return blarify_progress[idx]
@@ -440,7 +441,7 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
         job_id = blarify_step.run(repository_path=sample_repo)
 
         # Check status multiple times
-        statuses: List[Dict[str, Any]] = []
+        statuses: list[dict[str, Any]] = []
         for _ in range(3):  # Make 3 status checks to reach the failure state
             status = blarify_step.status(job_id)
             statuses.append(status)
@@ -502,7 +503,7 @@ def test_progress_with_parallel_steps(
     current_idx = [0]
 
     # Create a function to override the manager's status method
-    def calculate_pipeline_progress(job_id: str) -> Dict[str, Any]:
+    def calculate_pipeline_progress(job_id: str) -> dict[str, Any]:
         idx = min(current_idx[0], len(fs_statuses) - 1)
 
         # Get current status for each step
@@ -610,7 +611,7 @@ def test_progress_with_parallel_steps(
     ]
 
     # Check pipeline progress multiple times
-    progress_readings: List[float] = []
+    progress_readings: list[float] = []
     for i in range(5):  # Make 5 status checks
         # Get the current pipeline status
         status = pipeline_manager.status(job_id)
@@ -693,7 +694,7 @@ def test_nonlinear_progress_reporting(sample_repo: str) -> None:
     current_idx = [0]
 
     # Create a mock status implementation
-    def mock_status(self: Any, job_id: str) -> Dict[str, Any]:
+    def mock_status(self: Any, job_id: str) -> dict[str, Any]:
         idx = min(current_idx[0], len(summarizer_progress) - 1)
         current_idx[0] += 1
         return summarizer_progress[idx]
@@ -710,7 +711,7 @@ def test_nonlinear_progress_reporting(sample_repo: str) -> None:
         job_id = summarizer_step.run(repository_path=sample_repo)
 
         # Check status multiple times
-        statuses: List[Dict[str, Any]] = []
+        statuses: list[dict[str, Any]] = []
         for _ in range(len(summarizer_progress)):
             status = summarizer_step.status(job_id)
             statuses.append(status)
