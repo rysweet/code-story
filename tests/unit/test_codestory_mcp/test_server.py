@@ -1,5 +1,6 @@
 """Unit tests for the MCP Adapter server."""
 
+import asyncio
 from unittest import mock
 
 import pytest
@@ -107,12 +108,14 @@ async def test_get_current_user_with_valid_token(
     request = mock.Mock()
     request.headers = {"Authorization": "Bearer test-token"}
     
-    # Mock validate_token
-    mock_entra_validator.validate_token.return_value = {
+    # Mock validate_token to return an awaitable Future
+    future = asyncio.Future()
+    future.set_result({
         "sub": "test-user",
         "name": "Test User",
         "scopes": ["code-story.read"]
-    }
+    })
+    mock_entra_validator.validate_token.return_value = future
     
     # Call get_current_user
     user = await get_current_user(request)
@@ -136,8 +139,10 @@ async def test_get_current_user_with_invalid_token(
     request = mock.Mock()
     request.headers = {"Authorization": "Bearer invalid-token"}
     
-    # Mock validate_token to raise error
-    mock_entra_validator.validate_token.side_effect = Exception("Invalid token")
+    # Mock validate_token to raise error with an awaitable Future
+    future = asyncio.Future()
+    future.set_exception(Exception("Invalid token"))
+    mock_entra_validator.validate_token.return_value = future
     
     # Call get_current_user and expect error
     with pytest.raises(HTTPException) as excinfo:
@@ -155,8 +160,10 @@ async def test_tool_executor_success(mock_metrics, mock_tool):
     # Create a tool executor
     executor = tool_executor(lambda tool_name, params, user: None)
     
-    # Mock tool execution
-    mock_tool.return_value = {"result": "success"}
+    # Mock tool execution with an awaitable Future
+    future = asyncio.Future()
+    future.set_result({"result": "success"})
+    mock_tool.return_value = future
     
     # Execute tool
     result = await executor("testTool", {"param": "value"}, {"sub": "test-user"})
@@ -200,10 +207,12 @@ async def test_tool_executor_tool_error(mock_metrics, mock_tool):
     # Create a tool executor
     executor = tool_executor(lambda tool_name, params, user: None)
     
-    # Mock tool execution to raise ToolError
-    mock_tool.__call__.side_effect = ToolError(
+    # Mock tool execution to raise ToolError with an awaitable Future
+    future = asyncio.Future()
+    future.set_exception(ToolError(
         "Tool execution failed", status_code=status.HTTP_400_BAD_REQUEST
-    )
+    ))
+    mock_tool.return_value = future
     
     # Execute tool and expect error
     with pytest.raises(HTTPException) as excinfo:
@@ -251,8 +260,10 @@ async def test_tool_executor_unexpected_error(mock_metrics, mock_tool):
     # Create a tool executor
     executor = tool_executor(lambda tool_name, params, user: None)
     
-    # Mock tool execution to raise unexpected error
-    mock_tool.__call__.side_effect = ValueError("Unexpected error")
+    # Mock tool execution to raise unexpected error with an awaitable Future
+    future = asyncio.Future()
+    future.set_exception(ValueError("Unexpected error"))
+    mock_tool.return_value = future
     
     # Execute tool and expect error
     with pytest.raises(HTTPException) as excinfo:

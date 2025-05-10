@@ -11,7 +11,9 @@ from typing import Any, Dict, List, Optional, Union
 from fastapi import HTTPException, status
 
 from codestory.ingestion_pipeline.celery_app import app as celery_app
-from codestory.ingestion_pipeline.tasks import orchestrate_pipeline as run_ingestion_pipeline
+from codestory.ingestion_pipeline.tasks import (
+    orchestrate_pipeline as run_ingestion_pipeline,
+)
 from codestory.ingestion_pipeline.tasks import run_step as run_single_step
 
 from ..domain.ingestion import (

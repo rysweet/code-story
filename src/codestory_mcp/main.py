@@ -17,11 +17,11 @@ from codestory_mcp.tools import path_to, search_graph, similar_code, summarize_n
 
 def setup_logging() -> None:
     """Set up structured logging.
-    
+
     This function configures structlog for structured logging.
     """
     settings = get_mcp_settings()
-    
+
     # Configure structlog
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
     pre_chain = [
@@ -48,7 +48,9 @@ def setup_logging() -> None:
     )
 
     formatter = structlog.stdlib.ProcessorFormatter(
-        processor=structlog.dev.ConsoleRenderer() if settings.debug else structlog.processors.JSONRenderer(),
+        processor=structlog.dev.ConsoleRenderer()
+        if settings.debug
+        else structlog.processors.JSONRenderer(),
         foreign_pre_chain=pre_chain,
     )
 
@@ -66,19 +68,19 @@ def setup_logging() -> None:
 
 def main() -> None:
     """Run the MCP Adapter.
-    
+
     This function is the main entry point for running the MCP Adapter.
     """
     # Set up logging
     setup_logging()
-    
+
     # Create a logger
     logger = structlog.get_logger(__name__)
-    
+
     try:
         # Log startup
         logger.info("Starting MCP Adapter")
-        
+
         # Run the server
         run_server()
     except KeyboardInterrupt:

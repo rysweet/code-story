@@ -23,14 +23,20 @@ class TestNodeSerializer:
             "created_at": "2023-01-01",
             "lines": 10
         }
-        
+
         # Mock dictionary-like access
         def getitem(key):
+            if isinstance(key, int):
+                raise IndexError(key)
             if key in node.properties:
                 return node.properties[key]
             raise KeyError(key)
-        
+
+        def contains(key):
+            return key in node.properties
+
         node.__getitem__ = mock.Mock(side_effect=getitem)
+        node.__contains__ = mock.Mock(side_effect=contains)
         node.get = mock.Mock(side_effect=lambda k, d=None: node.properties.get(k, d))
         node.items = mock.Mock(return_value=node.properties.items())
         
@@ -82,6 +88,19 @@ class TestNodeSerializer:
         mock_node2.id = "node-456"
         mock_node2.labels = ["Function"]
         mock_node2.properties = {"name": "test_function"}
+
+        def getitem(key):
+            if isinstance(key, int):
+                raise IndexError(key)
+            if key in mock_node2.properties:
+                return mock_node2.properties[key]
+            raise KeyError(key)
+
+        def contains(key):
+            return key in mock_node2.properties
+
+        mock_node2.__getitem__ = mock.Mock(side_effect=getitem)
+        mock_node2.__contains__ = mock.Mock(side_effect=contains)
         mock_node2.get = mock.Mock(side_effect=lambda k, d=None: mock_node2.properties.get(k, d))
         mock_node2.items = mock.Mock(return_value=mock_node2.properties.items())
         
@@ -98,6 +117,19 @@ class TestNodeSerializer:
         mock_node2.id = "node-456"
         mock_node2.labels = ["Function"]
         mock_node2.properties = {"name": "test_function"}
+
+        def getitem(key):
+            if isinstance(key, int):
+                raise IndexError(key)
+            if key in mock_node2.properties:
+                return mock_node2.properties[key]
+            raise KeyError(key)
+
+        def contains(key):
+            return key in mock_node2.properties
+
+        mock_node2.__getitem__ = mock.Mock(side_effect=getitem)
+        mock_node2.__contains__ = mock.Mock(side_effect=contains)
         mock_node2.get = mock.Mock(side_effect=lambda k, d=None: mock_node2.properties.get(k, d))
         mock_node2.items = mock.Mock(return_value=mock_node2.properties.items())
         
@@ -113,6 +145,35 @@ class TestNodeSerializer:
 
 class TestRelationshipSerializer:
     """Tests for the RelationshipSerializer class."""
+
+    @pytest.fixture
+    def mock_node(self):
+        """Create a mock Neo4j node."""
+        node = mock.Mock()
+        node.id = "node-123"
+        node.labels = ["Class"]
+        node.properties = {
+            "name": "TestClass",
+            "path": "/path/to/test_class.py",
+            "content": "class TestClass:\n    pass",
+        }
+
+        def getitem(key):
+            if isinstance(key, int):
+                raise IndexError(key)
+            if key in node.properties:
+                return node.properties[key]
+            raise KeyError(key)
+
+        def contains(key):
+            return key in node.properties
+
+        node.__getitem__ = mock.Mock(side_effect=getitem)
+        node.__contains__ = mock.Mock(side_effect=contains)
+        node.get = mock.Mock(side_effect=lambda k, d=None: node.properties.get(k, d))
+        node.items = mock.Mock(return_value=node.properties.items())
+
+        return node
     
     @pytest.fixture
     def mock_relationship(self):
@@ -120,28 +181,34 @@ class TestRelationshipSerializer:
         rel = mock.Mock()
         rel.id = "rel-123"
         rel.type = "CALLS"
-        
+
         # Create mock start and end nodes
         start_node = mock.Mock()
         start_node.id = "node-123"
         end_node = mock.Mock()
         end_node.id = "node-456"
-        
+
         rel.start_node = start_node
         rel.end_node = end_node
-        
+
         rel.properties = {
             "count": 5,
             "created_at": "2023-01-01"
         }
-        
+
         # Mock dictionary-like access
         def getitem(key):
+            if isinstance(key, int):
+                raise IndexError(key)
             if key in rel.properties:
                 return rel.properties[key]
             raise KeyError(key)
-        
+
+        def contains(key):
+            return key in rel.properties
+
         rel.__getitem__ = mock.Mock(side_effect=getitem)
+        rel.__contains__ = mock.Mock(side_effect=contains)
         rel.get = mock.Mock(side_effect=lambda k, d=None: rel.properties.get(k, d))
         rel.items = mock.Mock(return_value=rel.properties.items())
         
@@ -180,15 +247,33 @@ class TestRelationshipSerializer:
         assert "created_at" in result["properties"]
     
     @pytest.fixture
-    def mock_path(self, mock_node, mock_relationship):
+    def mock_node2(self):
+        """Create another mock Neo4j node."""
+        node = mock.Mock()
+        node.id = "node-456"
+        node.labels = ["Function"]
+        node.properties = {"name": "test_function"}
+
+        def getitem(key):
+            if isinstance(key, int):
+                raise IndexError(key)
+            if key in node.properties:
+                return node.properties[key]
+            raise KeyError(key)
+
+        def contains(key):
+            return key in node.properties
+
+        node.__getitem__ = mock.Mock(side_effect=getitem)
+        node.__contains__ = mock.Mock(side_effect=contains)
+        node.get = mock.Mock(side_effect=lambda k, d=None: node.properties.get(k, d))
+        node.items = mock.Mock(return_value=node.properties.items())
+
+        return node
+
+    @pytest.fixture
+    def mock_path(self, mock_node, mock_relationship, mock_node2):
         """Create a mock path of nodes and relationships."""
-        mock_node2 = mock.Mock()
-        mock_node2.id = "node-456"
-        mock_node2.labels = ["Function"]
-        mock_node2.properties = {"name": "test_function"}
-        mock_node2.get = mock.Mock(side_effect=lambda k, d=None: mock_node2.properties.get(k, d))
-        mock_node2.items = mock.Mock(return_value=mock_node2.properties.items())
-        
         return [[mock_node, mock_relationship, mock_node2]]
     
     def test_to_mcp_path_result(self, mock_path):

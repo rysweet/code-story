@@ -47,7 +47,7 @@ class MCPSettings(BaseSettings):
     port: int = Field(8001, description="Port for the MCP server")
     host: str = Field("0.0.0.0", description="Host address to bind")
     workers: int = Field(4, description="Number of worker processes")
-    
+
     # Authentication
     azure_tenant_id: Optional[str] = Field(
         None, description="Microsoft Entra ID tenant ID"
@@ -55,71 +55,49 @@ class MCPSettings(BaseSettings):
     azure_client_id: Optional[str] = Field(
         None, description="Client ID for the MCP adapter"
     )
-    auth_enabled: bool = Field(
-        False, description="Enable/disable authentication"
-    )
+    auth_enabled: bool = Field(False, description="Enable/disable authentication")
 
     # Service configuration
     code_story_service_url: str = Field(
         "http://localhost:8000", description="URL of the Code Story service"
     )
-    
+
     # JWT configuration
     api_token_issuer: str = Field(
-        "https://sts.windows.net/", 
-        description="Issuer claim for JWT tokens"
+        "https://sts.windows.net/", description="Issuer claim for JWT tokens"
     )
     api_audience: Optional[str] = Field(
-        None,
-        description="Audience claim for JWT tokens"
+        None, description="Audience claim for JWT tokens"
     )
     required_scopes: list[str] = Field(
         ["code-story.read", "code-story.query"],
-        description="Required scopes for authorization"
+        description="Required scopes for authorization",
     )
-    
+
     # CORS configuration
-    cors_origins: list[str] = Field(
-        ["*"], 
-        description="Allowed CORS origins"
-    )
-    
+    cors_origins: list[str] = Field(["*"], description="Allowed CORS origins")
+
     # gRPC configuration
-    enable_grpc: bool = Field(
-        True, 
-        description="Enable gRPC server"
-    )
-    
+    enable_grpc: bool = Field(True, description="Enable gRPC server")
+
     # Metrics and tracing
     prometheus_metrics_path: str = Field(
-        "/metrics", 
-        description="Path for Prometheus metrics"
+        "/metrics", description="Path for Prometheus metrics"
     )
     enable_opentelemetry: bool = Field(
-        False, 
-        description="Enable OpenTelemetry tracing"
+        False, description="Enable OpenTelemetry tracing"
     )
-    
+
     # Documentation
     openapi_url: str = Field(
-        "/openapi.json", 
-        description="URL for OpenAPI documentation"
+        "/openapi.json", description="URL for OpenAPI documentation"
     )
-    docs_url: str = Field(
-        "/docs", 
-        description="URL for Swagger UI documentation"
-    )
-    redoc_url: str = Field(
-        "/redoc", 
-        description="URL for ReDoc documentation"
-    )
-    
+    docs_url: str = Field("/docs", description="URL for Swagger UI documentation")
+    redoc_url: str = Field("/redoc", description="URL for ReDoc documentation")
+
     # Debug mode
-    debug: bool = Field(
-        False, 
-        description="Enable debug mode"
-    )
-    
+    debug: bool = Field(False, description="Enable debug mode")
+
     @field_validator("api_audience", mode="before")
     @classmethod
     def set_audience(cls, v: Optional[str], info) -> str:
@@ -147,7 +125,7 @@ class MCPSettings(BaseSettings):
 @lru_cache()
 def get_mcp_settings() -> MCPSettings:
     """Get MCP settings singleton.
-    
+
     Returns:
         MCP settings instance
     """

@@ -186,6 +186,7 @@ class IngestionService:
 
             # Publish initial progress event
             from codestory.ingestion_pipeline.step import StepStatus
+
             initial_event = JobProgressEvent(
                 job_id=ingestion_started.job_id,
                 step="Initializing",
@@ -256,6 +257,7 @@ class IngestionService:
 
             # Publish cancellation event
             from codestory.ingestion_pipeline.step import StepStatus
+
             cancel_event = JobProgressEvent(
                 job_id=job_id,
                 step=job.current_step if job.current_step else "Cancelled",

@@ -1,5 +1,6 @@
 """Unit tests for the MCP Adapter tools."""
 
+import asyncio
 from unittest import mock
 
 import pytest
@@ -127,21 +128,33 @@ class TestSearchGraphTool:
         mock_node.id = "node-123"
         mock_node.labels = ["Class"]
         mock_node.properties = {"name": "TestClass", "path": "/path/to/test.py"}
+
+        def getitem(key):
+            return mock_node.properties[key]
+
+        def contains(key):
+            return key in mock_node.properties
+
+        mock_node.__getitem__ = mock.Mock(side_effect=getitem)
+        mock_node.__contains__ = mock.Mock(side_effect=contains)
         mock_node.get = mock.Mock(side_effect=lambda k, d=None: mock_node.properties.get(k, d))
         mock_node.items = mock.Mock(return_value=mock_node.properties.items())
-        
-        graph_service.search.return_value = [(mock_node, 0.95)]
-        
+
+        # Create a future to mock async function return value
+        future = asyncio.Future()
+        future.set_result([(mock_node, 0.95)])
+        graph_service.search.return_value = future
+
         # Call the tool
         result = await tool({"query": "test query", "node_types": ["Class"], "limit": 5})
-        
+
         # Verify graph service call
         graph_service.search.assert_called_once_with(
             query="test query",
             node_types=["Class"],
             limit=5
         )
-        
+
         # Verify result
         assert "matches" in result
         assert len(result["matches"]) == 1
@@ -157,13 +170,15 @@ class TestSearchGraphTool:
     @pytest.mark.asyncio
     async def test_call_with_search_error(self, tool, graph_service):
         """Test tool execution with search error."""
-        # Mock search to raise error
-        graph_service.search.side_effect = Exception("Search failed")
-        
+        # Mock search to raise error when awaited
+        future = asyncio.Future()
+        future.set_exception(Exception("Search failed"))
+        graph_service.search.return_value = future
+
         # Call the tool and expect error
         with pytest.raises(ToolError) as excinfo:
             await tool({"query": "test query"})
-        
+
         # Verify error
         assert "Search failed" in excinfo.value.message
         assert excinfo.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -226,13 +241,16 @@ class TestSummarizeNodeTool:
         mock_node.id = "node-123"
         mock_node.labels = ["Class"]
         mock_node.get = mock.Mock(return_value="")
-        
-        graph_service.find_node.return_value = mock_node
-        
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(mock_node)
+        graph_service.find_node.return_value = future
+
         # Call the tool and expect error
         with pytest.raises(ToolError) as excinfo:
             await tool({"node_id": "node-123"})
-        
+
         # Verify error
         assert "Node does not contain code content" in excinfo.value.message
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
@@ -249,19 +267,23 @@ class TestSummarizeNodeTool:
             "path": "/path/to/test.py",
             "content": "class TestClass:\n    pass"
         }.get(k, d))
-        
-        graph_service.find_node.return_value = mock_node
-        
-        # Mock summary generation
-        openai_service.generate_code_summary.return_value = "A simple test class."
-        
+
+        # Create futures to mock async function return values
+        find_node_future = asyncio.Future()
+        find_node_future.set_result(mock_node)
+        graph_service.find_node.return_value = find_node_future
+
+        summary_future = asyncio.Future()
+        summary_future.set_result("A simple test class.")
+        openai_service.generate_code_summary.return_value = summary_future
+
         # Call the tool
         result = await tool({"node_id": "node-123", "include_context": True})
-        
+
         # Verify service calls
         graph_service.find_node.assert_called_once_with("node-123")
         openai_service.generate_code_summary.assert_called_once()
-        
+
         # Verify result
         assert result["summary"] == "A simple test class."
         assert result["node"]["id"] == "node-123"
@@ -337,30 +359,67 @@ class TestPathToTool:
         mock_node1 = mock.Mock()
         mock_node1.id = "node-123"
         mock_node1.labels = ["Class"]
+        mock_node1_props = {"name": "TestClass"}
+
+        def node1_getitem(key):
+            return mock_node1_props[key]
+
+        def node1_contains(key):
+            return key in mock_node1_props
+
+        mock_node1.__getitem__ = mock.Mock(side_effect=node1_getitem)
+        mock_node1.__contains__ = mock.Mock(side_effect=node1_contains)
+        mock_node1.items = mock.Mock(return_value=mock_node1_props.items())
         mock_node1.get = mock.Mock(
-            side_effect=lambda k, d=None: {"name": "TestClass"}.get(k, d)
+            side_effect=lambda k, d=None: mock_node1_props.get(k, d)
         )
-        
+
         mock_rel = mock.Mock()
         mock_rel.id = "rel-123"
         mock_rel.type = "CALLS"
         mock_rel.start_node = mock_node1
         mock_rel.end_node = mock.Mock()
         mock_rel.end_node.id = "node-456"
+        mock_rel.properties = {}
+
+        def rel_getitem(key):
+            return mock_rel.properties[key]
+
+        def rel_contains(key):
+            return key in mock_rel.properties
+
+        mock_rel.__getitem__ = mock.Mock(side_effect=rel_getitem)
+        mock_rel.__contains__ = mock.Mock(side_effect=rel_contains)
+        mock_rel.items = mock.Mock(return_value=mock_rel.properties.items())
         mock_rel.get = mock.Mock(return_value=None)
-        
+
         mock_node2 = mock.Mock()
         mock_node2.id = "node-456"
         mock_node2.labels = ["Method"]
+        mock_node2_props = {"name": "testMethod"}
+
+        def node2_getitem(key):
+            return mock_node2_props[key]
+
+        def node2_contains(key):
+            return key in mock_node2_props
+
+        mock_node2.__getitem__ = mock.Mock(side_effect=node2_getitem)
+        mock_node2.__contains__ = mock.Mock(side_effect=node2_contains)
+        mock_node2.items = mock.Mock(return_value=mock_node2_props.items())
         mock_node2.get = mock.Mock(
-            side_effect=lambda k, d=None: {"name": "testMethod"}.get(k, d)
+            side_effect=lambda k, d=None: mock_node2_props.get(k, d)
         )
-        
-        graph_service.find_paths.return_value = [[mock_node1, mock_rel, mock_node2]]
-        
-        # Mock explanation generation
-        openai_service.generate_path_explanation.return_value = "TestClass calls testMethod."
-        
+
+        # Create futures to mock async function return values
+        paths_future = asyncio.Future()
+        paths_future.set_result([[mock_node1, mock_rel, mock_node2]])
+        graph_service.find_paths.return_value = paths_future
+
+        explanation_future = asyncio.Future()
+        explanation_future.set_result("TestClass calls testMethod.")
+        openai_service.generate_path_explanation.return_value = explanation_future
+
         # Call the tool
         result = await tool({
             "from_id": "node-123",
@@ -368,7 +427,7 @@ class TestPathToTool:
             "max_paths": 3,
             "include_explanation": True
         })
-        
+
         # Verify service calls
         graph_service.find_paths.assert_called_once_with(
             from_id="node-123",
@@ -376,7 +435,7 @@ class TestPathToTool:
             max_paths=3
         )
         openai_service.generate_path_explanation.assert_called_once()
-        
+
         # Verify result
         assert "paths" in result
         assert len(result["paths"]) == 1
@@ -453,18 +512,21 @@ class TestSimilarCodeTool:
                 "score": 0.85
             }
         ]
-        
-        openai_service.find_similar_code.return_value = similar_code
-        
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(similar_code)
+        openai_service.find_similar_code.return_value = future
+
         # Call the tool
         result = await tool({"code": "def test(): pass", "limit": 2})
-        
+
         # Verify service call
         openai_service.find_similar_code.assert_called_once_with(
             code="def test(): pass",
             limit=2
         )
-        
+
         # Verify result
         assert "matches" in result
         assert len(result["matches"]) == 2
@@ -473,6 +535,6 @@ class TestSimilarCodeTool:
         assert result["matches"][1]["id"] == "node-456"
         assert result["matches"][1]["score"] == 0.85
         assert "metadata" in result
-        assert result["metadata"]["code_length"] == 15
+        assert result["metadata"]["code_length"] == 16  # Updated to match actual length
         assert result["metadata"]["limit"] == 2
         assert result["metadata"]["result_count"] == 2

@@ -18,7 +18,7 @@ class ToolParameters(BaseModel):
 
 class BaseTool(ABC):
     """Base class for all MCP tools.
-    
+
     All tools must inherit from this class and implement the __call__ method.
     """
 
@@ -33,33 +33,33 @@ class BaseTool(ABC):
     @abstractmethod
     async def __call__(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the tool with the given parameters.
-        
+
         Args:
             params: Tool parameters
-            
+
         Returns:
             Tool execution results
-            
+
         Raises:
             HTTPException: If the tool execution fails
         """
         pass
-    
+
     def validate_parameters(self, params: Dict[str, Any]) -> None:
         """Validate tool parameters.
-        
+
         Args:
             params: Parameters to validate
-            
+
         Raises:
             HTTPException: If parameters are invalid
         """
         required_params = []
-        
+
         # Extract required parameters from JSON schema
         if "properties" in self.parameters and "required" in self.parameters:
             required_params = self.parameters["required"]
-            
+
         # Check that all required parameters are present
         for param_name in required_params:
             if param_name not in params:
@@ -73,13 +73,13 @@ class ToolError(Exception):
     """Error during tool execution."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        error_code: Optional[str] = None
+        error_code: Optional[str] = None,
     ) -> None:
         """Initialize the error.
-        
+
         Args:
             message: Error message
             status_code: HTTP status code

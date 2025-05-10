@@ -1,5 +1,6 @@
 """Unit tests for the MCP Adapter service adapters."""
 
+import asyncio
 from unittest import mock
 
 import httpx
@@ -178,8 +179,12 @@ class TestGraphServiceAdapter:
                 }
             ]
         }
-        mock_client.post.return_value = response
-        
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.post.return_value = future
+
         # Execute search
         results = await adapter.search(
             query="test",
@@ -218,8 +223,12 @@ class TestGraphServiceAdapter:
         response = mock.Mock()
         response.status_code = 500
         response.text = "Internal server error"
-        mock_client.post.return_value = response
-        
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.post.return_value = future
+
         # Execute search and expect error
         with pytest.raises(ToolError) as excinfo:
             await adapter.search(query="test")
@@ -237,8 +246,10 @@ class TestGraphServiceAdapter:
     async def test_search_network_error(self, adapter, mock_client, mock_metrics):
         """Test search with network error."""
         # Mock network error
-        mock_client.post.side_effect = httpx.RequestError("Connection error")
-        
+        future = asyncio.Future()
+        future.set_exception(httpx.RequestError("Connection error"))
+        mock_client.post.return_value = future
+
         # Execute search and expect error
         with pytest.raises(ToolError) as excinfo:
             await adapter.search(query="test")
@@ -270,7 +281,11 @@ class TestGraphServiceAdapter:
                 }
             }
         }
-        mock_client.get.return_value = response
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.get.return_value = future
         
         # Execute find_node
         node = await adapter.find_node("node-123")
@@ -293,7 +308,11 @@ class TestGraphServiceAdapter:
         response = mock.Mock()
         response.status_code = 404
         response.text = "Node not found"
-        mock_client.get.return_value = response
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.get.return_value = future
         
         # Execute find_node and expect error
         with pytest.raises(ToolError) as excinfo:
@@ -346,8 +365,12 @@ class TestGraphServiceAdapter:
                 }
             ]
         }
-        mock_client.post.return_value = response
-        
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.post.return_value = future
+
         # Execute find_paths
         paths = await adapter.find_paths(
             from_id="node-123",
@@ -439,7 +462,11 @@ class TestOpenAIServiceAdapter:
         response = mock.Mock()
         response.choices = [mock.Mock()]
         response.choices[0].message.content = "A simple test class."
-        mock_client.create_chat_completion.return_value = response
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.create_chat_completion.return_value = future
         
         # Execute summary generation
         summary = await adapter.generate_code_summary(
@@ -475,7 +502,9 @@ class TestOpenAIServiceAdapter:
     async def test_generate_code_summary_error(self, adapter, mock_client, mock_metrics):
         """Test code summary generation with error."""
         # Mock error
-        mock_client.create_chat_completion.side_effect = Exception("API error")
+        future = asyncio.Future()
+        future.set_exception(Exception("API error"))
+        mock_client.create_chat_completion.return_value = future
         
         # Execute summary generation and expect error
         with pytest.raises(ToolError) as excinfo:
@@ -498,7 +527,11 @@ class TestOpenAIServiceAdapter:
         response = mock.Mock()
         response.choices = [mock.Mock()]
         response.choices[0].message.content = "Class TestClass calls method testMethod."
-        mock_client.create_chat_completion.return_value = response
+
+        # Create future to mock async function return value
+        future = asyncio.Future()
+        future.set_result(response)
+        mock_client.create_chat_completion.return_value = future
         
         # Execute path explanation generation
         path_elements = [
@@ -555,7 +588,9 @@ class TestOpenAIServiceAdapter:
     async def test_find_similar_code_success(self, adapter, mock_client, mock_metrics):
         """Test successful similar code search."""
         # Mock embedding creation
-        mock_client.create_embedding.return_value = [0.1, 0.2, 0.3]
+        embed_future = asyncio.Future()
+        embed_future.set_result([0.1, 0.2, 0.3])
+        mock_client.create_embedding.return_value = embed_future
         
         # Execute similar code search
         results = await adapter.find_similar_code(

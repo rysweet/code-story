@@ -74,9 +74,7 @@ class OpenAIAdapter:
             # Perform a simple embedding request to check if API is responsive
             model_name = self.client.embedding_model
             response_obj = await self.client._async_client.embeddings.create(
-                deployment_name=model_name,
-                model=model_name,
-                input=["Health check"]
+                deployment_name=model_name, model=model_name, input=["Health check"]
             )
 
             # Convert to our response model
@@ -127,9 +125,7 @@ class OpenAIAdapter:
 
             # Get the response directly from the async client
             response_obj = await self.client._async_client.embeddings.create(
-                deployment_name=model_name,
-                model=model_name,
-                input=texts
+                deployment_name=model_name, model=model_name, input=texts
             )
 
             # Convert to our response model
