@@ -24,7 +24,7 @@ router = APIRouter(prefix="/v1/config", tags=["config"])
     summary="Get configuration",
     description="Get the current configuration settings.",
 )
-async def get_config(
+def get_config(
     include_sensitive: bool = Query(
         False, description="Whether to include sensitive values (requires admin role)"
     ),
@@ -116,7 +116,7 @@ async def update_config(
     summary="Get configuration schema",
     description="Get the JSON Schema for the configuration.",
 )
-async def get_config_schema(
+def get_config_schema(
     config_service: ConfigService = Depends(get_config_service),
     user: dict = Depends(get_current_user),
 ) -> ConfigSchema:

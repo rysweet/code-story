@@ -1,6 +1,7 @@
 """Main entry point for Code Story API service."""
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict
 
@@ -33,7 +34,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Initializing application resources")
 
     # Set up Neo4j connection
-    app.state.db = Neo4jConnector()
+    # Use the environment variable for database name if available
+    database = os.environ.get("CS_NEO4J_DATABASE", "neo4j")
+    app.state.db = Neo4jConnector(database=database)
     await app.state.db.check_connection_async()
 
     yield
