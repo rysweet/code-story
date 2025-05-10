@@ -8,18 +8,26 @@ import os
 from typing import Dict, Any
 
 from codestory.config.settings import (
-    Settings, Neo4jSettings, RedisSettings, OpenAISettings, 
-    AzureOpenAISettings, ServiceSettings, IngestionSettings,
-    PluginSettings, TelemetrySettings, InterfaceSettings, AzureSettings
+    Settings,
+    Neo4jSettings,
+    RedisSettings,
+    OpenAISettings,
+    AzureOpenAISettings,
+    ServiceSettings,
+    IngestionSettings,
+    PluginSettings,
+    TelemetrySettings,
+    InterfaceSettings,
+    AzureSettings,
 )
 
 
 def get_test_settings() -> Settings:
     """Return settings configured for integration tests.
-    
-    This function creates a Settings instance with appropriate 
+
+    This function creates a Settings instance with appropriate
     configuration for integration tests.
-    
+
     Returns:
         Settings: Test-configured settings instance
     """
@@ -30,12 +38,12 @@ def get_test_settings() -> Settings:
         password="password",
         database="codestory-test",
     )
-    
+
     # Define redis test settings
     redis = RedisSettings(
         uri="redis://localhost:6379/1",  # Test DB 1
     )
-    
+
     # Define OpenAI test settings
     openai = OpenAISettings(
         api_key="sk-test-key-openai",  # Fake key for testing
@@ -44,7 +52,7 @@ def get_test_settings() -> Settings:
         chat_model="gpt-4o",
         reasoning_model="gpt-4o",
     )
-    
+
     # Define Azure OpenAI test settings
     azure_openai = AzureOpenAISettings(
         api_key="test-azure-key",  # Fake key for testing
@@ -55,7 +63,7 @@ def get_test_settings() -> Settings:
         chat_model="gpt-4o",
         reasoning_model="gpt-4o",
     )
-    
+
     # Define service test settings
     service = ServiceSettings(
         host="127.0.0.1",
@@ -66,7 +74,7 @@ def get_test_settings() -> Settings:
         enable_telemetry=False,
         worker_concurrency=1,
     )
-    
+
     # Define ingestion test settings
     ingestion = IngestionSettings(
         config_path="pipeline_config.yml",
@@ -79,13 +87,13 @@ def get_test_settings() -> Settings:
         concurrency=1,  # Lower concurrency for testing
         steps={},
     )
-    
+
     # Define plugins test settings
     plugins = PluginSettings(
         enabled=["filesystem"],  # Only enable the filesystem plugin for testing
         plugin_directory="plugins",
     )
-    
+
     # Define telemetry test settings
     telemetry = TelemetrySettings(
         metrics_port=9091,  # Different port for testing
@@ -104,7 +112,7 @@ def get_test_settings() -> Settings:
         auto_refresh=False,  # Disable auto-refresh for testing
         refresh_interval=30,
     )
-    
+
     # Define Azure test settings
     azure = AzureSettings(
         keyvault_name="test-key-vault",
@@ -112,7 +120,7 @@ def get_test_settings() -> Settings:
         client_id="test-client-id",
         client_secret="test-client-secret",
     )
-    
+
     # Create test settings instance
     settings = Settings(
         neo4j=neo4j,
@@ -126,5 +134,5 @@ def get_test_settings() -> Settings:
         interface=interface,
         azure=azure,
     )
-    
+
     return settings

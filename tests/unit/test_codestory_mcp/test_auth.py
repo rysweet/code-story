@@ -4,7 +4,11 @@ from unittest import mock
 
 import pytest
 
-from codestory_mcp.auth.entra_validator import AuthenticationError, AuthorizationError, EntraValidator
+from codestory_mcp.auth.entra_validator import (
+    AuthenticationError,
+    AuthorizationError,
+    EntraValidator,
+)
 from codestory_mcp.auth.scope_manager import ScopeManager
 
 
@@ -77,83 +81,89 @@ class TestScopeManager:
 
 class TestEntraValidator:
     """Tests for the EntraValidator class."""
-    
+
     @pytest.fixture
     def mock_jwks_client(self):
         """Create a mock JWKS client."""
-        with mock.patch("codestory_mcp.auth.entra_validator.PyJWKClient") as mock_client:
+        with mock.patch(
+            "codestory_mcp.auth.entra_validator.PyJWKClient"
+        ) as mock_client:
             yield mock_client
-    
+
     @pytest.fixture
     def mock_jwt(self):
         """Create a mock JWT module."""
         with mock.patch("codestory_mcp.auth.entra_validator.jwt") as mock_jwt:
             yield mock_jwt
-    
+
     @pytest.fixture
     def validator(self, mock_jwks_client):
         """Create an EntraValidator instance."""
         return EntraValidator("test-tenant", "test-audience")
-    
+
     def test_init(self, mock_jwks_client):
         """Test initialization."""
         validator = EntraValidator("test-tenant", "test-audience")
-        
+
         assert validator.tenant_id == "test-tenant"
         assert validator.audience == "test-audience"
         mock_jwks_client.assert_called_once_with(
             "https://login.microsoftonline.com/test-tenant/discovery/v2.0/keys"
         )
-    
+
     @pytest.mark.asyncio
     async def test_validate_token_success(self, validator, mock_jwt):
         """Test successful token validation."""
         # Mock the key from JWKS client
         mock_key = mock.Mock()
         validator.jwks_client.get_signing_key_from_jwt.return_value = mock_key
-        
+
         # Mock JWT decode
         mock_jwt.decode.return_value = {
             "sub": "test-user",
             "azp": "test-client",
-            "scp": "code-story.read code-story.query"
+            "scp": "code-story.read code-story.query",
         }
-        
+
         # Patch scope verification
         with mock.patch.object(validator, "_verify_scopes") as mock_verify:
             claims = await validator.validate_token("test-token")
-            
+
             # Verify key retrieval
-            validator.jwks_client.get_signing_key_from_jwt.assert_called_once_with("test-token")
-            
+            validator.jwks_client.get_signing_key_from_jwt.assert_called_once_with(
+                "test-token"
+            )
+
             # Verify JWT decode
             mock_jwt.decode.assert_called_once_with(
                 "test-token",
                 mock_key.key,
                 algorithms=["RS256"],
                 audience="test-audience",
-                options={"verify_signature": True}
+                options={"verify_signature": True},
             )
-            
+
             # Verify scope verification
             mock_verify.assert_called_once_with(mock_jwt.decode.return_value)
-            
+
             # Verify claims
             assert claims == mock_jwt.decode.return_value
-    
+
     @pytest.mark.asyncio
     async def test_validate_token_jwt_error(self, validator, mock_jwt):
         """Test token validation with JWT error."""
         # Make JWT decode raise an error
         mock_jwt.PyJWTError = Exception
-        validator.jwks_client.get_signing_key_from_jwt.side_effect = mock_jwt.PyJWTError("Invalid token")
-        
+        validator.jwks_client.get_signing_key_from_jwt.side_effect = (
+            mock_jwt.PyJWTError("Invalid token")
+        )
+
         # Verify error handling
         with pytest.raises(AuthenticationError) as excinfo:
             await validator.validate_token("invalid-token")
-        
+
         assert "Token validation failed" in str(excinfo.value)
-    
+
     def test_verify_scopes_success(self, validator):
         """Test successful scope verification."""
         # Mock ScopeManager
@@ -163,11 +173,11 @@ class TestEntraValidator:
             # Claims with string scope
             validator._verify_scopes({"scp": "code-story.read"})
             mock_has_scope.assert_called_with(["code-story.read"])
-            
+
             # Claims with list scope
             validator._verify_scopes({"scope": ["code-story.query"]})
             mock_has_scope.assert_called_with(["code-story.query"])
-    
+
     def test_verify_scopes_failure(self, validator):
         """Test scope verification failure."""
         # Mock ScopeManager
@@ -177,5 +187,5 @@ class TestEntraValidator:
             # Verify error is raised
             with pytest.raises(AuthorizationError) as excinfo:
                 validator._verify_scopes({"scp": "wrong-scope"})
-            
+
             assert "Token lacks required scopes" in str(excinfo.value)

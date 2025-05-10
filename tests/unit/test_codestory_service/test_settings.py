@@ -14,7 +14,7 @@ from codestory_service.settings import ServiceSettings, get_service_settings
 def test_service_settings_default_values():
     """Test that default values are set correctly."""
     settings = ServiceSettings()
-    
+
     # Check that default values are set correctly
     assert settings.title == "Code Story API"
     assert settings.api_prefix == "/v1"
@@ -56,7 +56,11 @@ def test_service_settings_cors_origins_parsing():
     }
     with mock.patch.dict(os.environ, env_vars):
         settings = ServiceSettings()
-        assert settings.cors_origins == ["example.com", "api.example.org", "localhost:3000"]
+        assert settings.cors_origins == [
+            "example.com",
+            "api.example.org",
+            "localhost:3000",
+        ]
 
     # Test with a single origin in JSON format
     env_vars = {
@@ -78,7 +82,9 @@ def test_service_settings_cors_origins_parsing():
 def test_service_settings_cors_origins_validation():
     """Test that CORS origins validator works correctly."""
     # Mock the core settings environment to be "production"
-    with mock.patch("codestory_service.settings.get_core_settings") as mock_get_settings:
+    with mock.patch(
+        "codestory_service.settings.get_core_settings"
+    ) as mock_get_settings:
         mock_settings = mock.MagicMock()
         mock_settings.environment = "production"
         mock_get_settings.return_value = mock_settings

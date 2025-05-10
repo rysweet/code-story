@@ -7,12 +7,12 @@ class ConfigurationError(Exception):
     """Base class for configuration-related exceptions."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Initialize ConfigurationError.
-        
+
         Args:
             message: Error message
             details: Additional error details
@@ -26,12 +26,12 @@ class ValidationError(ConfigurationError):
     """Exception raised when configuration validation fails."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         errors: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """Initialize ValidationError.
-        
+
         Args:
             message: Error message
             errors: List of validation errors
@@ -44,14 +44,14 @@ class SourceError(ConfigurationError):
     """Exception raised when a configuration source cannot be loaded."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         source: str,
         source_path: Optional[str] = None,
         cause: Optional[Exception] = None,
     ) -> None:
         """Initialize SourceError.
-        
+
         Args:
             message: Error message
             source: Name of the configuration source (e.g., "env", "toml")
@@ -71,14 +71,14 @@ class KeyVaultError(ConfigurationError):
     """Exception raised when Azure KeyVault integration fails."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         vault_name: Optional[str] = None,
         secret_name: Optional[str] = None,
         cause: Optional[Exception] = None,
     ) -> None:
         """Initialize KeyVaultError.
-        
+
         Args:
             message: Error message
             vault_name: Name of the Azure KeyVault
@@ -98,12 +98,12 @@ class SettingNotFoundError(ConfigurationError):
     """Exception raised when a requested setting doesn't exist."""
 
     def __init__(
-        self, 
+        self,
         setting_path: str,
         available_settings: Optional[List[str]] = None,
     ) -> None:
         """Initialize SettingNotFoundError.
-        
+
         Args:
             setting_path: Path to the setting that was not found
             available_settings: List of available settings paths
@@ -120,13 +120,13 @@ class PermissionError(ConfigurationError):
     """Exception raised when configuration cannot be modified due to permissions."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         file_path: Optional[str] = None,
         operation: Optional[str] = None,
     ) -> None:
         """Initialize PermissionError.
-        
+
         Args:
             message: Error message
             file_path: Path to the file that couldn't be accessed

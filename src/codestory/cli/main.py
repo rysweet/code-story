@@ -27,6 +27,7 @@ def callback():
 def version():
     """Show the version of Code Story."""
     from codestory import __version__
+
     console.print(f"Code Story version {__version__}")
 
 

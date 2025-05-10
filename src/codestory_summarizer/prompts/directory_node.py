@@ -8,19 +8,19 @@ from typing import Dict, List, Union
 
 
 def get_directory_summary_prompt(
-    content: str, 
+    content: str,
     context: List[str],
     child_summaries: List[str] = None,
-    max_tokens: int = 8000
+    max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
-    
+
     Args:
         content: Directory content description
         context: Contextual information about the directory
         child_summaries: Summaries of child nodes
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Prompt for generating a directory summary
     """
@@ -30,13 +30,13 @@ Directory information:
 {chr(10).join(context)}
 
 """
-    
+
     if child_summaries:
         prompt += f"""Summaries of contained files and subdirectories:
 {chr(10).join(child_summaries)}
 
 """
-    
+
     prompt += """Your task is to:
 1. Summarize the overall purpose and functionality of this directory
 2. Identify the key components and their relationships
@@ -48,27 +48,27 @@ Your summary should be concise, technical, and informative. Focus on explaining 
 
 Summary:
 """
-    
+
     return prompt
 
 
 def get_summary_prompt(
-    content: str, 
+    content: str,
     context: List[str],
     child_summaries: List[str] = None,
-    max_tokens: int = 8000
+    max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
-    
+
     This is a wrapper around get_directory_summary_prompt to maintain
     a consistent interface across prompt modules.
-    
+
     Args:
         content: Directory content description
         context: Contextual information about the directory
         child_summaries: Summaries of child nodes
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Prompt for generating a directory summary
     """

@@ -4,6 +4,27 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+
+# Mock Prometheus metrics to prevent registration conflicts
+@pytest.fixture(autouse=True)
+def mock_prometheus_metrics():
+    """Mock prometheus metrics to avoid registration issues during tests."""
+    with patch("prometheus_client.Counter") as mock_counter, patch(
+        "prometheus_client.Gauge"
+    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram, patch(
+        "prometheus_client.REGISTRY._names_to_collectors", {}
+    ):
+        # Configure mocks to avoid attribute errors
+        mock_labels = MagicMock()
+        mock_counter.return_value.labels = mock_labels
+        mock_counter.return_value.labels.return_value.inc = MagicMock()
+        mock_gauge.return_value.set = MagicMock()
+        mock_histogram.return_value.labels = mock_labels
+        mock_histogram.return_value.labels.return_value.observe = MagicMock()
+
+        yield
+
+
 from codestory.graphdb.exceptions import SchemaError
 from codestory.graphdb.schema import (
     create_custom_vector_index,
@@ -26,7 +47,9 @@ def test_get_vector_index_query():
     assert '`vector.similarity_function`: "cosine"' in query
 
     # Test with custom parameters
-    query = get_vector_index_query("CustomLabel", "vectors", dimensions=768, similarity="euclidean")
+    query = get_vector_index_query(
+        "CustomLabel", "vectors", dimensions=768, similarity="euclidean"
+    )
     assert "CREATE VECTOR INDEX customlabel_vectors_vector_idx" in query
     assert "FOR (n:CustomLabel)" in query
     assert "ON (n.vectors)" in query
@@ -58,11 +81,17 @@ def test_get_all_schema_elements():
     assert any("file_content" in idx for idx in schema_elements["fulltext_indexes"])
     assert any("code_name" in idx for idx in schema_elements["fulltext_indexes"])
 
-    assert any("file_extension_idx" in idx for idx in schema_elements["property_indexes"])
-
-    assert any("Summary" in idx and "embedding" in idx for idx in schema_elements["vector_indexes"])
     assert any(
-        "Documentation" in idx and "embedding" in idx for idx in schema_elements["vector_indexes"]
+        "file_extension_idx" in idx for idx in schema_elements["property_indexes"]
+    )
+
+    assert any(
+        "Summary" in idx and "embedding" in idx
+        for idx in schema_elements["vector_indexes"]
+    )
+    assert any(
+        "Documentation" in idx and "embedding" in idx
+        for idx in schema_elements["vector_indexes"]
     )
 
 

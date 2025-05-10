@@ -18,7 +18,7 @@ def test_neo4j_error():
     assert str(error) == "Test error"
     assert error.message == "Test error"
     assert error.details == {}
-    
+
     # Create with details
     details = {"test": "value"}
     error = Neo4jError("Test error", details)
@@ -35,7 +35,7 @@ def test_connection_error():
     assert error.details["uri"] is None
     assert error.details["cause"] is None
     assert error.cause is None
-    
+
     # Create with all args
     cause = ValueError("Invalid URI")
     error = ConnectionError(
@@ -61,7 +61,7 @@ def test_query_error():
     assert error.details["parameters"] is None
     assert error.details["cause"] is None
     assert error.cause is None
-    
+
     # Create with sensitive parameters
     error = QueryError(
         "Query failed",
@@ -72,7 +72,7 @@ def test_query_error():
     assert error.details["parameters"]["password"] == "********"
     assert error.details["parameters"]["key"] == "********"
     assert error.details["parameters"]["normal"] == "data"
-    
+
     # Create with other details
     cause = ValueError("Syntax error")
     error = QueryError(
@@ -96,7 +96,7 @@ def test_schema_error():
     assert error.details["operation"] is None
     assert error.details["cause"] is None
     assert error.cause is None
-    
+
     # Create with all args
     cause = ValueError("Invalid constraint")
     error = SchemaError(
@@ -120,7 +120,7 @@ def test_transaction_error():
     assert error.details["operation"] is None
     assert error.details["cause"] is None
     assert error.cause is None
-    
+
     # Create with all args
     cause = ValueError("Transaction timeout")
     error = TransactionError(

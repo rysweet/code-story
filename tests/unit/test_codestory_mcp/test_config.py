@@ -33,22 +33,18 @@ def test_audience_validator():
     """Test the audience validator."""
     # When audience is provided, it should use that
     settings = MCPSettings(
-        code_story_service_url="http://localhost:8000",
-        api_audience="custom-audience"
+        code_story_service_url="http://localhost:8000", api_audience="custom-audience"
     )
     assert settings.api_audience == "custom-audience"
-    
+
     # When client ID is provided but no audience, it should use client ID
     settings = MCPSettings(
-        code_story_service_url="http://localhost:8000",
-        azure_client_id="test-client-id"
+        code_story_service_url="http://localhost:8000", azure_client_id="test-client-id"
     )
     assert settings.api_audience == "test-client-id"
-    
+
     # When neither is provided, falls back to "api://code-story"
-    settings = MCPSettings(
-        code_story_service_url="http://localhost:8000"
-    )
+    settings = MCPSettings(code_story_service_url="http://localhost:8000")
     assert settings.api_audience == "api://code-story"
 
 
@@ -87,7 +83,7 @@ def test_settings_from_env(env_vars, expected):
     """Test loading settings from environment variables."""
     with mock.patch.dict(os.environ, env_vars, clear=True):
         settings = MCPSettings()
-        
+
         for key, value in expected.items():
             assert getattr(settings, key) == value
 
@@ -99,5 +95,5 @@ def test_get_mcp_settings_singleton():
     ):
         settings1 = get_mcp_settings()
         settings2 = get_mcp_settings()
-        
+
         assert settings1 is settings2

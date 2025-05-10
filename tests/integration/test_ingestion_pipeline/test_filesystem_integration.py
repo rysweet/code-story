@@ -35,15 +35,21 @@ def sample_repo():
 
         # Create some files
         (repo_dir / "README.md").write_text("# Sample Repository")
-        (repo_dir / "src" / "main" / "app.py").write_text("def main():\n    print('Hello, world!')")
-        (repo_dir / "src" / "test" / "test_app.py").write_text("def test_main():\n    assert True")
+        (repo_dir / "src" / "main" / "app.py").write_text(
+            "def main():\n    print('Hello, world!')"
+        )
+        (repo_dir / "src" / "test" / "test_app.py").write_text(
+            "def test_main():\n    assert True"
+        )
         (repo_dir / "docs" / "index.md").write_text("# Documentation")
 
         # Add some files that should be ignored
         (repo_dir / ".git").mkdir()
         (repo_dir / ".git" / "config").write_text("# Git config")
         (repo_dir / "src" / "__pycache__").mkdir()
-        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text("# Bytecode")
+        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text(
+            "# Bytecode"
+        )
 
         yield str(repo_dir)
 
@@ -103,7 +109,9 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     print(f"Task registered with app? {process_filesystem.name in celery_app.tasks}")
 
     # Run the step
-    job_id = step.run(repository_path=sample_repo, ignore_patterns=[".git/", "__pycache__/"])
+    job_id = step.run(
+        repository_path=sample_repo, ignore_patterns=[".git/", "__pycache__/"]
+    )
     print(f"Got job_id: {job_id}")
 
     # Wait for the step to complete
@@ -129,7 +137,9 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     print(f"Final status: {status}")
 
     # Since we're using task_always_eager, the task should be completed
-    assert status["status"] == StepStatus.COMPLETED, f"Step failed: {status.get('error')}"
+    assert (
+        status["status"] == StepStatus.COMPLETED
+    ), f"Step failed: {status.get('error')}"
 
     # Verify that the repository structure was stored in Neo4j
     # 1. Check that a Repository node was created
@@ -140,7 +150,9 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     assert repo_query is not None, "Repository node not found"
 
     # 2. Check that Directory nodes were created
-    directories = neo4j_connector.execute_query("MATCH (d:Directory) RETURN d.path as path")
+    directories = neo4j_connector.execute_query(
+        "MATCH (d:Directory) RETURN d.path as path"
+    )
     directory_paths = [record["path"] for record in directories]
 
     # Check for expected directories
@@ -160,7 +172,9 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     assert "docs/index.md" in file_paths, "docs/index.md file not found"
 
     # 4. Check that ignored patterns were actually ignored
-    git_dir = neo4j_connector.execute_query("MATCH (d:Directory {path: '.git'}) RETURN d")
+    git_dir = neo4j_connector.execute_query(
+        "MATCH (d:Directory {path: '.git'}) RETURN d"
+    )
     assert git_dir is None, ".git directory was not ignored"
 
     pycache_dir = neo4j_connector.execute_query(
@@ -185,7 +199,9 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
     print("Running initial indexing...")
 
     # Run the step
-    job_id = step.run(repository_path=sample_repo, ignore_patterns=[".git/", "__pycache__/"])
+    job_id = step.run(
+        repository_path=sample_repo, ignore_patterns=[".git/", "__pycache__/"]
+    )
 
     # Wait for the step to complete
     max_wait_time = 30  # seconds
@@ -198,10 +214,14 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
         time.sleep(1)
 
     # Verify the step completed
-    assert status["status"] == StepStatus.COMPLETED, f"Initial step failed: {status.get('error')}"
+    assert (
+        status["status"] == StepStatus.COMPLETED
+    ), f"Initial step failed: {status.get('error')}"
 
     # Check the initial file count
-    file_count_query = neo4j_connector.execute_query("MATCH (f:File) RETURN count(f) as count")
+    file_count_query = neo4j_connector.execute_query(
+        "MATCH (f:File) RETURN count(f) as count"
+    )
     initial_file_count = file_count_query[0]["count"]
 
     # Add a new file to the repository
@@ -224,9 +244,9 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
         time.sleep(1)
 
     # Verify the update completed
-    assert update_status["status"] == StepStatus.COMPLETED, (
-        f"Update step failed: {update_status.get('error')}"
-    )
+    assert (
+        update_status["status"] == StepStatus.COMPLETED
+    ), f"Update step failed: {update_status.get('error')}"
 
     # Verify that the new file was added to the database
     new_file = neo4j_connector.execute_query(
@@ -235,6 +255,10 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
     assert new_file is not None, "New file was not added to the database"
 
     # Verify the file count increased
-    file_count_query = neo4j_connector.execute_query("MATCH (f:File) RETURN count(f) as count")
+    file_count_query = neo4j_connector.execute_query(
+        "MATCH (f:File) RETURN count(f) as count"
+    )
     updated_file_count = file_count_query[0]["count"]
-    assert updated_file_count > initial_file_count, "File count did not increase after update"
+    assert (
+        updated_file_count > initial_file_count
+    ), "File count did not increase after update"

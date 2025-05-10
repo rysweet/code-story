@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 from neo4j import GraphDatabase
 from neo4j.exceptions import (
-    DriverError, 
+    DriverError,
     Neo4jError as Neo4jDriverError,
     ServiceUnavailable,
     TransientError,
@@ -26,7 +26,13 @@ except ImportError:
     # For testing environments where settings might not be available
     get_settings = None
 
-from .exceptions import ConnectionError, Neo4jError, QueryError, SchemaError, TransactionError
+from .exceptions import (
+    ConnectionError,
+    Neo4jError,
+    QueryError,
+    SchemaError,
+    TransactionError,
+)
 from .metrics import (
     QueryType,
     instrument_query,
@@ -42,72 +48,79 @@ from .schema import initialize_schema, create_custom_vector_index
 logger = logging.getLogger(__name__)
 
 # Define type for decorated functions
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
-def retry_on_transient(max_retries: int = 3, backoff_factor: float = 1.5) -> Callable[[F], F]:
+def retry_on_transient(
+    max_retries: int = 3, backoff_factor: float = 1.5
+) -> Callable[[F], F]:
     """Decorator for retrying operations on transient Neo4j errors.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
         backoff_factor: Exponential backoff factor between retries
-    
+
     Returns:
         Decorated function that implements retry logic
     """
+
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             retries = 0
             latest_error = None
-            
+
             while retries <= max_retries:
                 try:
                     return func(*args, **kwargs)
                 except (TransientError, ServiceUnavailable) as e:
                     retries += 1
                     latest_error = e
-                    
+
                     if retries <= max_retries:
                         # Record retry in metrics
-                        query_type = getattr(kwargs.get('write', False), 'value', QueryType.READ.value)
+                        query_type = getattr(
+                            kwargs.get("write", False), "value", QueryType.READ.value
+                        )
                         record_retry(QueryType(query_type))
-                        
+
                         # Calculate backoff time
-                        wait_time = backoff_factor ** retries
+                        wait_time = backoff_factor**retries
                         logger.warning(
                             f"Transient Neo4j error, retrying in {wait_time:.2f} seconds "
                             f"(attempt {retries}/{max_retries}): {str(e)}"
                         )
                         time.sleep(wait_time)
-                        
+
                 except Exception as e:
                     # Non-transient errors are not retried
                     raise e
-            
+
             # If we get here, we've exhausted our retries
             if latest_error:
-                logger.error(f"Max retries ({max_retries}) reached for Neo4j operation: {str(latest_error)}")
+                logger.error(
+                    f"Max retries ({max_retries}) reached for Neo4j operation: {str(latest_error)}"
+                )
                 raise QueryError(
                     f"Operation failed after {max_retries} retries",
                     cause=latest_error,
                 )
-            
+
             # This should never happen
             raise QueryError("Operation failed for unknown reason")
-            
+
         return cast(F, wrapper)
-    
+
     return decorator
 
 
 class Neo4jConnector:
     """Connector for interacting with Neo4j database.
-    
+
     Provides methods for executing queries, managing transactions,
     and performing vector similarity search.
     """
-    
+
     def __init__(
         self,
         uri: Optional[str] = None,
@@ -118,7 +131,7 @@ class Neo4jConnector:
         **config_options: Any,
     ) -> None:
         """Initialize the Neo4j connector.
-        
+
         Args:
             uri: Neo4j connection URI
             username: Neo4j username
@@ -129,7 +142,7 @@ class Neo4jConnector:
                 - connection_timeout: Connection timeout in seconds
                 - max_transaction_retry_time: Maximum transaction retry time in seconds
                 - connection_acquisition_timeout: Connection acquisition timeout in seconds
-        
+
         Raises:
             ConnectionError: If the connection to Neo4j fails
         """
@@ -139,33 +152,39 @@ class Neo4jConnector:
             self.username = username
             self.password = password
             self.database = database or "neo4j"
-            
+
             # Set default configuration options
             self.max_connection_pool_size = config_options.get(
                 "max_connection_pool_size", 50
             )
-            self.connection_timeout = config_options.get(
-                "connection_timeout", 30
-            )
-            
+            self.connection_timeout = config_options.get("connection_timeout", 30)
+
             # In tests we provide all required parameters
             all_params_provided = self.uri and self.username and self.password
-            
+
             # Try to get settings only if necessary and if settings module is available
-            if (not all_params_provided) and get_settings and not config_options.get("skip_settings", False):
+            if (
+                (not all_params_provided)
+                and get_settings
+                and not config_options.get("skip_settings", False)
+            ):
                 try:
                     settings = get_settings()
-                    
+
                     # Fall back to settings if parameters not provided
                     self.uri = self.uri or settings.neo4j.uri
                     self.username = self.username or settings.neo4j.username
-                    self.password = self.password or settings.neo4j.password.get_secret_value()
+                    self.password = (
+                        self.password or settings.neo4j.password.get_secret_value()
+                    )
                     self.database = self.database or settings.neo4j.database
-                    
+
                     # Get additional configuration from settings if not provided in config_options
                     if "max_connection_pool_size" not in config_options:
-                        self.max_connection_pool_size = settings.neo4j.max_connection_pool_size
-                    
+                        self.max_connection_pool_size = (
+                            settings.neo4j.max_connection_pool_size
+                        )
+
                     if "connection_timeout" not in config_options:
                         self.connection_timeout = settings.neo4j.connection_timeout
                 except Exception as e:
@@ -176,18 +195,20 @@ class Neo4jConnector:
                             f"Failed to load settings and missing required connection parameters: {str(e)}",
                             cause=e,
                         )
-            
+
             # Initialize driver
             self.driver = GraphDatabase.driver(
                 self.uri,
                 auth=(self.username, self.password),
                 max_connection_pool_size=self.max_connection_pool_size,
                 connection_timeout=self.connection_timeout,
-                **{k: v for k, v in config_options.items() if k not in [
-                    "max_connection_pool_size", "connection_timeout"
-                ]},
+                **{
+                    k: v
+                    for k, v in config_options.items()
+                    if k not in ["max_connection_pool_size", "connection_timeout"]
+                },
             )
-            
+
             # For testing, we'll skip connectivity verification
             if not config_options.get("skip_connection_check", False):
                 try:
@@ -196,7 +217,7 @@ class Neo4jConnector:
                         logger.info(f"Connected to Neo4j at {self.uri}")
                 except Exception as e:
                     logger.error(f"Connection verification failed: {str(e)}")
-            
+
         except Exception as e:
             record_connection_error()
             logger.error(f"Failed to connect to Neo4j: {str(e)}")
@@ -205,13 +226,13 @@ class Neo4jConnector:
                 uri=self.uri,
                 cause=e,
             )
-    
+
     def close(self) -> None:
         """Close all connections in the pool."""
         if hasattr(self, "driver") and self.driver:
             self.driver.close()
             logger.debug("Neo4j driver closed")
-    
+
     @instrument_query(query_type=QueryType.READ)
     @retry_on_transient()
     def execute_query(
@@ -222,23 +243,23 @@ class Neo4jConnector:
         retry_count: int = 3,
     ) -> List[Dict[str, Any]]:
         """Execute a Cypher query with automatic connection management.
-        
+
         Args:
             query: Cypher query to execute
             params: Query parameters
             write: Whether this is a write operation
             retry_count: Number of retries for transient errors
-        
+
         Returns:
             List of records as dictionaries
-        
+
         Raises:
             QueryError: If the query execution fails
         """
         try:
             query_type = QueryType.WRITE if write else QueryType.READ
             logger.debug(f"Executing {query_type.value} query: {query}")
-            
+
             # Special handling for mock driver in tests
             if isinstance(self.driver, MagicMock):
                 # Return directly from mock in tests
@@ -247,7 +268,7 @@ class Neo4jConnector:
                     return session.execute_write()
                 else:
                     return session.execute_read()
-            
+
             # Create a session with the database name
             session = self.driver.session(database=self.database)
             try:
@@ -263,7 +284,7 @@ class Neo4jConnector:
                 return result
             finally:
                 session.close()
-                
+
         except Neo4jDriverError as e:
             logger.error(f"Neo4j query error: {str(e)}")
             raise QueryError(
@@ -280,7 +301,7 @@ class Neo4jConnector:
                 parameters=params,
                 cause=e,
             )
-    
+
     @instrument_query(query_type=QueryType.WRITE)
     @retry_on_transient()
     def execute_many(
@@ -290,28 +311,30 @@ class Neo4jConnector:
         write: bool = False,
     ) -> List[List[Dict[str, Any]]]:
         """Execute multiple queries in a single transaction.
-        
+
         Args:
             queries: List of Cypher queries to execute
             params_list: List of parameter dictionaries for each query
             write: Whether these are write operations
-        
+
         Returns:
             List of results for each query
-        
+
         Raises:
             QueryError: If any query execution fails
             ValueError: If queries and params_list have different lengths
         """
         if params_list and len(queries) != len(params_list):
             raise ValueError("Number of queries and parameter sets must match")
-        
+
         params_list = params_list or [{}] * len(queries)
-        
+
         try:
             query_type = QueryType.WRITE if write else QueryType.READ
-            logger.debug(f"Executing {len(queries)} {query_type.value} queries in transaction")
-            
+            logger.debug(
+                f"Executing {len(queries)} {query_type.value} queries in transaction"
+            )
+
             # Special handling for mock driver in tests
             if isinstance(self.driver, MagicMock):
                 # Return directly from mock in tests
@@ -320,7 +343,7 @@ class Neo4jConnector:
                     return session.execute_write()
                 else:
                     return session.execute_read()
-            
+
             # Create a session with the database name
             session = self.driver.session(database=self.database)
             try:
@@ -337,7 +360,7 @@ class Neo4jConnector:
                 return results
             finally:
                 session.close()
-                
+
         except Neo4jDriverError as e:
             record_transaction(success=False)
             logger.error(f"Neo4j transaction error: {str(e)}")
@@ -354,33 +377,33 @@ class Neo4jConnector:
                 operation="execute_many",
                 cause=e,
             )
-    
+
     def _transaction_function(
         self, tx, query: str, params: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Execute a single query in a transaction.
-        
+
         Args:
             tx: Neo4j transaction
             query: Cypher query to execute
             params: Query parameters
-        
+
         Returns:
             List of records as dictionaries
         """
         result = tx.run(query, params)
         return [dict(record) for record in result]
-    
+
     def _transaction_function_many(
         self, tx, queries: List[str], params_list: List[Dict[str, Any]]
     ) -> List[List[Dict[str, Any]]]:
         """Execute multiple queries in a transaction.
-        
+
         Args:
             tx: Neo4j transaction
             queries: List of Cypher queries to execute
             params_list: List of parameter dictionaries for each query
-        
+
         Returns:
             List of results for each query
         """
@@ -389,11 +412,11 @@ class Neo4jConnector:
             result = tx.run(query, params)
             results.append([dict(record) for record in result])
         return results
-    
+
     @instrument_query(query_type=QueryType.SCHEMA)
     def initialize_schema(self) -> None:
         """Create constraints, indexes, and schema elements.
-        
+
         Raises:
             SchemaError: If schema initialization fails
         """
@@ -407,7 +430,7 @@ class Neo4jConnector:
                 operation="initialize_schema",
                 cause=e,
             )
-    
+
     @instrument_query(query_type=QueryType.SCHEMA)
     def create_vector_index(
         self,
@@ -417,18 +440,20 @@ class Neo4jConnector:
         similarity: str = "cosine",
     ) -> None:
         """Create a vector index for semantic search.
-        
+
         Args:
             label: Node label to index
             property_name: Property containing the vector
             dimensions: Vector dimensions
             similarity: Similarity function (cosine, euclidean, or dot)
-        
+
         Raises:
             SchemaError: If the index creation fails
         """
         try:
-            create_custom_vector_index(self, label, property_name, dimensions, similarity)
+            create_custom_vector_index(
+                self, label, property_name, dimensions, similarity
+            )
             logger.info(f"Vector index created for {label}.{property_name}")
         except Exception as e:
             logger.error(f"Failed to create vector index: {str(e)}")
@@ -437,68 +462,55 @@ class Neo4jConnector:
                 operation="create_vector_index",
                 cause=e,
             )
-    
-    def create_node(
-        self,
-        label: str,
-        properties: Dict[str, Any]
-    ) -> Dict[str, Any]:
+
+    def create_node(self, label: str, properties: Dict[str, Any]) -> Dict[str, Any]:
         """Create a node in the Neo4j database.
-        
+
         Args:
             label: The node label
             properties: Node properties
-            
+
         Returns:
             Dict: The created node data
         """
         query = f"CREATE (n:{label} $props) RETURN n"
-        result = self.execute_query(
-            query,
-            params={"props": properties},
-            write=True
-        )
+        result = self.execute_query(query, params={"props": properties}, write=True)
         return result[0]["n"] if result else None
-    
-    def find_node(
-        self,
-        label: str,
-        properties: Dict[str, Any]
-    ) -> Dict[str, Any]:
+
+    def find_node(self, label: str, properties: Dict[str, Any]) -> Dict[str, Any]:
         """Find a node with the given label and properties.
-        
+
         Args:
             label: The node label
             properties: Node properties to match
-            
+
         Returns:
             Dict: The found node data or None if not found
         """
         # Create a match condition for each property
-        match_conditions = " AND ".join([f"n.{key} = ${key}" for key in properties.keys()])
-        
-        query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
-        result = self.execute_query(
-            query,
-            params=properties
+        match_conditions = " AND ".join(
+            [f"n.{key} = ${key}" for key in properties.keys()]
         )
+
+        query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
+        result = self.execute_query(query, params=properties)
         return result[0]["n"] if result else None
-        
+
     def create_relationship(
         self,
         start_node: Dict[str, Any],
         end_node: Dict[str, Any],
         rel_type: str,
-        properties: Dict[str, Any] = None
+        properties: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """Create a relationship between two nodes.
-        
+
         Args:
             start_node: The start node
             end_node: The end node
             rel_type: The relationship type
             properties: Optional relationship properties
-            
+
         Returns:
             Dict: The created relationship data
         """
@@ -511,18 +523,22 @@ class Neo4jConnector:
         SET r = $props
         RETURN r
         """
-        
+
         result = self.execute_query(
             query,
             params={
-                "start_id": start_node.element_id if hasattr(start_node, "element_id") else start_node["id"],
-                "end_id": end_node.element_id if hasattr(end_node, "element_id") else end_node["id"],
-                "props": props
+                "start_id": start_node.element_id
+                if hasattr(start_node, "element_id")
+                else start_node["id"],
+                "end_id": end_node.element_id
+                if hasattr(end_node, "element_id")
+                else end_node["id"],
+                "props": props,
             },
-            write=True
+            write=True,
         )
         return result[0]["r"] if result else None
-    
+
     def semantic_search(
         self,
         query_embedding: List[float],
@@ -532,22 +548,22 @@ class Neo4jConnector:
         similarity_cutoff: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         """Perform vector similarity search using the provided embedding.
-        
+
         Args:
             query_embedding: The vector embedding to search against
             node_label: The node label to search within
             property_name: The property containing the embedding vector
             limit: Maximum number of results
             similarity_cutoff: Minimum similarity score (0-1) to include in results
-        
+
         Returns:
             List of nodes with similarity scores
-        
+
         Raises:
             QueryError: If the search fails
         """
         start_time = time.time()
-        
+
         try:
             # Build the Cypher query with optional similarity cutoff
             cypher = f"""
@@ -555,26 +571,25 @@ class Neo4jConnector:
             WHERE n.{property_name} IS NOT NULL
             WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
             """
-            
+
             if similarity_cutoff is not None:
                 cypher += f"\nWHERE score >= {similarity_cutoff}"
-                
+
             cypher += """
             ORDER BY score DESC
             LIMIT $limit
             RETURN n, score
             """
-            
+
             result = self.execute_query(
-                cypher, 
-                {"embedding": query_embedding, "limit": limit}
+                cypher, {"embedding": query_embedding, "limit": limit}
             )
-            
+
             # Record metric
             record_vector_search(node_label, time.time() - start_time)
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Vector search failed: {str(e)}")
             raise QueryError(
@@ -583,32 +598,34 @@ class Neo4jConnector:
                 parameters={"limit": limit, "cutoff": similarity_cutoff},
                 cause=e,
             )
-    
+
     def check_connection(self) -> Dict[str, Any]:
         """Check if database is accessible and return basic info.
-        
+
         Returns:
             Dictionary with database information
-        
+
         Raises:
             ConnectionError: If the connection check fails
         """
         try:
             # Get basic database information
-            result = self.execute_query("CALL dbms.components() YIELD name, versions RETURN name, versions")
-            
+            result = self.execute_query(
+                "CALL dbms.components() YIELD name, versions RETURN name, versions"
+            )
+
             # Get connection pool metrics
             if hasattr(self.driver, "_pool") and hasattr(self.driver._pool, "in_use"):
                 pool_size = self.driver._pool.max_size
                 acquired = len(self.driver._pool.in_use)
                 update_pool_metrics(pool_size, acquired)
-            
+
             return {
                 "connected": True,
                 "database": self.database,
                 "components": result,
             }
-            
+
         except Exception as e:
             record_connection_error()
             logger.error(f"Connection check failed: {str(e)}")
@@ -617,7 +634,7 @@ class Neo4jConnector:
                 uri=self.uri,
                 cause=e,
             )
-    
+
     async def execute_query_async(
         self,
         query: str,
@@ -625,15 +642,15 @@ class Neo4jConnector:
         write: bool = False,
     ) -> List[Dict[str, Any]]:
         """Execute a Cypher query asynchronously.
-        
+
         Args:
             query: Cypher query to execute
             params: Query parameters
             write: Whether this is a write operation
-        
+
         Returns:
             List of records as dictionaries
-        
+
         Raises:
             QueryError: If the query execution fails
         """
@@ -645,28 +662,27 @@ class Neo4jConnector:
                 return session.execute_write.return_value
             else:
                 return session.execute_read.return_value
-                
+
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
-            None,
-            lambda: self.execute_query(query, params, write)
+            None, lambda: self.execute_query(query, params, write)
         )
-    
+
     async def execute_many_async(
         self,
         queries: List[Dict[str, Any]],
         write: bool = False,
     ) -> List[List[Dict[str, Any]]]:
         """Execute multiple queries asynchronously.
-        
+
         Args:
             queries: List of query dictionaries with 'query' and 'params' keys
             write: Whether these are write operations
-        
+
         Returns:
             List of results for each query
-        
+
         Raises:
             TransactionError: If any query execution fails
         """
@@ -678,7 +694,7 @@ class Neo4jConnector:
                 return session.execute_write.return_value
             else:
                 return session.execute_read.return_value
-                
+
         # Prepare the queries list in the right format
         query_list = []
         params_list = []
@@ -686,14 +702,13 @@ class Neo4jConnector:
             if isinstance(q, dict) and "query" in q:
                 query_list.append(q["query"])
                 params_list.append(q.get("params", {}))
-        
+
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
-            None,
-            lambda: self.execute_many(query_list, params_list, write)
+            None, lambda: self.execute_many(query_list, params_list, write)
         )
-    
+
     async def check_connection_async(self) -> Dict[str, Any]:
         """Check database connectivity asynchronously.
 
@@ -710,7 +725,7 @@ class Neo4jConnector:
                 return {
                     "connected": True,
                     "database": self.database,
-                    "components": [{"name": "Neo4j", "versions": ["5.x"]}]
+                    "components": [{"name": "Neo4j", "versions": ["5.x"]}],
                 }
 
             # Execute the query asynchronously, ensuring database name is used
@@ -738,19 +753,16 @@ class Neo4jConnector:
                 uri=self.uri,
                 cause=e,
             )
-    
+
     async def close_async(self) -> None:
         """Close connections asynchronously."""
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(
-            None,
-            self.close
-        )
-    
+        await loop.run_in_executor(None, self.close)
+
     def __enter__(self) -> "Neo4jConnector":
         """Support for context manager protocol."""
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Clean up resources when exiting context."""
         self.close()
@@ -758,21 +770,21 @@ class Neo4jConnector:
 
 def create_connector(async_mode: bool = False) -> Neo4jConnector:
     """Create a Neo4j connector with settings from configuration.
-    
+
     Args:
         async_mode: Whether to use async mode for the connector
-    
+
     Returns:
         Neo4jConnector instance
-    
+
     Raises:
         ConnectionError: If the connection to Neo4j fails
     """
     if get_settings is None:
         raise ImportError("Settings module not available")
-        
+
     settings = get_settings()
-    
+
     connector = Neo4jConnector(
         uri=settings.neo4j.uri,
         username=settings.neo4j.username,
@@ -782,5 +794,5 @@ def create_connector(async_mode: bool = False) -> Neo4jConnector:
         max_connection_pool_size=settings.neo4j.max_connection_pool_size,
         connection_timeout=settings.neo4j.connection_timeout,
     )
-    
+
     return connector

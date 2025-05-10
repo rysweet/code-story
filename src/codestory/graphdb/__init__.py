@@ -51,7 +51,6 @@ __all__ = [
     # Connector
     "Neo4jConnector",
     "create_connector",
-    
     # Exceptions
     "Neo4jError",
     "ConnectionError",
@@ -59,7 +58,6 @@ __all__ = [
     "SchemaError",
     "TransactionError",
     "ExportError",
-    
     # Node models
     "NodeType",
     "BaseNode",
@@ -68,26 +66,23 @@ __all__ = [
     "ClassNode",
     "FunctionNode",
     "MethodNode",
-    "ModuleNode", 
+    "ModuleNode",
     "SummaryNode",
     "DocumentationNode",
-    
     # Relationship models
     "RelationshipType",
     "BaseRelationship",
     "ContainsRelationship",
     "ImportsRelationship",
-    "CallsRelationship", 
+    "CallsRelationship",
     "InheritsFromRelationship",
-    "DocumentedByRelationship", 
+    "DocumentedByRelationship",
     "SummarizedByRelationship",
-    
     # Schema
     "initialize_schema",
     "create_custom_vector_index",
     "get_schema_initialization_queries",
     "verify_schema",
-    
     # Export
     "export_to_json",
     "export_to_csv",

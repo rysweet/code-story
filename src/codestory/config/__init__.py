@@ -60,7 +60,7 @@ __all__ = [
     "Settings",
     "Neo4jSettings",
     "RedisSettings",
-    "OpenAISettings", 
+    "OpenAISettings",
     "AzureOpenAISettings",
     "ServiceSettings",
     "IngestionSettings",
@@ -68,24 +68,20 @@ __all__ = [
     "TelemetrySettings",
     "InterfaceSettings",
     "AzureSettings",
-    
     # Settings access
     "get_settings",
     "refresh_settings",
     "get_project_root",
-    
     # Configuration writing
     "update_config",
     "update_env",
     "update_toml",
     "get_config_value",
-    
     # Configuration export
     "settings_to_dict",
     "export_to_json",
     "export_to_toml",
     "create_env_template",
-    
     # Exceptions
     "ConfigurationError",
     "ValidationError",

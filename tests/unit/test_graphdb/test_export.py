@@ -47,7 +47,9 @@ def test_export_to_json(mock_connector):
         )
 
         # Verify connector called correctly
-        mock_connector.execute_query.assert_called_once_with("MATCH (n) RETURN n", {"key": "value"})
+        mock_connector.execute_query.assert_called_once_with(
+            "MATCH (n) RETURN n", {"key": "value"}
+        )
 
         # Verify output file created
         assert os.path.exists(output_path)
@@ -79,7 +81,9 @@ def test_export_to_csv(mock_connector):
         )
 
         # Verify connector called correctly
-        mock_connector.execute_query.assert_called_once_with("MATCH (n) RETURN n", {"key": "value"})
+        mock_connector.execute_query.assert_called_once_with(
+            "MATCH (n) RETURN n", {"key": "value"}
+        )
 
         # Verify output file created
         assert os.path.exists(output_path)
@@ -129,7 +133,9 @@ def test_export_to_json_error(mock_connector):
         # Should raise ExportError
         with pytest.raises(ExportError):
             export_to_json(
-                connector=mock_connector, output_path=output_path, query="MATCH (n) RETURN n"
+                connector=mock_connector,
+                output_path=output_path,
+                query="MATCH (n) RETURN n",
             )
 
         # File should not exist
@@ -187,13 +193,21 @@ def test_export_cypher_script(mock_connector):
     """Test exporting database as a Cypher script."""
     # Configure mock responses
     nodes_data = [
-        {"n": {"labels": ["File"], "properties": {"path": "/test/file.py", "name": "file.py"}}}
+        {
+            "n": {
+                "labels": ["File"],
+                "properties": {"path": "/test/file.py", "name": "file.py"},
+            }
+        }
     ]
 
     relationships_data = [
         {
             "r": {"type": "CONTAINS", "properties": {}},
-            "source": {"labels": ["Directory"], "properties": {"path": "/test", "name": "test"}},
+            "source": {
+                "labels": ["Directory"],
+                "properties": {"path": "/test", "name": "test"},
+            },
             "target": {
                 "labels": ["File"],
                 "properties": {"path": "/test/file.py", "name": "file.py"},
@@ -215,7 +229,9 @@ def test_export_cypher_script(mock_connector):
         output_path = os.path.join(temp_dir, "export.cypher")
 
         # Export as Cypher script
-        result_path = export_cypher_script(connector=mock_connector, output_path=output_path)
+        result_path = export_cypher_script(
+            connector=mock_connector, output_path=output_path
+        )
 
         # Verify output file created
         assert os.path.exists(output_path)

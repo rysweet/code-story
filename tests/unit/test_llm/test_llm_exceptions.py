@@ -20,13 +20,13 @@ def test_llm_openai_error_base():
     assert error.message == "Test message"
     assert error.details == {}
     assert error.cause is None
-    
+
     # Test with details
     details = {"model": "gpt-4", "tokens": 1000}
     error = OpenAIError("Test message", details=details)
     assert error.message == "Test message"
     assert error.details == details
-    
+
     # Test with cause
     cause = ValueError("Original error")
     error = OpenAIError("Test message", cause=cause)
@@ -47,7 +47,7 @@ def test_llm_rate_limit_error():
     error = RateLimitError("Rate limit exceeded")
     assert isinstance(error, OpenAIError)
     assert error.retry_after is None
-    
+
     # With retry_after
     error = RateLimitError("Rate limit exceeded", retry_after=30)
     assert error.retry_after == 30
@@ -81,12 +81,10 @@ def test_llm_context_length_error():
     assert isinstance(error, InvalidRequestError)
     assert error.max_tokens is None
     assert error.input_tokens is None
-    
+
     # With token counts
     error = ContextLengthError(
-        "Context length exceeded",
-        max_tokens=8192,
-        input_tokens=9000
+        "Context length exceeded", max_tokens=8192, input_tokens=9000
     )
     assert error.max_tokens == 8192
     assert error.input_tokens == 9000

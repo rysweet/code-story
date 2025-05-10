@@ -8,39 +8,39 @@ from typing import Dict, List, Union
 
 
 def get_module_summary_prompt(
-    content: str, 
+    content: str,
     context: List[str],
     child_summaries: List[str] = None,
-    max_tokens: int = 8000
+    max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a module.
-    
+
     Args:
         content: Module content
         context: Contextual information about the module
         child_summaries: Summaries of child nodes
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Prompt for generating a module summary
     """
     # Truncate content if it's too long
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
-        content = content[:max_tokens * 4] + "\n...[content truncated due to length]"
-    
+        content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
+
     prompt = f"""You are an expert code architect. Analyze the following module and write a comprehensive summary.
 
 Module information:
 {chr(10).join(context)}
 
 """
-    
+
     if child_summaries:
         prompt += f"""Summaries of contained components:
 {chr(10).join(child_summaries)}
 
 """
-    
+
     prompt += f"""Module content:
 ```
 {content}
@@ -57,27 +57,27 @@ Your summary should be concise, technical, and informative. Focus on explaining 
 
 Summary:
 """
-    
+
     return prompt
 
 
 def get_summary_prompt(
-    content: str, 
+    content: str,
     context: List[str],
     child_summaries: List[str] = None,
-    max_tokens: int = 8000
+    max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a module.
-    
+
     This is a wrapper around get_module_summary_prompt to maintain
     a consistent interface across prompt modules.
-    
+
     Args:
         content: Module content
         context: Contextual information about the module
         child_summaries: Summaries of child nodes
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Prompt for generating a module summary
     """

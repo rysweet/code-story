@@ -36,9 +36,9 @@ def client():
         mock_get_settings.return_value = mock_settings
 
     # Create app with mocked adapters
-    with mock.patch("codestory_mcp.adapters.graph_service.GraphServiceAdapter"), \
-         mock.patch("codestory_mcp.adapters.openai_service.OpenAIServiceAdapter"):
-
+    with mock.patch(
+        "codestory_mcp.adapters.graph_service.GraphServiceAdapter"
+    ), mock.patch("codestory_mcp.adapters.openai_service.OpenAIServiceAdapter"):
         # Register tools manually for testing
         register_tool(SearchGraphTool)
         register_tool(SummarizeNodeTool)
@@ -56,7 +56,7 @@ def client():
 def test_health_check(client):
     """Test the health check endpoint."""
     response = client.get("/v1/health")
-    
+
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
@@ -64,13 +64,13 @@ def test_health_check(client):
 def test_get_tools(client):
     """Test getting available tools."""
     response = client.get("/v1/tools")
-    
+
     assert response.status_code == 200
     assert "tools" in response.json()
-    
+
     tools = response.json()["tools"]
     tool_names = [tool["name"] for tool in tools]
-    
+
     assert "searchGraph" in tool_names
     assert "summarizeNode" in tool_names
     assert "pathTo" in tool_names
@@ -80,8 +80,11 @@ def test_get_tools(client):
 def test_execute_search_graph_tool(client):
     """Test executing the searchGraph tool."""
     # Mock the GraphServiceAdapter search method and serializer
-    with mock.patch("codestory_mcp.tools.search_graph.get_graph_service") as mock_get_service, \
-         mock.patch("codestory_mcp.tools.search_graph.NodeSerializer") as mock_serializer:
+    with mock.patch(
+        "codestory_mcp.tools.search_graph.get_graph_service"
+    ) as mock_get_service, mock.patch(
+        "codestory_mcp.tools.search_graph.NodeSerializer"
+    ) as mock_serializer:
         service = mock.AsyncMock()
         mock_get_service.return_value = service
 
@@ -89,11 +92,10 @@ def test_execute_search_graph_tool(client):
         mock_node = mock.Mock()
         mock_node.id = "node-123"
         mock_node.labels = ["Class"]
-        mock_node.properties = {
-            "name": "TestClass",
-            "path": "/path/to/test.py"
-        }
-        mock_node.get = mock.Mock(side_effect=lambda k, d=None: mock_node.properties.get(k, d))
+        mock_node.properties = {"name": "TestClass", "path": "/path/to/test.py"}
+        mock_node.get = mock.Mock(
+            side_effect=lambda k, d=None: mock_node.properties.get(k, d)
+        )
         mock_node.items = mock.Mock(return_value=mock_node.properties.items())
 
         # Set up async mock correctly
@@ -108,7 +110,7 @@ def test_execute_search_graph_tool(client):
                     "name": "TestClass",
                     "path": "/path/to/test.py",
                     "score": 0.95,
-                    "properties": {}
+                    "properties": {},
                 }
             ]
         }
@@ -116,11 +118,7 @@ def test_execute_search_graph_tool(client):
         # Execute tool
         response = client.post(
             "/v1/tools/searchGraph",
-            json={
-                "query": "test query",
-                "node_types": ["Class"],
-                "limit": 5
-            }
+            json={"query": "test query", "node_types": ["Class"], "limit": 5},
         )
 
         # Verify response
@@ -136,17 +134,18 @@ def test_execute_search_graph_tool(client):
 
         # Verify service call
         service.search.assert_called_once_with(
-            query="test query",
-            node_types=["Class"],
-            limit=5
+            query="test query", node_types=["Class"], limit=5
         )
 
 
 def test_execute_summarize_node_tool(client):
     """Test executing the summarizeNode tool."""
     # Mock the GraphServiceAdapter and OpenAIServiceAdapter
-    with mock.patch("codestory_mcp.tools.summarize_node.get_graph_service") as mock_get_graph_service, \
-         mock.patch("codestory_mcp.tools.summarize_node.get_openai_service") as mock_get_openai_service:
+    with mock.patch(
+        "codestory_mcp.tools.summarize_node.get_graph_service"
+    ) as mock_get_graph_service, mock.patch(
+        "codestory_mcp.tools.summarize_node.get_openai_service"
+    ) as mock_get_openai_service:
         graph_service = mock.AsyncMock()
         openai_service = mock.AsyncMock()
         mock_get_graph_service.return_value = graph_service
@@ -159,9 +158,11 @@ def test_execute_summarize_node_tool(client):
         mock_node.properties = {
             "name": "TestClass",
             "path": "/path/to/test.py",
-            "content": "class TestClass:\n    pass"
+            "content": "class TestClass:\n    pass",
         }
-        mock_node.get = mock.Mock(side_effect=lambda k, d=None: mock_node.properties.get(k, d))
+        mock_node.get = mock.Mock(
+            side_effect=lambda k, d=None: mock_node.properties.get(k, d)
+        )
 
         graph_service.find_node.return_value = mock_node
 
@@ -171,10 +172,7 @@ def test_execute_summarize_node_tool(client):
         # Execute tool
         response = client.post(
             "/v1/tools/summarizeNode",
-            json={
-                "node_id": "node-123",
-                "include_context": True
-            }
+            json={"node_id": "node-123", "include_context": True},
         )
 
         # Verify response
@@ -194,12 +192,9 @@ def test_execute_summarize_node_tool(client):
 def test_execute_tool_with_invalid_parameters(client):
     """Test executing a tool with invalid parameters."""
     response = client.post(
-        "/v1/tools/searchGraph",
-        json={
-            "query": ""  # Empty query is invalid
-        }
+        "/v1/tools/searchGraph", json={"query": ""}  # Empty query is invalid
     )
-    
+
     # Verify error response
     assert response.status_code == 400
     # Test accepts both error formats
@@ -212,11 +207,8 @@ def test_execute_tool_with_invalid_parameters(client):
 
 def test_execute_nonexistent_tool(client):
     """Test executing a non-existent tool."""
-    response = client.post(
-        "/v1/tools/nonexistentTool",
-        json={}
-    )
-    
+    response = client.post("/v1/tools/nonexistentTool", json={})
+
     # Verify error response
     assert response.status_code == 404
     # Test accepts both error formats

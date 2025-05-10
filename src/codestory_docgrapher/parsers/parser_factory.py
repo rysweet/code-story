@@ -14,16 +14,16 @@ logger = logging.getLogger(__name__)
 
 class Parser:
     """Base class for document parsers.
-    
+
     All document parsers should implement this interface.
     """
-    
+
     def parse(self, document: DocumentationFile) -> Dict:
         """Parse a documentation file and extract entities and relationships.
-        
+
         Args:
             document: The documentation file to parse
-            
+
         Returns:
             Dict containing extracted entities and relationships
         """
@@ -32,36 +32,38 @@ class Parser:
 
 class ParserFactory:
     """Factory for creating parsers based on document type.
-    
+
     This class creates the appropriate parser for a given document type.
     """
-    
+
     _parsers: Dict[DocumentType, Type[Parser]] = {}
-    
+
     @classmethod
     def register(cls, doc_type: DocumentType) -> callable:
         """Register a parser class for a document type.
-        
+
         This is a decorator for registering parser classes.
-        
+
         Args:
             doc_type: The document type to register the parser for
-            
+
         Returns:
             Decorator function
         """
+
         def decorator(parser_class: Type[Parser]) -> Type[Parser]:
             cls._parsers[doc_type] = parser_class
             return parser_class
+
         return decorator
-    
+
     @classmethod
     def create(cls, doc_type: DocumentType) -> Optional[Parser]:
         """Create a parser for the given document type.
-        
+
         Args:
             doc_type: The document type to create a parser for
-            
+
         Returns:
             An instance of the appropriate parser, or None if no parser is registered
         """
@@ -69,16 +71,16 @@ class ParserFactory:
         if not parser_class:
             logger.warning(f"No parser registered for document type: {doc_type}")
             return None
-        
+
         return parser_class()
 
 
 def get_parser_for_file(document: DocumentationFile) -> Optional[Parser]:
     """Get a parser for the given documentation file.
-    
+
     Args:
         document: The documentation file to get a parser for
-        
+
     Returns:
         An instance of the appropriate parser, or None if no parser is registered
     """

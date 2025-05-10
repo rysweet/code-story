@@ -8,24 +8,22 @@ from typing import Dict, List, Union
 
 
 def get_function_summary_prompt(
-    content: str, 
-    context: List[str],
-    max_tokens: int = 8000
+    content: str, context: List[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a function.
-    
+
     Args:
         content: Function content
         context: Contextual information about the function
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Prompt for generating a function summary
     """
     # Truncate content if it's too long
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
-        content = content[:max_tokens * 4] + "\n...[content truncated due to length]"
-    
+        content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
+
     prompt = f"""You are an expert code summarizer specializing in function analysis. Analyze the following function and write a comprehensive summary.
 
 Function information:
@@ -47,29 +45,27 @@ Your summary should be concise, technical, and informative. Focus on explaining 
 
 Summary:
 """
-    
+
     return prompt
 
 
 def get_method_summary_prompt(
-    content: str, 
-    context: List[str],
-    max_tokens: int = 8000
+    content: str, context: List[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a method.
-    
+
     Args:
         content: Method content
         context: Contextual information about the method
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Prompt for generating a method summary
     """
     # Truncate content if it's too long
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
-        content = content[:max_tokens * 4] + "\n...[content truncated due to length]"
-    
+        content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
+
     prompt = f"""You are an expert code summarizer specializing in object-oriented design. Analyze the following method and write a comprehensive summary.
 
 Method information:
@@ -91,24 +87,21 @@ Your summary should be concise, technical, and informative. Focus on explaining 
 
 Summary:
 """
-    
+
     return prompt
 
 
 def get_summary_prompt(
-    content: str, 
-    context: List[str],
-    is_method: bool = False,
-    max_tokens: int = 8000
+    content: str, context: List[str], is_method: bool = False, max_tokens: int = 8000
 ) -> str:
     """Generate an appropriate prompt based on whether it's a function or method.
-    
+
     Args:
         content: Function/method content
         context: Contextual information about the function/method
         is_method: Whether this is a method (as opposed to a function)
         max_tokens: Maximum tokens to include in the prompt
-        
+
     Returns:
         Appropriate prompt for the function/method
     """

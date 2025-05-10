@@ -49,7 +49,9 @@ def mock_llm_client():
                 choices=[
                     ChatCompletionResponseChoice(
                         index=0,
-                        message=ChatMessage(role=ChatRole.ASSISTANT, content=response_text),
+                        message=ChatMessage(
+                            role=ChatRole.ASSISTANT, content=response_text
+                        ),
                         finish_reason="stop",
                     )
                 ],
@@ -100,7 +102,8 @@ def sample_repo():
         (repo_dir / "docs").mkdir()
 
         # Create a README file
-        (repo_dir / "README.md").write_text("""
+        (repo_dir / "README.md").write_text(
+            """
 # Sample Repository
 
 This is a sample repository for testing the full ingestion pipeline.
@@ -119,10 +122,12 @@ from sample_repo import SampleClass
 sample = SampleClass("World")
 print(sample.greet())
 ```
-""")
+"""
+        )
 
         # Create a Python file
-        (repo_dir / "src" / "sample.py").write_text("""
+        (repo_dir / "src" / "sample.py").write_text(
+            """
 '''Sample module for testing.
 
 This module provides a simple class for greeting.
@@ -160,7 +165,8 @@ def main():
     
 if __name__ == "__main__":
     main()
-""")
+"""
+        )
 
         # Add some files that should be ignored
         (repo_dir / ".git").mkdir()
@@ -203,8 +209,12 @@ def mock_steps(mock_llm_client, mock_docker_client):
 
             # Mock status methods to return COMPLETED
             with (
-                patch.object(BlarifyStep, "status", autospec=True) as mock_blarify_status,
-                patch.object(SummarizerStep, "status", autospec=True) as mock_summarizer_status,
+                patch.object(
+                    BlarifyStep, "status", autospec=True
+                ) as mock_blarify_status,
+                patch.object(
+                    SummarizerStep, "status", autospec=True
+                ) as mock_summarizer_status,
                 patch.object(
                     DocumentationGrapherStep, "status", autospec=True
                 ) as mock_docgrapher_status,
@@ -265,13 +275,15 @@ def test_full_pipeline_run(sample_repo, neo4j_connector, mock_steps):
     assert "filesystem" in steps_status, "FileSystemStep was not executed"
     assert "blarify" in steps_status, "BlarifyStep was not executed"
     assert "summarizer" in steps_status, "SummarizerStep was not executed"
-    assert "documentation_grapher" in steps_status, "DocumentationGrapherStep was not executed"
+    assert (
+        "documentation_grapher" in steps_status
+    ), "DocumentationGrapherStep was not executed"
 
     # Verify that all steps completed successfully
     for step_name, step_status in steps_status.items():
-        assert step_status["status"] == "COMPLETED", (
-            f"Step {step_name} failed: {step_status.get('error')}"
-        )
+        assert (
+            step_status["status"] == "COMPLETED"
+        ), f"Step {step_name} failed: {step_status.get('error')}"
 
     # Verify that File nodes were created in Neo4j
     file_count = neo4j_connector.run_query(
@@ -339,14 +351,14 @@ def test_pipeline_step_dependencies(sample_repo, neo4j_connector, mock_steps):
     step_order = list(steps_status.keys())
 
     # Verify filesystem comes before blarify
-    assert step_order.index("filesystem") < step_order.index("blarify"), (
-        "FileSystemStep should execute before BlarifyStep"
-    )
+    assert step_order.index("filesystem") < step_order.index(
+        "blarify"
+    ), "FileSystemStep should execute before BlarifyStep"
 
     # Verify blarify comes before summarizer
-    assert step_order.index("blarify") < step_order.index("summarizer"), (
-        "BlarifyStep should execute before SummarizerStep"
-    )
+    assert step_order.index("blarify") < step_order.index(
+        "summarizer"
+    ), "BlarifyStep should execute before SummarizerStep"
 
 
 @pytest.mark.integration
@@ -464,6 +476,10 @@ def test_pipeline_progress_tracking(sample_repo, neo4j_connector, mock_steps):
         final_status = manager.get_job_status(job_id)
 
         # Verify that progress increased over time
-        assert status1.get("progress", 0) < status2.get("progress", 0), "Progress should increase"
-        assert status2.get("progress", 0) < status3.get("progress", 0), "Progress should increase"
+        assert status1.get("progress", 0) < status2.get(
+            "progress", 0
+        ), "Progress should increase"
+        assert status2.get("progress", 0) < status3.get(
+            "progress", 0
+        ), "Progress should increase"
         assert final_status.get("progress", 0) == 100.0, "Final progress should be 100%"

@@ -4,26 +4,67 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from codestory.llm.metrics import (
-    ERROR_COUNT,
-    REQUEST_COUNT,
-    REQUEST_DURATION,
-    RETRY_COUNT,
-    TOKEN_USAGE,
-    OperationType,
-    instrument_async_request,
-    instrument_request,
-    record_error,
-    record_request,
-    record_retry,
-)
+# Import the OperationType enum directly
+from codestory.llm.metrics import OperationType
+
+
+# Create mock fixture to prevent real Prometheus metrics from being used
+@pytest.fixture(autouse=True)
+def mock_all_metrics_objects():
+    """Mock all Prometheus metrics objects before any module imports."""
+    with patch("prometheus_client.Counter") as mock_counter, patch(
+        "prometheus_client.Gauge"
+    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram, patch(
+        "prometheus_client.registry.REGISTRY._names_to_collectors", {}
+    ):
+        # Configure the mocks to behave like the real counters
+        mock_labels = MagicMock()
+        mock_counter.return_value.labels = mock_labels
+        mock_gauge.return_value.labels = mock_labels
+        mock_histogram.return_value.labels = mock_labels
+
+        # Now import the metrics functions after patching
+        from codestory.llm.metrics import (
+            ERROR_COUNT,
+            REQUEST_COUNT,
+            REQUEST_DURATION,
+            RETRY_COUNT,
+            TOKEN_USAGE,
+            CURRENT_REQUESTS,
+            instrument_async_request,
+            instrument_request,
+            record_error,
+            record_request,
+            record_retry,
+        )
+
+        # Store the imported functions/objects for use in tests
+        metrics_objects = {
+            "ERROR_COUNT": ERROR_COUNT,
+            "REQUEST_COUNT": REQUEST_COUNT,
+            "REQUEST_DURATION": REQUEST_DURATION,
+            "RETRY_COUNT": RETRY_COUNT,
+            "TOKEN_USAGE": TOKEN_USAGE,
+            "CURRENT_REQUESTS": CURRENT_REQUESTS,
+            "instrument_async_request": instrument_async_request,
+            "instrument_request": instrument_request,
+            "record_error": record_error,
+            "record_request": record_request,
+            "record_retry": record_retry,
+        }
+
+        yield metrics_objects
 
 
 class TestMetricsFunctions:
     """Tests for metrics utility functions."""
 
-    def test_record_request(self):
+    def test_record_request(self, mock_all_metrics_objects):
         """Test record_request function."""
+        record_request = mock_all_metrics_objects["record_request"]
+        REQUEST_COUNT = mock_all_metrics_objects["REQUEST_COUNT"]
+        REQUEST_DURATION = mock_all_metrics_objects["REQUEST_DURATION"]
+
         with (
             patch.object(REQUEST_COUNT, "labels") as mock_count_labels,
             patch.object(REQUEST_DURATION, "labels") as mock_duration_labels,
@@ -34,7 +75,10 @@ class TestMetricsFunctions:
 
             # Call function without tokens
             record_request(
-                operation=OperationType.CHAT, model="gpt-4o", status="success", duration=1.5
+                operation=OperationType.CHAT,
+                model="gpt-4o",
+                status="success",
+                duration=1.5,
             )
 
             # Verify metrics were recorded
@@ -43,11 +87,18 @@ class TestMetricsFunctions:
             )
             mock_count_labels.return_value.inc.assert_called_once()
 
-            mock_duration_labels.assert_called_once_with(operation="chat", model="gpt-4o")
+            mock_duration_labels.assert_called_once_with(
+                operation="chat", model="gpt-4o"
+            )
             mock_duration_labels.return_value.observe.assert_called_once_with(1.5)
 
-    def test_record_request_with_tokens(self):
+    def test_record_request_with_tokens(self, mock_all_metrics_objects):
         """Test record_request function with token usage."""
+        record_request = mock_all_metrics_objects["record_request"]
+        REQUEST_COUNT = mock_all_metrics_objects["REQUEST_COUNT"]
+        REQUEST_DURATION = mock_all_metrics_objects["REQUEST_DURATION"]
+        TOKEN_USAGE = mock_all_metrics_objects["TOKEN_USAGE"]
+
         with (
             patch.object(REQUEST_COUNT, "labels") as mock_count_labels,
             patch.object(REQUEST_DURATION, "labels") as mock_duration_labels,
@@ -94,8 +145,11 @@ class TestMetricsFunctions:
                 any_order=True,
             )
 
-    def test_record_error(self):
+    def test_record_error(self, mock_all_metrics_objects):
         """Test record_error function."""
+        record_error = mock_all_metrics_objects["record_error"]
+        ERROR_COUNT = mock_all_metrics_objects["ERROR_COUNT"]
+
         with patch.object(ERROR_COUNT, "labels") as mock_error_labels:
             # Configure mock
             mock_error_labels.return_value.inc = MagicMock()
@@ -109,12 +163,17 @@ class TestMetricsFunctions:
 
             # Verify error was recorded
             mock_error_labels.assert_called_once_with(
-                operation="embedding", model="text-embedding-3-small", error_type="RateLimitError"
+                operation="embedding",
+                model="text-embedding-3-small",
+                error_type="RateLimitError",
             )
             mock_error_labels.return_value.inc.assert_called_once()
 
-    def test_record_retry(self):
+    def test_record_retry(self, mock_all_metrics_objects):
         """Test record_retry function."""
+        record_retry = mock_all_metrics_objects["record_retry"]
+        RETRY_COUNT = mock_all_metrics_objects["RETRY_COUNT"]
+
         with patch.object(RETRY_COUNT, "labels") as mock_retry_labels:
             # Configure mock
             mock_retry_labels.return_value.inc = MagicMock()
@@ -123,15 +182,20 @@ class TestMetricsFunctions:
             record_retry(operation=OperationType.COMPLETION, model="gpt-4o")
 
             # Verify retry was recorded
-            mock_retry_labels.assert_called_once_with(operation="completion", model="gpt-4o")
+            mock_retry_labels.assert_called_once_with(
+                operation="completion", model="gpt-4o"
+            )
             mock_retry_labels.return_value.inc.assert_called_once()
 
 
 class TestInstrumentRequestDecorator:
     """Tests for the instrument_request decorator."""
 
-    def test_instrument_request_success(self):
+    def test_instrument_request_success(self, mock_all_metrics_objects):
         """Test instrument_request decorator with successful response."""
+        instrument_request = mock_all_metrics_objects["instrument_request"]
+        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+
         # Create a mock function that returns a result with usage info
         mock_function = MagicMock()
         mock_function.return_value = MagicMock(
@@ -143,8 +207,8 @@ class TestInstrumentRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch("src.codestory.llm.metrics.CURRENT_REQUESTS.labels") as mock_current,
-            patch("src.codestory.llm.metrics.record_request") as mock_record,
+            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch("codestory.llm.metrics.record_request") as mock_record,
         ):
             # Configure the mock
             mock_current.return_value.inc = MagicMock()
@@ -172,8 +236,11 @@ class TestInstrumentRequestDecorator:
             # Check token info was extracted
             assert kwargs["tokens"] == {"prompt": 100, "completion": 50, "total": 150}
 
-    def test_instrument_request_error(self):
+    def test_instrument_request_error(self, mock_all_metrics_objects):
         """Test instrument_request decorator with an error response."""
+        instrument_request = mock_all_metrics_objects["instrument_request"]
+        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+
         # Create a mock function that raises an exception
         mock_function = MagicMock()
         mock_function.side_effect = ValueError("Test error")
@@ -183,9 +250,9 @@ class TestInstrumentRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch("src.codestory.llm.metrics.CURRENT_REQUESTS.labels") as mock_current,
-            patch("src.codestory.llm.metrics.record_request") as mock_record_req,
-            patch("src.codestory.llm.metrics.record_error") as mock_record_err,
+            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch("codestory.llm.metrics.record_request") as mock_record_req,
+            patch("codestory.llm.metrics.record_error") as mock_record_err,
         ):
             # Configure the mock
             mock_current.return_value.inc = MagicMock()
@@ -199,7 +266,9 @@ class TestInstrumentRequestDecorator:
             mock_function.assert_called_once()
 
             # Verify the current requests counter was incremented and decremented
-            mock_current.assert_called_with(operation="embedding", model="text-embedding-3-small")
+            mock_current.assert_called_with(
+                operation="embedding", model="text-embedding-3-small"
+            )
             mock_current.return_value.inc.assert_called_once()
             mock_current.return_value.dec.assert_called_once()
 
@@ -223,15 +292,20 @@ class TestInstrumentAsyncRequestDecorator:
     """Tests for the instrument_async_request decorator."""
 
     @pytest.mark.asyncio
-    async def test_instrument_async_request_success(self):
+    async def test_instrument_async_request_success(self, mock_all_metrics_objects):
         """Test instrument_async_request decorator with successful response."""
+        instrument_async_request = mock_all_metrics_objects["instrument_async_request"]
+        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+
         # Create a mock async function that returns a result with usage info
         mock_function = MagicMock()
 
         # Configure the mock to work with await
         async def mock_coro(*args, **kwargs):
             return MagicMock(
-                usage=MagicMock(prompt_tokens=100, completion_tokens=50, total_tokens=150)
+                usage=MagicMock(
+                    prompt_tokens=100, completion_tokens=50, total_tokens=150
+                )
             )
 
         mock_function.side_effect = mock_coro
@@ -241,8 +315,8 @@ class TestInstrumentAsyncRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch("src.codestory.llm.metrics.CURRENT_REQUESTS.labels") as mock_current,
-            patch("src.codestory.llm.metrics.record_request") as mock_record,
+            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch("codestory.llm.metrics.record_request") as mock_record,
         ):
             # Configure the mock
             mock_current.return_value.inc = MagicMock()
@@ -271,8 +345,11 @@ class TestInstrumentAsyncRequestDecorator:
             assert kwargs["tokens"] == {"prompt": 100, "completion": 50, "total": 150}
 
     @pytest.mark.asyncio
-    async def test_instrument_async_request_error(self):
+    async def test_instrument_async_request_error(self, mock_all_metrics_objects):
         """Test instrument_async_request decorator with an error response."""
+        instrument_async_request = mock_all_metrics_objects["instrument_async_request"]
+        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+
         # Create a mock async function that raises an exception
         mock_function = MagicMock()
 
@@ -283,13 +360,15 @@ class TestInstrumentAsyncRequestDecorator:
         mock_function.side_effect = mock_coro
 
         # Apply the decorator
-        decorated_function = instrument_async_request(OperationType.EMBEDDING)(mock_function)
+        decorated_function = instrument_async_request(OperationType.EMBEDDING)(
+            mock_function
+        )
 
         # Patch the metrics functions
         with (
-            patch("src.codestory.llm.metrics.CURRENT_REQUESTS.labels") as mock_current,
-            patch("src.codestory.llm.metrics.record_request") as mock_record_req,
-            patch("src.codestory.llm.metrics.record_error") as mock_record_err,
+            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch("codestory.llm.metrics.record_request") as mock_record_req,
+            patch("codestory.llm.metrics.record_error") as mock_record_err,
         ):
             # Configure the mock
             mock_current.return_value.inc = MagicMock()
@@ -303,7 +382,9 @@ class TestInstrumentAsyncRequestDecorator:
             mock_function.assert_called_once()
 
             # Verify the current requests counter was incremented and decremented
-            mock_current.assert_called_with(operation="embedding", model="text-embedding-3-small")
+            mock_current.assert_called_with(
+                operation="embedding", model="text-embedding-3-small"
+            )
             mock_current.return_value.inc.assert_called_once()
             mock_current.return_value.dec.assert_called_once()
 

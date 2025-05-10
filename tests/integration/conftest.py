@@ -16,13 +16,13 @@ def pytest_addoption(parser):
         "--run-neo4j",
         action="store_true",
         default=False,
-        help="Run tests that require Neo4j"
+        help="Run tests that require Neo4j",
     )
     parser.addoption(
         "--run-celery",
         action="store_true",
         default=False,
-        help="Run tests that require Celery"
+        help="Run tests that require Celery",
     )
 
 
@@ -37,13 +37,13 @@ def pytest_collection_modifyitems(config, items):
     """Skip integration tests unless explicitly enabled."""
     skip_neo4j = pytest.mark.skip(reason="Need --run-neo4j option to run")
     skip_celery = pytest.mark.skip(reason="Need --run-celery option to run")
-    
+
     # Skip Neo4j tests
     if not config.getoption("--run-neo4j"):
         for item in items:
             if "neo4j" in item.keywords:
                 item.add_marker(skip_neo4j)
-    
+
     # Skip Celery tests
     if not config.getoption("--run-celery"):
         for item in items:
@@ -62,7 +62,9 @@ def mock_settings():
     from codestory.config.settings import get_settings as original_get_settings
 
     # Create a patch for the get_settings function
-    with patch('codestory.config.settings.get_settings', return_value=get_test_settings()):
+    with patch(
+        "codestory.config.settings.get_settings", return_value=get_test_settings()
+    ):
         # Apply the patch for all tests
         yield
 
@@ -75,7 +77,9 @@ def load_env_vars():
     and ensures that the Neo4j connection settings are available for tests.
     """
     # Load environment variables from .env file
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
+    env_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
+    )
     load_dotenv(env_path)
 
     # Ensure project root is in Python path for proper imports
@@ -106,15 +110,15 @@ def load_env_vars():
 def celery_config():
     """Configure Celery for testing."""
     return {
-        'broker_url': 'memory://',
-        'result_backend': 'rpc://',
-        'task_always_eager': True,  # Tasks run synchronously in tests
-        'task_eager_propagates': True,  # Exceptions are propagated
-        'task_ignore_result': False,  # Results are tracked
-        'worker_concurrency': 1,  # Single worker for tests
-        'worker_prefetch_multiplier': 1,
-        'task_acks_late': False,
-        'task_track_started': True,
+        "broker_url": "memory://",
+        "result_backend": "rpc://",
+        "task_always_eager": True,  # Tasks run synchronously in tests
+        "task_eager_propagates": True,  # Exceptions are propagated
+        "task_ignore_result": False,  # Results are tracked
+        "worker_concurrency": 1,  # Single worker for tests
+        "worker_prefetch_multiplier": 1,
+        "task_acks_late": False,
+        "task_track_started": True,
     }
 
 
@@ -122,10 +126,11 @@ def celery_config():
 def celery_app():
     """Provide the Celery app for testing."""
     from codestory.ingestion_pipeline.celery_app import app
+
     # Configure app for testing
     app.conf.update(
-        broker_url='memory://',
-        result_backend='rpc://',
+        broker_url="memory://",
+        result_backend="rpc://",
         task_always_eager=True,  # Tasks run synchronously in tests
         task_eager_propagates=True,  # Exceptions are propagated
         task_ignore_result=False,  # Results are tracked

@@ -7,7 +7,7 @@ log_level = "INFO"
 auth_enabled = false
 
 [neo4j]
-uri = "bolt://localhost:7689"
+uri = "bolt://neo4j:7687"
 username = "neo4j"
 database = "neo4j"
 connection_timeout = 30
@@ -58,7 +58,11 @@ timeout = 300
 docker_image = "codestory/blarify:latest"
 
 [ingestion.steps.filesystem]
-ignore_patterns = ["node_modules/", ".git/", "__pycache__/"]
+ignore_patterns = [
+    "node_modules/",
+    ".git/",
+    "__pycache__/",
+]
 
 [ingestion.steps.summarizer]
 max_concurrency = 5
@@ -68,7 +72,12 @@ max_tokens_per_file = 8000
 enabled = true
 
 [plugins]
-enabled = ["blarify", "filesystem", "summarizer", "docgrapher"]
+enabled = [
+    "blarify",
+    "filesystem",
+    "summarizer",
+    "docgrapher",
+]
 plugin_directory = "plugins"
 
 [telemetry]

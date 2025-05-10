@@ -8,14 +8,14 @@ from typing import Any, Dict, Optional
 
 class Neo4jError(Exception):
     """Base exception for all Neo4j-related errors."""
-    
+
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Initialize Neo4jError.
-        
+
         Args:
             message: Error message
             details: Additional error details
@@ -27,17 +27,17 @@ class Neo4jError(Exception):
 
 class ExportError(Neo4jError):
     """Error exporting data from Neo4j."""
-    
+
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         format: Optional[str] = None,
         path: Optional[str] = None,
         cause: Optional[Exception] = None,
         **kwargs
     ) -> None:
         """Initialize ExportError.
-        
+
         Args:
             message: Error message
             format: Export format (e.g., JSON, CSV)
@@ -49,7 +49,7 @@ class ExportError(Neo4jError):
             "format": format,
             "path": path,
             "cause": str(cause) if cause else None,
-            **kwargs
+            **kwargs,
         }
         self.cause = cause
         super().__init__(message, details)
@@ -57,44 +57,40 @@ class ExportError(Neo4jError):
 
 class ConnectionError(Neo4jError):
     """Error establishing connection to Neo4j."""
-    
+
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         uri: Optional[str] = None,
         cause: Optional[Exception] = None,
         **kwargs
     ) -> None:
         """Initialize ConnectionError.
-        
+
         Args:
             message: Error message
             uri: Neo4j URI that failed to connect
             cause: Original exception that caused this error
             **kwargs: Additional details to include
         """
-        details = {
-            "uri": uri,
-            "cause": str(cause) if cause else None,
-            **kwargs
-        }
+        details = {"uri": uri, "cause": str(cause) if cause else None, **kwargs}
         self.cause = cause
         super().__init__(message, details)
 
 
 class QueryError(Neo4jError):
     """Error executing a Cypher query."""
-    
+
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         query: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
         cause: Optional[Exception] = None,
         **kwargs
     ) -> None:
         """Initialize QueryError.
-        
+
         Args:
             message: Error message
             query: The Cypher query that failed
@@ -107,16 +103,19 @@ class QueryError(Neo4jError):
         if parameters:
             safe_params = {}
             for k, v in parameters.items():
-                if any(sensitive in k.lower() for sensitive in ["password", "secret", "key"]):
+                if any(
+                    sensitive in k.lower()
+                    for sensitive in ["password", "secret", "key"]
+                ):
                     safe_params[k] = "********"  # Redact sensitive values
                 else:
                     safe_params[k] = v
-        
+
         details = {
             "query": query,
             "parameters": safe_params,
             "cause": str(cause) if cause else None,
-            **kwargs
+            **kwargs,
         }
         self.cause = cause
         super().__init__(message, details)
@@ -124,16 +123,16 @@ class QueryError(Neo4jError):
 
 class SchemaError(Neo4jError):
     """Error with graph schema operation."""
-    
+
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         operation: Optional[str] = None,
         cause: Optional[Exception] = None,
         **kwargs
     ) -> None:
         """Initialize SchemaError.
-        
+
         Args:
             message: Error message
             operation: Schema operation that failed (e.g., creating constraint)
@@ -143,7 +142,7 @@ class SchemaError(Neo4jError):
         details = {
             "operation": operation,
             "cause": str(cause) if cause else None,
-            **kwargs
+            **kwargs,
         }
         self.cause = cause
         super().__init__(message, details)
@@ -151,16 +150,16 @@ class SchemaError(Neo4jError):
 
 class TransactionError(Neo4jError):
     """Error in transaction management."""
-    
+
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         operation: Optional[str] = None,
         cause: Optional[Exception] = None,
         **kwargs
     ) -> None:
         """Initialize TransactionError.
-        
+
         Args:
             message: Error message
             operation: Transaction operation that failed
@@ -170,7 +169,7 @@ class TransactionError(Neo4jError):
         details = {
             "operation": operation,
             "cause": str(cause) if cause else None,
-            **kwargs
+            **kwargs,
         }
         self.cause = cause
         super().__init__(message, details)

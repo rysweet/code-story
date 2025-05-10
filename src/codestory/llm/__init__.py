@@ -30,7 +30,6 @@ __all__ = [
     # Client
     "OpenAIClient",
     "create_client",
-    
     # Exceptions
     "OpenAIError",
     "AuthenticationError",
@@ -39,7 +38,6 @@ __all__ = [
     "ServiceUnavailableError",
     "TimeoutError",
     "ContextLengthError",
-    
     # Models
     "CompletionRequest",
     "CompletionResponse",
