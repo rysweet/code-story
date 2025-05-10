@@ -10,7 +10,7 @@ from codestory_mcp.utils.config import MCPSettings, get_mcp_settings
 
 def test_mcp_settings_defaults():
     """Test the default settings."""
-    settings = MCPSettings(code_story_service_url="http://localhost:8000")
+    settings = MCPSettings()
     
     assert settings.port == 8001
     assert settings.host == "0.0.0.0"
