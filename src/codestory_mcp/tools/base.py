@@ -7,16 +7,13 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Optional
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ToolParameters(BaseModel):
     """Base model for tool parameters."""
 
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class BaseTool(ABC):
