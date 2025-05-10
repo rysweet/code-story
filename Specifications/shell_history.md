@@ -98,3 +98,7 @@
 - `cd /Users/ryan/src/msec/code-story && black src tests` - Formatting code with black
 - `cd /Users/ryan/src/msec/code-story && isort src tests` - Sorting imports with isort
 - `cd /Users/ryan/src/msec/code-story && flake8 src tests` - Linting code with flake8
+- `cd /Users/ryan/src/msec/code-story && git add .` - Adding all modified files to the staging area
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking git status before committing
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Fix linting and type issues throughout codebase"` - Committing all remaining changes
+- `cd /Users/ryan/src/msec/code-story && git push` - Pushing changes to remote repository
