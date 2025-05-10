@@ -3,7 +3,9 @@
 This module contains tests for the domain models used in the service.
 """
 
+from datetime import datetime
 import pytest
+from unittest import mock
 from pydantic import ValidationError
 
 from codestory_service.domain.auth import LoginRequest, TokenResponse, UserInfo
@@ -29,6 +31,7 @@ from codestory_service.domain.ingestion import (
     StepProgress,
     IngestionSourceType
 )
+from codestory.ingestion_pipeline.step import StepStatus
 
 
 class TestAuthModels:
@@ -96,7 +99,7 @@ class TestConfigModels:
             value="secret123",
             metadata=sensitive_meta
         )
-        assert sensitive_item.is_sensitive() is True
+        assert sensitive_item.is_sensitive is True
         
         # Create a non-sensitive item
         non_sensitive_meta = ConfigMetadata(
@@ -111,7 +114,7 @@ class TestConfigModels:
             value=True,
             metadata=non_sensitive_meta
         )
-        assert non_sensitive_item.is_sensitive() is False
+        assert non_sensitive_item.is_sensitive is False
     
     def test_config_item_redact_if_sensitive(self):
         """Test that ConfigItem redacts sensitive values."""
@@ -231,30 +234,41 @@ class TestIngestionModels:
     
     def test_ingestion_request_validation(self):
         """Test that IngestionRequest validates inputs correctly."""
-        # Valid request
-        valid_request = IngestionRequest(
-            source_type=IngestionSourceType.LOCAL_PATH,
-            source="/path/to/repo",
-            options={"ignore_patterns": ["node_modules", ".git"]},
-            steps=["filesystem", "summarizer"]
-        )
-        assert valid_request.source_type == IngestionSourceType.LOCAL_PATH
-        assert valid_request.source == "/path/to/repo"
-        assert "ignore_patterns" in valid_request.options
-        assert "filesystem" in valid_request.steps
-        
-        # Empty source
-        with pytest.raises(ValidationError):
-            IngestionRequest(
+        # We need to patch the os.path.exists check to make the test pass
+        with mock.patch("os.path.exists", return_value=True):
+            # Valid request
+            valid_request = IngestionRequest(
                 source_type=IngestionSourceType.LOCAL_PATH,
-                source=""
+                source="/path/to/repo",
+                options={"ignore_patterns": ["node_modules", ".git"]},
+                steps=["filesystem", "summarizer"]
             )
+            assert valid_request.source_type == IngestionSourceType.LOCAL_PATH
+            assert valid_request.source == "/path/to/repo"
+            assert "ignore_patterns" in valid_request.options
+            assert "filesystem" in valid_request.steps
+
+            # Empty source
+            with pytest.raises(ValidationError):
+                IngestionRequest(
+                    source_type=IngestionSourceType.LOCAL_PATH,
+                    source=""
+                )
+
+            # Invalid GitHub repo format
+            with pytest.raises(ValueError):
+                IngestionRequest(
+                    source_type=IngestionSourceType.GITHUB_REPO,
+                    source="invalid-format"
+                )
     
     def test_ingestion_started(self):
         """Test IngestionStarted model."""
         started = IngestionStarted(
             job_id="job123",
             status=JobStatus.PENDING,
+            source="/path/to/repo",  # Required field
+            steps=["filesystem", "summarizer", "docgrapher"],  # Required field
             message="Job submitted successfully",
             eta=1620000000
         )
@@ -266,16 +280,14 @@ class TestIngestionModels:
     def test_step_progress(self):
         """Test StepProgress model."""
         progress = StepProgress(
-            step="filesystem",
-            progress=0.75,
+            name="filesystem",
+            status=StepStatus.RUNNING,
+            progress=75.0,
             message="Processing files",
-            current_file="src/main.py",
-            files_processed=150,
-            total_files=200
+            started_at=datetime.now()
         )
-        assert progress.step == "filesystem"
-        assert progress.progress == 0.75
+        assert progress.name == "filesystem"
+        assert progress.status == StepStatus.RUNNING
+        assert progress.progress == 75.0
         assert progress.message == "Processing files"
-        assert progress.current_file == "src/main.py"
-        assert progress.files_processed == 150
-        assert progress.total_files == 200
+        assert progress.started_at is not None

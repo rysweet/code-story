@@ -76,12 +76,29 @@ class IngestionRequest(BaseModel):
     )
 
     @field_validator("source")
-    def validate_source(cls, v: str, values: Dict[str, Any]) -> str:
+    def source_not_empty(cls, v: str) -> str:
+        """Validate that source is not empty.
+
+        Args:
+            v: The source path or URL
+
+        Returns:
+            The validated source string
+
+        Raises:
+            ValueError: If the source is empty
+        """
+        if not v:
+            raise ValueError("Source cannot be empty")
+        return v
+
+    @field_validator("source")
+    def validate_source(cls, v: str, info) -> str:
         """Validate the source based on source_type.
 
         Args:
             v: The source path or URL
-            values: Previously validated values
+            info: ValidationInfo object containing data and context
 
         Returns:
             The validated source
@@ -89,7 +106,8 @@ class IngestionRequest(BaseModel):
         Raises:
             ValueError: If the source is invalid for the given source_type
         """
-        source_type = values.get("source_type")
+        # In Pydantic v2, we need to access the source_type from info.data
+        source_type = info.data.get("source_type")
 
         if source_type == IngestionSourceType.LOCAL_PATH:
             # Local paths should exist

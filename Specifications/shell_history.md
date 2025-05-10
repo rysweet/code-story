@@ -53,7 +53,7 @@
 
 ## May 8, 2025
 - `cd /Users/ryan/src/msec/code-story && ls scripts && pwd` - Checking available scripts and current directory
-- `cd /Users/ryan/src/msec/code-story && chmod +x scripts/start_project.sh && ./scripts/start_project.sh` - Making start_project.sh executable and running it to set up the environment 
+- `cd /Users/ryan/src/msec/code-story && chmod +x scripts/start_project.sh && ./scripts/start_project.sh` - Making start_project.sh executable and running it to set up the environment
 - `cd /Users/ryan/src/msec/code-story && poetry install -E azure` - Installing the Azure extras to fix missing dependencies
 - `cat /Users/ryan/src/msec/code-story/scripts/run_celery.sh` - Examining the Celery worker script
 - `cd /Users/ryan/src/msec/code-story && chmod +x scripts/run_celery.sh` - Making the run_celery.sh script executable
@@ -71,3 +71,10 @@
 - `flake8 src/codestory_service` - Linting the Code Story Service code
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service` - Running unit tests for Code Story Service
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_service.py -v` - Running integration tests for Code Story Service
+- `cd /Users/ryan/src/msec/code-story && mkdir -p src/codestory_mcp` - Creating directory for MCP Adapter
+- `cd /Users/ryan/src/msec/code-story && mkdir -p src/codestory_mcp/{tools,auth,adapters,utils}` - Creating subdirectories for MCP Adapter
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_mcp.py -v` - Running MCP integration tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_settings.py -v` - Running service settings unit tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_domain_models.py -v` - Running service domain models unit tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_domain_models.py::TestIngestionModels -v` - Running ingestion models tests
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking git status for modified files

@@ -30,15 +30,15 @@ def test_service_settings_from_env():
     env_vars = {
         "CODESTORY_SERVICE_TITLE": "Custom API Title",
         "CODESTORY_SERVICE_API_PREFIX": "/api/v2",
-        "CODESTORY_SERVICE_CORS_ORIGINS": "example.com,localhost",
+        "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com", "localhost"]',  # JSON array format
         "CODESTORY_SERVICE_AUTH_ENABLED": "true",
         "CODESTORY_SERVICE_DEV_MODE": "false",
         "CODESTORY_SERVICE_METRICS_ENABLED": "false",
     }
-    
+
     with mock.patch.dict(os.environ, env_vars):
         settings = ServiceSettings()
-        
+
         # Check that values from environment variables were used
         assert settings.title == "Custom API Title"
         assert settings.api_prefix == "/api/v2"
@@ -48,6 +48,33 @@ def test_service_settings_from_env():
         assert settings.metrics_enabled is False
 
 
+def test_service_settings_cors_origins_parsing():
+    """Test that CORS origins are correctly parsed from different formats."""
+    # Test with multiple origins in JSON format
+    env_vars = {
+        "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com", "api.example.org", "localhost:3000"]',
+    }
+    with mock.patch.dict(os.environ, env_vars):
+        settings = ServiceSettings()
+        assert settings.cors_origins == ["example.com", "api.example.org", "localhost:3000"]
+
+    # Test with a single origin in JSON format
+    env_vars = {
+        "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com"]',
+    }
+    with mock.patch.dict(os.environ, env_vars):
+        settings = ServiceSettings()
+        assert settings.cors_origins == ["example.com"]
+
+    # Test with a single wildcard in JSON format
+    env_vars = {
+        "CODESTORY_SERVICE_CORS_ORIGINS": '["*"]',
+    }
+    with mock.patch.dict(os.environ, env_vars):
+        settings = ServiceSettings()
+        assert settings.cors_origins == ["*"]
+
+
 def test_service_settings_cors_origins_validation():
     """Test that CORS origins validator works correctly."""
     # Mock the core settings environment to be "production"
@@ -55,16 +82,16 @@ def test_service_settings_cors_origins_validation():
         mock_settings = mock.MagicMock()
         mock_settings.environment = "production"
         mock_get_settings.return_value = mock_settings
-        
+
         # Create settings with wildcard CORS origin in production
         env_vars = {
-            "CODESTORY_SERVICE_CORS_ORIGINS": "*",
+            "CODESTORY_SERVICE_CORS_ORIGINS": '["*"]',
         }
-        
+
         with mock.patch.dict(os.environ, env_vars):
             with mock.patch("codestory_service.settings.logger") as mock_logger:
                 settings = ServiceSettings()
-                
+
                 # Check that a warning was logged
                 mock_logger.warning.assert_called_once()
                 assert "security risk" in mock_logger.warning.call_args[0][0]

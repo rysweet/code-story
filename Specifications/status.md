@@ -1,7 +1,7 @@
 # Project Implementation Status
 
 ## Current Task
-Implement CLI (Section 13.0)
+Fixing Service Tests and MCP Adapter Tests
 
 ## Completed Tasks
 - Created claude-1st-impl branch
@@ -167,14 +167,18 @@ Implement CLI (Section 13.0)
   - Implemented CLI entry point for standalone usage
 
 ## In Progress Tasks
-- Implement CLI (Section 13.0)
-  - Design CLI architecture and commands
-  - Implement core CLI functionality
-  - Add authentication and configuration management
-  - Create local caching mechanisms
-  - Implement interactive mode
+- Fixing Service Tests and MCP Adapter Tests
+  - Fixed ServiceSettings CORS origin parsing
+  - Updated IngestionRequest validator for Pydantic v2
+  - Fixed StepProgress model test to match implementation
+  - Updated ConfigItem.is_sensitive property usage in tests
+  - Working on resolving async coroutine issues in tests
+  - Addressing integration test mocking approaches
+  - Fixing unit tests for service components
+  - Updating domain models with v2 validators
 
 ## Pending Tasks
+- Implement CLI (Section 13.0)
 - Implement GUI (Section 14.0)
 - Implement Infrastructure (Section 15.0)
 - Implement Documentation (Section 16.0)

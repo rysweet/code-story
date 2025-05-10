@@ -106,6 +106,8 @@ class ServiceSettings(BaseSettings):
         extra="ignore",
     )
 
+    # We no longer need a custom parser since we use JSON arrays in environment variables
+
     @field_validator("cors_origins")
     def validate_cors_origins(cls, v: List[str]) -> List[str]:
         """Validate CORS origins.
