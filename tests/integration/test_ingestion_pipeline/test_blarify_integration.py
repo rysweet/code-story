@@ -91,7 +91,7 @@ def neo4j_connector():
     )
     
     # Clear the database before each test
-    connector.run_query("MATCH (n) DETACH DELETE n")
+    connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
     
     yield connector
     

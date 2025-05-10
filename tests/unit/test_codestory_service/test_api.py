@@ -221,22 +221,26 @@ class TestConfigAPI:
     
     def test_get_config(self, mock_service):
         """Test getting configuration."""
+        from codestory_service.domain.config import ConfigSection
+
         # Call the endpoint
         result = config.get_config(
             include_sensitive=False,
             config_service=mock_service,
             user={"roles": ["user"]}
         )
-        
+
         # Check that service was called correctly
         mock_service.get_config_dump.assert_called_once_with(include_sensitive=False)
-        
+
         # Check the result
         assert result.version == "1.0.0"
         assert ConfigSection.GENERAL in result.groups
         
     def test_get_config_sensitive(self, mock_service):
         """Test that only admins can view sensitive values."""
+        from codestory_service.domain.config import ConfigSection
+
         # Call the endpoint with non-admin user
         with pytest.raises(HTTPException) as exc_info:
             config.get_config(
@@ -244,9 +248,9 @@ class TestConfigAPI:
                 config_service=mock_service,
                 user={"name": "user", "roles": ["user"]}
             )
-        
+
         assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
-        
+
         # Call with admin user should work
         admin_user = {"roles": ["admin"]}
         result = config.get_config(
@@ -254,14 +258,14 @@ class TestConfigAPI:
             config_service=mock_service,
             user=admin_user
         )
-        
+
         mock_service.get_config_dump.assert_called_with(include_sensitive=True)
     
     @pytest.mark.asyncio
     async def test_update_config(self, mock_service):
         """Test updating configuration."""
-        from codestory_service.domain.config import ConfigPatch
-        
+        from codestory_service.domain.config import ConfigPatch, ConfigSection
+
         # Create patch and user
         patch = ConfigPatch(
             items=[
@@ -270,13 +274,13 @@ class TestConfigAPI:
             comment="Disable debug mode"
         )
         user = {"roles": ["admin"]}
-        
+
         # Call the endpoint
         result = await config.update_config(patch, mock_service, user)
-        
+
         # Check that service was called correctly
-        await mock_service.update_config.assert_called_once_with(patch)
-        
+        mock_service.update_config.assert_awaited_once_with(patch)
+
         # Check the result
         assert result.version == "1.0.0"
         assert ConfigSection.GENERAL in result.groups
@@ -323,15 +327,25 @@ class TestAuthAPI:
     @pytest.mark.asyncio
     async def test_get_user_info(self, mock_service):
         """Test getting user info."""
+        from codestory_service.domain.auth import UserInfo
+
         # Create user
         user = {"sub": "user123", "name": "Test User", "roles": ["user"]}
-        
+
+        # Mock the service return value
+        mock_service.get_user_info.return_value = UserInfo(
+            id="user123",
+            name="Test User",
+            roles=["user"],
+            is_authenticated=True
+        )
+
         # Call the endpoint
         result = await auth.get_user_info(mock_service, user)
-        
+
         # Check that service was called correctly
         mock_service.get_user_info.assert_called_once_with(user)
-        
+
         # Check the result
         assert result.id == "user123"
         assert result.name == "Test User"
@@ -359,7 +373,7 @@ class TestHealthAPI:
         openai = mock.AsyncMock()
         openai.check_health.return_value = {
             "status": "healthy",
-            "details": {"models": {"embedding": "text-embedding-ada-002"}}
+            "details": {"models": "text-embedding-ada-002"}
         }
         
         return neo4j, celery, openai
