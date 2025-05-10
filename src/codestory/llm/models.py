@@ -5,7 +5,7 @@ requests and responses for the Azure OpenAI API.
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TypeVar
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -51,12 +51,16 @@ class ChatResponseMessage(BaseModel):
 
 class ChatResponseChoice(BaseModel):
     """A choice in a chat completion response."""
-    
+
     index: int
     message: ChatResponseMessage
     finish_reason: Optional[str] = None
-    
+
     model_config = ConfigDict(extra="allow")
+
+
+# Aliases for backward compatibility
+ChatCompletionResponseChoice = ChatResponseChoice
 
 
 class CompletionChoice(BaseModel):
@@ -82,12 +86,16 @@ class EmbeddingData(BaseModel):
 
 class UsageInfo(BaseModel):
     """Token usage information."""
-    
+
     prompt_tokens: int
     completion_tokens: Optional[int] = None
     total_tokens: int
-    
+
     model_config = ConfigDict(extra="allow")
+
+
+# Aliases for backward compatibility
+Usage = UsageInfo
 
 
 # Request Models

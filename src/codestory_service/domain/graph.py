@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class QueryType(str, Enum):
@@ -38,7 +38,8 @@ class CypherQuery(BaseModel):
         le=300,
     )
 
-    @validator("query")
+    @field_validator("query")
+    @classmethod
     def query_must_not_be_empty(cls, v: str) -> str:
         """Validate that query is not empty."""
         if not v.strip():

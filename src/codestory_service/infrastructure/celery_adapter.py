@@ -100,7 +100,9 @@ class CeleryAdapter:
             }
 
             # Submit the Celery task
-            task = run_ingestion_pipeline.apply_async(
+            # For testing, use a local reference that can be mocked
+            task_func = getattr(self, "_run_ingestion_pipeline", run_ingestion_pipeline)
+            task = task_func.apply_async(
                 kwargs=task_params,
                 countdown=0,  # Start immediately
                 expires=3600 * 24,  # Expire after 24 hours if not started
@@ -110,6 +112,8 @@ class CeleryAdapter:
             return IngestionStarted(
                 job_id=task.id,
                 status=JobStatus.PENDING,
+                source=request.source,  # Add required source field
+                steps=request.steps or ["default_pipeline"],  # Add required steps field
                 message="Ingestion job submitted successfully",
                 eta=int(time.time()),  # Immediate start
             )

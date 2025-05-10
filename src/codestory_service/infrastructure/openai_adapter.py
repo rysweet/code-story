@@ -72,11 +72,15 @@ class OpenAIAdapter:
         """
         try:
             # Perform a simple embedding request to check if API is responsive
-            response = await self.client.create_embeddings_async(
-                EmbeddingRequest(
-                    input=["Health check"], model=self.client.embedding_model
-                )
+            model_name = self.client.embedding_model
+            response_obj = await self.client._async_client.embeddings.create(
+                deployment_name=model_name,
+                model=model_name,
+                input=["Health check"]
             )
+
+            # Convert to our response model
+            response = EmbeddingResponse.model_validate(response_obj.model_dump())
 
             if response and response.data and len(response.data) > 0:
                 return {
@@ -118,11 +122,18 @@ class OpenAIAdapter:
             HTTPException: If embedding creation fails
         """
         try:
-            # Create the embedding request
-            request = EmbeddingRequest(input=texts, model=self.client.embedding_model)
+            # Call the OpenAI client directly using the async client
+            model_name = self.client.embedding_model
 
-            # Call the OpenAI client
-            response = await self.client.create_embeddings_async(request)
+            # Get the response directly from the async client
+            response_obj = await self.client._async_client.embeddings.create(
+                deployment_name=model_name,
+                model=model_name,
+                input=texts
+            )
+
+            # Convert to our response model
+            response = EmbeddingResponse.model_validate(response_obj.model_dump())
 
             # Extract embeddings from the response
             embeddings = [item.embedding for item in response.data]

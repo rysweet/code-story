@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ConfigValueType(str, Enum):
@@ -69,7 +69,7 @@ class ConfigMetadata(BaseModel):
         default=None, description="Name of the environment variable"
     )
     required: bool = Field(default=False, description="Whether the value is required")
-    schema: Optional[Dict[str, Any]] = Field(
+    json_schema: Optional[Dict[str, Any]] = Field(
         default=None, description="JSON Schema for validation"
     )
 
@@ -149,7 +149,8 @@ class ConfigPatch(BaseModel):
         default=None, description="Comment describing the changes"
     )
 
-    @validator("items")
+    @field_validator("items")
+    @classmethod
     def validate_items(cls, v: List[ConfigPatchItem]) -> List[ConfigPatchItem]:
         """Validate that there are items to update."""
         if not v:
@@ -210,7 +211,7 @@ class ConfigSchemaSection(BaseModel):
 class ConfigSchema(BaseModel):
     """Full JSON Schema for configuration, used by GUI form generation."""
 
-    schema: Dict[str, Any] = Field(..., description="JSON Schema")
+    json_schema: Dict[str, Any] = Field(..., description="JSON Schema")
     ui_schema: Dict[str, Any] = Field(
         default_factory=dict, description="UI Schema with layout hints"
     )
@@ -242,10 +243,10 @@ class ConfigSchema(BaseModel):
 
                 # Special handling for type-specific properties
                 if meta.type == ConfigValueType.STRING:
-                    if meta.schema and "pattern" in meta.schema:
-                        prop.pattern = meta.schema["pattern"]
-                    if meta.schema and "maxLength" in meta.schema:
-                        prop.maxLength = meta.schema["maxLength"]
+                    if meta.json_schema and "pattern" in meta.json_schema:
+                        prop.pattern = meta.json_schema["pattern"]
+                    if meta.json_schema and "maxLength" in meta.json_schema:
+                        prop.maxLength = meta.json_schema["maxLength"]
 
                 # Handle secrets as password fields
                 if meta.type == ConfigValueType.SECRET:
@@ -269,7 +270,7 @@ class ConfigSchema(BaseModel):
             ui_schema["ui:order"].append(section_name.value)
             ui_schema[section_name.value] = section_ui
 
-        schema = {
+        json_schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "title": "Code Story Configuration",
@@ -278,7 +279,7 @@ class ConfigSchema(BaseModel):
             "required": required,
         }
 
-        return cls(schema=schema, ui_schema=ui_schema)
+        return cls(json_schema=json_schema, ui_schema=ui_schema)
 
 
 class ConfigValidationError(BaseModel):

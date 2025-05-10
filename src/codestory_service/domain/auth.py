@@ -6,7 +6,7 @@ including login requests, token responses, and user information.
 
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, SecretStr, validator
+from pydantic import BaseModel, EmailStr, Field, SecretStr, field_validator
 
 
 class LoginRequest(BaseModel):
@@ -15,14 +15,16 @@ class LoginRequest(BaseModel):
     username: str = Field(..., description="Username")
     password: str = Field(..., description="Password")
 
-    @validator("username")
+    @field_validator("username")
+    @classmethod
     def username_must_not_be_empty(cls, v: str) -> str:
         """Validate that username is not empty."""
         if not v.strip():
             raise ValueError("Username must not be empty")
         return v
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def password_must_not_be_empty(cls, v: str) -> str:
         """Validate that password is not empty."""
         if not v.strip():
