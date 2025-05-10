@@ -59,7 +59,7 @@ class MCPSettings(BaseSettings):
     
     # Service configuration
     code_story_service_url: str = Field(
-        ..., description="URL of the Code Story service", env="CODE_STORY_SERVICE_URL"
+        "http://localhost:8000", description="URL of the Code Story service", env="CODE_STORY_SERVICE_URL"
     )
     
     # JWT configuration
