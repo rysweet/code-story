@@ -11,11 +11,11 @@ from codestory_mcp.utils.config import MCPSettings, get_mcp_settings
 def test_mcp_settings_defaults():
     """Test the default settings."""
     settings = MCPSettings()
-    
+
     assert settings.port == 8001
     assert settings.host == "0.0.0.0"
     assert settings.workers == 4
-    assert settings.auth_enabled is False
+    assert settings.auth_enabled is False  # Default was changed to False
     assert settings.code_story_service_url == "http://localhost:8000"
     assert settings.api_token_issuer == "https://sts.windows.net/"
     assert settings.required_scopes == ["code-story.read", "code-story.query"]
@@ -45,11 +45,11 @@ def test_audience_validator():
     )
     assert settings.api_audience == "test-client-id"
     
-    # When neither is provided, api_audience is None in current implementation
+    # When neither is provided, falls back to "api://code-story"
     settings = MCPSettings(
         code_story_service_url="http://localhost:8000"
     )
-    assert settings.api_audience is None
+    assert settings.api_audience == "api://code-story"
 
 
 @pytest.mark.parametrize(

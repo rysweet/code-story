@@ -10,69 +10,69 @@ from codestory_mcp.auth.scope_manager import ScopeManager
 
 class TestScopeManager:
     """Tests for the ScopeManager class."""
-    
+
     def test_get_required_scopes(self):
         """Test getting required scopes."""
-        with mock.patch(
-            "codestory_mcp.utils.config.MCPSettings.required_scopes",
-            ["scope1", "scope2"]
-        ):
-            manager = ScopeManager()
-            assert manager.get_required_scopes() == ["scope1", "scope2"]
-    
+        # Create a mock settings object
+        mock_settings = mock.MagicMock()
+        mock_settings.required_scopes = ["scope1", "scope2"]
+
+        manager = ScopeManager(settings=mock_settings)
+        assert manager.get_required_scopes() == ["scope1", "scope2"]
+
     def test_has_required_scope_when_no_scopes_required(self):
         """Test that any scopes are accepted when no scopes are required."""
-        with mock.patch(
-            "codestory_mcp.utils.config.MCPSettings.required_scopes",
-            []
-        ):
-            manager = ScopeManager()
-            assert manager.has_required_scope([]) is True
-            assert manager.has_required_scope(["random-scope"]) is True
-    
+        # Create a mock settings object
+        mock_settings = mock.MagicMock()
+        mock_settings.required_scopes = []
+
+        manager = ScopeManager(settings=mock_settings)
+        assert manager.has_required_scope([]) is True
+        assert manager.has_required_scope(["random-scope"]) is True
+
     def test_has_required_scope_with_wildcard(self):
         """Test that wildcard scope grants access to all scopes."""
-        with mock.patch(
-            "codestory_mcp.utils.config.MCPSettings.required_scopes",
-            ["scope1", "scope2"]
-        ):
-            manager = ScopeManager()
-            assert manager.has_required_scope(["*"]) is True
-    
+        # Create a mock settings object
+        mock_settings = mock.MagicMock()
+        mock_settings.required_scopes = ["scope1", "scope2"]
+
+        manager = ScopeManager(settings=mock_settings)
+        assert manager.has_required_scope(["*"]) is True
+
     def test_has_required_scope_with_matching_scope(self):
         """Test that having one required scope is sufficient."""
-        with mock.patch(
-            "codestory_mcp.utils.config.MCPSettings.required_scopes",
-            ["scope1", "scope2"]
-        ):
-            manager = ScopeManager()
-            assert manager.has_required_scope(["scope1"]) is True
-            assert manager.has_required_scope(["scope2"]) is True
-            assert manager.has_required_scope(["scope1", "other-scope"]) is True
-    
+        # Create a mock settings object
+        mock_settings = mock.MagicMock()
+        mock_settings.required_scopes = ["scope1", "scope2"]
+
+        manager = ScopeManager(settings=mock_settings)
+        assert manager.has_required_scope(["scope1"]) is True
+        assert manager.has_required_scope(["scope2"]) is True
+        assert manager.has_required_scope(["scope1", "other-scope"]) is True
+
     def test_has_required_scope_with_no_matching_scope(self):
         """Test that having no required scope results in denial."""
-        with mock.patch(
-            "codestory_mcp.utils.config.MCPSettings.required_scopes",
-            ["scope1", "scope2"]
-        ):
-            manager = ScopeManager()
-            assert manager.has_required_scope([]) is False
-            assert manager.has_required_scope(["other-scope"]) is False
-    
+        # Create a mock settings object
+        mock_settings = mock.MagicMock()
+        mock_settings.required_scopes = ["scope1", "scope2"]
+
+        manager = ScopeManager(settings=mock_settings)
+        assert manager.has_required_scope([]) is False
+        assert manager.has_required_scope(["other-scope"]) is False
+
     def test_can_execute_tool(self):
         """Test tool execution authorization."""
-        with mock.patch(
-            "codestory_mcp.utils.config.MCPSettings.required_scopes",
-            ["code-story.read", "code-story.query"]
-        ):
-            manager = ScopeManager()
-            
-            # With required scope
-            assert manager.can_execute_tool("anyTool", ["code-story.read"]) is True
-            
-            # Without required scope
-            assert manager.can_execute_tool("anyTool", ["wrong-scope"]) is False
+        # Create a mock settings object
+        mock_settings = mock.MagicMock()
+        mock_settings.required_scopes = ["code-story.read", "code-story.query"]
+
+        manager = ScopeManager(settings=mock_settings)
+
+        # With required scope
+        assert manager.can_execute_tool("anyTool", ["code-story.read"]) is True
+
+        # Without required scope
+        assert manager.can_execute_tool("anyTool", ["wrong-scope"]) is False
 
 
 class TestEntraValidator:

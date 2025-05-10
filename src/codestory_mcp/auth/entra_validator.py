@@ -44,8 +44,8 @@ class AuthorizationError(Exception):
 
 class EntraValidator:
     """JWT token validator for Microsoft Entra ID."""
-    
-    def __init__(self, tenant_id: str, audience: str):
+
+    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None):
         """Initialize the validator.
         
         Args:
@@ -56,12 +56,12 @@ class EntraValidator:
         self.audience = audience
         
         # Create JWKS client for token validation
-        self.jwks_client = PyJWKClient(
+        self.jwks_client = jwks_client or PyJWKClient(
             f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
         )
-        
+
         # Create scope manager
-        self.scope_manager = ScopeManager()
+        self.scope_manager = scope_manager or ScopeManager()
         
     async def validate_token(self, token: str) -> Dict[str, Any]:
         """Validate JWT token and return claims if valid.
