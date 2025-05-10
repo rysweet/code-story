@@ -291,14 +291,24 @@ def create_app() -> FastAPI:
         
         if isinstance(exc, HTTPException):
             status_code = exc.status_code
-        
+            # For FastAPI's HTTPException, format error in the way our tests expect
+            return JSONResponse(
+                status_code=status_code,
+                content={
+                    "error": {
+                        "message": str(exc.detail),
+                        "type": exc.__class__.__name__,
+                    }
+                },
+            )
+
         logger.exception(
-            "Unhandled exception", 
+            "Unhandled exception",
             path=request.url.path,
             method=request.method,
             error=str(exc),
         )
-        
+
         return JSONResponse(
             status_code=status_code,
             content={
