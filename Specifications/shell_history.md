@@ -142,3 +142,8 @@
 - `cd /Users/ryan/src/msec/code-story/gui && npx vitest run src/pages/__tests__/IngestionPage.test.tsx` - Testing IngestionPage component fixes
 - `cd /Users/ryan/src/msec/code-story/gui && npx tsc --noEmit` - Running TypeScript type checking
 - `cd /Users/ryan/src/msec/code-story && git commit -m "Fix test warnings and type errors: Update McpParameterForm to convert boolean attribute to string, fix GraphControls.tsx JSX escaping, suppress React Router warnings, update Vitest config to use newer syntax pattern"` - Committing test fixes
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking for uncommitted files
+- `cd /Users/ryan/src/msec/code-story && git add gui/src/components/ gui/src/hooks/ gui/src/pages/ gui/src/router.tsx gui/src/store/ gui/src/styles/ gui/src/tests/ gui/src/utils/ gui/vitest.config.ts gui/src/App.tsx gui/src/main.tsx package-lock.json package.json` - Adding all GUI files to git
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add GUI components and structure including layouts, store, tests, and utilities"` - Committing GUI implementation files
+- `cd /Users/ryan/src/msec/code-story && git push origin cli-implementation` - Pushing changes to GitHub
+- `cd /Users/ryan/src/msec/code-story && gh pr checks 6` - Checking CI status of PR #6
