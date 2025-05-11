@@ -7,11 +7,13 @@ import sys
 from typing import Optional
 
 import click
+
 # Import rich_click if available, otherwise create a stub
 try:
     import rich_click
 except ImportError:
     import click as rich_click
+
     # Create fake attributes to avoid errors
     rich_click.USE_RICH_MARKUP = False
     rich_click.SHOW_ARGUMENTS = False
@@ -29,12 +31,17 @@ rich_click.USE_RICH_MARKUP = True
 rich_click.SHOW_ARGUMENTS = True
 rich_click.GROUP_ARGUMENTS_OPTIONS = True
 rich_click.STYLE_ERRORS_SUGGESTION = "yellow italic"
-rich_click.ERRORS_SUGGESTION = "Try running the command with --help to see available options."
+rich_click.ERRORS_SUGGESTION = (
+    "Try running the command with --help to see available options."
+)
 
 # Create console
 console = Console()
 
-@click.group(help="[bold]Code Story[/bold] - A tool for exploring and documenting codebases.")
+
+@click.group(
+    help="[bold]Code Story[/bold] - A tool for exploring and documenting codebases."
+)
 @click.version_option()
 @click.option(
     "--service-url",
@@ -47,7 +54,9 @@ console = Console()
     envvar="CODESTORY_API_KEY",
 )
 @click.pass_context
-def app(ctx: click.Context, service_url: Optional[str] = None, api_key: Optional[str] = None) -> None:
+def app(
+    ctx: click.Context, service_url: Optional[str] = None, api_key: Optional[str] = None
+) -> None:
     """
     Code Story CLI application.
 
@@ -94,10 +103,12 @@ def register_commands():
 
     # Aliases for common commands
     app.add_command(ingest.ingest, name="in")
-    app.add_command(query.query, name="q")
+    app.add_command(query.run_query, name="q")  # Alias for query run
     app.add_command(config.config, name="cfg")
     app.add_command(service.status, name="st")
     app.add_command(ask.ask, name="gs")  # Graph search
+    app.add_command(visualize.generate, name="vz")  # Alias for visualize generate
+
 
 # Register commands after app is defined
 register_commands()

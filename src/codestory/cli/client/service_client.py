@@ -76,10 +76,10 @@ class ServiceClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        
+
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-            
+
         return headers
 
     def check_service_health(self) -> Dict[str, Any]:
@@ -109,7 +109,7 @@ class ServiceClient:
         data = {
             "repository_path": repository_path,
         }
-        
+
         try:
             response = self.client.post("/ingest", json=data)
             response.raise_for_status()
@@ -167,7 +167,9 @@ class ServiceClient:
         except (KeyError, json.JSONDecodeError) as e:
             raise ServiceError(f"Invalid response format: {str(e)}")
 
-    def execute_query(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute_query(
+        self, query: str, parameters: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Execute a Cypher query or MCP tool call.
 
@@ -181,10 +183,10 @@ class ServiceClient:
         data = {
             "query": query,
         }
-        
+
         if parameters:
             data["parameters"] = parameters
-            
+
         try:
             response = self.client.post("/query", json=data)
             response.raise_for_status()
@@ -205,7 +207,7 @@ class ServiceClient:
         data = {
             "question": question,
         }
-        
+
         try:
             response = self.client.post("/ask", json=data)
             response.raise_for_status()
@@ -226,7 +228,7 @@ class ServiceClient:
         params = {}
         if include_sensitive:
             params["include_sensitive"] = "true"
-            
+
         try:
             response = self.client.get("/config", params=params)
             response.raise_for_status()
@@ -293,15 +295,29 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to get service status: {str(e)}")
 
-    def generate_visualization(self) -> str:
+    def generate_visualization(self, params: Optional[Dict[str, Any]] = None) -> str:
         """
         Generate a graph visualization.
+
+        Args:
+            params: Optional parameters for the visualization.
+                - type: Type of visualization (force, hierarchy, radial, sankey)
+                - theme: Color theme (light, dark, auto)
+                - title: Custom title for the visualization
 
         Returns:
             HTML content for the visualization.
         """
         try:
-            response = self.client.get("/visualize", headers={"Accept": "text/html"})
+            # Only include params if they're provided
+            if params:
+                response = self.client.get(
+                    "/visualize", params=params, headers={"Accept": "text/html"}
+                )
+            else:
+                response = self.client.get(
+                    "/visualize", headers={"Accept": "text/html"}
+                )
             response.raise_for_status()
             return response.text
         except httpx.HTTPError as e:
@@ -326,4 +342,5 @@ class ServiceClient:
 
 class ServiceError(Exception):
     """Exception raised for service client errors."""
+
     pass

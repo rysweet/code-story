@@ -25,17 +25,17 @@ _imported_modules = {}
 def _import_module(name: str) -> Any:
     """
     Import a command module.
-    
+
     Args:
         name: Name of the module to import
-        
+
     Returns:
         Imported module
     """
     if name not in _imported_modules:
         module_path = f"codestory.cli.commands.{name}"
         _imported_modules[name] = import_module(module_path)
-    
+
     return _imported_modules[name]
 
 
