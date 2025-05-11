@@ -120,3 +120,25 @@
 - `cd /Users/ryan/src/msec/code-story && git commit -m "Add CLI unit tests, update dependencies and CLI specification"` - Commit remaining files
 - `cd /Users/ryan/src/msec/code-story && git push origin claude-1st-impl` - Push final commit to GitHub
 - `cd /Users/ryan/src/msec/code-story && git status` - Verify all files are committed
+
+## May 10, 2025 (CLI implementation continued)
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_commands/test_query.py` - Testing query.py fixes
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/` - Running all unit tests for CLI module
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/integration/test_cli/` - Running CLI integration tests
+- `cd /Users/ryan/src/msec/code-story && poetry run black src/codestory/cli/ --check` - Checking formatting of CLI code
+- `cd /Users/ryan/src/msec/code-story && poetry run black src/codestory/cli/` - Formatting CLI code with black
+- `cd /Users/ryan/src/msec/code-story && poetry run mypy src/codestory/cli/main.py` - Running type checking on CLI main module
+- `cd /Users/ryan/src/msec/code-story && poetry run ruff check src/codestory/cli/` - Linting CLI code with ruff
+- `cd /Users/ryan/src/msec/code-story && git checkout -b cli-implementation` - Creating new branch for CLI PR
+- `cd /Users/ryan/src/msec/code-story && git push -u origin cli-implementation` - Pushing CLI branch to GitHub
+- `cd /Users/ryan/src/msec/code-story && git add src/codestory/cli/main.py` - Adding fixed main.py to staging
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Fix linting and type issues in CLI main module"` - Committing lint fixes
+- `cd /Users/ryan/src/msec/code-story && git push` - Pushing changes to GitHub
+- `cd /Users/ryan/src/msec/code-story && gh pr checks 6` - Checking CI status for PR #6
+
+## May 11, 2025 (GUI tests fixes)
+- `cd /Users/ryan/src/msec/code-story/gui && npx vitest run` - Running GUI tests to identify issues
+- `cd /Users/ryan/src/msec/code-story/gui && npx vitest run src/pages/__tests__/McpPage.test.tsx` - Testing McpPage component fixes
+- `cd /Users/ryan/src/msec/code-story/gui && npx vitest run src/pages/__tests__/IngestionPage.test.tsx` - Testing IngestionPage component fixes
+- `cd /Users/ryan/src/msec/code-story/gui && npx tsc --noEmit` - Running TypeScript type checking
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Fix test warnings and type errors: Update McpParameterForm to convert boolean attribute to string, fix GraphControls.tsx JSX escaping, suppress React Router warnings, update Vitest config to use newer syntax pattern"` - Committing test fixes
