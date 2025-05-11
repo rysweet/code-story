@@ -71,7 +71,9 @@ docker compose -f docker-compose.prod.yml up -d
 
 ### Azure Deployment
 
-Code Story can be deployed to Azure Container Apps using the provided Bicep templates:
+#### Option 1: Using Bicep directly
+
+Deploy Code Story to Azure Container Apps using the provided Bicep templates:
 
 1. Login to Azure:
    ```bash
@@ -86,6 +88,35 @@ Code Story can be deployed to Azure Container Apps using the provided Bicep temp
 3. Build and push Docker images to the Azure Container Registry:
    ```bash
    ./infra/scripts/build_push_acr.sh -r <registry-name> -e dev
+   ```
+
+#### Option 2: Using Azure Developer CLI (azd)
+
+For a simplified deployment experience, you can use the Azure Developer CLI:
+
+1. Install the Azure Developer CLI:
+   ```bash
+   curl -fsSL https://aka.ms/install-azd.sh | bash
+   ```
+
+2. Login to Azure:
+   ```bash
+   azd auth login
+   ```
+
+3. Initialize a new environment:
+   ```bash
+   azd init --template .
+   ```
+
+4. Configure the environment:
+   ```bash
+   azd env set NEO4J_PASSWORD <your-neo4j-password>
+   ```
+
+5. Deploy the application:
+   ```bash
+   azd up
    ```
 
 The Azure deployment creates:

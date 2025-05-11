@@ -1,0 +1,10 @@
+{
+  "appContainerApps": "aca-",
+  "appManagedEnvironments": "acaenv-",
+  "cacheRedis": "redis-",
+  "containerRegistryRegistries": "cr",
+  "insightsComponents": "appi-",
+  "keyVaultVaults": "kv-",
+  "operationalInsightsWorkspaces": "log-",
+  "resourcesResourceGroups": "rg-"
+}
