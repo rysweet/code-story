@@ -1,53 +1,73 @@
 {
-  "name": "code-story-dev",
-  "dockerComposeFile": ["../docker-compose.yaml", "docker-compose.extend.yml"],
+  "name": "Code Story Development Environment",
+  "dockerComposeFile": "../docker-compose.yaml",
   "service": "service",
   "workspaceFolder": "/app",
+  
+  "remoteUser": "root",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.isort",
         "charliermarsh.ruff",
-        "ms-azuretools.vscode-docker",
-        "dbaeumer.vscode-eslint",
+        "matangover.mypy",
         "esbenp.prettier-vscode",
-        "bradlc.vscode-tailwindcss",
-        "github.copilot",
+        "dbaeumer.vscode-eslint",
+        "vue.volar",
+        "ms-azuretools.vscode-docker",
+        "ms-azuretools.vscode-bicep",
+        "redhat.vscode-yaml",
+        "mhutchie.git-graph",
         "github.vscode-github-actions",
-        "ms-vscode.vscode-typescript-next",
-        "ms-python.mypy-type-checker",
-        "editorconfig.editorconfig"
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
         "python.linting.mypyEnabled": true,
-        "[python]": {
-          "editor.formatOnSave": true,
-          "editor.codeActionsOnSave": {
-            "source.organizeImports": true
-          },
-          "editor.defaultFormatter": "charliermarsh.ruff"
+        "python.formatting.provider": "black",
+        "python.formatting.blackPath": "/root/.local/bin/black",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
         },
-        "[typescript]": {
-          "editor.formatOnSave": true,
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.rulers": [100],
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/.pytest_cache": true,
+          "**/*.egg-info": true
         },
-        "[typescriptreact]": {
-          "editor.formatOnSave": true,
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "eslint.validate": ["javascript", "typescript", "typescriptreact"],
-        "editor.formatOnSave": true
+        "terminal.integrated.defaultProfile.linux": "bash"
       }
     }
   },
+  
+  "forwardPorts": [
+    7474, 
+    7687, 
+    8000, 
+    8001, 
+    5173, 
+    6379 
+  ],
+  
+  "postCreateCommand": "pip install --no-cache-dir -e .; pip install black ruff mypy pytest",
+  
   "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "18"
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "version": "latest"
     }
-  },
-  "postCreateCommand": "pip install -e ."
+  }
 }
+EOF < /dev/null

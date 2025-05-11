@@ -3,14 +3,35 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus_instance'
+
   - job_name: 'neo4j'
     static_configs:
       - targets: ['neo4j:2004']
         labels:
           instance: 'neo4j_instance'
 
-  - job_name: 'codestory'
+  - job_name: 'code_story_service'
     static_configs:
-      - targets: ['host.docker.internal:8000']
+      - targets: ['service:8000']
         labels:
-          instance: 'codestory_instance'
+          instance: 'service_instance'
+    metrics_path: /metrics
+
+  - job_name: 'code_story_mcp'
+    static_configs:
+      - targets: ['mcp:8001']
+        labels:
+          instance: 'mcp_instance'
+    metrics_path: /metrics
+
+  - job_name: 'code_story_worker'
+    static_configs:
+      - targets: ['worker:8000']
+        labels:
+          instance: 'worker_instance'
+    metrics_path: /metrics

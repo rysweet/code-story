@@ -54,12 +54,47 @@ Code Story is built as a microservices architecture with the following component
    # Edit .env with your settings
    ```
 
-3. Start the services with Docker Compose:
+3. Start the services with the provided script:
    ```bash
-   docker compose up -d
+   ./infra/scripts/start.sh
    ```
 
 4. Access the GUI at http://localhost:5173
+
+### Production Deployment
+
+For production deployment, use the production Docker Compose file:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Azure Deployment
+
+Code Story can be deployed to Azure Container Apps using the provided Bicep templates:
+
+1. Login to Azure:
+   ```bash
+   az login
+   ```
+
+2. Deploy the infrastructure:
+   ```bash
+   ./infra/scripts/deploy_azure.sh -e dev -g code-story-dev
+   ```
+
+3. Build and push Docker images to the Azure Container Registry:
+   ```bash
+   ./infra/scripts/build_push_acr.sh -r <registry-name> -e dev
+   ```
+
+The Azure deployment creates:
+- Container Apps for Service, Worker, MCP, and GUI
+- Managed Neo4j database
+- Redis Cache
+- Key Vault for secrets
+- Log Analytics and Application Insights
+- Container Registry
 
 ### Development Setup
 

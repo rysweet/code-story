@@ -1,5 +1,5 @@
-# Multi-stage build for the MCP Adapter
-FROM python:3.12-slim AS builder
+# Build stage
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
@@ -13,51 +13,53 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="${PATH}:/root/.local/bin"
 
-# Copy poetry configuration files
-COPY pyproject.toml poetry.lock* ./
+# Copy only requirements to cache them in docker layer
+COPY pyproject.toml poetry.lock* /app/
 
-# Configure poetry to not create a virtual environment
+# Configure poetry to not use virtualenvs inside Docker
 RUN poetry config virtualenvs.create false
 
-# Install dependencies (without dev dependencies)
+# Install dependencies
 RUN poetry install --no-interaction --no-ansi --no-root --only main
 
-# Stage 2: Runtime
-FROM python:3.12-slim
+# Copy project
+COPY . /app/
+
+# Install project
+RUN poetry install --no-interaction --no-ansi --only main
+
+# Development stage
+FROM builder as development
+
+# Install dev dependencies
+RUN poetry install --no-interaction --no-ansi --with dev
+
+# Expose port
+EXPOSE 8001
+
+# Run the MCP API with auto-reload
+CMD ["uvicorn", "src.codestory_mcp.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+
+# Production stage
+FROM python:3.12-slim as production
 
 WORKDIR /app
 
-# Install curl for healthcheck
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
-
-# Copy dependencies from the builder stage
+# Copy built Python packages and code from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /app/src/codestory_mcp /app/src/codestory_mcp
 
-# Copy project files
-COPY . /app/
-
-# Create non-root user
-RUN groupadd --system mcp && \
-    useradd --system --gid mcp mcp && \
-    chown -R mcp:mcp /app
-
-# Switch to non-root user
-USER mcp
-
-# Expose the MCP port
-EXPOSE 8001
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8001/v1/health || exit 1
 
-# Set the entrypoint
-CMD ["python", "-m", "codestory_mcp.main"]
+# Expose port
+EXPOSE 8001
+
+# Run the MCP API
+CMD ["uvicorn", "src.codestory_mcp.main:app", "--host", "0.0.0.0", "--port", "8001"]

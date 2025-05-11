@@ -1,31 +1,6 @@
-FROM python:3.12-slim
+# Use the service Dockerfile with the worker target
+FROM service:worker
 
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="${PATH}:/root/.local/bin"
-
-# Copy only requirements to cache them in docker layer
-COPY pyproject.toml poetry.lock* /app/
-
-# Configure poetry to not use virtualenvs inside Docker
-RUN poetry config virtualenvs.create false
-
-# Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root --only main
-
-# Copy project
-COPY . /app/
-
-# Install project
-RUN poetry install --no-interaction --no-ansi --only main
-
-# Run the worker
-CMD ["celery", "-A", "src.codestory.ingestion_pipeline.worker", "worker", "--loglevel=info"]
+# Note: This Dockerfile exists for backward compatibility.
+# For new deployments, use:
+# docker build -f infra/docker/service.Dockerfile --target worker .
