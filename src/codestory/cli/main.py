@@ -109,6 +109,13 @@ def register_commands():
     app.add_command(ask.ask, name="gs")  # Graph search
     app.add_command(visualize.generate, name="vz")  # Alias for visualize generate
 
+    # Additional aliases from the spec
+    app.add_command(service.start_service, name="ss")  # Service start
+    app.add_command(service.stop_service, name="sx")  # Service stop
+    app.add_command(ingest.stop_job, name="is")  # Ingest stop
+    app.add_command(ingest.list_jobs, name="ij")  # Ingest jobs
+    app.add_command(config.show_config, name="cfs")  # Config show
+
 
 # Register commands after app is defined
 register_commands()
