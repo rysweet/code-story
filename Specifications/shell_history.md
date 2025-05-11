@@ -102,3 +102,16 @@
 - `cd /Users/ryan/src/msec/code-story && git status` - Checking git status before committing
 - `cd /Users/ryan/src/msec/code-story && git commit -m "Fix linting and type issues throughout codebase"` - Committing all remaining changes
 - `cd /Users/ryan/src/msec/code-story && git push` - Pushing changes to remote repository
+
+## May 10, 2025 (continued)
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_cli/ -v` - Running CLI unit tests to check their status
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_cli/test_commands/test_ingest.py -v` - Running CLI ingest commands tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_cli/test_main.py -v` - Running CLI main tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_cli/test_progress_client.py -v` - Running CLI progress client tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_cli/test_service_client.py -v` - Running CLI service client tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest` - Running all tests to verify final state with CLI test fixes
+- `cd /Users/ryan/src/msec/code-story && mkdir -p tests/integration/test_cli` - Creating directory for CLI integration tests
+- `cd /Users/ryan/src/msec/code-story && mkdir -p tests/integration/test_cli/test_commands` - Creating directory for CLI command integration tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_cli/ -v` - Running CLI integration tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest` - Running all tests to verify final state with CLI integration tests
+- `cd /Users/ryan/src/msec/code-story && find . -name "*.py" -o -name "*.md" | xargs grep -l "TODO" | grep -v "test_" | grep -v "conftest.py"` - Searching for remaining TODOs in the codebase
