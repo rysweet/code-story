@@ -2,71 +2,59 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { MantineProvider } from '@mantine/core';
 
-// Mock Sidebar component for testing
-vi.mock('../Sidebar', () => ({
-  default: ({ 
-    active, 
-    onNavigate, 
-    collapsed 
-  }: { 
-    active?: string; 
-    onNavigate: (path: string) => void; 
-    collapsed?: boolean 
-  }) => (
-    <div data-testid="sidebar" data-collapsed={collapsed} data-active={active}>
-      <ul>
-        <li>
-          <button 
-            data-active={active === '/graph'}
-            onClick={() => onNavigate('/graph')}
-          >
-            Graph
-          </button>
-        </li>
-        <li>
-          <button 
-            data-active={active === '/ingestion'}
-            onClick={() => onNavigate('/ingestion')}
-          >
-            Ingestion
-          </button>
-        </li>
-        <li>
-          <button 
-            data-active={active === '/config'}
-            onClick={() => onNavigate('/config')}
-          >
-            Configuration
-          </button>
-        </li>
-        <li>
-          <button 
-            data-active={active === '/mcp'}
-            onClick={() => onNavigate('/mcp')}
-          >
-            MCP Playground
-          </button>
-        </li>
-        <li>
-          <button 
-            data-active={active === '/ask'}
-            onClick={() => onNavigate('/ask')}
-          >
-            Ask Questions
-          </button>
-        </li>
-        <li>
-          <button 
-            data-active={active === '/dashboard'}
-            onClick={() => onNavigate('/dashboard')}
-          >
-            Dashboard
-          </button>
-        </li>
-      </ul>
-    </div>
-  )
+// Mock Mantine components
+vi.mock('@mantine/core', () => ({
+  Box: ({ children, sx, 'data-testid': dataTestId }: any) => (
+    <div data-testid={dataTestId || 'box'} data-has-style={!!sx}>{children}</div>
+  ),
+  NavLink: ({
+    label,
+    description,
+    icon,
+    active,
+    onClick,
+    rightSection,
+    'aria-label': ariaLabel
+  }: any) => (
+    <a
+      data-testid="nav-link"
+      data-active={active}
+      aria-label={ariaLabel}
+      onClick={onClick}
+    >
+      {icon && <span data-testid="nav-icon" />}
+      {label && <div data-testid="nav-label">{label}</div>}
+      {description && <div data-testid="nav-description">{description}</div>}
+      {rightSection && <div data-testid="nav-right-section">{rightSection}</div>}
+    </a>
+  ),
+  Stack: ({ children, spacing }: any) => (
+    <div data-testid="stack" data-spacing={spacing}>{children}</div>
+  ),
+  useMantineTheme: () => ({
+    colors: { gray: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999'], dark: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999'] },
+    colorScheme: 'light',
+    spacing: { xs: '0.5rem', sm: '0.75rem', md: '1rem' },
+    radius: { sm: '0.25rem' }
+  }),
+  Badge: ({ children, size, color, variant }: any) => (
+    <span data-testid="badge" data-size={size} data-color={color} data-variant={variant}>
+      {children}
+    </span>
+  ),
+  MantineProvider: ({ children }: any) => <div>{children}</div>
+}));
+
+// Mock Tabler icons
+vi.mock('@tabler/icons-react', () => ({
+  IconGraph: () => <span data-testid="icon-graph"></span>,
+  IconDatabase: () => <span data-testid="icon-database"></span>,
+  IconSettings: () => <span data-testid="icon-settings"></span>,
+  IconCode: () => <span data-testid="icon-code"></span>,
+  IconMessage: () => <span data-testid="icon-message"></span>,
+  IconDashboard: () => <span data-testid="icon-dashboard"></span>
 }));
 
 // Import after mocking
@@ -80,51 +68,109 @@ describe('Sidebar', () => {
   });
 
   it('should render all navigation items', () => {
-    render(<Sidebar onNavigate={mockNavigate} />);
-    
-    // Check for all navigation items
-    expect(screen.getByText('Graph')).toBeInTheDocument();
-    expect(screen.getByText('Ingestion')).toBeInTheDocument();
-    expect(screen.getByText('Configuration')).toBeInTheDocument();
-    expect(screen.getByText('MCP Playground')).toBeInTheDocument();
-    expect(screen.getByText('Ask Questions')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    render(
+      <MantineProvider>
+        <Sidebar onNavigate={mockNavigate} />
+      </MantineProvider>
+    );
+
+    // There should be 6 navigation links
+    const navLinks = screen.getAllByTestId('nav-link');
+    expect(navLinks.length).toBe(6);
+
+    // Check for icons
+    const icons = screen.getAllByTestId('nav-icon');
+    expect(icons.length).toBe(6);
+  });
+
+  it('should render full labels and descriptions when not collapsed', () => {
+    render(
+      <MantineProvider>
+        <Sidebar onNavigate={mockNavigate} collapsed={false} />
+      </MantineProvider>
+    );
+
+    // Labels should exist
+    const labels = screen.getAllByTestId('nav-label');
+    expect(labels.length).toBe(6);
+
+    // Descriptions should exist
+    const descriptions = screen.getAllByTestId('nav-description');
+    expect(descriptions.length).toBe(6);
+  });
+
+  it('should not render labels and descriptions when collapsed', () => {
+    render(
+      <MantineProvider>
+        <Sidebar onNavigate={mockNavigate} collapsed={true} />
+      </MantineProvider>
+    );
+
+    // Labels and descriptions should not exist (element may exist but be empty)
+    expect(screen.queryAllByTestId('nav-label').length).toBe(0);
+    expect(screen.queryAllByTestId('nav-description').length).toBe(0);
   });
 
   it('should highlight the active navigation item', () => {
-    render(<Sidebar active="/graph" onNavigate={mockNavigate} />);
-    
+    render(
+      <MantineProvider>
+        <Sidebar active="/graph" onNavigate={mockNavigate} />
+      </MantineProvider>
+    );
+
     // Find all nav links
-    const navLinks = screen.getAllByRole('button');
-    
+    const navLinks = screen.getAllByTestId('nav-link');
+
     // Check that the Graph item is active (first in the list)
     expect(navLinks[0]).toHaveAttribute('data-active', 'true');
-    
+
     // Other items should not be active
-    expect(navLinks[1]).not.toHaveAttribute('data-active', 'true');
-    expect(navLinks[2]).not.toHaveAttribute('data-active', 'true');
-    expect(navLinks[3]).not.toHaveAttribute('data-active', 'true');
-    expect(navLinks[4]).not.toHaveAttribute('data-active', 'true');
-    expect(navLinks[5]).not.toHaveAttribute('data-active', 'true');
+    for (let i = 1; i < navLinks.length; i++) {
+      expect(navLinks[i]).toHaveAttribute('data-active', 'false');
+    }
   });
 
   it('should call onNavigate with correct path when an item is clicked', async () => {
     const user = userEvent.setup();
-    render(<Sidebar onNavigate={mockNavigate} />);
-    
+    render(
+      <MantineProvider>
+        <Sidebar onNavigate={mockNavigate} />
+      </MantineProvider>
+    );
+
+    // Find all navigation links
+    const navLinks = screen.getAllByTestId('nav-link');
+
     // Click on the Ingestion nav item (second in the list)
-    const navLinks = screen.getAllByRole('button');
     await user.click(navLinks[1]);
-    
+
     // Check that onNavigate was called with the correct path
     expect(mockNavigate).toHaveBeenCalledWith('/ingestion');
   });
 
-  it('should apply collapsed styling when collapsed prop is true', () => {
-    render(<Sidebar onNavigate={mockNavigate} collapsed={true} />);
-    
-    // Check that sidebar has collapsed attribute
-    const sidebar = screen.getByTestId('sidebar');
-    expect(sidebar).toHaveAttribute('data-collapsed', 'true');
+  it('should show badge for items with badges', () => {
+    render(
+      <MantineProvider>
+        <Sidebar onNavigate={mockNavigate} collapsed={false} />
+      </MantineProvider>
+    );
+
+    // There should be at least one badge (for the Ingestion item)
+    const badges = screen.getAllByTestId('badge');
+    expect(badges.length).toBeGreaterThan(0);
+
+    // The badge should say "Jobs"
+    expect(badges[0]).toHaveTextContent('Jobs');
+  });
+
+  it('should not show badges when collapsed', () => {
+    render(
+      <MantineProvider>
+        <Sidebar onNavigate={mockNavigate} collapsed={true} />
+      </MantineProvider>
+    );
+
+    // There should be no right sections when collapsed
+    expect(screen.queryAllByTestId('nav-right-section').length).toBe(0);
   });
 });
