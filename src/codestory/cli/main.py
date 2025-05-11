@@ -1,25 +1,27 @@
-"""
-Main CLI application for Code Story.
-"""
+"""Main CLI application for Code Story."""
 
-import os
 import sys
-from typing import Optional
+from typing import Optional, Union
 
 import click
 
-# Import rich_click if available, otherwise create a stub
+# Import rich_click if available, otherwise create a stub with click
+rich_click_module = None
 try:
-    import rich_click
+    import rich_click as rich_click_module
 except ImportError:
-    import click as rich_click
+    # Create fake attributes on click module for fallback
+    import click as _click_for_rich
 
-    # Create fake attributes to avoid errors
-    rich_click.USE_RICH_MARKUP = False
-    rich_click.SHOW_ARGUMENTS = False
-    rich_click.GROUP_ARGUMENTS_OPTIONS = False
-    rich_click.STYLE_ERRORS_SUGGESTION = ""
-    rich_click.ERRORS_SUGGESTION = ""
+    # Add required rich_click attributes to click module
+    _click_for_rich.USE_RICH_MARKUP = False
+    _click_for_rich.SHOW_ARGUMENTS = False
+    _click_for_rich.GROUP_ARGUMENTS_OPTIONS = False
+    _click_for_rich.STYLE_ERRORS_SUGGESTION = ""
+    _click_for_rich.ERRORS_SUGGESTION = ""
+
+    # Set our module variable
+    rich_click_module = _click_for_rich
 from rich.console import Console
 
 from codestory.config import get_settings
@@ -27,11 +29,11 @@ from codestory.config import get_settings
 from .client import ServiceClient, ServiceError
 
 # Set up Rich for Click
-rich_click.USE_RICH_MARKUP = True
-rich_click.SHOW_ARGUMENTS = True
-rich_click.GROUP_ARGUMENTS_OPTIONS = True
-rich_click.STYLE_ERRORS_SUGGESTION = "yellow italic"
-rich_click.ERRORS_SUGGESTION = (
+rich_click_module.USE_RICH_MARKUP = True
+rich_click_module.SHOW_ARGUMENTS = True
+rich_click_module.GROUP_ARGUMENTS_OPTIONS = True
+rich_click_module.STYLE_ERRORS_SUGGESTION = "yellow italic"
+rich_click_module.ERRORS_SUGGESTION = (
     "Try running the command with --help to see available options."
 )
 
@@ -55,7 +57,7 @@ console = Console()
 )
 @click.pass_context
 def app(
-    ctx: click.Context, service_url: Optional[str] = None, api_key: Optional[str] = None
+    ctx: click.Context, service_url: Union[str, None] = None, api_key: Union[str, None] = None
 ) -> None:
     """
     Code Story CLI application.
@@ -69,10 +71,7 @@ def app(
     # Create service client
     settings = get_settings()
 
-    if service_url:
-        base_url = service_url
-    else:
-        base_url = f"http://localhost:{settings.service.port}/v1"
+    base_url = service_url if service_url else f"http://localhost:{settings.service.port}/v1"
 
     client = ServiceClient(
         base_url=base_url,
@@ -88,7 +87,7 @@ def app(
 
 
 # Register commands later to avoid circular imports
-def register_commands():
+def register_commands() -> None:
     """Register all CLI commands."""
     from .commands import ask, config, ingest, query, service, ui, visualize
 
@@ -122,16 +121,14 @@ register_commands()
 
 
 def main() -> None:
-    """
-    Entry point for the CLI application.
-    """
+    """Entry point for the CLI application."""
     try:
         app()
     except ServiceError as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
     except Exception as e:
-        console.print(f"[bold red]Unexpected error:[/] {str(e)}")
+        console.print(f"[bold red]Unexpected error:[/] {e!s}")
         console.print_exception(show_locals=False)
         sys.exit(1)
 
