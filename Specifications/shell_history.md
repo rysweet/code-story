@@ -147,3 +147,9 @@
 - `cd /Users/ryan/src/msec/code-story && git commit -m "Add GUI components and structure including layouts, store, tests, and utilities"` - Committing GUI implementation files
 - `cd /Users/ryan/src/msec/code-story && git push origin cli-implementation` - Pushing changes to GitHub
 - `cd /Users/ryan/src/msec/code-story && gh pr checks 6` - Checking CI status of PR #6
+- `cd /Users/ryan/src/msec/code-story/gui && npx vitest run src/components/common/__tests__/Header.test.tsx` - Running tests for Header component
+- `cd /Users/ryan/src/msec/code-story/gui && npx vitest run src/components/common/__tests__` - Running tests for all layout components
+- `cd /Users/ryan/src/msec/code-story/gui && npx vitest run` - Running all GUI tests
+- `cd /Users/ryan/src/msec/code-story && git add gui/src/components/common/__tests__/ gui/src/tests/test-utils.tsx` - Staging test files
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add tests for layout components with proper mocking to ensure reliable tests"` - Committing test files
+- `cd /Users/ryan/src/msec/code-story && git push origin cli-implementation` - Pushing changes to GitHub
