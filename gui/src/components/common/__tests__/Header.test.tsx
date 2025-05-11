@@ -12,7 +12,7 @@ vi.mock('@mantine/core', () => ({
   Group: ({ children, justify, noWrap, spacing }: any) => (
     <div data-testid="header-group" data-justify={justify} data-spacing={spacing} data-nowrap={noWrap?.toString()}>{children}</div>
   ),
-  Title: ({ children, order, style }: any) => (
+  Title: ({ children, order }: any) => (
     <h3 data-testid="app-title" data-order={order}>{children}</h3>
   ),
   Button: ({ children, variant, leftIcon, onClick, size }: any) => (
