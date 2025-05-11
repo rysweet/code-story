@@ -127,6 +127,8 @@ The Azure deployment creates:
 - Log Analytics and Application Insights
 - Container Registry
 
+For detailed infrastructure documentation and architecture diagrams, see the [Infrastructure README](./infra/README.md).
+
 ### Development Setup
 
 1. Install Python dependencies:

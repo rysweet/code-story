@@ -2,6 +2,36 @@
 
 This directory contains the infrastructure as code for Code Story, supporting both local development with Docker Compose and cloud deployment to Azure Container Apps.
 
+## Azure Architecture
+
+The following diagram illustrates the Azure resources and their relationships in the Code Story deployment:
+
+![Azure Architecture](./azure-architecture.svg)
+
+The architecture consists of:
+1. **Container Apps Environment** - Hosts all containerized applications
+2. **Container Apps** - Service, Worker, MCP, GUI, and Neo4j
+3. **Supporting Azure Services** - Redis Cache, Key Vault, Container Registry, and monitoring
+
+### Components and Flow
+
+- **GUI Container App**: React-based web interface for users to interact with Code Story
+- **MCP Container App**: Model Context Protocol adapter for LLM integration
+- **Service Container App**: Main API service providing business logic and data access
+- **Worker Container App**: Background processes for codebase analysis and ingestion
+- **Neo4j Container App**: Graph database for storing code relationships and metadata
+
+### Data Flow
+
+1. Users access the application through the GUI or MCP interface
+2. The GUI communicates with the Service API for data retrieval and mutations
+3. The Service coordinates with Workers for background processing
+4. Both Service and Workers store and query data from Neo4j
+5. Redis is used for caching and as a message broker between Service and Workers
+6. Key Vault securely stores all secrets (database credentials, API keys)
+7. Container Registry provides image storage and versioning
+8. Log Analytics and Application Insights provide monitoring and diagnostics
+
 ## Directory Structure
 
 - `/docker` - Docker build files for all services
