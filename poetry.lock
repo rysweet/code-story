@@ -1713,6 +1713,27 @@ pygments = ">=2.13.0,<3.0.0"
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
+name = "rich-click"
+version = "1.8.8"
+description = "Format click help output nicely with rich"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "rich_click-1.8.8-py3-none-any.whl", hash = "sha256:205aabd5a98e64ab2c105dee9e368be27480ba004c7dfa2accd0ed44f9f1550e"},
+    {file = "rich_click-1.8.8.tar.gz", hash = "sha256:547c618dea916620af05d4a6456da797fbde904c97901f44d2f32f89d85d6c84"},
+]
+
+[package.dependencies]
+click = ">=7"
+rich = ">=10.7"
+typing_extensions = ">=4"
+
+[package.extras]
+dev = ["mypy", "packaging", "pre-commit", "pytest", "pytest-cov", "rich-codex", "ruff", "types-setuptools"]
+docs = ["markdown_include", "mkdocs", "mkdocs-glightbox", "mkdocs-material-extensions", "mkdocs-material[imaging] (>=9.5.18,<9.6.0)", "mkdocs-rss-plugin", "mkdocstrings[python]", "rich-codex"]
+
+[[package]]
 name = "ruff"
 version = "0.11.8"
 description = "An extremely fast Python linter and code formatter, written in Rust."
@@ -2179,4 +2200,4 @@ azure = ["azure-identity", "azure-keyvault-secrets"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "f86e16b7ed8357d6a12c94dd85e583268439854d652fd4b07165541b52233d04"
+content-hash = "dca4b6a66eeb28d52d133ab42a2ca6d4b3e89348e6be0c76eb7eadde22cefeb8"
