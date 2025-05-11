@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import React, { ReactNode } from 'react';
 import ErrorBoundary from '../ErrorBoundary';
 
+interface ErrorComponentProps {
+  shouldThrow?: boolean;
+}
+
 // Create a component that throws an error
-const ErrorComponent = ({ shouldThrow = false }) => {
+const ErrorComponent: React.FC<ErrorComponentProps> = ({ shouldThrow = false }) => {
   if (shouldThrow) {
     throw new Error('Test error');
   }
@@ -11,24 +16,24 @@ const ErrorComponent = ({ shouldThrow = false }) => {
 };
 
 // Create a custom fallback component
-const CustomFallback = () => <div>Custom fallback component</div>;
+const CustomFallback: React.FC = () => <div>Custom fallback component</div>;
 
 // We need to mock console.error to prevent test output noise
 const originalConsoleError = console.error;
 
 // Mock Mantine components for the error message
 vi.mock('@mantine/core', () => ({
-  Alert: ({ title, children, icon }) => (
+  Alert: ({ title, children, icon }: { title: string; children: ReactNode; icon?: ReactNode }) => (
     <div role="alert" data-title={title}>
       {icon && <span data-testid="icon" />}
       <div>{children}</div>
     </div>
   ),
-  Button: ({ children, onClick }) => (
+  Button: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
     <button onClick={onClick}>{children}</button>
   ),
-  Stack: ({ children }) => <div data-testid="stack">{children}</div>,
-  Text: ({ children, size, color }) => (
+  Stack: ({ children }: { children: ReactNode }) => <div data-testid="stack">{children}</div>,
+  Text: ({ children, size, color }: { children: ReactNode; size?: string; color?: string }) => (
     <div data-size={size} data-color={color}>{children}</div>
   ),
 }));
@@ -53,7 +58,7 @@ describe('ErrorBoundary', () => {
         <div>Test content</div>
       </ErrorBoundary>
     );
-
+    
     expect(screen.getByText('Test content')).toBeInTheDocument();
   });
 
@@ -63,7 +68,7 @@ describe('ErrorBoundary', () => {
         <ErrorComponent shouldThrow={true} />
       </ErrorBoundary>
     );
-
+    
     const alert = screen.getByRole('alert');
     expect(alert).toHaveAttribute('data-title', 'Something went wrong');
     expect(screen.getByText('An error occurred while rendering this component.')).toBeInTheDocument();
@@ -77,23 +82,23 @@ describe('ErrorBoundary', () => {
         <ErrorComponent shouldThrow={true} />
       </ErrorBoundary>
     );
-
+    
     expect(screen.getByText('Custom fallback component')).toBeInTheDocument();
   });
 
   it('should reset error state when Try Again button is clicked', () => {
     // Spy on setState method
     vi.spyOn(ErrorBoundary.prototype, 'setState');
-
+    
     render(
       <ErrorBoundary>
         <ErrorComponent shouldThrow={true} />
       </ErrorBoundary>
     );
-
+    
     const tryAgainButton = screen.getByText('Try again');
     fireEvent.click(tryAgainButton);
-
+    
     // Check that setState was called to reset the error state
     expect(ErrorBoundary.prototype.setState).toHaveBeenCalledWith({
       hasError: false,

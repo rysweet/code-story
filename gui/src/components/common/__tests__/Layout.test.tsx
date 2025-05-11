@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
+// Removing unused import userEvent
+import React from 'react';
 
 // Mock the Layout component directly instead of its dependencies
 vi.mock('../Layout', () => ({

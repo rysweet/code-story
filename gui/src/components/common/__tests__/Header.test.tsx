@@ -1,15 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 
 // Mock the Header component for testing
 vi.mock('../Header', () => ({
-  default: ({ toggleServicePanel }) => (
+  default: ({ toggleServicePanel }: { toggleServicePanel?: () => void }) => (
     <div className="header">
       <h3>Code Story</h3>
       <div className="controls">
-        <button
-          className="theme-toggle"
+        <button 
+          className="theme-toggle" 
           aria-label="Toggle color scheme"
         >
           Theme
@@ -47,12 +48,12 @@ describe('Header', () => {
   it('should call toggleServicePanel when Service Status button is clicked', async () => {
     const toggleServicePanel = vi.fn();
     const user = userEvent.setup();
-
+    
     render(<Header toggleServicePanel={toggleServicePanel} />);
-
+    
     const button = screen.getByText('Service Status');
     await user.click(button);
-
+    
     expect(toggleServicePanel).toHaveBeenCalled();
   });
 });

@@ -1,14 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 
 // Mock Sidebar component for testing
 vi.mock('../Sidebar', () => ({
-  default: ({ active, onNavigate, collapsed }) => (
+  default: ({ 
+    active, 
+    onNavigate, 
+    collapsed 
+  }: { 
+    active?: string; 
+    onNavigate: (path: string) => void; 
+    collapsed?: boolean 
+  }) => (
     <div data-testid="sidebar" data-collapsed={collapsed} data-active={active}>
       <ul>
         <li>
-          <button
+          <button 
             data-active={active === '/graph'}
             onClick={() => onNavigate('/graph')}
           >
@@ -16,7 +25,7 @@ vi.mock('../Sidebar', () => ({
           </button>
         </li>
         <li>
-          <button
+          <button 
             data-active={active === '/ingestion'}
             onClick={() => onNavigate('/ingestion')}
           >
@@ -24,7 +33,7 @@ vi.mock('../Sidebar', () => ({
           </button>
         </li>
         <li>
-          <button
+          <button 
             data-active={active === '/config'}
             onClick={() => onNavigate('/config')}
           >
@@ -32,7 +41,7 @@ vi.mock('../Sidebar', () => ({
           </button>
         </li>
         <li>
-          <button
+          <button 
             data-active={active === '/mcp'}
             onClick={() => onNavigate('/mcp')}
           >
@@ -40,7 +49,7 @@ vi.mock('../Sidebar', () => ({
           </button>
         </li>
         <li>
-          <button
+          <button 
             data-active={active === '/ask'}
             onClick={() => onNavigate('/ask')}
           >
@@ -48,7 +57,7 @@ vi.mock('../Sidebar', () => ({
           </button>
         </li>
         <li>
-          <button
+          <button 
             data-active={active === '/dashboard'}
             onClick={() => onNavigate('/dashboard')}
           >
@@ -72,7 +81,7 @@ describe('Sidebar', () => {
 
   it('should render all navigation items', () => {
     render(<Sidebar onNavigate={mockNavigate} />);
-
+    
     // Check for all navigation items
     expect(screen.getByText('Graph')).toBeInTheDocument();
     expect(screen.getByText('Ingestion')).toBeInTheDocument();
@@ -84,13 +93,13 @@ describe('Sidebar', () => {
 
   it('should highlight the active navigation item', () => {
     render(<Sidebar active="/graph" onNavigate={mockNavigate} />);
-
+    
     // Find all nav links
     const navLinks = screen.getAllByRole('button');
-
+    
     // Check that the Graph item is active (first in the list)
     expect(navLinks[0]).toHaveAttribute('data-active', 'true');
-
+    
     // Other items should not be active
     expect(navLinks[1]).not.toHaveAttribute('data-active', 'true');
     expect(navLinks[2]).not.toHaveAttribute('data-active', 'true');
@@ -102,18 +111,18 @@ describe('Sidebar', () => {
   it('should call onNavigate with correct path when an item is clicked', async () => {
     const user = userEvent.setup();
     render(<Sidebar onNavigate={mockNavigate} />);
-
+    
     // Click on the Ingestion nav item (second in the list)
     const navLinks = screen.getAllByRole('button');
     await user.click(navLinks[1]);
-
+    
     // Check that onNavigate was called with the correct path
     expect(mockNavigate).toHaveBeenCalledWith('/ingestion');
   });
 
   it('should apply collapsed styling when collapsed prop is true', () => {
     render(<Sidebar onNavigate={mockNavigate} collapsed={true} />);
-
+    
     // Check that sidebar has collapsed attribute
     const sidebar = screen.getByTestId('sidebar');
     expect(sidebar).toHaveAttribute('data-collapsed', 'true');
