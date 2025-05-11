@@ -115,3 +115,8 @@
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_cli/ -v` - Running CLI integration tests
 - `cd /Users/ryan/src/msec/code-story && python -m pytest` - Running all tests to verify final state with CLI integration tests
 - `cd /Users/ryan/src/msec/code-story && find . -name "*.py" -o -name "*.md" | xargs grep -l "TODO" | grep -v "test_" | grep -v "conftest.py"` - Searching for remaining TODOs in the codebase
+- `cd /Users/ryan/src/msec/code-story && git status` - Check remaining uncommitted files
+- `cd /Users/ryan/src/msec/code-story && git add poetry.lock pyproject.toml specs/13-cli/cli.md tests/unit/test_cli/` - Add all remaining uncommitted files
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add CLI unit tests, update dependencies and CLI specification"` - Commit remaining files
+- `cd /Users/ryan/src/msec/code-story && git push origin claude-1st-impl` - Push final commit to GitHub
+- `cd /Users/ryan/src/msec/code-story && git status` - Verify all files are committed
