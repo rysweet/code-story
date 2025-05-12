@@ -75,12 +75,12 @@ jobs:
         image: neo4j:5.18.0
         env:
           NEO4J_AUTH: neo4j/password
-          NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
-          NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+          NEO4J_PLUGINS: '["apoc"]'
+          NEO4J_dbms_security_procedures_unrestricted: apoc.*
           NEO4J_dbms_memory_heap_initial__size: 512m
           NEO4J_dbms_memory_heap_max__size: 1G
           NEO4J_dbms_memory_pagecache_size: 512m
-          NEO4J_initial_dbms_default__database: codestory-test
+          NEO4J_initial_dbms_default__database: testdb
           NEO4J_dbms_jvm_additional: -XX:+ExitOnOutOfMemoryError
           NEO4J_server_default__listen__address: 0.0.0.0
           NEO4J_dbms_memory_transaction_max__size: 512M
@@ -88,7 +88,7 @@ jobs:
           - 7474:7474
           - 7687:7687
         options: >-
-          --health-cmd "curl -f http://localhost:7474/browser/ || exit 1"
+          --health-cmd "nc -z localhost 7474 || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -147,7 +147,7 @@ jobs:
           from neo4j import GraphDatabase
           uri = 'bolt://localhost:7687'
           driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
-          with driver.session(database='codestory-test') as session:
+          with driver.session(database='testdb') as session:
               session.run('''$(cat init_test_db.cypher)''')
           driver.close()
           print('Neo4j database initialized')
@@ -158,11 +158,11 @@ jobs:
           echo "NEO4J_URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J_USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J_PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J_DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "NEO4J_DATABASE=testdb" >> $GITHUB_ENV
           echo "NEO4J__URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J__USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J__PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J__DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "NEO4J__DATABASE=testdb" >> $GITHUB_ENV
           echo "REDIS_URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS__URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS_HOST=localhost" >> $GITHUB_ENV
@@ -192,12 +192,12 @@ jobs:
         image: neo4j:5.18.0
         env:
           NEO4J_AUTH: neo4j/password
-          NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
-          NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+          NEO4J_PLUGINS: '["apoc"]'
+          NEO4J_dbms_security_procedures_unrestricted: apoc.*
           NEO4J_dbms_memory_heap_initial__size: 512m
           NEO4J_dbms_memory_heap_max__size: 1G
           NEO4J_dbms_memory_pagecache_size: 512m
-          NEO4J_initial_dbms_default__database: codestory-test
+          NEO4J_initial_dbms_default__database: testdb
           NEO4J_dbms_jvm_additional: -XX:+ExitOnOutOfMemoryError
           NEO4J_server_default__listen__address: 0.0.0.0
           NEO4J_dbms_memory_transaction_max__size: 512M
@@ -205,7 +205,7 @@ jobs:
           - 7474:7474
           - 7687:7687
         options: >-
-          --health-cmd "curl -f http://localhost:7474/browser/ || exit 1"
+          --health-cmd "nc -z localhost 7474 || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -257,7 +257,7 @@ jobs:
           from neo4j import GraphDatabase
           uri = 'bolt://localhost:7687'
           driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
-          with driver.session(database='codestory-test') as session:
+          with driver.session(database='testdb') as session:
               with open('tests/fixtures/cypher/01_init_schema.cypher', 'r') as f:
                   script = f.read()
                   session.run(script)
@@ -270,11 +270,11 @@ jobs:
           echo "NEO4J_URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J_USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J_PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J_DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "NEO4J_DATABASE=testdb" >> $GITHUB_ENV
           echo "NEO4J__URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J__USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J__PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J__DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "NEO4J__DATABASE=testdb" >> $GITHUB_ENV
           echo "REDIS_URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS__URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS_HOST=localhost" >> $GITHUB_ENV
