@@ -20,7 +20,26 @@ services:
     volumes:
       - neo4j_test_data:/data
       - neo4j_test_logs:/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2.4-alpine
+    container_name: codestory-redis-test
+    ports:
+      - "6380:6379"  # Using different port to avoid conflicts
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   neo4j_test_data:
   neo4j_test_logs:
+  redis_test_data:

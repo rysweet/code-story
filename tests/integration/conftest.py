@@ -13,16 +13,29 @@ from .test_config import get_test_settings
 def pytest_addoption(parser):
     """Add command line options for integration tests."""
     parser.addoption(
+        "--skip-neo4j",
+        action="store_true",
+        default=False,
+        help="Skip tests that require Neo4j",
+    )
+    parser.addoption(
+        "--skip-celery",
+        action="store_true",
+        default=False,
+        help="Skip tests that require Celery",
+    )
+    # Keep old options for backward compatibility
+    parser.addoption(
         "--run-neo4j",
         action="store_true",
         default=False,
-        help="Run tests that require Neo4j",
+        help="[DEPRECATED] Use --skip-neo4j=False instead",
     )
     parser.addoption(
         "--run-celery",
         action="store_true",
         default=False,
-        help="Run tests that require Celery",
+        help="[DEPRECATED] Use --skip-celery=False instead",
     )
 
 
@@ -34,18 +47,25 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(config, items):
-    """Skip integration tests unless explicitly enabled."""
-    skip_neo4j = pytest.mark.skip(reason="Need --run-neo4j option to run")
-    skip_celery = pytest.mark.skip(reason="Need --run-celery option to run")
+    """Enable Neo4j and Celery tests by default.
 
-    # Skip Neo4j tests
-    if not config.getoption("--run-neo4j"):
+    Neo4j and Redis are considered core components of the system, so their
+    tests should run by default. Only Azure-dependent tests are skipped
+    unless explicitly enabled.
+    """
+    # Neo4j and Celery tests are now enabled by default
+    # They can be disabled with --skip-neo4j and --skip-celery options
+    skip_neo4j = pytest.mark.skip(reason="Tests using Neo4j are disabled with --skip-neo4j")
+    skip_celery = pytest.mark.skip(reason="Tests using Celery are disabled with --skip-celery")
+
+    # Skip Neo4j tests if explicitly disabled
+    if config.getoption("--skip-neo4j", False):
         for item in items:
             if "neo4j" in item.keywords:
                 item.add_marker(skip_neo4j)
 
-    # Skip Celery tests
-    if not config.getoption("--run-celery"):
+    # Skip Celery tests if explicitly disabled
+    if config.getoption("--skip-celery", False):
         for item in items:
             if "celery" in item.keywords:
                 item.add_marker(skip_celery)
@@ -101,9 +121,9 @@ def load_env_vars():
     # Override the NEO4J__URI in environment to match the test container port
     os.environ["NEO4J__URI"] = "bolt://localhost:7688"
 
-    # Set default Redis variables if not already set
-    if "REDIS_URI" not in os.environ:
-        os.environ["REDIS_URI"] = "redis://localhost:6379/0"
+    # Set default Redis variables to use test instance
+    # Test Redis runs on port 6380 instead of 6379 to avoid conflicts
+    os.environ["REDIS_URI"] = "redis://localhost:6380/0"
 
 
 @pytest.fixture(scope="session")

@@ -12,20 +12,26 @@ The following services are required to run the integration tests:
 
 ## Environment Setup
 
-### 1. Start Neo4j Test Instance
+### 1. Start Test Services
 
-To start the Neo4j test database:
+Start the Neo4j and Redis test instances:
 
 ```bash
-docker-compose -f docker-compose.test.yml up -d neo4j
+docker-compose -f docker-compose.test.yml up -d
 ```
 
-This will start a Neo4j instance with:
+This will start:
+
+#### Neo4j:
 - HTTP on port 7475 (http://localhost:7475)
 - Bolt on port 7688 (bolt://localhost:7688)
 - Username: neo4j
 - Password: password
 - Database: codestory-test
+
+#### Redis:
+- Port 6380 (redis://localhost:6380)
+- Dedicated test instance to avoid interfering with your development Redis
 
 ### 2. Python Environment Setup
 
@@ -48,20 +54,29 @@ python -m pytest tests/unit/
 
 ### Integration Tests
 
-Integration tests require additional flags to enable specific test components:
+By default, all integration tests that use Neo4j and Celery now run automatically, as these are considered core components of the system. Only OpenAI-dependent tests are skipped by default to avoid requiring external API keys.
 
-- `--run-neo4j` - Enable tests that require Neo4j
-- `--run-celery` - Enable tests that require Celery
-- `--run-openai` - Enable tests that require OpenAI API access
+If needed, you can skip specific test categories with these flags:
+
+- `--skip-neo4j` - Skip tests that require Neo4j
+- `--skip-celery` - Skip tests that require Celery
+- `--skip-openai` - Skip tests that require OpenAI API access (default behavior)
+- `--run-openai` - Enable tests that require OpenAI API access (deprecated but still supported)
 
 Example:
 
 ```bash
-# Run all integration tests with Neo4j and Celery support
-python -m pytest tests/integration/ --run-neo4j --run-celery
+# Run all integration tests (except OpenAI)
+python -m pytest tests/integration/
+
+# Run all integration tests including OpenAI
+python -m pytest tests/integration/ --run-openai
+
+# Run tests but skip Neo4j-dependent ones
+python -m pytest tests/integration/ --skip-neo4j
 
 # Run specific integration test for the summarizer
-python -m pytest tests/integration/test_ingestion_pipeline/test_summarizer_integration.py --run-neo4j --run-celery
+python -m pytest tests/integration/test_ingestion_pipeline/test_summarizer_integration.py
 ```
 
 ## Troubleshooting
@@ -103,6 +118,22 @@ For Celery-related issues:
    export REDIS_URI=redis://localhost:6379/0
    ```
 
-## Skipped Tests
+## Test Categories
 
-Many integration tests are skipped by default to avoid requiring external services for regular test runs. Always check the test markers to understand why a test is skipped and which flags are required to enable it.
+The project has several test categories, each with specific requirements:
+
+1. **Unit Tests** - No external dependencies, always run
+2. **Neo4j Tests** - Require Neo4j database, run by default
+3. **Celery Tests** - Require Redis/Celery, run by default
+4. **OpenAI Tests** - Require OpenAI API access, skipped by default
+
+Integration tests may have multiple markers. For example, a test might require both Neo4j and Celery.
+
+To see which tests are skipped and why:
+
+```bash
+# Run with verbose flag to see skip reasons
+python -m pytest -v tests/integration/
+```
+
+Tests marked with `@pytest.mark.skip` or `@pytest.mark.skipif` have specific conditions that must be met, independent of the command line options.

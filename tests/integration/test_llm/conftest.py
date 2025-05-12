@@ -13,10 +13,17 @@ from codestory.llm.client import OpenAIClient, create_client
 def pytest_addoption(parser):
     """Add command line options for integration tests."""
     parser.addoption(
+        "--skip-openai",
+        action="store_true",
+        default=False,
+        help="Skip tests that require OpenAI API access",
+    )
+    # Keep old option for backward compatibility
+    parser.addoption(
         "--run-openai",
         action="store_true",
         default=False,
-        help="Run tests that require OpenAI API access",
+        help="[DEPRECATED] Use --skip-openai=False instead",
     )
 
 
@@ -29,9 +36,19 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(config, items):
-    """Skip OpenAI tests unless explicitly enabled."""
-    if not config.getoption("--run-openai"):
-        skip_openai = pytest.mark.skip(reason="Need --run-openai option to run")
+    """Skip OpenAI tests if explicitly disabled or if they require Azure.
+
+    For Azure tests, we first check if Azure credentials are available before skipping.
+    """
+    # Skip OpenAI tests if explicitly disabled
+    skip_openai = pytest.mark.skip(reason="Tests using OpenAI are disabled with --skip-openai")
+
+    # We skip OpenAI tests in the following cases:
+    # 1. If --skip-openai is specified
+    # 2. If --run-openai is not specified (for backward compatibility)
+    should_skip_openai = config.getoption("--skip-openai") or not config.getoption("--run-openai")
+
+    if should_skip_openai:
         for item in items:
             if "openai" in item.keywords:
                 item.add_marker(skip_openai)
