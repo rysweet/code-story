@@ -28,13 +28,34 @@ jobs:
           poetry install --no-interaction --no-root
       - name: Lint with Ruff
         run: |
-          git diff --name-only origin/main HEAD | grep -E '\.py$' | xargs -r poetry run ruff check
+          if [ -z "$GITHUB_BASE_REF" ]; then
+            # Direct push to a branch - check all Python files in src
+            find src -name "*.py" | xargs -r poetry run ruff check
+          else
+            # PR - try to get changed files
+            git fetch origin $GITHUB_BASE_REF
+            git diff --name-only origin/$GITHUB_BASE_REF HEAD | grep -E '\.py$' | xargs -r poetry run ruff check
+          fi
       - name: Check formatting with Ruff
         run: |
-          git diff --name-only origin/main HEAD | grep -E '\.py$' | xargs -r poetry run ruff format --check
+          if [ -z "$GITHUB_BASE_REF" ]; then
+            # Direct push to a branch - check all Python files in src
+            find src -name "*.py" | xargs -r poetry run ruff format --check
+          else
+            # PR - try to get changed files
+            git fetch origin $GITHUB_BASE_REF
+            git diff --name-only origin/$GITHUB_BASE_REF HEAD | grep -E '\.py$' | xargs -r poetry run ruff format --check
+          fi
       - name: Type check with mypy
         run: |
-          git diff --name-only origin/main HEAD | grep -E '\.py$' | grep -v 'tests/' | xargs -r poetry run mypy
+          if [ -z "$GITHUB_BASE_REF" ]; then
+            # Direct push to a branch - check all Python files in src
+            find src -name "*.py" | grep -v 'tests/' | xargs -r poetry run mypy
+          else
+            # PR - try to get changed files
+            git fetch origin $GITHUB_BASE_REF
+            git diff --name-only origin/$GITHUB_BASE_REF HEAD | grep -E '\.py$' | grep -v 'tests/' | xargs -r poetry run mypy
+          fi
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:

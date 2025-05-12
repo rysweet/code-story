@@ -64,7 +64,7 @@ myst_enable_extensions = [
     "dollarmath",
     "html_admonition",
     "html_image",
-    "linkify",
+    "linkify",  # Re-enabled after adding linkify-it-py to dependencies
     "replacements",
     "smartquotes",
     "substitution",
