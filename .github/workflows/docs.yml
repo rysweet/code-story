@@ -39,6 +39,7 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install --no-interaction --extras "docs"
+          pip install linkify-it-py  # Ensure linkify is installed
       
       - name: Build documentation
         run: |
