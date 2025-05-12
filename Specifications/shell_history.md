@@ -1,5 +1,11 @@
 # Shell Command History
 
+## May 11, 2025 (Documentation implementation)
+- `cd /Users/ryan/src/msec/code-story && cat pyproject.toml` - Checking current Python dependencies
+- `cd /Users/ryan/src/msec/code-story && mkdir -p docs/{_build,_static,_templates,architecture,user_guides/workflows,developer_guides/extending,api,deployment}` - Creating documentation directory structure
+- `cd /Users/ryan/src/msec/code-story && ls -la docs` - Listing documentation directories
+- `cd /Users/ryan/src/msec/code-story && cat specs/16-documentation/documentation.md` - Reviewing documentation specifications
+
 ## May 6, 2025
 - `git checkout -b claude-1st-impl` - Creating a new branch for implementation
 - `ls -la` - Listing project files to understand current structure

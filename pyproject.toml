@@ -29,9 +29,17 @@ azure-identity = {version = "^1.15.0", optional = true}
 azure-keyvault-secrets = {version = "^4.8.0", optional = true}
 pyyaml = "^6.0.2"
 rich-click = "^1.8.8"
+sphinx = {version = "^7.3.7", optional = true}
+sphinx-rtd-theme = {version = "^2.0.0", optional = true}
+myst-parser = {version = "^3.0.0", optional = true}
+sphinxcontrib-mermaid = {version = "^0.9.2", optional = true}
+sphinx-copybutton = {version = "^0.5.2", optional = true}
+sphinx-design = {version = "^0.5.1", optional = true}
+sphinx-tabs = {version = "^3.4.5", optional = true}
 
 [tool.poetry.extras]
 azure = ["azure-identity", "azure-keyvault-secrets"]
+docs = ["sphinx", "sphinx-rtd-theme", "myst-parser", "sphinxcontrib-mermaid", "sphinx-copybutton", "sphinx-design", "sphinx-tabs"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
