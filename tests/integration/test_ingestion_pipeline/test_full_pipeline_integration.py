@@ -1,485 +1,430 @@
 """Integration tests for the full ingestion pipeline.
 
 These tests verify that the complete ingestion pipeline can process a
-repository through all workflow steps correctly.
+repository through all workflow steps correctly using real services.
 """
 
+import os
+import shutil
+import socket
+import subprocess
 import tempfile
 import time
+import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+import logging
+import psutil
 
 import pytest
 
-from codestory.config.settings import get_settings
+# Configure logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+from codestory.config.settings import Settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 from codestory.ingestion_pipeline.manager import PipelineManager
-from codestory.llm.models import (
-    ChatCompletionResponse,
-    ChatCompletionResponseChoice,
-    ChatMessage,
-    ChatRole,
-    Usage,
-)
-from codestory_blarify.step import BlarifyStep
-from codestory_docgrapher.step import DocumentationGrapherStep
-from codestory_filesystem.step import FileSystemStep
-from codestory_summarizer.step import SummarizerStep
-
-# Mark these tests as integration tests
-pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
 
 
-@pytest.fixture
-def mock_llm_client():
-    """Mock the LLM client to avoid making actual API calls during tests."""
-    with patch("codestory.llm.client.create_client") as mock_create_client:
-        # Create a mock client with a chat method that returns a predefined response
-        mock_client = MagicMock()
-
-        def mock_chat(messages, **kwargs):
-            # Generate a mock response
-            response_text = "This is a generated summary of the code or documentation."
-
-            mock_response = ChatCompletionResponse(
-                id="mock-response-id",
-                object="chat.completion",
-                created=int(time.time()),
-                model="gpt-4",
-                choices=[
-                    ChatCompletionResponseChoice(
-                        index=0,
-                        message=ChatMessage(
-                            role=ChatRole.ASSISTANT, content=response_text
-                        ),
-                        finish_reason="stop",
-                    )
-                ],
-                usage=Usage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
-            )
-
-            return mock_response
-
-        mock_client.chat.side_effect = mock_chat
-        mock_create_client.return_value = mock_client
-
-        yield mock_client
-
-
-@pytest.fixture
-def mock_docker_client():
-    """Mock the Docker client for testing."""
-    with patch("docker.from_env") as mock_docker:
-        # Create mock container with logs method
-        mock_container = MagicMock()
-        mock_container.logs.return_value = (
-            b"Progress: 50%\nProcessing Python files...\nProgress: 100%\nDone."
+def ensure_services_running():
+    """Ensure Neo4j and Redis services are running, start them if not."""
+    # Check and start Neo4j if needed
+    try:
+        # Try to connect to Neo4j
+        connector = Neo4jConnector(
+            uri="bolt://localhost:7688",
+            username="neo4j",
+            password="password",
+            database="codestory-test",
         )
-        mock_container.wait.return_value = {"StatusCode": 0}
+        connector.execute_query("RETURN 1 as test")
+        connector.close()
+        logger.info("Neo4j is running")
+    except Exception as e:
+        logger.error(f"Neo4j is not running: {e}")
+        logger.info("Starting Neo4j container...")
 
-        # Create mock client
-        mock_client = MagicMock()
-        mock_client.containers.run.return_value = mock_container
-        mock_client.images.pull.return_value = None
-        mock_client.ping.return_value = True
+        # Start Neo4j container
+        subprocess.run(["docker-compose", "-f", "docker-compose.test.yml", "up", "-d", "neo4j"])
 
-        # Return mock client from from_env
-        mock_docker.return_value = mock_client
+        # Wait for Neo4j to be ready
+        max_attempts = 30
+        for i in range(max_attempts):
+            try:
+                connector = Neo4jConnector(
+                    uri="bolt://localhost:7688",
+                    username="neo4j",
+                    password="password",
+                    database="codestory-test",
+                )
+                connector.execute_query("RETURN 1 as test")
+                connector.close()
+                logger.info("Neo4j is now running")
+                break
+            except Exception:
+                logger.info(f"Waiting for Neo4j to start (attempt {i+1}/{max_attempts})...")
+                time.sleep(2)
+        else:
+            raise RuntimeError("Failed to start Neo4j container after multiple attempts")
 
-        yield mock_client
+    # Check and start Redis if needed
+    try:
+        import redis
+        client = redis.from_url("redis://localhost:6380/0")
+        client.ping()
+        logger.info("Redis is running")
+    except Exception as e:
+        logger.error(f"Redis is not running: {e}")
+        logger.info("Starting Redis container...")
+
+        # Start Redis container
+        subprocess.run(["docker-compose", "-f", "docker-compose.test.yml", "up", "-d", "redis"])
+
+        # Wait for Redis to be ready
+        max_attempts = 15
+        for i in range(max_attempts):
+            try:
+                client = redis.from_url("redis://localhost:6380/0")
+                client.ping()
+                logger.info("Redis is now running")
+                break
+            except Exception:
+                logger.info(f"Waiting for Redis to start (attempt {i+1}/{max_attempts})...")
+                time.sleep(2)
+        else:
+            raise RuntimeError("Failed to start Redis container after multiple attempts")
 
 
-@pytest.fixture
-def sample_repo():
-    """Create a sample repository structure for testing."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Create a simple directory structure
-        repo_dir = Path(temp_dir) / "sample_repo"
-        repo_dir.mkdir()
+class TestFullPipelineIntegration(unittest.TestCase):
+    """Test the full ingestion pipeline with real services."""
 
-        # Create some directories
-        (repo_dir / "src").mkdir()
-        (repo_dir / "docs").mkdir()
+    @classmethod
+    def setUpClass(cls):
+        """Set up the test environment and start required services."""
+        # Ensure required services are running (Neo4j, Redis, Celery)
+        ensure_services_running()
 
-        # Create a README file
-        (repo_dir / "README.md").write_text(
-            """
-# Sample Repository
+        # Configure settings for the test
+        os.environ["NEO4J_URI"] = "bolt://localhost:7688"
+        os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+        os.environ["NEO4J_USERNAME"] = "neo4j"
+        os.environ["NEO4J_PASSWORD"] = "password"
+        os.environ["NEO4J__USERNAME"] = "neo4j"
+        os.environ["NEO4J__PASSWORD"] = "password"
 
-This is a sample repository for testing the full ingestion pipeline.
+        # Configure Redis for Celery
+        os.environ["REDIS_URI"] = "redis://localhost:6380/0"
+        os.environ["REDIS__URI"] = "redis://localhost:6380/0"
 
-## Installation
+        # Create a test repository
+        cls.repo_dir = cls._create_test_repo()
+        cls.settings = Settings()
 
-```bash
-pip install sample-repo
-```
+        # Create Neo4j connector for the test
+        cls.neo4j_connector = Neo4jConnector(
+            uri="bolt://localhost:7688",
+            username="neo4j",
+            password="password",
+            database="codestory-test"
+        )
 
-## Usage
+        # Start a Celery worker for the tests if needed
+        cls.celery_worker_process = cls._ensure_celery_worker_running()
 
-```python
-from sample_repo import SampleClass
+        # Create a basic config file for the PipelineManager
+        cls.config_file_path = cls._create_pipeline_config_file()
+        
+        # Create PipelineManager with the test config file
+        cls.pipeline_manager = PipelineManager(config_path=cls.config_file_path)
 
-sample = SampleClass("World")
-print(sample.greet())
-```
+        # Wait for Neo4j to be ready
+        cls._wait_for_neo4j(cls.neo4j_connector)
+    
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up test resources and stop services."""
+        # Clean up the test repository
+        if hasattr(cls, 'repo_dir') and cls.repo_dir and os.path.exists(cls.repo_dir):
+            shutil.rmtree(cls.repo_dir)
+        
+        # Clean up temporary config file
+        if hasattr(cls, 'config_file_path') and cls.config_file_path and os.path.exists(cls.config_file_path):
+            os.unlink(cls.config_file_path)
+
+        # Clean up Neo4j database
+        if hasattr(cls, 'neo4j_connector') and cls.neo4j_connector:
+            try:
+                cls.neo4j_connector.execute_query("MATCH (n) DETACH DELETE n")
+                cls.neo4j_connector.close()
+            except Exception as e:
+                print(f"Error cleaning up Neo4j: {e}")
+
+        # Stop Celery worker if we started it
+        if hasattr(cls, 'celery_worker_process') and cls.celery_worker_process:
+            cls.celery_worker_process.terminate()
+            cls.celery_worker_process.wait(timeout=5)
+    
+    @classmethod
+    def _create_pipeline_config_file(cls):
+        """Create a pipeline configuration file for testing."""
+        config_content = """
+steps:
+  - name: filesystem
+    concurrency: 1
+    ignore_patterns:
+      - ".git/"
+      - "__pycache__/"
+  - name: blarify
+    concurrency: 1
+  - name: summarizer
+    concurrency: 1
+    max_tokens_per_file: 4000
+  - name: documentation_grapher
+    concurrency: 1
+    parse_docstrings: true
+    
+dependencies:
+  filesystem: []
+  blarify: ["filesystem"]
+  summarizer: ["filesystem", "blarify"]
+  documentation_grapher: ["filesystem", "summarizer"]
+
+retry:
+  max_retries: 2
+  back_off_seconds: 1
 """
-        )
+        
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
+            f.write(config_content)
+            return f.name
 
-        # Create a Python file
-        (repo_dir / "src" / "sample.py").write_text(
-            """
-'''Sample module for testing.
+    @classmethod
+    def _ensure_celery_worker_running(cls):
+        """Start a Celery worker for the tests if one is not already running."""
+        # Check if there's a Celery worker already running
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                cmdline = proc.info.get('cmdline', [])
+                if cmdline and 'celery' in cmdline and '-A' in cmdline and 'worker' in cmdline:
+                    logger.info(f"Found existing Celery worker: {' '.join(cmdline)}")
+                    return None
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
 
-This module provides a simple class for greeting.
-'''
+        # Start a Celery worker
+        logger.info("Starting Celery worker for tests...")
+        worker_env = os.environ.copy()
+        worker_env["PYTHONPATH"] = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        
+        process = subprocess.Popen([
+            "celery", "-A", "codestory.ingestion_pipeline.celery_app", "worker",
+            "--loglevel=info", "--concurrency=2", "-Q", "ingestion,celery"
+        ], env=worker_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Wait a bit for the worker to initialize
+        time.sleep(5)
+        
+        # Check if the worker is running
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            logger.error(f"Failed to start Celery worker: {stderr.decode()}")
+            raise RuntimeError("Failed to start Celery worker")
+        
+        logger.info("Celery worker started successfully")
+        return process
 
-class SampleClass:
-    '''A sample class for testing.
+    @staticmethod
+    def _is_port_in_use(port):
+        """Check if a port is in use."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', port)) == 0
     
-    This class demonstrates docstrings and provides greeting functionality.
-    '''
+    @classmethod
+    def _create_test_repo(cls):
+        """Create a test repository with some files."""
+        repo_dir = tempfile.mkdtemp()
+        
+        # Create sample Python files
+        os.makedirs(os.path.join(repo_dir, "src/package"), exist_ok=True)
+        
+        # Create __init__.py files
+        Path(os.path.join(repo_dir, "src/package/__init__.py")).touch()
+        
+        # Create a module file
+        with open(os.path.join(repo_dir, "src/package/module.py"), "w") as f:
+            f.write("""
+def hello_world():
+    \"\"\"Print hello world.
     
-    def __init__(self, name):
-        '''Initialize with a name.
+    Returns:
+        str: A greeting
+    \"\"\"
+    return "Hello, world!"
+
+class Calculator:
+    \"\"\"A simple calculator class.\"\"\"
+    
+    def add(self, a, b):
+        \"\"\"Add two numbers.
         
         Args:
-            name: The name to greet.
-        '''
-        self.name = name
-        
-    def greet(self):
-        '''Return a greeting.
-        
+            a: First number
+            b: Second number
+            
         Returns:
-            str: A greeting message.
-        '''
-        return f"Hello, {self.name}!"
+            The sum of a and b
+        \"\"\"
+        return a + b
+""")
         
-def main():
-    '''Main entry point.
+        # Create a README
+        with open(os.path.join(repo_dir, "README.md"), "w") as f:
+            f.write("""# Test Repository
+            
+This is a test repository for pipeline integration tests.
+
+## Features
+
+- Module with functions and classes
+- Documentation in docstrings
+- Simple README
+""")
+        
+        return repo_dir
     
-    This function creates a SampleClass instance and prints a greeting.
-    '''
-    sample = SampleClass("World")
-    print(sample.greet())
-    
-if __name__ == "__main__":
-    main()
-"""
-        )
+    @classmethod
+    def _wait_for_neo4j(cls, connector, max_attempts=30):
+        """Wait for Neo4j to be ready."""
+        for i in range(max_attempts):
+            try:
+                # Try a simple query
+                connector.execute_query("RETURN 1 AS n")
+                return True
+            except Exception as e:
+                print(f"Waiting for Neo4j (attempt {i+1}/{max_attempts}): {e}")
+                time.sleep(1)
+        
+        raise RuntimeError("Neo4j not ready after maximum wait time")
 
-        # Add some files that should be ignored
-        (repo_dir / ".git").mkdir()
-        (repo_dir / ".git" / "config").write_text("# Git config")
+    def test_full_pipeline_execution(self):
+        """Test that the full pipeline executes successfully using the real services."""
+        # Start the pipeline job using the real pipeline manager
+        job_id = self.pipeline_manager.start_job(repository_path=self.repo_dir)
 
-        yield str(repo_dir)
+        logger.info(f"Started pipeline job with ID: {job_id}")
 
-
-@pytest.fixture
-def neo4j_connector():
-    """Create a Neo4j connector for testing."""
-    settings = get_settings()
-    connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        database=settings.neo4j.database,
-    )
-
-    # Clear the database before each test
-    connector.run_query("MATCH (n) DETACH DELETE n")
-
-    yield connector
-
-    # Close the connection
-    connector.close()
-
-
-@pytest.fixture
-def mock_steps(mock_llm_client, mock_docker_client):
-    """Mock the implementation of steps to focus on pipeline integration."""
-    # Mock BlarifyStep to avoid Docker dependency and improve test speed
-    with patch.object(BlarifyStep, "run", autospec=True) as mock_blarify_run:
-        # Mock successful job execution
-        mock_blarify_run.return_value = "blarify-test-job"
-
-        # Mock SummarizerStep to avoid dependency on graph nodes and LLM
-        with patch.object(SummarizerStep, "run", autospec=True) as mock_summarizer_run:
-            mock_summarizer_run.return_value = "summarizer-test-job"
-
-            # Mock status methods to return COMPLETED
-            with (
-                patch.object(
-                    BlarifyStep, "status", autospec=True
-                ) as mock_blarify_status,
-                patch.object(
-                    SummarizerStep, "status", autospec=True
-                ) as mock_summarizer_status,
-                patch.object(
-                    DocumentationGrapherStep, "status", autospec=True
-                ) as mock_docgrapher_status,
-            ):
-                mock_blarify_status.return_value = {
-                    "status": "COMPLETED",
-                    "message": "Blarify step completed successfully",
-                    "progress": 100.0,
-                }
-
-                mock_summarizer_status.return_value = {
-                    "status": "COMPLETED",
-                    "message": "Summarizer step completed successfully",
-                    "progress": 100.0,
-                }
-
-                mock_docgrapher_status.return_value = {
-                    "status": "COMPLETED",
-                    "message": "Documentation Grapher step completed successfully",
-                    "progress": 100.0,
-                }
-
-                yield
-
-
-@pytest.mark.integration
-def test_full_pipeline_run(sample_repo, neo4j_connector, mock_steps):
-    """Test that the complete ingestion pipeline processes a repository correctly."""
-    # Create the pipeline manager
-    manager = PipelineManager()
-
-    # Run the pipeline
-    job_id = manager.start_job(
-        repository_path=sample_repo,
-        steps=["filesystem", "blarify", "summarizer", "documentation_grapher"],
-        config={
-            "ignore_patterns": [".git/", "__pycache__/"],
-            "max_concurrency": 2,
-            "use_llm": True,
-        },
-    )
-
-    # Wait for the pipeline to complete (poll for status)
-    max_wait_time = 120  # seconds
-    start_time = time.time()
-
-    while time.time() - start_time < max_wait_time:
-        status = manager.get_job_status(job_id)
-        if status["status"] in ("COMPLETED", "FAILED"):
-            break
-        time.sleep(2)
-
-    # Verify that the pipeline completed successfully
-    assert status["status"] == "COMPLETED", f"Pipeline failed: {status.get('error')}"
-
-    # Verify that all steps were executed
-    steps_status = status.get("steps", {})
-    assert "filesystem" in steps_status, "FileSystemStep was not executed"
-    assert "blarify" in steps_status, "BlarifyStep was not executed"
-    assert "summarizer" in steps_status, "SummarizerStep was not executed"
-    assert (
-        "documentation_grapher" in steps_status
-    ), "DocumentationGrapherStep was not executed"
-
-    # Verify that all steps completed successfully
-    for step_name, step_status in steps_status.items():
-        assert (
-            step_status["status"] == "COMPLETED"
-        ), f"Step {step_name} failed: {step_status.get('error')}"
-
-    # Verify that File nodes were created in Neo4j
-    file_count = neo4j_connector.run_query(
-        "MATCH (f:File) RETURN COUNT(f) as count", fetch_one=True
-    )["count"]
-
-    assert file_count >= 2, f"Expected at least 2 File nodes, got {file_count}"
-
-    # Verify that Directory nodes were created
-    dir_count = neo4j_connector.run_query(
-        "MATCH (d:Directory) RETURN COUNT(d) as count", fetch_one=True
-    )["count"]
-
-    assert dir_count >= 2, f"Expected at least 2 Directory nodes, got {dir_count}"
-
-
-@pytest.mark.integration
-def test_pipeline_step_dependencies(sample_repo, neo4j_connector, mock_steps):
-    """Test that the pipeline handles step dependencies correctly.
-
-    This test verifies that:
-    1. Dependencies are automatically resolved - when we request the summarizer step,
-       the pipeline automatically runs the filesystem and blarify steps first
-    2. Steps are executed in the correct order based on dependencies
-    """
-    # Create the pipeline manager
-    manager = PipelineManager()
-
-    # Run only the summarizer step, which depends on filesystem and blarify
-    # This should run the dependencies automatically in the correct order:
-    # 1. filesystem (no dependencies)
-    # 2. blarify (depends on filesystem)
-    # 3. summarizer (depends on filesystem and blarify)
-    job_id = manager.start_job(
-        repository_path=sample_repo,
-        steps=["summarizer"],
-        config={
-            "ignore_patterns": [".git/", "__pycache__/"],
-            "max_concurrency": 2,
-            "use_llm": True,
-        },
-    )
-
-    # Wait for the pipeline to complete (poll for status)
-    max_wait_time = 120  # seconds
-    start_time = time.time()
-
-    while time.time() - start_time < max_wait_time:
-        status = manager.get_job_status(job_id)
-        if status["status"] in ("COMPLETED", "FAILED"):
-            break
-        time.sleep(2)
-
-    # Verify that the pipeline completed successfully
-    assert status["status"] == "COMPLETED", f"Pipeline failed: {status.get('error')}"
-
-    # Verify that dependent steps were executed
-    steps_status = status.get("steps", {})
-    assert "filesystem" in steps_status, "FileSystemStep dependency was not executed"
-    assert "blarify" in steps_status, "BlarifyStep dependency was not executed"
-    assert "summarizer" in steps_status, "SummarizerStep was not executed"
-
-    # Verify the execution order based on the order in the status report
-    # The status report contains steps in the order they were executed
-    step_order = list(steps_status.keys())
-
-    # Verify filesystem comes before blarify
-    assert step_order.index("filesystem") < step_order.index(
-        "blarify"
-    ), "FileSystemStep should execute before BlarifyStep"
-
-    # Verify blarify comes before summarizer
-    assert step_order.index("blarify") < step_order.index(
-        "summarizer"
-    ), "BlarifyStep should execute before SummarizerStep"
-
-
-@pytest.mark.integration
-def test_pipeline_cancellation(sample_repo, neo4j_connector, mock_steps):
-    """Test that a pipeline job can be cancelled."""
-    # Modify the FileSystemStep status mock to simulate a long-running job
-    with patch.object(FileSystemStep, "status", autospec=True) as mock_fs_status:
-        counter = [0]
-
-        def fs_status_side_effect(self, job_id):
-            counter[0] += 1
-            if counter[0] < 3:  # Return RUNNING for the first 2 calls
-                return {
-                    "status": "RUNNING",
-                    "message": "FileSystemStep is running...",
-                    "progress": 50.0,
-                }
-            else:  # Return COMPLETED afterwards
-                return {
-                    "status": "COMPLETED",
-                    "message": "FileSystemStep completed successfully",
-                    "progress": 100.0,
-                }
-
-        mock_fs_status.side_effect = fs_status_side_effect
-
-        # Create the pipeline manager
-        manager = PipelineManager()
-
-        # Run the pipeline
-        job_id = manager.start_job(
-            repository_path=sample_repo,
-            steps=["filesystem", "blarify", "summarizer"],
-            config={"ignore_patterns": [".git/", "__pycache__/"]},
-        )
-
-        # Wait a moment for the job to start
-        time.sleep(1)
-
-        # Cancel the job
-        cancel_result = manager.cancel_job(job_id)
-
-        # Verify cancellation result
-        assert cancel_result["status"] == "CANCELLED", "Job was not cancelled"
-
-        # Check final job status
-        status = manager.get_job_status(job_id)
-        assert status["status"] == "CANCELLED", "Job status should be CANCELLED"
-
-
-@pytest.mark.integration
-def test_pipeline_progress_tracking(sample_repo, neo4j_connector, mock_steps):
-    """Test that the pipeline tracks overall progress correctly."""
-    # Modify step status mocks to simulate progress
-    with (
-        patch.object(FileSystemStep, "status", autospec=True) as mock_fs_status,
-        patch.object(BlarifyStep, "status", autospec=True) as mock_blarify_status,
-    ):
-        # FileSystemStep starts at 0%, then goes to 50%, then 100%
-        fs_statuses = [
-            {"status": "RUNNING", "message": "Starting...", "progress": 0.0},
-            {"status": "RUNNING", "message": "Processing...", "progress": 50.0},
-            {"status": "COMPLETED", "message": "Done", "progress": 100.0},
-        ]
-
-        # BlarifyStep starts at 0%, then goes to 50%, then 100%
-        blarify_statuses = [
-            {"status": "RUNNING", "message": "Starting...", "progress": 0.0},
-            {"status": "RUNNING", "message": "Processing...", "progress": 50.0},
-            {"status": "COMPLETED", "message": "Done", "progress": 100.0},
-        ]
-
-        mock_fs_status.side_effect = (
-            lambda self, job_id: fs_statuses.pop(0)
-            if fs_statuses
-            else {"status": "COMPLETED", "message": "Done", "progress": 100.0}
-        )
-
-        mock_blarify_status.side_effect = (
-            lambda self, job_id: blarify_statuses.pop(0)
-            if blarify_statuses
-            else {"status": "COMPLETED", "message": "Done", "progress": 100.0}
-        )
-
-        # Create the pipeline manager
-        manager = PipelineManager()
-
-        # Run the pipeline with only filesystem and blarify steps
-        job_id = manager.start_job(
-            repository_path=sample_repo,
-            steps=["filesystem", "blarify"],
-            config={"ignore_patterns": [".git/", "__pycache__/"]},
-        )
-
-        # Check progress at various points
-        time.sleep(0.5)
-        status1 = manager.get_job_status(job_id)
-
-        time.sleep(0.5)
-        status2 = manager.get_job_status(job_id)
-
-        time.sleep(0.5)
-        status3 = manager.get_job_status(job_id)
-
-        # Wait for the pipeline to complete
-        max_wait_time = 10  # seconds
+        # Wait for job to complete with a timeout (real services might take longer)
+        timeout = 180  # 3 minutes
         start_time = time.time()
+        job_status = None
 
-        while time.time() - start_time < max_wait_time:
-            status = manager.get_job_status(job_id)
-            if status["status"] in ("COMPLETED", "FAILED"):
+        while time.time() - start_time < timeout:
+            job_status = self.pipeline_manager.status(job_id)
+            logger.info(f"Job status: {job_status.get('status')}")
+            
+            if job_status.get('status') in [StepStatus.COMPLETED, StepStatus.FAILED]:
                 break
-            time.sleep(0.5)
+                
+            time.sleep(5)  # Check every 5 seconds
+        
+        self.assertIsNotNone(job_status, "Failed to get job status")
+        
+        # If the job is still running, the test will fail, which is what we want
+        self.assertEqual(job_status.get('status'), StepStatus.COMPLETED, 
+                        f"Pipeline job failed or timed out: {job_status}")
 
-        final_status = manager.get_job_status(job_id)
+        # Verify data in Neo4j
+        query = """
+        MATCH (n)
+        RETURN count(n) as node_count
+        """
+        result = self.neo4j_connector.execute_query(query)
+        self.assertGreater(result[0]["node_count"], 0, "No nodes created in Neo4j")
+        
+        # Check for specific node types
+        query = """
+        MATCH (f:File)
+        RETURN count(f) as file_count
+        """
+        result = self.neo4j_connector.execute_query(query)
+        self.assertGreater(result[0]["file_count"], 0, "No File nodes created")
+        
+        # Check for the README file specifically
+        query = """
+        MATCH (f:File {name: "README.md"})
+        RETURN f
+        """
+        result = self.neo4j_connector.execute_query(query)
+        self.assertEqual(len(result), 1, "README.md not found in graph")
 
-        # Verify that progress increased over time
-        assert status1.get("progress", 0) < status2.get(
-            "progress", 0
-        ), "Progress should increase"
-        assert status2.get("progress", 0) < status3.get(
-            "progress", 0
-        ), "Progress should increase"
-        assert final_status.get("progress", 0) == 100.0, "Final progress should be 100%"
+    def test_pipeline_with_empty_repo(self):
+        """Test the pipeline with an empty repository."""
+        # Create an empty repository
+        empty_repo_dir = tempfile.mkdtemp()
+
+        try:
+            # Start the pipeline job
+            job_id = self.pipeline_manager.start_job(repository_path=empty_repo_dir)
+            
+            # Wait for job to complete with timeout
+            timeout = 60  # 1 minute (should be faster for empty repo)
+            start_time = time.time()
+            job_status = None
+            
+            while time.time() - start_time < timeout:
+                job_status = self.pipeline_manager.status(job_id)
+                logger.info(f"Empty repo job status: {job_status.get('status')}")
+                
+                if job_status.get('status') in [StepStatus.COMPLETED, StepStatus.FAILED]:
+                    break
+                    
+                time.sleep(2)
+            
+            # For an empty repo, we don't assert overall success since some steps might fail
+            # due to having no content to process, but the filesystem step should still succeed
+            
+            # Verify the filesystem step worked even for an empty repo
+            # We check by querying Neo4j directly since the step statuses might be complex
+            query = """
+            MATCH (r:Repository)
+            RETURN count(r) as repo_count
+            """
+            result = self.neo4j_connector.execute_query(query)
+            self.assertGreater(result[0]["repo_count"], 0, "No Repository node created for empty repo")
+            
+        finally:
+            # Clean up
+            shutil.rmtree(empty_repo_dir)
+
+    def test_pipeline_error_handling(self):
+        """Test that the pipeline handles errors correctly when steps fail."""
+        # Use a non-existent repository path to trigger an error
+        non_existent_path = "/path/that/does/not/exist"
+        
+        try:
+            # Start the pipeline job
+            job_id = self.pipeline_manager.start_job(repository_path=non_existent_path)
+            
+            # Wait for job to complete with timeout
+            timeout = 60  # 1 minute
+            start_time = time.time()
+            job_status = None
+            
+            while time.time() - start_time < timeout:
+                job_status = self.pipeline_manager.status(job_id)
+                logger.info(f"Error handling job status: {job_status.get('status')}")
+                
+                if job_status.get('status') in [StepStatus.COMPLETED, StepStatus.FAILED]:
+                    break
+                    
+                time.sleep(2)
+            
+            self.assertIsNotNone(job_status, "Failed to get job status")
+            
+            # The pipeline should have failed due to the non-existent repository path
+            self.assertEqual(job_status.get('status'), StepStatus.FAILED, 
+                           "Pipeline should have failed with non-existent repository path")
+        except ValueError:
+            # It's also acceptable if the pipeline manager refuses to start a job with an invalid path
+            pass

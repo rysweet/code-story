@@ -41,7 +41,7 @@ def get_test_settings() -> Settings:
 
     # Define redis test settings
     redis = RedisSettings(
-        uri="redis://localhost:6379/1",  # Test DB 1
+        uri="redis://localhost:6380/0",  # Test port from docker-compose.test.yml
     )
 
     # Define OpenAI test settings

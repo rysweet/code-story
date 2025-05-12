@@ -1,5 +1,16 @@
 # Shell Command History
 
+## May 12, 2025 (Integration Test Fixes)
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/` - Running unit tests to verify basic functionality
+- `cd /Users/ryan/src/msec/code-story && cat -n tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py | grep -A20 "test_full_pipeline_execution"` - Examining full pipeline integration test
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py -v` - Running integration tests for the full pipeline
+- `cd /Users/ryan/src/msec/code-story && cat -n src/codestory/ingestion_pipeline/tasks.py` - Examining Celery tasks for anti-patterns
+- `cd /Users/ryan/src/msec/code-story && grep -r "\.get()" src/codestory/ingestion_pipeline/` - Finding all instances of blocking get() calls
+- `cd /Users/ryan/src/msec/code-story && cat -n src/codestory/ingestion_pipeline/manager.py` - Checking PipelineManager API
+- `cd /Users/ryan/src/msec/code-story && cat -n docker-compose.test.yml` - Examining test Docker Compose configuration
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/` - Running unit tests after making changes
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking status of changed files
+
 ## May 11, 2025 (Documentation implementation)
 - `cd /Users/ryan/src/msec/code-story && cat pyproject.toml` - Checking current Python dependencies
 - `cd /Users/ryan/src/msec/code-story && mkdir -p docs/{_build,_static,_templates,architecture,user_guides/workflows,developer_guides/extending,api,deployment}` - Creating documentation directory structure

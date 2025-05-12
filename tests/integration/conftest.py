@@ -107,59 +107,93 @@ def load_env_vars():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    # Set default Neo4j test variables if not already set
-    # The setup_test_db.sh script should set these, but this is a fallback
-    if "NEO4J_URI" not in os.environ:
-        os.environ["NEO4J_URI"] = "bolt://localhost:7688"
-    if "NEO4J_USERNAME" not in os.environ:
-        os.environ["NEO4J_USERNAME"] = "neo4j"
-    if "NEO4J_PASSWORD" not in os.environ:
-        os.environ["NEO4J_PASSWORD"] = "password"
-    if "NEO4J_DATABASE" not in os.environ:
-        os.environ["NEO4J_DATABASE"] = "codestory-test"
+    # Set default Neo4j test variables
+    os.environ["NEO4J_URI"] = "bolt://localhost:7688"
+    os.environ["NEO4J_USERNAME"] = "neo4j"
+    os.environ["NEO4J_PASSWORD"] = "password"
+    os.environ["NEO4J_DATABASE"] = "codestory-test"
 
-    # Override the NEO4J__URI in environment to match the test container port
+    # Set Neo4j settings for the code-story app via double-underscore format
     os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+    os.environ["NEO4J__USERNAME"] = "neo4j"
+    os.environ["NEO4J__PASSWORD"] = "password"
+    os.environ["NEO4J__DATABASE"] = "codestory-test"
 
-    # Set default Redis variables to use test instance
+    # Set Redis settings
     # Test Redis runs on port 6380 instead of 6379 to avoid conflicts
     os.environ["REDIS_URI"] = "redis://localhost:6380/0"
+    os.environ["REDIS__URI"] = "redis://localhost:6380/0"
 
 
 @pytest.fixture(scope="session")
-def celery_config():
-    """Configure Celery for testing."""
-    return {
-        "broker_url": "memory://",
-        "result_backend": "rpc://",
-        "task_always_eager": True,  # Tasks run synchronously in tests
-        "task_eager_propagates": True,  # Exceptions are propagated
-        "task_ignore_result": False,  # Results are tracked
-        "worker_concurrency": 1,  # Single worker for tests
-        "worker_prefetch_multiplier": 1,
-        "task_acks_late": False,
-        "task_track_started": True,
-    }
+def celery_config(request):
+    """Configure Celery for testing.
+
+    This provides a different configuration based on whether we're running
+    with --run-celery (using real Celery) or not (using in-memory tasks).
+    """
+    # Check if we're running with the real Celery flag
+    using_real_celery = request.config.getoption("--run-celery")
+
+    if using_real_celery:
+        # For integration tests with real Celery
+        return {
+            # Use the Redis broker from test settings
+            "broker_url": "redis://localhost:6380/0",
+            "result_backend": "redis://localhost:6380/0",
+            "task_always_eager": False,  # Tasks run asynchronously in real Celery
+            "task_eager_propagates": False,
+            "task_ignore_result": False,  # Results are tracked
+            "worker_concurrency": 1,  # Single worker for tests
+            "worker_prefetch_multiplier": 1,
+            "task_acks_late": False,
+            "task_track_started": True,
+        }
+    else:
+        # For unit tests without real Celery
+        return {
+            "broker_url": "memory://",
+            "result_backend": "rpc://",
+            "task_always_eager": True,  # Tasks run synchronously in tests
+            "task_eager_propagates": True,  # Exceptions are propagated
+            "task_ignore_result": False,  # Results are tracked
+            "worker_concurrency": 1,  # Single worker for tests
+            "worker_prefetch_multiplier": 1,
+            "task_acks_late": False,
+            "task_track_started": True,
+        }
 
 
 @pytest.fixture(scope="session")
-def celery_app():
-    """Provide the Celery app for testing."""
+def celery_app(request):
+    """Provide the Celery app for testing.
+
+    This provides a different configuration based on whether we're running
+    with --run-celery (using real Celery) or not (using in-memory tasks).
+    """
     from codestory.ingestion_pipeline.celery_app import app
 
-    # Configure app for testing
-    app.conf.update(
-        broker_url="memory://",
-        result_backend="rpc://",
-        task_always_eager=True,  # Tasks run synchronously in tests
-        task_eager_propagates=True,  # Exceptions are propagated
-        task_ignore_result=False,  # Results are tracked
-        worker_concurrency=1,  # Single worker for tests
-        worker_prefetch_multiplier=1,
-        task_acks_late=False,
-        task_track_started=True,
-    )
-    return app
+    # Check if we're running with the real Celery flag
+    using_real_celery = request.config.getoption("--run-celery")
+
+    if using_real_celery:
+        # For integration tests with real Celery, don't modify the app
+        # The app will use the Redis settings from the test environment
+        return app
+    else:
+        # For unit tests without real Celery
+        app.conf.update(
+            broker_url="memory://",
+            result_backend="rpc://",
+            task_always_eager=True,  # Tasks run synchronously in tests
+            task_eager_propagates=True,  # Exceptions are propagated
+            task_ignore_result=False,  # Results are tracked
+            worker_concurrency=1,  # Single worker for tests
+            worker_prefetch_multiplier=1,
+            task_acks_late=False,
+            task_track_started=True,
+        )
+        return app
 
 
 @pytest.fixture(scope="function")

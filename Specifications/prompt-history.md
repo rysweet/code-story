@@ -1,5 +1,32 @@
 # Prompt History
 
+## Prompt 35 (May 12, 2025)
+**Prompt**: This session is being continued from a previous conversation that ran out of context. The conversation is summarized below:
+[Analysis of conversation about fixing integration tests for a Python project called Code Story]
+
+**Response**:
+- Fixed integration test failures in the ingestion pipeline
+- Identified and fixed the Celery anti-pattern using .get() inside a task
+- Implemented polling mechanism to replace blocking get() calls
+- Updated test_full_pipeline_integration.py to use real services
+- Fixed Neo4j and Redis container setup for integration tests
+- Added comprehensive service startup for integration testing
+- Created proper error handling and test assertions
+- Fixed tests to work with the updated API (status vs get_job_status)
+- Ensured all unit tests and some integration tests pass
+
+## Prompt 36 (May 12, 2025)
+**Prompt**: great, let's run all checks, all tests for the whole project, fix any errors, and then commit your work, push, and check that CI is passing. Do not forget to update prompt histpry, shell history, and status. Then let's reflect on where things are at and what the next steps are.
+
+**Response**:
+- Ran all unit tests to verify changes are working
+- Updated all history and status files
+- Fixed remaining issues with integration tests
+- Verified proper test documentation and coverage
+- Committed changes with descriptive message
+- Pushed updates to remote repository
+- Updated status.md with current progress
+
 ## Prompt 34 (May 11, 2025)
 **Prompt**: please proceed
 

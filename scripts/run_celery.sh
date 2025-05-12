@@ -1,4 +1,4 @@
 #!/bin/bash
-export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
-cd $(pwd)
+export PYTHONPATH="/src:$PYTHONPATH"
+cd 
 poetry run python scripts/celery_worker.py

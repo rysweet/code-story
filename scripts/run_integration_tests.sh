@@ -86,6 +86,12 @@ print_info ""
 
 # Run the tests with poetry and the correct Python path
 export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
+export REDIS__URI="redis://localhost:6380/0"
+export NEO4J__URI="bolt://localhost:7688"
+export NEO4J__USERNAME="neo4j"
+export NEO4J__PASSWORD="password"
+export NEO4J__DATABASE="codestory-test"
+
 poetry run pytest $SPECIFIC_TEST -v --run-neo4j --run-celery --override-ini="addopts="
 
 # Check test result

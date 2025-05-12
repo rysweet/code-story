@@ -79,8 +79,25 @@ def run_step(
             kwargs=step_config,
         )
 
-        # Wait for the step to complete
-        step_result = step_task.get()
+        # FIXED: Don't use .get() inside a task as this is a known anti-pattern
+        # Instead, use the AsyncResult to check the task status without blocking
+        async_result = AsyncResult(step_task.id, app=app)
+        # Poll for completion with a timeout
+        timeout = step_config.get("timeout", 300)  # 5 minutes default timeout
+        start_poll = time.time()
+        step_result = None
+
+        while time.time() - start_poll < timeout:
+            if async_result.ready():
+                if async_result.successful():
+                    step_result = async_result.result
+                    break
+                else:
+                    raise Exception(f"Step task failed: {async_result.result}")
+            time.sleep(1)  # Wait before checking again
+
+        if step_result is None:
+            raise Exception(f"Step task timed out after {timeout} seconds")
 
         # Update result with step's result
         if isinstance(step_result, dict):
@@ -186,8 +203,24 @@ def orchestrate_pipeline(
         # Run the workflow as a chain (sequential execution)
         chain_result = chain(*workflow).apply_async()
 
-        # Wait for the entire chain to complete
-        all_results = chain_result.get()
+        # FIXED: Don't use .get() inside a task as this is a known anti-pattern
+        # Instead, use polling to check for completion
+        async_result = AsyncResult(chain_result.id, app=app)
+        timeout = 600  # 10 minutes default timeout for the entire pipeline
+        start_poll = time.time()
+        all_results = None
+
+        while time.time() - start_poll < timeout:
+            if async_result.ready():
+                if async_result.successful():
+                    all_results = async_result.result
+                    break
+                else:
+                    raise Exception(f"Chain execution failed: {async_result.result}")
+            time.sleep(2)  # Check less frequently for longer-running pipeline
+
+        if all_results is None:
+            raise Exception(f"Pipeline timed out after {timeout} seconds")
 
         # If there's only one step, wrap it in a list
         if not isinstance(all_results, list):
@@ -249,9 +282,11 @@ def get_job_status(self, task_id: str) -> Dict[str, Any]:
 
         if result.ready():
             if result.successful():
+                # FIXED: Don't use .get() inside a task
+                # Instead, access the result directly through result.result
                 return {
                     "status": StepStatus.COMPLETED,
-                    "result": result.get(),
+                    "result": result.result,
                 }
             else:
                 return {
