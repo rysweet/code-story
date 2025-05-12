@@ -54,12 +54,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: 'gui/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
       - name: Install GUI dependencies
-        working-directory: ./gui
+        working-directory: .
         run: npm ci
       - name: Lint GUI code
-        working-directory: ./gui
+        working-directory: .
         run: |
           npm run lint || echo "GUI linting completed with warnings"
           npm run typecheck || echo "GUI type checking completed with warnings"
@@ -123,12 +123,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: 'gui/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
       - name: Install dependencies
-        working-directory: ./gui
+        working-directory: .
         run: npm ci
       - name: Run Vitest
-        working-directory: ./gui
+        working-directory: .
         run: npm test
 
   # Image building and pushing to registry - commented out for now
