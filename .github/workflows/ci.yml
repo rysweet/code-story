@@ -89,10 +89,11 @@ jobs:
           - 7474:7474
           - 7687:7687
         options: >-
-          --health-cmd "nc -z localhost 7474 || exit 1"
+          --health-cmd "wget -q --spider http://localhost:7474 || exit 1"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
+          --health-start-period 30s
       redis:
         image: redis:7.2.4-alpine
         ports:
@@ -207,10 +208,11 @@ jobs:
           - 7474:7474
           - 7687:7687
         options: >-
-          --health-cmd "nc -z localhost 7474 || exit 1"
+          --health-cmd "wget -q --spider http://localhost:7474 || exit 1"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
+          --health-start-period 30s
       redis:
         image: redis:7.2.4-alpine
         ports:
