@@ -1,26 +1,54 @@
 // Test Data Generation for Integration Tests
 // This creates a minimal but useful codebase structure for testing
 
+// First clear any existing test data
+MATCH (n) DETACH DELETE n;
+
 // Create directory structure
-MATCH (root:Directory {path: '/test/repo/src'})
+CREATE (root:Directory {
+  name: 'src',
+  path: '/test/repo/src',
+  created_at: datetime()
+});
 
 // Create src/core directory
 CREATE (core:Directory {
   name: 'core',
   path: '/test/repo/src/core',
   created_at: datetime()
-})
-CREATE (root)-[:CONTAINS]->(core)
+});
 
 // Create src/utils directory
 CREATE (utils:Directory {
   name: 'utils',
   path: '/test/repo/src/utils',
   created_at: datetime()
-})
-CREATE (root)-[:CONTAINS]->(utils)
+});
+
+// Create relationships between directories
+MATCH (root:Directory {path: '/test/repo/src'})
+MATCH (core:Directory {path: '/test/repo/src/core'})
+CREATE (root)-[:CONTAINS]->(core);
+
+MATCH (root:Directory {path: '/test/repo/src'})
+MATCH (utils:Directory {path: '/test/repo/src/utils'})
+CREATE (root)-[:CONTAINS]->(utils);
+
+// Create a repository node
+CREATE (r:Repository {
+  name: 'test-repo',
+  path: '/test/repo',
+  description: 'Test repository for integration tests',
+  created_at: datetime()
+});
+
+// Link repository to root directory
+MATCH (r:Repository {name: 'test-repo'})
+MATCH (d:Directory {path: '/test/repo/src'})
+CREATE (r)-[:CONTAINS]->(d);
 
 // Create a few Python files
+MATCH (core:Directory {path: '/test/repo/src/core'})
 CREATE (init_file:File {
   name: '__init__.py',
   path: '/test/repo/src/core/__init__.py',
@@ -30,8 +58,9 @@ CREATE (init_file:File {
   created_at: datetime(),
   summary: 'Core module initialization file that imports BaseClass.'
 })
-CREATE (core)-[:CONTAINS]->(init_file)
+CREATE (core)-[:CONTAINS]->(init_file);
 
+MATCH (core:Directory {path: '/test/repo/src/core'})
 CREATE (base_file:File {
   name: 'base.py',
   path: '/test/repo/src/core/base.py',
@@ -41,8 +70,9 @@ CREATE (base_file:File {
   created_at: datetime(),
   summary: 'Defines BaseClass with name property and getter method.'
 })
-CREATE (core)-[:CONTAINS]->(base_file)
+CREATE (core)-[:CONTAINS]->(base_file);
 
+MATCH (utils:Directory {path: '/test/repo/src/utils'})
 CREATE (utils_file:File {
   name: 'string_utils.py',
   path: '/test/repo/src/utils/string_utils.py',
@@ -52,11 +82,10 @@ CREATE (utils_file:File {
   created_at: datetime(),
   summary: 'Utility functions for string manipulation including normalization and concatenation.'
 })
-CREATE (utils)-[:CONTAINS]->(utils_file)
+CREATE (utils)-[:CONTAINS]->(utils_file);
 
 // Create class and function nodes
 MATCH (base_file:File {path: '/test/repo/src/core/base.py'})
-
 CREATE (base_class:Class {
   id: 'core.base.BaseClass',
   name: 'BaseClass',
@@ -67,8 +96,9 @@ CREATE (base_class:Class {
   summary: 'Base class that provides a common name property and getter',
   created_at: datetime()
 })
-CREATE (base_file)-[:CONTAINS]->(base_class)
+CREATE (base_file)-[:CONTAINS]->(base_class);
 
+MATCH (base_class:Class {id: 'core.base.BaseClass'})
 CREATE (init_method:Function {
   id: 'core.base.BaseClass.__init__',
   name: '__init__',
@@ -81,8 +111,9 @@ CREATE (init_method:Function {
   summary: 'Constructor that sets the name property',
   created_at: datetime()
 })
-CREATE (base_class)-[:CONTAINS]->(init_method)
+CREATE (base_class)-[:CONTAINS]->(init_method);
 
+MATCH (base_class:Class {id: 'core.base.BaseClass'})
 CREATE (get_name_method:Function {
   id: 'core.base.BaseClass.get_name',
   name: 'get_name',
@@ -95,11 +126,10 @@ CREATE (get_name_method:Function {
   summary: 'Getter method that returns the name property',
   created_at: datetime()
 })
-CREATE (base_class)-[:CONTAINS]->(get_name_method)
+CREATE (base_class)-[:CONTAINS]->(get_name_method);
 
 // Create function nodes for utility functions
 MATCH (utils_file:File {path: '/test/repo/src/utils/string_utils.py'})
-
 CREATE (normalize_fn:Function {
   id: 'utils.string_utils.normalize_string',
   name: 'normalize_string',
@@ -112,8 +142,9 @@ CREATE (normalize_fn:Function {
   summary: 'Normalizes strings by trimming whitespace and converting to lowercase',
   created_at: datetime()
 })
-CREATE (utils_file)-[:CONTAINS]->(normalize_fn)
+CREATE (utils_file)-[:CONTAINS]->(normalize_fn);
 
+MATCH (utils_file:File {path: '/test/repo/src/utils/string_utils.py'})
 CREATE (concat_fn:Function {
   id: 'utils.string_utils.concat_strings',
   name: 'concat_strings',
@@ -126,11 +157,16 @@ CREATE (concat_fn:Function {
   summary: 'Joins multiple strings using a specified separator (space by default)',
   created_at: datetime()
 })
-CREATE (utils_file)-[:CONTAINS]->(concat_fn)
+CREATE (utils_file)-[:CONTAINS]->(concat_fn);
 
 // Create some relationships between functions (dependencies)
-CREATE (normalize_fn)-[:CALLS {count: 1}]->(get_name_method)
-CREATE (concat_fn)-[:CALLS {count: 2}]->(normalize_fn)
+MATCH (normalize_fn:Function {id: 'utils.string_utils.normalize_string'})
+MATCH (get_name_method:Function {id: 'core.base.BaseClass.get_name'})
+CREATE (normalize_fn)-[:CALLS {count: 1}]->(get_name_method);
+
+MATCH (concat_fn:Function {id: 'utils.string_utils.concat_strings'})
+MATCH (normalize_fn:Function {id: 'utils.string_utils.normalize_string'})
+CREATE (concat_fn)-[:CALLS {count: 2}]->(normalize_fn);
 
 // Create modules
 CREATE (core_module:Module {
@@ -139,7 +175,7 @@ CREATE (core_module:Module {
   path: '/test/repo/src/core',
   summary: 'Core module containing base classes and functionality',
   created_at: datetime()
-})
+});
 
 CREATE (utils_module:Module {
   id: 'utils',
@@ -147,18 +183,20 @@ CREATE (utils_module:Module {
   path: '/test/repo/src/utils',
   summary: 'Utility functions for common operations',
   created_at: datetime()
-})
+});
 
 // Create module relationships
 MATCH (core:Directory {path: '/test/repo/src/core'})
 MATCH (core_module:Module {id: 'core'})
-CREATE (core)-[:REPRESENTS]->(core_module)
+CREATE (core)-[:REPRESENTS]->(core_module);
 
 MATCH (utils:Directory {path: '/test/repo/src/utils'})
 MATCH (utils_module:Module {id: 'utils'})
-CREATE (utils)-[:REPRESENTS]->(utils_module)
+CREATE (utils)-[:REPRESENTS]->(utils_module);
 
 // Create module imports
-CREATE (utils_module)-[:IMPORTS]->(core_module)
+MATCH (utils_module:Module {id: 'utils'})
+MATCH (core_module:Module {id: 'core'})
+CREATE (utils_module)-[:IMPORTS]->(core_module);
 
 RETURN 'Test data created successfully' as status;

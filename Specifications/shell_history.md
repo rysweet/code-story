@@ -1,5 +1,21 @@
 # Shell Command History
 
+## May 12, 2025 (Neo4j Integration Test Fixes)
+- `cd /Users/ryan/src/msec/code-story && ./scripts/run_integration_tests.sh tests/integration/test_graphdb/test_neo4j_integration.py::test_vector_search --force-restart` - Running vector search test with updated Docker configuration
+- `cd /Users/ryan/src/msec/code-story && docker logs codestory-neo4j-test` - Checking Neo4j logs to see what's happening
+- `cd /Users/ryan/src/msec/code-story && ./scripts/run_integration_tests.sh tests/integration/test_graphdb/test_neo4j_integration.py::test_vector_search` - Running vector search test with existing containers
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-neo4j-test cypher-shell -u neo4j -p password "SHOW DATABASES"` - Checking available databases in Neo4j
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-neo4j-test cypher-shell -u neo4j -p password -d system "SHOW DATABASES"` - Connect to system database and list all databases
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-neo4j-test cypher-shell -u neo4j -p password -d system "CREATE DATABASE codestory-test IF NOT EXISTS"` - Create the Neo4j database from system database
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-neo4j-test cypher-shell -u neo4j -p password -d system "CREATE DATABASE codestory_test IF NOT EXISTS"` - Create the Neo4j database with valid name
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-neo4j-test cypher-shell -u neo4j -p password -d system "CREATE DATABASE testdb IF NOT EXISTS"` - Create a Neo4j database with a simple name
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-neo4j-test cypher-shell -u neo4j -p password -d system "SHOW DATABASES"` - Verify the database was created
+- `cd /Users/ryan/src/msec/code-story && ./scripts/run_integration_tests.sh tests/integration/test_graphdb/test_neo4j_integration.py::test_vector_search` - Run vector search test with updated test file
+- `cd /Users/ryan/src/msec/code-story && NEO4J_DATABASE=testdb poetry run pytest tests/integration/test_graphdb/test_neo4j_integration.py::test_vector_search -v` - Run test directly with environment variables
+- `cd /Users/ryan/src/msec/code-story && CODESTORY_TEST_ENV=true NEO4J_DATABASE=testdb poetry run pytest tests/integration/test_graphdb/test_neo4j_integration.py::test_vector_search -v` - Run vector search test with test environment variables
+- `cd /Users/ryan/src/msec/code-story && ./scripts/run_integration_tests.sh tests/integration/test_graphdb/test_neo4j_integration.py --force-restart` - Run all Neo4j integration tests with the updated configuration
+- `cd /Users/ryan/src/msec/code-story && ./scripts/run_integration_tests.sh tests/integration --force-restart` - Run all integration tests
+
 ## May 12, 2025 (Celery Anti-Pattern Fixes)
 - `cd /Users/ryan/src/msec/code-story && grep -r "\.get()" --include="*.py" src/` - Finding all instances of the Celery anti-pattern
 - `cd /Users/ryan/src/msec/code-story && grep -n "result.get()" src/codestory_summarizer/step.py` - Checking specific instances in the Summarizer step

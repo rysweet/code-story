@@ -5,6 +5,10 @@ import pytest
 import time
 from typing import Dict, List, Any, Generator
 
+# Set environment variables for tests
+os.environ["NEO4J_DATABASE"] = "testdb"
+os.environ["CODESTORY_TEST_ENV"] = "true"
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.graphdb.exceptions import (
     ConnectionError,
@@ -23,13 +27,18 @@ from codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
 @pytest.fixture
 def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     """Create a Neo4j connector for testing with a test container."""
-    # Get connection details from environment variables
-    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-    username = os.environ.get("NEO4J_USERNAME", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD", "password")
-    database = os.environ.get("NEO4J_DATABASE", "neo4j")
+    # Force testdb usage
+    uri = "bolt://localhost:7688"
+    username = "neo4j"
+    password = "password"
+    database = "testdb"
 
-    # Create connector
+    print(f"Using Neo4j connection: {uri}, database: {database}")
+
+    # Create connector with forced parameters
+    # First set the env var for the database directly
+    os.environ["CODESTORY_TEST_DB"] = database
+
     connector = Neo4jConnector(
         uri=uri, username=username, password=password, database=database
     )

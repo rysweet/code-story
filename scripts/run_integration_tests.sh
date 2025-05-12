@@ -155,54 +155,50 @@ start_test_environment() {
   echo ""
   print_success "Redis is healthy"
   
-  # Initialize Neo4j database with test schema and data
-  print_step "Initializing Neo4j database with test schema and data..."
-  
+  # Initialize Neo4j database
+  print_step "Initializing Neo4j database..."
+
+  # Always clear the database first to ensure a clean state
+  print_step "Clearing database..."
+  docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb \
+    "MATCH (n) DETACH DELETE n;"
+
+  print_success "Database cleared"
+
   # Check if the schema initialization file exists
   if [[ -f "tests/fixtures/cypher/01_init_schema.cypher" ]]; then
     print_step "Running schema initialization..."
     # Load schema initialization file
-    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=codestory-test < tests/fixtures/cypher/01_init_schema.cypher
-    print_success "Schema initialized successfully"
-  else
-    print_warning "Schema initialization file not found, skipping schema setup"
-  fi
-  
-  # Check if the test data file exists
-  if [[ -f "tests/fixtures/cypher/02_test_data.cypher" ]]; then
-    print_step "Loading test data..."
-    # Load test data file
-    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=codestory-test < tests/fixtures/cypher/02_test_data.cypher
-    print_success "Test data loaded successfully"
-  else
-    print_warning "Test data file not found, skipping data load"
-  fi
-  
-  # Check if Celery worker is running
-  if docker-compose -f docker-compose.test.yml ps celery-worker | grep -q "Up"; then
-    print_step "Waiting for Celery worker to be healthy..."
-    retries=0
-    max_retries=20
-    
-    while ! docker-compose -f docker-compose.test.yml ps celery-worker | grep -q "healthy"; do
-      if [[ $retries -eq $max_retries ]]; then
-        print_warning "Celery worker did not become healthy within the timeout period"
-        print_info "This is not critical, tests will be run with a local Celery worker"
-        break
-      fi
-      
-      retries=$((retries+1))
-      echo -ne "${YELLOW}Waiting for Celery worker to be healthy... ($retries/$max_retries)${NC}\r"
-      sleep 3
-    done
-    echo ""
-    
-    if [[ $retries -lt $max_retries ]]; then
-      print_success "Celery worker is healthy"
+    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb < tests/fixtures/cypher/01_init_schema.cypher
+
+    if [[ $? -eq 0 ]]; then
+      print_success "Schema initialized successfully"
+
+      # Load any test data fixtures in numerical order
+      for fixture in tests/fixtures/cypher/0[2-9]_*.cypher; do
+        if [[ -f "$fixture" ]]; then
+          print_step "Loading test data from $fixture..."
+          docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb < "$fixture"
+
+          if [[ $? -eq 0 ]]; then
+            print_success "Test data from $fixture loaded successfully"
+          else
+            print_warning "Failed to load test data from $fixture"
+          fi
+        fi
+      done
+    else
+      print_warning "Schema initialization failed"
+      print_info "Tests will run with basic schema only"
     fi
   else
-    print_warning "Celery worker container not found, will use local Celery if needed"
+    print_warning "Schema initialization file not found, skipping schema setup"
+    print_info "Tests will run with an empty database"
   fi
+  
+  # No Celery worker container in this simplified setup
+  print_warning "Using simplified Docker setup without Celery container"
+  print_info "Tests that need Celery will use a local worker"
   
   print_success "Test environment is ready"
 }
@@ -215,13 +211,13 @@ setup_environment_variables() {
   export NEO4J_URI="bolt://localhost:7688"
   export NEO4J_USERNAME="neo4j"
   export NEO4J_PASSWORD="password"
-  export NEO4J_DATABASE="codestory-test"
-  
+  export NEO4J_DATABASE="testdb"
+
   # Set Neo4j settings for codestory app (double underscore format)
   export NEO4J__URI="bolt://localhost:7688"
   export NEO4J__USERNAME="neo4j"
   export NEO4J__PASSWORD="password"
-  export NEO4J__DATABASE="codestory-test"
+  export NEO4J__DATABASE="testdb"
   
   # Set Redis environment variables
   export REDIS_URI="redis://localhost:6380/0"
@@ -248,12 +244,6 @@ setup_environment_variables() {
 # Function to ensure a local Celery worker is running if needed
 ensure_celery_worker() {
   print_header "Ensuring Celery Worker"
-  
-  # If the celery worker container is healthy, we don't need a local worker
-  if docker-compose -f docker-compose.test.yml ps celery-worker | grep -q "healthy"; then
-    print_success "Using Celery worker from Docker container"
-    return 0
-  fi
   
   print_step "Starting local Celery worker for tests..."
   

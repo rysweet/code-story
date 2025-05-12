@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   neo4j:
-    image: neo4j:5.18.0
+    image: neo4j:5.18.0-enterprise
     container_name: codestory-neo4j-test
     ports:
       - "7475:7474"  # HTTP - using different port to avoid conflicts
@@ -11,36 +9,25 @@ services:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
-      - NEO4J_dbms_memory_heap_initial__size=512m
-      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_dbms_memory_pagecache_size=512m
-      # Neo4j 5.x uses a different configuration format for databases
-      - NEO4J_initial_dbms_default__database=codestory-test
-      # JVM configuration for stability
-      - NEO4J_dbms_jvm_additional=-XX:+ExitOnOutOfMemoryError
-      - NEO4J_server_default__listen__address=0.0.0.0
-      - NEO4J_dbms_memory_transaction_max__size=512M
-    # Using volumes with simpler names and explicit paths
+      - NEO4J_initial_dbms_default__database=testdb
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
     volumes:
       - neo4j_test_data:/data
       - neo4j_test_logs:/logs
       - ./tests/fixtures/cypher:/import  # Mount fixtures directory for data import
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7474/browser/" ]
-      interval: 5s
+      test: "wget -O /dev/null -q http://localhost:7474 || exit 1"
+      interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
-    restart: unless-stopped
-    networks:
-      - test-network
+    restart: on-failure
 
   redis:
     image: redis:7.2.4-alpine
     container_name: codestory-redis-test
     ports:
       - "6380:6379"  # Using different port to avoid conflicts
-    command: redis-server --appendonly yes
     volumes:
       - redis_test_data:/data
     healthcheck:
@@ -49,51 +36,7 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
-    restart: unless-stopped
-    networks:
-      - test-network
-
-  # Dedicated Celery worker container for integration tests
-  celery-worker:
-    image: python:3.12-slim
-    container_name: codestory-celery-test
-    build:
-      context: .
-      dockerfile: infra/docker/worker.Dockerfile
-      target: test
-    volumes:
-      - .:/app
-      - ./data:/data
-      - ./logs:/logs
-    environment:
-      - PYTHONPATH=/app/src
-      - REDIS__URI=redis://redis:6379/0
-      - NEO4J__URI=bolt://neo4j:7687
-      - NEO4J__USERNAME=neo4j
-      - NEO4J__PASSWORD=password
-      - NEO4J__DATABASE=codestory-test
-    depends_on:
-      redis:
-        condition: service_healthy
-      neo4j:
-        condition: service_healthy
-    command: >
-      sh -c "cd /app &&
-             poetry config virtualenvs.create false &&
-             poetry install --no-interaction --extras azure &&
-             celery -A codestory.ingestion_pipeline.celery_app:app worker --loglevel=info -Q ingestion"
-    networks:
-      - test-network
-    healthcheck:
-      test: ["CMD", "celery", "-A", "codestory.ingestion_pipeline.celery_app:app", "inspect", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
-
-networks:
-  test-network:
-    name: codestory-test-network
+    restart: on-failure
 
 volumes:
   neo4j_test_data:

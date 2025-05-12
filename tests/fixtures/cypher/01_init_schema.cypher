@@ -27,12 +27,12 @@ CREATE INDEX function_name IF NOT EXISTS FOR (f:Function) ON (f.name);
 CREATE INDEX class_name IF NOT EXISTS FOR (c:Class) ON (c.name);
 CREATE INDEX module_name IF NOT EXISTS FOR (m:Module) ON (m.name);
 
-// Create indexes for full-text search
-CALL db.index.fulltext.createNodeIndex(
-  'codeContentIndex',
-  ['File', 'Function', 'Class', 'Module'],
-  ['content', 'summary', 'docstring']
-);
+// Create standard indexes for text fields (instead of full-text search)
+CREATE INDEX file_content IF NOT EXISTS FOR (f:File) ON (f.content);
+CREATE INDEX file_summary IF NOT EXISTS FOR (f:File) ON (f.summary);
+CREATE INDEX function_summary IF NOT EXISTS FOR (f:Function) ON (f.summary);
+CREATE INDEX class_summary IF NOT EXISTS FOR (c:Class) ON (c.summary);
+CREATE INDEX module_summary IF NOT EXISTS FOR (m:Module) ON (m.summary);
 
 // Initial seed data for testing
 CREATE (r:Repository {
