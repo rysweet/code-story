@@ -18,16 +18,104 @@ Code Story ingests codebases, analyzes their structure, and produces a knowledge
 
 ## Architecture
 
-Code Story is built as a microservices architecture with the following components:
+The system follows a microservices architecture with clear separation of concerns and extensible plugins:
 
-- **Configuration Module**: Layered configuration system
-- **Graph Database**: Neo4j connector with semantic indexing
-- **AI Client**: OpenAI API client with caching and retry logic
-- **Ingestion Pipeline**: Plugin-based system for processing code
-- **API Service**: FastAPI service exposing graph operations
-- **Worker**: Celery worker for async processing
-- **MCP Service**: Model Context Protocol server
-- **GUI**: React/Redux web interface with 3D visualization
+### Components and Data Flow
+
+- **Configuration Module** – Manages application configuration from `.env` or Azure Key Vault.
+- **User Interfaces** – Trigger ingestion or query the graph:
+  - **CLI** – Rich command-line interface using [Rich](https://github.com/Textualize/rich-cli).
+  - **GUI** – React + Redux web app with 3D force graph visualization.
+- **Code Story Service** – FastAPI service:
+  - Orchestrates ingestion pipeline via Celery tasks.
+  - Provides REST and WebSocket interfaces for queries and real-time updates.
+  - Handles authentication and authorization.
+- **Ingestion Pipeline** – Plugin-based workflow steps:
+  - **BlarifyStep** – Parses code into AST nodes.
+  - **FileSystemStep** – Maps filesystem hierarchy into the graph.
+  - **Summarizer** – Generates natural language summaries.
+  - **DocumentationGrapher** – Attaches documentation to code nodes.
+- **Storage & Services**:
+  - **Neo4j Graph Database** – Knowledge graph with semantic index and vector search.
+  - **Redis** – Celery backend and WebSocket pub/sub.
+  - **OpenAI Client** – Azure OpenAI integration with caching and retry logic.
+- **MCP Adapter** – Exposes the graph to LLM agents via Model Context Protocol.
+
+### Deployment Topology
+
+All components can run locally via Docker Compose or be deployed to Azure Container Apps:
+
+- **Neo4j** – Graph database with semantic indexing.
+- **Redis** – Backend for Celery and pub/sub.
+- **Code Story Service** – Core API container.
+- **Celery Workers** – Asynchronous pipeline executors.
+- **MCP Adapter** – Model Context Protocol server.
+- **GUI** – Web interface container.
+- **CLI** – Local executable.
+
+### Cross-Cutting Concerns
+
+- **Auth** – Entra ID bearer JWT for MCP endpoints; `--no-auth` flag for local mode.
+- **Observability** – OpenTelemetry traces, Prometheus metrics, Grafana dashboards.
+- **Extensibility** – Plugin architecture; customizable prompts in `prompts/`.
+
+### Architecture Overview
+
+```mermaid
+graph TD
+    subgraph "User Interfaces"
+        CLI["CLI (Rich)"]
+        GUI["GUI (React + Redux)"]
+    end
+
+    subgraph "API Layer"
+        CS["Code Story Service (FastAPI)"]
+        MCP["MCP Adapter"]
+    end
+
+    subgraph "Data Processing"
+        IP["Ingestion Pipeline"]
+        CELERY["Celery Workers"]
+        subgraph "Pipeline Steps"
+            BS["BlarifyStep"]
+            FS["FileSystemStep"]
+            SS["Summarizer"]
+            DG["Documentation Grapher"]
+        end
+    end
+
+    subgraph "Storage & Services"
+        NEO4J["Neo4j Graph Database"]
+        REDIS["Redis"]
+        OAI["OpenAI Client"]
+    end
+
+    CLI --> CS
+    GUI --> CS
+    GUI --> MCP
+    MCP --> CS
+    CS --> IP
+    IP --> CELERY
+    CELERY --> BS & FS & SS & DG
+    BS & FS & SS & DG --> NEO4J
+    CS --> NEO4J
+    IP --> REDIS
+    CS --> REDIS
+    SS --> OAI
+    DG --> OAI
+    CS --> OAI
+    AGENT[("External LLM Agents")] --> MCP
+```
+
+#### Key Architectural Principles
+
+* **Containerized Services** – Consistent deployment via Docker containers.
+* **API-First Design** – Well-defined interfaces for all interactions.
+* **Event-Driven Processing** – Asynchronous tasks via Celery.
+* **Knowledge Graph** – Neo4j stores multi-layered code insights.
+* **Multi-Modal Interfaces** – CLI, GUI, and MCP for diverse clients.
+* **Extensibility** – Easily add new ingestion steps and plugins.
+* **Observability** – Comprehensive logging, metrics, and tracing.
 
 ## Getting Started
 
