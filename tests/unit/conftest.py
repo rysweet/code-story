@@ -134,13 +134,21 @@ def get_test_settings() -> Settings:
 @pytest.fixture(scope="session", autouse=True)
 def mock_settings():
     """Mock the settings module to use test settings for all unit tests."""
-    # We need to mock get_settings() to return test settings for unit tests
+    # Patch the get_settings function at module import time
+    # This is critical since some modules import and call get_settings() during module loading
+
+    # Import the module first to ensure it exists before patching
     from codestory.config.settings import get_settings as original_get_settings
 
-    # Create a patch for the get_settings function
-    with patch("codestory.config.settings.get_settings", return_value=get_test_settings()):
-        # Apply the patch for all tests
-        yield
+    # Create and directly assign the test settings instance
+    test_settings = get_test_settings()
+
+    # Use more aggressive patching that affects existing imports
+    with patch("codestory.config.settings.Settings.__init__", return_value=None):
+        with patch("codestory.config.settings.Settings.__new__", return_value=test_settings):
+            with patch("codestory.config.settings.get_settings", return_value=test_settings):
+                # Apply the patch for all tests
+                yield
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -157,17 +165,55 @@ def load_env_vars():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    # Set basic environment variables for tests
+    # Set all required environment variables in both formats for Pydantic BaseSettings
+
+    # Neo4j settings
     os.environ["NEO4J_URI"] = "bolt://localhost:7687"
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
     os.environ["NEO4J_DATABASE"] = "codestory-test"
 
-    # Set Redis settings
+    # Double underscore format for Pydantic nested settings
+    os.environ["NEO4J__URI"] = "bolt://localhost:7687"
+    os.environ["NEO4J__USERNAME"] = "neo4j"
+    os.environ["NEO4J__PASSWORD"] = "password"
+    os.environ["NEO4J__DATABASE"] = "codestory-test"
+
+    # Redis settings
     os.environ["REDIS_URI"] = "redis://localhost:6379/0"
-    
-    # Set OpenAI mock credentials
+    os.environ["REDIS__URI"] = "redis://localhost:6379/0"
+
+    # OpenAI settings
     os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
+    os.environ["OPENAI__API_KEY"] = "sk-test-key-openai"
+    os.environ["OPENAI__EMBEDDING_MODEL"] = "text-embedding-3-small"
+    os.environ["OPENAI__CHAT_MODEL"] = "gpt-4o"
+    os.environ["OPENAI__REASONING_MODEL"] = "gpt-4o"
+
+    # Azure OpenAI settings
+    os.environ["AZURE_OPENAI__API_KEY"] = "test-azure-key"
+    os.environ["AZURE_OPENAI__ENDPOINT"] = "https://test-azure-endpoint.openai.azure.com"
+    os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "gpt-4o"
+
+    # Service settings
+    os.environ["SERVICE__HOST"] = "127.0.0.1"
+    os.environ["SERVICE__PORT"] = "8000"
+    os.environ["SERVICE__ENVIRONMENT"] = "testing"
+
+    # Ingestion settings
+    os.environ["INGESTION__CONFIG_PATH"] = "pipeline_config.yml"
+
+    # Plugins settings
+    os.environ["PLUGINS__ENABLED"] = "filesystem"
+
+    # Telemetry settings
+    os.environ["TELEMETRY__METRICS_PORT"] = "9090"
+
+    # Interface settings
+    os.environ["INTERFACE__THEME"] = "light"
+
+    # Azure settings
+    os.environ["AZURE__KEYVAULT_NAME"] = "test-key-vault"
 
 
 @pytest.fixture(scope="function")

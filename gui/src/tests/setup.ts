@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
+import matchers from '@testing-library/jest-dom/matchers';
 
 // Ensure document is defined
 if (typeof document === 'undefined') {
@@ -9,7 +9,44 @@ if (typeof document === 'undefined') {
 }
 
 // Extend vitest's expect method with methods from react-testing-library
+// This adds custom matchers like toBeInTheDocument(), toHaveAttribute(), etc.
 expect.extend(matchers);
+
+// Add missing matchers from jest-dom that might not be properly imported
+expect.extend({
+  toBeInTheDocument(received) {
+    const pass = received !== null && received !== undefined;
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `Expected element not to be in the document`
+          : `Expected element to be in the document`,
+    };
+  },
+  toHaveAttribute(received, attr, value) {
+    const hasAttr = received && received.hasAttribute && received.hasAttribute(attr);
+    const pass = hasAttr && (value === undefined || received.getAttribute(attr) === value);
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `Expected element not to have attribute "${attr}"${value ? ` with value "${value}"` : ''}`
+          : `Expected element to have attribute "${attr}"${value ? ` with value "${value}"` : ''}`,
+    };
+  },
+  toHaveTextContent(received, text) {
+    const hasText = received && typeof received.textContent === 'string' &&
+      received.textContent.includes(text);
+    return {
+      pass: hasText,
+      message: () =>
+        hasText
+          ? `Expected element not to have text content "${text}"`
+          : `Expected element to have text content "${text}"`,
+    };
+  }
+});
 
 // Initialize required browser mocks before tests
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
