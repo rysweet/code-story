@@ -107,16 +107,6 @@ graph TD
     AGENT[("External LLM Agents")] --> MCP
 ```
 
-#### Key Architectural Principles
-
-* **Containerized Services** – Consistent deployment via Docker containers.
-* **API-First Design** – Well-defined interfaces for all interactions.
-* **Event-Driven Processing** – Asynchronous tasks via Celery.
-* **Knowledge Graph** – Neo4j stores multi-layered code insights.
-* **Multi-Modal Interfaces** – CLI, GUI, and MCP for diverse clients.
-* **Extensibility** – Easily add new ingestion steps and plugins.
-* **Observability** – Comprehensive logging, metrics, and tracing.
-
 ## Getting Started
 
 ### Prerequisites
