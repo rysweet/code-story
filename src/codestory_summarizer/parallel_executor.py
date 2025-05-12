@@ -6,10 +6,9 @@ configurable concurrency limits.
 
 import asyncio
 import logging
-import time
-import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from .models import DependencyGraph, NodeData, ProcessingStatus
 
@@ -25,7 +24,7 @@ class ParallelExecutor:
     """
 
     def __init__(
-        self, max_concurrency: int = 5, executor: Optional[ThreadPoolExecutor] = None
+        self, max_concurrency: int = 5, executor: ThreadPoolExecutor | None = None
     ):
         """Initialize the parallel executor.
 
@@ -35,19 +34,19 @@ class ParallelExecutor:
         """
         self.max_concurrency = max_concurrency
         self.executor = executor or ThreadPoolExecutor(max_workers=max_concurrency)
-        self.active_tasks: Dict[str, asyncio.Future] = {}
-        self.completed_tasks: Set[str] = set()
-        self.failed_tasks: Set[str] = set()
-        self.task_queue: List[str] = []
-        self.graph: Optional[DependencyGraph] = None
-        self.processing_function: Optional[Callable] = None
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self.active_tasks: dict[str, asyncio.Future] = {}
+        self.completed_tasks: set[str] = set()
+        self.failed_tasks: set[str] = set()
+        self.task_queue: list[str] = []
+        self.graph: DependencyGraph | None = None
+        self.processing_function: Callable | None = None
+        self.loop: asyncio.AbstractEventLoop | None = None
 
     async def process_graph(
         self,
         graph: DependencyGraph,
         process_func: Callable[[str, NodeData], Any],
-        on_completion: Optional[Callable] = None,
+        on_completion: Callable | None = None,
     ) -> DependencyGraph:
         """Process all nodes in the dependency graph.
 
@@ -82,7 +81,7 @@ class ParallelExecutor:
             # Wait for any task to complete
             if self.active_tasks:
                 done, _ = await asyncio.wait(
-                    [task for task in self.active_tasks.values()],
+                    list(self.active_tasks.values()),
                     return_when=asyncio.FIRST_COMPLETED,
                 )
 
@@ -106,7 +105,8 @@ class ParallelExecutor:
                         < self.graph.total_count
                     ):
                         logger.warning(
-                            "No more nodes can be processed but not all nodes are complete. There might be a cycle."
+                            "No more nodes can be processed but not all nodes are complete. "
+                            "There might be a cycle."
                         )
                         self._fail_remaining_nodes()
                     break
@@ -115,7 +115,8 @@ class ParallelExecutor:
             await asyncio.sleep(0.1)
 
         logger.info(
-            f"Processing complete. {self.graph.completed_count}/{self.graph.total_count} nodes processed successfully."
+            f"Processing complete. {self.graph.completed_count}/{self.graph.total_count} "
+            f"nodes processed successfully."
         )
         return self.graph
 
@@ -125,7 +126,7 @@ class ParallelExecutor:
             return
 
         node_id = self.task_queue.pop(0)
-        if node_id not in self.graph.nodes:
+        if not self.graph or node_id not in self.graph.nodes:
             logger.warning(f"Node {node_id} not found in graph")
             return
 
@@ -133,13 +134,16 @@ class ParallelExecutor:
         self.graph.update_node_status(node_id, ProcessingStatus.PROCESSING)
 
         # Start task
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
+
         task = self.loop.run_in_executor(
             self.executor, self._execute_task, node_id, self.graph.nodes[node_id]
         )
 
         self.active_tasks[node_id] = task
 
-    def _execute_task(self, node_id: str, node_data: NodeData) -> Tuple[str, bool]:
+    def _execute_task(self, node_id: str, node_data: NodeData) -> tuple[str, bool]:
         """Execute the processing function for a node.
 
         Args:
@@ -147,17 +151,21 @@ class ParallelExecutor:
             node_data: Data for the node
 
         Returns:
-            Tuple[str, bool]: Node ID and success flag
+            tuple[str, bool]: Node ID and success flag
         """
         try:
-            result = self.processing_function(node_id, node_data)
+            if not self.processing_function:
+                logger.error("Processing function is not set")
+                return node_id, False
+
+            self.processing_function(node_id, node_data)
             return node_id, True
         except Exception as e:
             logger.exception(f"Error processing node {node_id}: {e}")
             return node_id, False
 
     async def _handle_completed_task(
-        self, node_id: str, success: bool, on_completion: Optional[Callable] = None
+        self, node_id: str, success: bool, on_completion: Callable | None = None
     ) -> None:
         """Handle a completed task.
 
@@ -170,13 +178,18 @@ class ParallelExecutor:
         if node_id in self.active_tasks:
             del self.active_tasks[node_id]
 
+        # Check if graph exists
+        if not self.graph:
+            logger.error("Graph is not initialized")
+            return
+
         # Update status
         if success:
             self.graph.update_node_status(node_id, ProcessingStatus.COMPLETED)
             self.completed_tasks.add(node_id)
 
             # Call completion callback if provided
-            if on_completion:
+            if on_completion and node_id in self.graph.nodes:
                 try:
                     on_completion(node_id, self.graph.nodes[node_id])
                 except Exception as e:
@@ -214,6 +227,10 @@ class ParallelExecutor:
 
     def _fail_remaining_nodes(self) -> None:
         """Mark all remaining pending nodes as failed."""
+        if not self.graph:
+            logger.error("Graph is not initialized")
+            return
+
         for node_id, node in self.graph.nodes.items():
             if node.status == ProcessingStatus.PENDING:
                 self.graph.update_node_status(node_id, ProcessingStatus.FAILED)

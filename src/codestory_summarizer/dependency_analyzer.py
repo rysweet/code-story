@@ -5,10 +5,10 @@ of code dependencies by querying the Neo4j database for AST and filesystem nodes
 """
 
 import logging
-from typing import Dict, List, Optional, Set, Tuple
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from .models import DependencyGraph, NodeData, NodeType, ProcessingStatus
+
+from .models import DependencyGraph, NodeData, NodeType
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -67,19 +67,20 @@ class DependencyAnalyzer:
 
         logger.info(f"Dependency graph built with {self.graph.total_count} nodes")
         logger.info(
-            f"Found {len(self.graph.leaf_nodes)} leaf nodes and {len(self.graph.root_nodes)} root nodes"
+            f"Found {len(self.graph.leaf_nodes)} leaf nodes and "
+            f"{len(self.graph.root_nodes)} root nodes"
         )
 
         return self.graph
 
-    def _get_repository_node(self, repository_path: str) -> Optional[NodeData]:
+    def _get_repository_node(self, repository_path: str) -> NodeData | None:
         """Get the repository node from Neo4j.
 
         Args:
             repository_path: Path to the repository
 
         Returns:
-            Optional[NodeData]: Repository node if found, None otherwise
+            NodeData | None: Repository node if found, None otherwise
         """
         # Query for the repository node
         query = """
@@ -92,14 +93,15 @@ class DependencyAnalyzer:
         # Extract repository name from path (last part)
         repo_name = repository_path.strip("/").split("/")[-1]
 
-        result = self.connector.run_query(
+        results = self.connector.execute_query(
             query,
-            parameters={"path": repository_path, "name": repo_name},
-            fetch_one=True,
+            params={"path": repository_path, "name": repo_name},
         )
 
-        if not result:
+        if not results or len(results) == 0:
             return None
+
+        result = results[0]  # Get the first result as a dict
 
         return NodeData(
             id=str(result["id"]),
@@ -124,7 +126,7 @@ class DependencyAnalyzer:
         RETURN ID(d) as id, d.name as name, d.path as path, ID(parent) as parent_id
         """
 
-        dirs = self.connector.run_query(dir_query, fetch_all=True)
+        dirs = self.connector.execute_query(dir_query)
 
         # Process directories
         for dir_data in dirs:
@@ -150,10 +152,11 @@ class DependencyAnalyzer:
         # Get files and their parent directories
         file_query = """
         MATCH (d:Directory)-[:CONTAINS]->(f:File)
-        RETURN ID(f) as id, f.name as name, f.path as path, f.extension as extension, ID(d) as parent_id
+        RETURN ID(f) as id, f.name as name, f.path as path,
+               f.extension as extension, ID(d) as parent_id
         """
 
-        files = self.connector.run_query(file_query, fetch_all=True)
+        files = self.connector.execute_query(file_query)
 
         # Process files
         for file_data in files:
@@ -193,7 +196,7 @@ class DependencyAnalyzer:
         RETURN ID(c) as id, c.name as name, c.qualified_name as qualified_name, ID(f) as file_id
         """
 
-        classes = self.connector.run_query(class_query, fetch_all=True)
+        classes = self.connector.execute_query(class_query)
 
         # Process classes
         for class_data in classes:
@@ -221,11 +224,11 @@ class DependencyAnalyzer:
         # Get function and method nodes
         func_query = """
         MATCH (parent)-[:CONTAINS]->(f:Function)
-        RETURN ID(f) as id, f.name as name, f.qualified_name as qualified_name, 
+        RETURN ID(f) as id, f.name as name, f.qualified_name as qualified_name,
                labels(parent) as parent_labels, ID(parent) as parent_id
         """
 
-        funcs = self.connector.run_query(func_query, fetch_all=True)
+        funcs = self.connector.execute_query(func_query)
 
         # Process functions and methods
         for func_data in funcs:
@@ -279,7 +282,7 @@ class DependencyAnalyzer:
         RETURN ID(f1) as file_id, ID(f2) as import_id
         """
 
-        imports = self.connector.run_query(import_query, fetch_all=True)
+        imports = self.connector.execute_query(import_query)
 
         # Process imports
         for import_data in imports:
@@ -306,7 +309,7 @@ class DependencyAnalyzer:
         RETURN ID(c1) as class_id, ID(c2) as parent_id
         """
 
-        inherits = self.connector.run_query(inherit_query, fetch_all=True)
+        inherits = self.connector.execute_query(inherit_query)
 
         # Process inheritance
         for inherit_data in inherits:

@@ -6,9 +6,9 @@ for summarization from the Neo4j database.
 
 import logging
 import os
-from typing import Dict, List, Optional, Union
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 from ..models import NodeData, NodeType
 
 # Set up logging
@@ -23,7 +23,7 @@ class ContentExtractor:
     """
 
     def __init__(
-        self, connector: Neo4jConnector, repository_path: Optional[str] = None
+        self, connector: Neo4jConnector, repository_path: str | None = None
     ):
         """Initialize the content extractor.
 
@@ -33,16 +33,16 @@ class ContentExtractor:
         """
         self.connector = connector
         self.repository_path = repository_path
-        self.cache: Dict[str, str] = {}  # Cache file contents
+        self.cache: dict[str, str] = {}  # Cache file contents
 
-    def extract_content(self, node: NodeData) -> Dict[str, Union[str, List[str]]]:
+    def extract_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a node based on its type.
 
         Args:
             node: Node to extract content for
 
         Returns:
-            Dict containing content and context for the node
+            dict containing content and context for the node
         """
         node_type = node.type
 
@@ -62,14 +62,14 @@ class ContentExtractor:
 
     def _extract_repository_content(
         self, node: NodeData
-    ) -> Dict[str, Union[str, List[str]]]:
+    ) -> dict[str, str | list[str]]:
         """Extract content for a repository node.
 
         Args:
             node: Repository node
 
         Returns:
-            Dict with repository overview
+            dict with repository overview
         """
         # Get repository metadata
         repo_name = node.name
@@ -85,11 +85,11 @@ class ContentExtractor:
         RETURN COUNT(d) as dir_count
         """
 
-        dir_result = self.connector.run_query(
-            dir_query, parameters={"repo_id": int(node.id)}, fetch_one=True
+        dir_result = self.connector.execute_query(
+            dir_query, params={"repo_id": int(node.id)}
         )
 
-        dir_count = dir_result["dir_count"] if dir_result else 0
+        dir_count = dir_result[0]["dir_count"] if dir_result else 0
 
         file_query = """
         MATCH (r:Repository)-[:CONTAINS*]->(d:Directory)-[:CONTAINS]->(f:File)
@@ -97,11 +97,11 @@ class ContentExtractor:
         RETURN COUNT(f) as file_count
         """
 
-        file_result = self.connector.run_query(
-            file_query, parameters={"repo_id": int(node.id)}, fetch_one=True
+        file_result = self.connector.execute_query(
+            file_query, params={"repo_id": int(node.id)}
         )
 
-        file_count = file_result["file_count"] if file_result else 0
+        file_count = file_result[0]["file_count"] if file_result else 0
 
         # Get list of top-level directories
         top_dirs_query = """
@@ -110,8 +110,8 @@ class ContentExtractor:
         RETURN d.name as name, d.path as path
         """
 
-        top_dirs = self.connector.run_query(
-            top_dirs_query, parameters={"repo_id": int(node.id)}, fetch_all=True
+        top_dirs = self.connector.execute_query(
+            top_dirs_query, params={"repo_id": int(node.id)}
         )
 
         top_level_dirs = [f"{d['name']} ({d['path']})" for d in top_dirs]
@@ -132,14 +132,14 @@ class ContentExtractor:
 
     def _extract_directory_content(
         self, node: NodeData
-    ) -> Dict[str, Union[str, List[str]]]:
+    ) -> dict[str, str | list[str]]:
         """Extract content for a directory node.
 
         Args:
             node: Directory node
 
         Returns:
-            Dict with directory contents
+            dict with directory contents
         """
         dir_name = node.name
         dir_path = node.path
@@ -151,8 +151,8 @@ class ContentExtractor:
         RETURN f.name as name, f.path as path
         """
 
-        files = self.connector.run_query(
-            files_query, parameters={"dir_id": int(node.id)}, fetch_all=True
+        files = self.connector.execute_query(
+            files_query, params={"dir_id": int(node.id)}
         )
 
         file_list = [f"{f['name']} ({f['path']})" for f in files]
@@ -164,8 +164,8 @@ class ContentExtractor:
         RETURN sub.name as name, sub.path as path
         """
 
-        subdirs = self.connector.run_query(
-            subdirs_query, parameters={"dir_id": int(node.id)}, fetch_all=True
+        subdirs = self.connector.execute_query(
+            subdirs_query, params={"dir_id": int(node.id)}
         )
 
         subdir_list = [f"{d['name']} ({d['path']})" for d in subdirs]
@@ -185,17 +185,17 @@ class ContentExtractor:
 
         return {"content": f"Directory: {dir_path}", "context": context}
 
-    def _extract_file_content(self, node: NodeData) -> Dict[str, Union[str, List[str]]]:
+    def _extract_file_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a file node.
 
         Args:
             node: File node
 
         Returns:
-            Dict with file content
+            dict with file content
         """
         file_name = node.name
-        file_path = node.path
+        file_path = node.path or ""
         file_extension = node.properties.get("extension", "")
 
         # Skip binary files
@@ -237,14 +237,20 @@ class ContentExtractor:
             }
 
         # Get file content
-        if self.repository_path:
+        context = [
+            f"File: {file_name}",
+            f"Path: {file_path}",
+            f"Type: {file_extension}",
+        ]
+
+        if self.repository_path and file_path:
             absolute_path = os.path.join(self.repository_path, file_path)
 
             if absolute_path in self.cache:
                 content = self.cache[absolute_path]
             else:
                 try:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
                     self.cache[absolute_path] = content
                 except Exception as e:
@@ -258,22 +264,15 @@ class ContentExtractor:
             RETURN f.content as content
             """
 
-            content_result = self.connector.run_query(
-                content_query, parameters={"file_id": int(node.id)}, fetch_one=True
+            content_results = self.connector.execute_query(
+                content_query, params={"file_id": int(node.id)}
             )
+            content_item = content_results[0] if content_results else {}
 
-            content = (
-                content_result["content"]
-                if content_result and "content" in content_result
-                else ""
-            )
+            content = content_item.get("content", "")
 
-        # Get file metadata
-        context = [
-            f"File: {file_name}",
-            f"Path: {file_path}",
-            f"Type: {file_extension}",
-        ]
+        # Add any additional context information
+        # (we already initialized context above)
 
         # Try to get imports or includes if relevant
         if file_extension in {"py", "js", "ts", "java", "cpp", "c", "h", "hpp"}:
@@ -283,8 +282,8 @@ class ContentExtractor:
             RETURN i.name as name, i.path as path
             """
 
-            imports = self.connector.run_query(
-                imports_query, parameters={"file_id": int(node.id)}, fetch_all=True
+            imports = self.connector.execute_query(
+                imports_query, params={"file_id": int(node.id)}
             )
 
             if imports:
@@ -295,14 +294,14 @@ class ContentExtractor:
 
     def _extract_class_content(
         self, node: NodeData
-    ) -> Dict[str, Union[str, List[str]]]:
+    ) -> dict[str, str | list[str]]:
         """Extract content for a class node.
 
         Args:
             node: Class node
 
         Returns:
-            Dict with class content
+            dict with class content
         """
         class_name = node.name
         qualified_name = node.properties.get("qualified_name", class_name)
@@ -314,12 +313,12 @@ class ContentExtractor:
         RETURN f.path as file_path, ID(f) as file_id
         """
 
-        file_result = self.connector.run_query(
-            file_query, parameters={"class_id": int(node.id)}, fetch_one=True
+        file_results = self.connector.execute_query(
+            file_query, params={"class_id": int(node.id)}
         )
+        file_result = file_results[0] if file_results and len(file_results) > 0 else None
 
-        file_path = file_result["file_path"] if file_result else None
-        file_id = str(file_result["file_id"]) if file_result else None
+        file_path = file_result.get("file_path") if file_result else None
 
         # Get class content from file
         class_content = ""
@@ -330,7 +329,7 @@ class ContentExtractor:
                 if absolute_path in self.cache:
                     file_content = self.cache[absolute_path]
                 else:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         file_content = f.read()
                     self.cache[absolute_path] = file_content
 
@@ -381,8 +380,8 @@ class ContentExtractor:
         RETURN p.name as name
         """
 
-        parents = self.connector.run_query(
-            parent_query, parameters={"class_id": int(node.id)}, fetch_all=True
+        parents = self.connector.execute_query(
+            parent_query, params={"class_id": int(node.id)}
         )
 
         parent_classes = [p["name"] for p in parents]
@@ -394,8 +393,8 @@ class ContentExtractor:
         RETURN m.name as name
         """
 
-        methods = self.connector.run_query(
-            method_query, parameters={"class_id": int(node.id)}, fetch_all=True
+        methods = self.connector.execute_query(
+            method_query, params={"class_id": int(node.id)}
         )
 
         method_list = [m["name"] for m in methods]
@@ -416,14 +415,14 @@ class ContentExtractor:
 
     def _extract_function_content(
         self, node: NodeData
-    ) -> Dict[str, Union[str, List[str]]]:
+    ) -> dict[str, str | list[str]]:
         """Extract content for a function or method node.
 
         Args:
             node: Function or method node
 
         Returns:
-            Dict with function content
+            dict with function content
         """
         func_name = node.name
         qualified_name = node.properties.get("qualified_name", func_name)
@@ -436,20 +435,19 @@ class ContentExtractor:
         RETURN ID(container) as container_id, labels(container) as container_labels
         """
 
-        container_result = self.connector.run_query(
-            container_query, parameters={"func_id": int(node.id)}, fetch_one=True
+        container_results = self.connector.execute_query(
+            container_query, params={"func_id": int(node.id)}
         )
+        # Extract first result if results exist, otherwise None
+        have_results = container_results and len(container_results) > 0
+        container_result = container_results[0] if have_results else None
 
-        container_id = (
-            str(container_result["container_id"]) if container_result else None
-        )
         container_labels = (
-            container_result["container_labels"] if container_result else []
+            container_result.get("container_labels", []) if container_result else []
         )
 
         # Get the file path
         file_path = None
-        file_id = None
 
         if "Class" in container_labels:
             # Function is a method in a class
@@ -459,15 +457,16 @@ class ContentExtractor:
             RETURN f.path as file_path, ID(f) as file_id, c.name as class_name
             """
 
-            file_result = self.connector.run_query(
-                file_query, parameters={"func_id": int(node.id)}, fetch_one=True
+            file_results = self.connector.execute_query(
+                file_query, params={"func_id": int(node.id)}
             )
+            file_result = file_results[0] if file_results and len(file_results) > 0 else None
 
             if file_result:
-                file_path = file_result["file_path"]
-                file_id = str(file_result["file_id"])
-                class_name = file_result["class_name"]
-                qualified_name = f"{class_name}.{func_name}"
+                file_path = file_result.get("file_path")
+                class_name = file_result.get("class_name", "")
+                if file_path and class_name:
+                    qualified_name = f"{class_name}.{func_name}"
         else:
             # Function is directly in a file
             file_query = """
@@ -476,24 +475,24 @@ class ContentExtractor:
             RETURN f.path as file_path, ID(f) as file_id
             """
 
-            file_result = self.connector.run_query(
-                file_query, parameters={"func_id": int(node.id)}, fetch_one=True
+            file_results = self.connector.execute_query(
+                file_query, params={"func_id": int(node.id)}
             )
+            file_result = file_results[0] if file_results and len(file_results) > 0 else None
 
             if file_result:
-                file_path = file_result["file_path"]
-                file_id = str(file_result["file_id"])
+                file_path = file_result.get("file_path")
 
         # Get function content from file
         func_content = ""
-        if file_path and self.repository_path:
+        if file_path and self.repository_path is not None:
             absolute_path = os.path.join(self.repository_path, file_path)
 
             try:
                 if absolute_path in self.cache:
                     file_content = self.cache[absolute_path]
                 else:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         file_content = f.read()
                     self.cache[absolute_path] = file_content
 
@@ -521,13 +520,9 @@ class ContentExtractor:
                             func_end = i
                             break
 
-                        # For Python, empty line followed by no indentation might mean end of function
-                        if (
-                            i > func_start
-                            and line.strip() == ""
-                            and i + 1 < len(lines)
-                            and not lines[i + 1].startswith(" ")
-                        ):
+                        # For Python, empty line followed by no indentation might end function
+                        if (i > func_start and line.strip() == "" and
+                            i + 1 < len(lines) and not lines[i + 1].startswith(" ")):
                             func_end = i
                             break
 
@@ -553,7 +548,7 @@ class ContentExtractor:
             "context": context,
         }
 
-    def _get_readme_content(self, repo_path: Optional[str] = None) -> str:
+    def _get_readme_content(self, repo_path: str | None = None) -> str:
         """Get README content from the repository.
 
         Args:
@@ -572,7 +567,7 @@ class ContentExtractor:
             try:
                 filepath = os.path.join(repo_path, filename)
                 if os.path.exists(filepath):
-                    with open(filepath, "r", encoding="utf-8") as f:
+                    with open(filepath, encoding="utf-8") as f:
                         return f.read()
             except Exception as e:
                 logger.warning(f"Error reading README {filepath}: {e}")

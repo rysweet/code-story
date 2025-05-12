@@ -4,7 +4,7 @@ This package provides specialized prompt templates for generating
 high-quality summaries of different types of code elements.
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Any
 
 from ..models import NodeData, NodeType
 
@@ -18,8 +18,8 @@ from .module_node import get_summary_prompt as get_module_summary_prompt
 def get_summary_prompt(
     node: NodeData,
     content: str,
-    context: List[str],
-    child_summaries: Optional[List[str]] = None,
+    context: list[str],
+    child_summaries: list[str] | None = None,
     max_tokens: int = 8000,
 ) -> str:
     """Get an appropriate summary prompt for a node based on its type.
@@ -58,14 +58,14 @@ def get_summary_prompt(
         return get_directory_summary_prompt(
             content=content,
             context=context,
-            child_summaries=child_summaries,
+            child_summaries=child_summaries if child_summaries is not None else [],
             max_tokens=max_tokens,
         )
     elif node_type == NodeType.MODULE:
         return get_module_summary_prompt(
             content=content,
             context=context,
-            child_summaries=child_summaries,
+            child_summaries=child_summaries if child_summaries is not None else [],
             max_tokens=max_tokens,
         )
     elif node_type == NodeType.REPOSITORY:

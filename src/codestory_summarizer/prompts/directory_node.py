@@ -4,13 +4,13 @@ This module provides prompt templates specifically designed for generating
 high-quality summaries of directory nodes.
 """
 
-from typing import Dict, List, Union
+from typing import Any
 
 
 def get_directory_summary_prompt(
     content: str,
-    context: List[str],
-    child_summaries: List[str] = None,
+    context: list[str],
+    child_summaries: list[str] = [],  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
@@ -54,8 +54,8 @@ Summary:
 
 def get_summary_prompt(
     content: str,
-    context: List[str],
-    child_summaries: List[str] = None,
+    context: list[str],
+    child_summaries: list[str] = [],  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.

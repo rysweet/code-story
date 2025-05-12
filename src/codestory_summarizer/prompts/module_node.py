@@ -9,8 +9,8 @@ from typing import Dict, List, Union
 
 def get_module_summary_prompt(
     content: str,
-    context: List[str],
-    child_summaries: List[str] = None,
+    context: list[str],
+    child_summaries: list[str] = [],  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a module.
@@ -63,8 +63,8 @@ Summary:
 
 def get_summary_prompt(
     content: str,
-    context: List[str],
-    child_summaries: List[str] = None,
+    context: list[str],
+    child_summaries: list[str] = [],  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a module.
@@ -81,4 +81,5 @@ def get_summary_prompt(
     Returns:
         Prompt for generating a module summary
     """
+    # Use child_summaries directly since empty list is already the default
     return get_module_summary_prompt(content, context, child_summaries, max_tokens)

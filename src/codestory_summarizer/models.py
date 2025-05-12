@@ -5,7 +5,7 @@ for representing summaries and tracking processing state.
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Union
+
 from pydantic import BaseModel, Field
 
 
@@ -40,11 +40,11 @@ class NodeData(BaseModel):
     id: str
     name: str
     type: NodeType
-    path: Optional[str] = None
+    path: str | None = None
     status: ProcessingStatus = ProcessingStatus.PENDING
-    dependencies: Set[str] = Field(default_factory=set)
-    dependents: Set[str] = Field(default_factory=set)
-    properties: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    dependencies: set[str] = Field(default_factory=set)
+    dependents: set[str] = Field(default_factory=set)
+    properties: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
 class SummaryData(BaseModel):
@@ -53,18 +53,18 @@ class SummaryData(BaseModel):
     node_id: str
     node_type: NodeType
     summary: str
-    code_snippets: List[str] = Field(default_factory=list)
+    code_snippets: list[str] = Field(default_factory=list)
     token_count: int = 0
     confidence: float = 1.0
-    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
 class DependencyGraph(BaseModel):
     """Represents the dependency graph of nodes to be summarized."""
 
-    nodes: Dict[str, NodeData] = Field(default_factory=dict)
-    leaf_nodes: Set[str] = Field(default_factory=set)
-    root_nodes: Set[str] = Field(default_factory=set)
+    nodes: dict[str, NodeData] = Field(default_factory=dict)
+    leaf_nodes: set[str] = Field(default_factory=set)
+    root_nodes: set[str] = Field(default_factory=set)
 
     # Keep track of progress
     pending_count: int = 0
@@ -126,7 +126,7 @@ class DependencyGraph(BaseModel):
         elif status == ProcessingStatus.SKIPPED:
             self.skipped_count += 1
 
-    def get_ready_nodes(self) -> List[str]:
+    def get_ready_nodes(self) -> list[str]:
         """Get nodes that are ready to be processed.
 
         A node is ready when all its dependencies have been processed.

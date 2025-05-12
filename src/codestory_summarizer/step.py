@@ -10,8 +10,7 @@ import logging
 import os
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from celery import shared_task
 
@@ -22,10 +21,10 @@ from codestory.llm.client import create_client
 from codestory.llm.models import ChatMessage, ChatRole
 
 from .dependency_analyzer import DependencyAnalyzer
-from .models import DependencyGraph, NodeData, NodeType, ProcessingStatus, SummaryData
+from .models import NodeData, SummaryData
 from .parallel_executor import ParallelExecutor
 from .prompts import get_summary_prompt
-from .utils import ContentExtractor, ProgressTracker, get_progress_message
+from .utils import ContentExtractor, ProgressTracker
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -38,11 +37,11 @@ class SummarizerStep(PipelineStep):
     summaries using a language model, and stores them in the Neo4j database.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the summarizer step."""
         self.settings = get_settings()
-        self.active_jobs: Dict[str, Dict[str, Any]] = {}
-        self.node_summaries: Dict[str, SummaryData] = {}
+        self.active_jobs: dict[str, dict[str, Any]] = {}
+        self.node_summaries: dict[str, SummaryData] = {}
 
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the summarizer step.
@@ -98,14 +97,14 @@ class SummarizerStep(PipelineStep):
 
         return job_id
 
-    def status(self, job_id: str) -> Dict[str, Any]:
+    def status(self, job_id: str) -> dict[str, Any]:
         """Check the status of a job.
 
         Args:
             job_id: Identifier for the job
 
         Returns:
-            Dict[str, Any]: Status information including:
+            dict[str, Any]: Status information including:
                 - status: StepStatus enum value
                 - progress: Optional float (0-100) indicating completion percentage
                 - message: Optional human-readable status message
@@ -143,8 +142,8 @@ class SummarizerStep(PipelineStep):
                         "message": f"Task is in state: {result.state}",
                         "info": result.info,
                     }
-            except Exception:
-                raise ValueError(f"Invalid job ID: {job_id}")
+            except Exception as e:
+                raise ValueError(f"Invalid job ID: {job_id}") from e
 
         job_info = self.active_jobs[job_id]
         task_id = job_info["task_id"]
@@ -184,14 +183,14 @@ class SummarizerStep(PipelineStep):
 
             return status_info
 
-    def stop(self, job_id: str) -> Dict[str, Any]:
+    def stop(self, job_id: str) -> dict[str, Any]:
         """Stop a running job.
 
         Args:
             job_id: Identifier for the job
 
         Returns:
-            Dict[str, Any]: Status information (same format as status method)
+            dict[str, Any]: Status information (same format as status method)
 
         Raises:
             ValueError: If the job ID is invalid or not found
@@ -218,7 +217,7 @@ class SummarizerStep(PipelineStep):
             "job_id": job_id,
         }
 
-    def cancel(self, job_id: str) -> Dict[str, Any]:
+    def cancel(self, job_id: str) -> dict[str, Any]:
         """Cancel a job.
 
         Unlike stop(), cancel attempts to immediately terminate the job
@@ -228,7 +227,7 @@ class SummarizerStep(PipelineStep):
             job_id: Identifier for the job
 
         Returns:
-            Dict[str, Any]: Status information (same format as status method)
+            dict[str, Any]: Status information (same format as status method)
 
         Raises:
             ValueError: If the job ID is invalid or not found
@@ -267,16 +266,17 @@ class SummarizerStep(PipelineStep):
 
 @shared_task(bind=True, name="summarizer.run_summarizer")
 def run_summarizer(
-    self,
+    self: Any,
     repository_path: str,
     job_id: str,
     max_concurrency: int = 5,
     max_tokens_per_file: int = 8000,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Run the summarizer workflow step as a Celery task.
 
     Args:
+        self: The Celery task instance
         repository_path: Path to the repository to process
         job_id: ID for the job
         max_concurrency: Maximum number of concurrent tasks
@@ -284,13 +284,12 @@ def run_summarizer(
         config: Additional configuration
 
     Returns:
-        Dict with results
+        dict[str, Any]: Results of the summarization process
     """
     logger.info(f"Starting summarizer task for repository: {repository_path}")
 
     start_time = time.time()
     config = config or {}
-    update_mode = config.get("update_mode", False)
 
     # Create Neo4j connector
     settings = get_settings()
@@ -329,7 +328,7 @@ def run_summarizer(
         os.makedirs(summary_dir, exist_ok=True)
 
         # Initialize summary store
-        summary_store: Dict[str, SummaryData] = {}
+        summary_store: dict[str, SummaryData] = {}
 
         # Define node processor function
         def process_node(node_id: str, node_data: NodeData) -> bool:
@@ -354,10 +353,14 @@ def run_summarizer(
                         child_summaries.append(child_summary)
 
                 # Generate prompt
+                # Ensure content and context are the right types
+                content_str = content if isinstance(content, str) else str(content)
+                context_list = context if isinstance(context, list) else [str(context)]
+
                 prompt = get_summary_prompt(
                     node=node_data,
-                    content=content,
-                    context=context,
+                    content=content_str,
+                    context=context_list,
                     child_summaries=child_summaries,
                     max_tokens=max_tokens_per_file,
                 )
@@ -375,22 +378,34 @@ def run_summarizer(
                     messages=messages, max_tokens=500, temperature=0.1
                 )
 
-                summary_text = response.choices[0].message.content
+                # Get summary text from response, handle empty response case
+                have_choices = response.choices and len(response.choices) > 0
+                summary_text = response.choices[0].message.content if have_choices else ""
+
+                # Calculate token count safely
+                token_count = 0
+                if response.usage:
+                    prompt_tokens = response.usage.prompt_tokens or 0
+                    completion_tokens = response.usage.completion_tokens or 0
+                    token_count = prompt_tokens + completion_tokens
 
                 # Create summary data
+                # Ensure summary_text is not None
+                safe_summary_text = summary_text if summary_text is not None else ""
+
                 summary = SummaryData(
                     node_id=node_id,
                     node_type=node_data.type,
-                    summary=summary_text,
-                    token_count=response.usage.prompt_tokens
-                    + response.usage.completion_tokens,
+                    summary=safe_summary_text,
+                    token_count=token_count,
                 )
 
                 # Store summary
                 summary_store[node_id] = summary
 
-                # Write summary to Neo4j
-                store_summary(connector, node_id, summary_text, node_data.type.value)
+                # Write summary to Neo4j - ensure we have a valid summary text
+                safe_summary = safe_summary_text if safe_summary_text else ""
+                store_summary(connector, node_id, safe_summary, node_data.type.value)
 
                 # Write summary to file for easy inspection
                 summary_file = os.path.join(summary_dir, f"{node_id}.json")
@@ -470,7 +485,7 @@ def run_summarizer(
             "duration": duration,
             "status": StepStatus.FAILED,
             "error": str(e),
-            "message": f"Summarizer task failed: {str(e)}",
+            "message": f"Summarizer task failed: {e!s}",
         }
     finally:
         # Close connections
@@ -501,14 +516,14 @@ def store_summary(
     })
     """
 
-    connector.run_query(
+    connector.execute_query(
         summary_query,
-        parameters={
+        params={
             "summary_id": summary_id,
             "summary": summary,
             "timestamp": time.time(),
             "source_type": node_type,
-        },
+        }
     )
 
     # Link the summary to the original node
@@ -518,6 +533,6 @@ def store_summary(
     CREATE (n)-[:HAS_SUMMARY]->(s)
     """
 
-    connector.run_query(
-        link_query, parameters={"summary_id": summary_id, "node_id": int(node_id)}
+    connector.execute_query(
+        link_query, params={"summary_id": summary_id, "node_id": int(node_id)}
     )
