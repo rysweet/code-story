@@ -1,5 +1,14 @@
 # Shell Command History
 
+## May 12, 2025 (Celery Anti-Pattern Fixes)
+- `cd /Users/ryan/src/msec/code-story && grep -r "\.get()" --include="*.py" src/` - Finding all instances of the Celery anti-pattern
+- `cd /Users/ryan/src/msec/code-story && grep -n "result.get()" src/codestory_summarizer/step.py` - Checking specific instances in the Summarizer step
+- `cd /Users/ryan/src/msec/code-story && grep -n "result.get()" src/codestory_blarify/step.py` - Checking specific instances in the Blarify step
+- `cd /Users/ryan/src/msec/code-story && grep -n "result.get()" src/codestory_filesystem/step.py` - Checking specific instances in the FileSystem step
+- `cd /Users/ryan/src/msec/code-story && grep -n "result.get()" src/codestory_docgrapher/step.py` - Checking specific instances in the Documentation Grapher step
+- `cd /Users/ryan/src/msec/code-story && grep -n "get()" src/codestory/ingestion_pipeline/manager.py` - Checking get() usage in the Pipeline Manager
+- `cd /Users/ryan/src/msec/code-story && sleep 30 && gh run list --limit 5` - Checking CI status after fixes
+
 ## May 12, 2025 (Integration Test Fixes)
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/` - Running unit tests to verify basic functionality
 - `cd /Users/ryan/src/msec/code-story && cat -n tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py | grep -A20 "test_full_pipeline_execution"` - Examining full pipeline integration test

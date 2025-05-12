@@ -31,7 +31,9 @@ jobs:
           virtualenvs-in-project: true
       - name: Install dependencies
         run: |
-          poetry install --no-interaction --no-root
+          poetry install --no-interaction --no-root --extras azure
+          # Ensure email-validator is available
+          poetry run pip install email-validator
       - name: Lint with Ruff
         run: |
           # Just run linting on all Python files in src directory
@@ -95,7 +97,9 @@ jobs:
           virtualenvs-in-project: true
       - name: Install dependencies
         run: |
-          poetry install --no-interaction
+          poetry install --no-interaction --extras azure
+          # Ensure email-validator is available
+          poetry run pip install email-validator
       - name: Run unit tests
         run: poetry run pytest tests/unit -v
         env:
@@ -129,7 +133,7 @@ jobs:
         run: npm ci
       - name: Run Vitest
         working-directory: .
-        run: npm test
+        run: npm test -- --environment jsdom
 
   # Image building and pushing to registry - commented out for now
   # Uncomment and configure when ready for centralized image distribution

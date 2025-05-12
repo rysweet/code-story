@@ -1,7 +1,12 @@
 import '@testing-library/jest-dom';
-import { expect, afterEach, beforeAll, vi } from 'vitest';
+import { expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
+
+// Ensure document is defined
+if (typeof document === 'undefined') {
+  global.document = window.document;
+}
 
 // Extend vitest's expect method with methods from react-testing-library
 expect.extend(matchers);

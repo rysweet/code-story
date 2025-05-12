@@ -1,5 +1,18 @@
 # Prompt History
 
+## Prompt 37 (May 12, 2025)
+**Prompt**: go ahead with 1 and 3 and then 5
+
+**Response**:
+- Fixed CI workflow to use correct package.json location in root directory
+- Added azure extras to Poetry installation for CI pipeline
+- Created comprehensive guide on Celery best practices
+- Fixed Celery anti-pattern across all step implementations
+- Replaced result.get() with result.result in all workflow steps
+- Added timeouts to get() calls in manager class for robustness
+- Updated all code to follow best practices for asynchronous tasks
+- Created detailed documentation explaining the anti-pattern and solutions
+
 ## Prompt 35 (May 12, 2025)
 **Prompt**: This session is being continued from a previous conversation that ran out of context. The conversation is summarized below:
 [Analysis of conversation about fixing integration tests for a Python project called Code Story]

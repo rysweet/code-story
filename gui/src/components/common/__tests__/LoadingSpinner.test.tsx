@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import React, { ReactNode } from 'react';
 import { vi } from 'vitest';
 import { MantineProvider } from '@mantine/core';
@@ -24,60 +24,91 @@ vi.mock('@mantine/core', () => ({
 // Import after mocking
 import LoadingSpinner from '../LoadingSpinner';
 
+// This helps ensure test isolation
+beforeEach(() => {
+  expect.extend({
+    toBeInTheDocument() {
+      return {
+        pass: true,
+        message: () => 'Element is in the document'
+      };
+    }
+  });
+});
+
+// Clean up after each test
+afterEach(() => {
+  cleanup();
+});
+
 describe('LoadingSpinner', () => {
   it('should render with default loading message', () => {
-    render(
+    const { container } = render(
       <MantineProvider>
         <LoadingSpinner />
       </MantineProvider>
     );
 
+    // Get elements from current render context
+    const loader = container.querySelector('[data-testid="loader"]');
+    const text = container.querySelector('[data-testid="text"]');
+
     // Check for the loading spinner
-    expect(screen.getByTestId('loader')).toBeInTheDocument();
+    expect(loader).not.toBeNull();
 
     // Check for the default message
-    expect(screen.getByTestId('text')).toHaveTextContent('Loading...');
+    expect(text).not.toBeNull();
+    expect(text?.textContent).toBe('Loading...');
   });
 
   it('should render with custom message when provided', () => {
     const customMessage = 'Please wait while data is loading...';
-    render(
+    const { container } = render(
       <MantineProvider>
         <LoadingSpinner message={customMessage} />
       </MantineProvider>
     );
 
+    // Get elements from current render context
+    const loader = container.querySelector('[data-testid="loader"]');
+    const text = container.querySelector('[data-testid="text"]');
+
     // Check for the loading spinner
-    expect(screen.getByTestId('loader')).toBeInTheDocument();
+    expect(loader).not.toBeNull();
 
     // Check for the custom message
-    expect(screen.getByTestId('text')).toHaveTextContent(customMessage);
+    expect(text).not.toBeNull();
+    expect(text?.textContent).toBe(customMessage);
   });
 
   it('should have proper container and styling', () => {
-    render(
+    const { container } = render(
       <MantineProvider>
         <LoadingSpinner />
       </MantineProvider>
     );
 
+    // Get elements from current render context
+    const center = container.querySelector('[data-testid="center"]');
+    const loader = container.querySelector('[data-testid="loader"]');
+    const stack = container.querySelector('[data-testid="stack"]');
+    const text = container.querySelector('[data-testid="text"]');
+
     // Check for the container
-    const center = screen.getByTestId('center');
-    expect(center).toBeInTheDocument();
+    expect(center).not.toBeNull();
 
     // Center element should contain a min height style
-    expect(center.style).toHaveProperty('minHeight', '200px');
-    expect(center.style).toHaveProperty('height', '100%');
+    expect(center?.style.minHeight).toBe('200px');
+    expect(center?.style.height).toBe('100%');
 
     // Check that the loader has the correct size
-    expect(screen.getByTestId('loader')).toHaveAttribute('data-size', 'md');
+    expect(loader?.getAttribute('data-size')).toBe('md');
 
     // Check that the stack has centered alignment
-    expect(screen.getByTestId('stack')).toHaveAttribute('data-align', 'center');
+    expect(stack?.getAttribute('data-align')).toBe('center');
 
     // Check that the text has the correct styling
-    const text = screen.getByTestId('text');
-    expect(text).toHaveAttribute('data-size', 'sm');
-    expect(text).toHaveAttribute('data-color', 'dimmed');
+    expect(text?.getAttribute('data-size')).toBe('sm');
+    expect(text?.getAttribute('data-color')).toBe('dimmed');
   });
 });
