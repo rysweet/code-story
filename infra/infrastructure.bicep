@@ -1,61 +1,45 @@
-@description('Name of the environment (e.g., dev, test, prod)')
-param environmentName string = 'dev'
+// This is the main infrastructure Bicep file that contains all the resources
+// It's called by main.bicep and handles resource deployment within the resource group
 
 @description('Azure region to deploy resources')
-param location string = resourceGroup().location
+param location string
 
 @description('Tags to apply to all resources')
-param tags object = {
-  Environment: environmentName
-  Application: 'CodeStory'
-  ManagedBy: 'Bicep'
-}
-
-@description('Email address for alert notifications')
-param alertNotificationEmail string = ''
-
-@description('Enable detailed monitoring with dashboards and workbooks')
-param enableDetailedMonitoring bool = false
-
-@description('Secondary region for disaster recovery')
-param secondaryLocation string = 'westus2'
-
-@description('Enable disaster recovery features')
-param enableDisasterRecovery bool = false
+param tags object
 
 // Container Apps Environment
 @description('Container Apps Environment settings')
-param containerAppsEnvName string = 'code-story-${environmentName}-env'
-param logAnalyticsWorkspaceName string = 'code-story-${environmentName}-logs'
-param appInsightsName string = 'code-story-${environmentName}-insights'
+param containerAppsEnvName string
+param logAnalyticsWorkspaceName string
+param appInsightsName string
 
 // Key Vault
 @description('Key Vault settings')
-param keyVaultName string = 'code-story-${environmentName}-kv'
+param keyVaultName string
 @secure()
 param secretsOfficerObjectId string = ''
 
 // Container Registry
 @description('Container Registry settings')
-param containerRegistryName string = 'codestory${environmentName}acr'
+param containerRegistryName string
 param containerRegistrySku string = 'Basic'
 
 // Redis
 @description('Redis settings')
-param redisName string = 'code-story-${environmentName}-redis'
+param redisName string
 param redisSku string = 'Basic'
 param redisCapacity int = 0
 
 // Neo4j
 @description('Neo4j settings')
-param neo4jName string = 'code-story-${environmentName}-neo4j'
+param neo4jName string
 param neo4jUsername string = 'neo4j'
 @secure()
 param neo4jPassword string
 
 // Service
 @description('Service settings')
-param serviceName string = 'code-story-${environmentName}-service'
+param serviceName string
 param serviceImage string
 param servicePort int = 8000
 param serviceReplicas int = 1
@@ -64,7 +48,7 @@ param serviceCpu string = '0.5'
 
 // Worker
 @description('Worker settings')
-param workerName string = 'code-story-${environmentName}-worker'
+param workerName string
 param workerImage string
 param workerReplicas int = 2
 param workerMemory string = '1.0Gi'
@@ -72,7 +56,7 @@ param workerCpu string = '0.5'
 
 // MCP
 @description('MCP settings')
-param mcpName string = 'code-story-${environmentName}-mcp'
+param mcpName string
 param mcpImage string
 param mcpPort int = 8001
 param mcpReplicas int = 1
@@ -85,22 +69,29 @@ param authEnabled bool = true
 
 // GUI
 @description('GUI settings')
-param guiName string = 'code-story-${environmentName}-gui'
+param guiName string
 param guiImage string
 param guiPort int = 80
 param guiReplicas int = 1
 param guiMemory string = '0.5Gi'
 param guiCpu string = '0.25'
 
+// OpenAI API Keys
+@secure()
+param openaiApiKey string = ''
+
+@secure()
+param azureOpenaiApiKey string = ''
+
 // Managed Identity
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: 'code-story-${environmentName}-mi'
+  name: 'code-story-mi'
   location: location
   tags: tags
 }
 
 // Create Log Analytics workspace
-module logAnalytics './modules/log-analytics.bicep' = {
+module logAnalytics './azure/modules/log-analytics.bicep' = {
   name: 'logAnalyticsDeployment'
   params: {
     name: logAnalyticsWorkspaceName
@@ -110,7 +101,7 @@ module logAnalytics './modules/log-analytics.bicep' = {
 }
 
 // Create Application Insights
-module appInsights './modules/app-insights.bicep' = {
+module appInsights './azure/modules/app-insights.bicep' = {
   name: 'appInsightsDeployment'
   params: {
     name: appInsightsName
@@ -121,7 +112,7 @@ module appInsights './modules/app-insights.bicep' = {
 }
 
 // Create Container Registry
-module containerRegistry './modules/container-registry.bicep' = {
+module containerRegistry './azure/modules/container-registry.bicep' = {
   name: 'containerRegistryDeployment'
   params: {
     name: containerRegistryName
@@ -132,15 +123,8 @@ module containerRegistry './modules/container-registry.bicep' = {
   }
 }
 
-// OpenAI API Keys
-@secure()
-param openaiApiKey string = ''
-
-@secure()
-param azureOpenaiApiKey string = ''
-
 // Create Key Vault
-module keyVault './modules/key-vault.bicep' = {
+module keyVault './azure/modules/key-vault.bicep' = {
   name: 'keyVaultDeployment'
   params: {
     name: keyVaultName
@@ -170,7 +154,7 @@ module keyVault './modules/key-vault.bicep' = {
 }
 
 // Create Container Apps Environment
-module containerAppsEnv './modules/container-apps-environment.bicep' = {
+module containerAppsEnv './azure/modules/container-apps-environment.bicep' = {
   name: 'containerAppsEnvDeployment'
   params: {
     name: containerAppsEnvName
@@ -178,12 +162,11 @@ module containerAppsEnv './modules/container-apps-environment.bicep' = {
     tags: tags
     logAnalyticsWorkspaceId: logAnalytics.outputs.id
     appInsightsInstrumentationKey: appInsights.outputs.instrumentationKey
-    enableDetailedMonitoring: enableDetailedMonitoring
   }
 }
 
 // Create Redis Cache
-module redis './modules/redis.bicep' = {
+module redis './azure/modules/redis.bicep' = {
   name: 'redisDeployment'
   params: {
     name: redisName
@@ -195,7 +178,7 @@ module redis './modules/redis.bicep' = {
 }
 
 // Create Neo4j container
-module neo4j './modules/neo4j.bicep' = {
+module neo4j './azure/modules/neo4j.bicep' = {
   name: 'neo4jDeployment'
   params: {
     name: neo4jName
@@ -209,7 +192,7 @@ module neo4j './modules/neo4j.bicep' = {
 }
 
 // Create Service container app
-module service './modules/service.bicep' = {
+module service './azure/modules/service.bicep' = {
   name: 'serviceDeployment'
   params: {
     name: serviceName
@@ -238,7 +221,7 @@ module service './modules/service.bicep' = {
 }
 
 // Create Worker container app
-module worker './modules/worker.bicep' = {
+module worker './azure/modules/worker.bicep' = {
   name: 'workerDeployment'
   params: {
     name: workerName
@@ -267,7 +250,7 @@ module worker './modules/worker.bicep' = {
 }
 
 // Create MCP container app
-module mcp './modules/mcp.bicep' = {
+module mcp './azure/modules/mcp.bicep' = {
   name: 'mcpDeployment'
   params: {
     name: mcpName
@@ -296,7 +279,7 @@ module mcp './modules/mcp.bicep' = {
 }
 
 // Create GUI container app
-module gui './modules/gui.bicep' = {
+module gui './azure/modules/gui.bicep' = {
   name: 'guiDeployment'
   params: {
     name: guiName
@@ -323,51 +306,6 @@ module gui './modules/gui.bicep' = {
   ]
 }
 
-// Create Monitoring Resources
-module monitoring './modules/monitoring.bicep' = {
-  name: 'monitoringDeployment'
-  params: {
-    namePrefix: 'code-story-${environmentName}'
-    location: location
-    tags: tags
-    logAnalyticsWorkspaceId: logAnalytics.outputs.id
-    appInsightsId: appInsights.outputs.id
-    containerAppIds: [
-      service.outputs.id
-      worker.outputs.id
-      mcp.outputs.id
-    ]
-    neo4jContainerId: neo4j.outputs.id
-    alertNotificationEmail: alertNotificationEmail
-    enableDetailedMonitoring: enableDetailedMonitoring
-  }
-  dependsOn: [
-    service
-    worker
-    mcp
-    neo4j
-  ]
-}
-
-// Create Disaster Recovery Resources
-module disasterRecovery './modules/disaster-recovery.bicep' = if (enableDisasterRecovery) {
-  name: 'disasterRecoveryDeployment'
-  params: {
-    namePrefix: 'code-story-${environmentName}'
-    primaryLocation: location
-    secondaryLocation: secondaryLocation
-    tags: tags
-    logAnalyticsWorkspaceId: logAnalytics.outputs.id
-    backupRetentionDays: 30
-    storageTier: 'Standard'
-    storageReplication: 'GRS'
-  }
-  dependsOn: [
-    neo4j
-    keyVault
-  ]
-}
-
 // Outputs
 output containerRegistryName string = containerRegistry.outputs.name
 output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
@@ -376,6 +314,3 @@ output serviceFqdn string = service.outputs.fqdn
 output mcpFqdn string = mcp.outputs.fqdn
 output guiFqdn string = gui.outputs.fqdn
 output neo4jFqdn string = neo4j.outputs.fqdn
-output dashboardName string = enableDetailedMonitoring ? monitoring.outputs.dashboardName : ''
-output primaryBackupStorageAccountName string = enableDisasterRecovery ? disasterRecovery.outputs.primaryBackupStorageAccountName : ''
-output secondaryBackupStorageAccountName string = enableDisasterRecovery ? disasterRecovery.outputs.secondaryBackupStorageAccountName : ''

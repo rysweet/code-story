@@ -45,16 +45,26 @@ The architecture consists of:
   - `healthcheck.sh` - Check health of services
   - `deploy_azure.sh` - Deploy to Azure
   - `build_push_acr.sh` - Build and push images to Azure Container Registry
-- `/azure` - Azure Bicep templates
+- `/azure` - Azure Bicep templates for manual deployment
   - `main.bicep` - Main deployment template
   - `modules/` - Modular templates for each resource
   - `parameters/` - Environment-specific parameter files
+- `/azd` - Azure Developer CLI configuration
+  - `main.bicep` - Subscription-level deployment entry point
+  - `infrastructure.bicep` - Resource group deployment template
+  - `abbreviations.json` - Resource naming conventions
+  - `hooks/` - Pre/post deployment scripts
+  - `main.parameters.json` - Parameter template with azd variable substitution
 
-## Local Development
+## Deployment Options
+
+Code Story supports two deployment approaches: local development with Docker Compose and cloud deployment to Azure using either manual scripts or the Azure Developer CLI (azd).
+
+### Local Development
 
 The local development environment uses Docker Compose with development-optimized builds.
 
-### Starting the Environment
+#### Starting the Environment
 
 ```bash
 ./infra/scripts/start.sh
@@ -67,29 +77,117 @@ This script:
 4. Waits for services to become healthy
 5. Displays endpoints for all services
 
-### Stopping the Environment
+#### Stopping the Environment
 
 ```bash
 ./infra/scripts/stop.sh
 ```
 
-### Checking Service Health
+#### Checking Service Health
 
 ```bash
 ./infra/scripts/healthcheck.sh
 ```
 
-## Azure Deployment
+### Azure Deployment
 
-Code Story can be deployed to Azure Container Apps for production or staging environments.
+#### Option 1: Using Azure Developer CLI (azd) - Recommended
 
-### Prerequisites
+The preferred way to deploy Code Story to Azure is using the Azure Developer CLI (azd), which simplifies the process into a few commands.
+
+##### Prerequisites
+
+- [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd) installed
+- Docker installed locally
+- Azure subscription
+
+##### Deployment Process
+
+1. **Initialize a new environment**
+
+   ```bash
+   # From the repository root
+   azd init --template .
+   ```
+
+2. **Configure environment variables**
+
+   ```bash
+   # Required parameters
+   azd env set NEO4J_PASSWORD <your-secure-password>
+
+   # Optional parameters
+   azd env set OPENAI_API_KEY <your-openai-api-key>
+   azd env set AZURE_OPENAI_API_KEY <your-azure-openai-api-key>
+
+   # For authentication
+   azd env set AUTH_ENABLED true
+   azd env set MCP_CLIENT_ID <your-entra-client-id>
+   azd env set MCP_CLIENT_SECRET <your-entra-client-secret>
+   ```
+
+3. **Deploy everything**
+
+   ```bash
+   azd up
+   ```
+
+   This single command will:
+   - Create a resource group
+   - Deploy all Azure resources
+   - Build and push Docker images
+   - Deploy and configure Container Apps
+   - Set up networking and secrets
+
+4. **View results and endpoints**
+
+   ```bash
+   azd monitor
+   ```
+
+##### Testing and Validating azd Configuration
+
+Before deploying, you can test and validate the azd configuration:
+
+1. **Validate the azd configuration**
+
+   ```bash
+   # Validate the azure.yaml file
+   azd config validate
+   ```
+
+2. **Test the Bicep templates syntax**
+
+   ```bash
+   # Validate main.bicep syntax
+   az bicep build --file infra/azd/main.bicep
+   ```
+
+3. **Preview the deployment**
+
+   ```bash
+   # See what would be deployed without actually deploying
+   azd provision --preview
+   ```
+
+4. **Dry run the entire process**
+
+   ```bash
+   # Perform a dry run of the entire deployment process
+   azd up --dry-run
+   ```
+
+#### Option 2: Using Manual Scripts
+
+For those who prefer more control or need to customize the deployment process:
+
+##### Prerequisites
 
 - Azure CLI installed and authenticated
 - Docker installed locally
 - Subscription with permissions to create resources
 
-### Deployment Process
+##### Deployment Process
 
 1. **Deploy Infrastructure**
 
@@ -102,12 +200,6 @@ Code Story can be deployed to Azure Container Apps for production or staging env
    - `-g, --resource-group`: Azure Resource Group name
    - `-l, --location`: Azure location (default: eastus)
    - `-s, --subscription`: Azure subscription ID
-
-   This script will prompt for sensitive parameters:
-   - Neo4j password
-   - Azure OpenAI API key
-   - OpenAI API key
-   - Entra Client Secret (if using authentication)
 
 2. **Build and Push Images**
 
@@ -160,3 +252,49 @@ A VS Code devcontainer is provided in `/.devcontainer/devcontainer.json` for con
 - CORS is properly configured
 - Container registries use Managed Identity authentication
 - Images use minimal base images to reduce attack surface
+
+## Troubleshooting
+
+### Common azd Issues
+
+1. **Invalid Azure Credentials**
+   ```
+   Problem: "Azure credentials are invalid or have expired."
+   Solution: Run `azd auth login` to re-authenticate.
+   ```
+
+2. **Resource Name Conflicts**
+   ```
+   Problem: "Resource name already exists."
+   Solution: Create a new environment with a unique name: `azd env new my-unique-env`
+   ```
+
+3. **Permission Issues**
+   ```
+   Problem: "Authorization failed for creating resource."
+   Solution: Ensure your Azure account has Contributor role on the subscription.
+   ```
+
+4. **Docker Build Failures**
+   ```
+   Problem: "Failed to build image."
+   Solution: Verify Docker is running and try building the image locally first.
+   ```
+
+5. **Environment Variables Missing**
+   ```
+   Problem: "Required parameter NEO4J_PASSWORD is missing."
+   Solution: Set the required environment variables: `azd env set NEO4J_PASSWORD <value>`
+   ```
+
+### Viewing Detailed Logs
+
+To see more detailed logs for troubleshooting:
+
+```bash
+# Enable verbose logging
+azd up --debug
+
+# View logs for a specific service
+azd monitor --service service
+```

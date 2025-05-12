@@ -1,0 +1,522 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Code Story Application Monitoring\nThis workbook provides detailed monitoring for the Code Story application components."
+      },
+      "name": "Title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "786e0dbb-b8a5-4a75-a7a9-c1c0caf7b251",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 3600000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                }
+              ],
+              "allowCustom": true
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "c01be722-70e2-4d47-9922-9074d14e3960",
+            "version": "KqlParameterItem/1.0",
+            "name": "Component",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "requests\n| summarize by cloud_RoleName\n| order by cloud_RoleName asc",
+            "value": [
+              "service",
+              "worker",
+              "mcp"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "label": "Component"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "parameters - 0"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "9e836730-d6c9-4b5d-a741-59bfdf3adba7",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Overview",
+            "subTarget": "Overview",
+            "style": "link"
+          },
+          {
+            "id": "46568efa-9e21-440d-8c4b-f9e3523d97f6",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Performance",
+            "subTarget": "Performance",
+            "style": "link"
+          },
+          {
+            "id": "7ce5f5ef-f65b-4991-8d0a-83f85f32a2a8",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Failures",
+            "subTarget": "Failures",
+            "style": "link"
+          },
+          {
+            "id": "e14148d1-9c50-488f-aaa5-9fd2e8fc28c3",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Operations",
+            "subTarget": "Operations",
+            "style": "link"
+          },
+          {
+            "id": "a8e2c148-8d4b-4479-8695-6d3f5c9eb7ea",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Neo4j",
+            "subTarget": "Neo4j",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "Navigation Tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 10,
+            "content": {
+              "chartId": "workbook7e1721e5-5c1a-47f6-abc4-05fad97649dc",
+              "version": "MetricsItem/2.0",
+              "size": 0,
+              "chartType": 2,
+              "resourceType": "microsoft.insights/components",
+              "metricScope": 0,
+              "resourceParameter": "Resource",
+              "resourceIds": [
+                "${Resource}"
+              ],
+              "timeContext": {
+                "durationMs": 3600000
+              },
+              "metrics": [
+                {
+                  "namespace": "microsoft.insights/components",
+                  "metric": "microsoft.insights/components--requests/count",
+                  "aggregation": 1,
+                  "splitBy": null
+                }
+              ],
+              "title": "Request Count",
+              "gridSettings": {
+                "rowLimit": 10000
+              }
+            },
+            "name": "Request Count"
+          },
+          {
+            "type": 10,
+            "content": {
+              "chartId": "workbook2c39b6c7-9c08-4629-8a11-5ece1d6d6ee1",
+              "version": "MetricsItem/2.0",
+              "size": 0,
+              "chartType": 2,
+              "resourceType": "microsoft.insights/components",
+              "metricScope": 0,
+              "resourceParameter": "Resource",
+              "resourceIds": [
+                "${Resource}"
+              ],
+              "timeContext": {
+                "durationMs": 3600000
+              },
+              "metrics": [
+                {
+                  "namespace": "microsoft.insights/components",
+                  "metric": "microsoft.insights/components--requests/failed",
+                  "aggregation": 1,
+                  "splitBy": null
+                }
+              ],
+              "title": "Failed Requests",
+              "gridSettings": {
+                "rowLimit": 10000
+              }
+            },
+            "name": "Failed Requests"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| summarize count() by tostring(resultCode), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Response Codes",
+              "noDataMessage": "No data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "linechart"
+            },
+            "name": "Response Codes"
+          }
+        ],
+        "exportParameters": true,
+        "conditionalVisibility": {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "Overview"
+        },
+        "name": "Overview Group"
+      },
+      "name": "Overview Group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 10,
+            "content": {
+              "chartId": "workbook4f062309-bd38-4178-bef9-aa5d9de219a2",
+              "version": "MetricsItem/2.0",
+              "size": 0,
+              "chartType": 2,
+              "resourceType": "microsoft.insights/components",
+              "metricScope": 0,
+              "resourceParameter": "Resource",
+              "resourceIds": [
+                "${Resource}"
+              ],
+              "timeContext": {
+                "durationMs": 3600000
+              },
+              "metrics": [
+                {
+                  "namespace": "microsoft.insights/components",
+                  "metric": "microsoft.insights/components--requests/duration",
+                  "aggregation": 4,
+                  "splitBy": null
+                }
+              ],
+              "title": "Server Response Time",
+              "gridSettings": {
+                "rowLimit": 10000
+              }
+            },
+            "name": "Response Time"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| summarize count(), avg(duration), percentiles(duration, 50, 95, 99) by name, cloud_RoleName\n| order by count_ desc\n| project ['Operation'] = name, ['Component'] = cloud_RoleName, ['Count'] = count_, ['Avg Duration (ms)'] = round(avg_duration, 2), ['Median (ms)'] = round(percentile_duration_50, 2), ['P95 (ms)'] = round(percentile_duration_95, 2), ['P99 (ms)'] = round(percentile_duration_99, 2)",
+              "size": 0,
+              "title": "Operation Performance",
+              "noDataMessage": "No data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Operation Performance"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| where operation_Name contains \"ingest\"\n| summarize count(), avg(duration), percentiles(duration, 50, 95, 99) by name, cloud_RoleName\n| order by count_ desc\n| project ['Ingestion Operation'] = name, ['Component'] = cloud_RoleName, ['Count'] = count_, ['Avg Duration (ms)'] = round(avg_duration, 2), ['Median (ms)'] = round(percentile_duration_50, 2), ['P95 (ms)'] = round(percentile_duration_95, 2), ['P99 (ms)'] = round(percentile_duration_99, 2)",
+              "size": 0,
+              "title": "Ingestion Performance",
+              "noDataMessage": "No data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Ingestion Performance"
+          }
+        ],
+        "exportParameters": true,
+        "conditionalVisibility": {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "Performance"
+        },
+        "name": "Performance Group"
+      },
+      "name": "Performance Group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| summarize count() by type, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Exceptions Over Time",
+              "noDataMessage": "No exceptions in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "linechart"
+            },
+            "name": "Exceptions Over Time"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| summarize count() by type, cloud_RoleName\n| order by count_ desc\n| project ['Exception Type'] = type, ['Component'] = cloud_RoleName, ['Count'] = count_",
+              "size": 0,
+              "title": "Top Exceptions",
+              "noDataMessage": "No exceptions in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Top Exceptions"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| summarize count() by outerMessage, problemId\n| top 10 by count_ desc\n| project ['Exception Message'] = outerMessage, ['Problem ID'] = problemId, ['Count'] = count_",
+              "size": 0,
+              "title": "Top Exception Messages",
+              "noDataMessage": "No exceptions in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Top Exception Messages"
+          }
+        ],
+        "exportParameters": true,
+        "conditionalVisibility": {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "Failures"
+        },
+        "name": "Failures Group"
+      },
+      "name": "Failures Group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| summarize count(), avg(duration) by operation_Name, cloud_RoleName\n| order by count_ desc\n| project ['Operation'] = operation_Name, ['Component'] = cloud_RoleName, ['Request Count'] = count_, ['Avg Duration (ms)'] = round(avg_duration, 2)\n| take 20",
+              "size": 0,
+              "title": "Top Operations",
+              "noDataMessage": "No data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Top Operations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| where operation_Name contains \"ingestion\" or operation_Name contains \"ingest\"\n| summarize count(), avg(duration), max(duration) by operation_Name, cloud_RoleName\n| order by count_ desc\n| project ['Operation'] = operation_Name, ['Component'] = cloud_RoleName, ['Count'] = count_, ['Avg Duration (ms)'] = round(avg_duration, 2), ['Max Duration (ms)'] = round(max_duration, 2)",
+              "size": 0,
+              "title": "Ingestion Operations",
+              "noDataMessage": "No ingestion data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Ingestion Operations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| where operation_Name contains \"query\" or operation_Name contains \"search\"\n| summarize count(), avg(duration), max(duration) by operation_Name, cloud_RoleName\n| order by count_ desc\n| project ['Operation'] = operation_Name, ['Component'] = cloud_RoleName, ['Count'] = count_, ['Avg Duration (ms)'] = round(avg_duration, 2), ['Max Duration (ms)'] = round(max_duration, 2)",
+              "size": 0,
+              "title": "Query Operations",
+              "noDataMessage": "No query data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Query Operations"
+          }
+        ],
+        "exportParameters": true,
+        "conditionalVisibility": {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "Operations"
+        },
+        "name": "Operations Group"
+      },
+      "name": "Operations Group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| where type == 'Neo4j'\n| summarize count(), avg(duration), max(duration) by name, cloud_RoleName\n| order by count_ desc\n| project ['Query Type'] = name, ['Component'] = cloud_RoleName, ['Count'] = count_, ['Avg Duration (ms)'] = round(avg_duration, 2), ['Max Duration (ms)'] = round(max_duration, 2)",
+              "size": 0,
+              "title": "Neo4j Queries",
+              "noDataMessage": "No Neo4j data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "Neo4j Queries"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| where type == 'Neo4j'\n| where success == false\n| summarize count() by target, resultCode, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Neo4j Failures Over Time",
+              "noDataMessage": "No Neo4j failures in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "linechart"
+            },
+            "name": "Neo4j Failures Over Time"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where timestamp {TimeRange}\n| where cloud_RoleName in ({Component}) or '*' in ({Component})\n| where type == 'Neo4j'\n| summarize count(), avg(duration), percentiles(duration, 50, 95, 99) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Neo4j Performance Over Time",
+              "noDataMessage": "No Neo4j data in this time range",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "linechart"
+            },
+            "name": "Neo4j Performance Over Time"
+          }
+        ],
+        "exportParameters": true,
+        "conditionalVisibility": {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "Neo4j"
+        },
+        "name": "Neo4j Group"
+      },
+      "name": "Neo4j Group"
+    }
+  ],
+  "defaultResourceIds": [],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

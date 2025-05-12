@@ -47,13 +47,24 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    curl=7.88.* \
     && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user to run the application
+RUN groupadd -r codestory && useradd -r -g codestory codestory
 
 # Copy built Python packages and code from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/prompts /app/prompts
+
+# Set proper ownership and permissions
+RUN chown -R codestory:codestory /app && \
+    chmod -R 750 /app
+
+# Add security labels
+LABEL org.opencontainers.image.security.capabilities="CHOWN,DAC_OVERRIDE,SETGID,SETUID"
+LABEL org.opencontainers.image.security.seccomp=unconfined
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -61,6 +72,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Expose port
 EXPOSE 8000
+
+# Switch to non-root user
+USER codestory
 
 # Run the service
 CMD ["uvicorn", "src.codestory_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -43,13 +43,22 @@ EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Production stage
-FROM nginx:alpine as production
+FROM nginx:1.25-alpine as production
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY infra/docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Add security-related configurations
+RUN chmod -R 750 /usr/share/nginx/html && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod 750 /etc/nginx/conf.d/default.conf
+
+# Add security labels
+LABEL org.opencontainers.image.security.capabilities="NET_BIND_SERVICE"
+LABEL org.opencontainers.image.security.seccomp=unconfined
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -58,5 +67,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 80
 
-# Start nginx
+# Start nginx with non-root user (nginx already does this internally)
 CMD ["nginx", "-g", "daemon off;"]

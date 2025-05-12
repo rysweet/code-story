@@ -13,6 +13,9 @@ param logAnalyticsWorkspaceId string
 @description('Application Insights Instrumentation Key')
 param appInsightsInstrumentationKey string
 
+@description('Enable detailed monitoring for container apps')
+param enableDetailedMonitoring bool = false
+
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: name
   location: location

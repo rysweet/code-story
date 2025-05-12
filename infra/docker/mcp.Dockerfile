@@ -47,12 +47,23 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    curl=7.88.* \
     && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user to run the application
+RUN groupadd -r mcp && useradd -r -g mcp mcp
 
 # Copy built Python packages and code from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /app/src/codestory_mcp /app/src/codestory_mcp
+
+# Set proper ownership and permissions
+RUN chown -R mcp:mcp /app && \
+    chmod -R 750 /app
+
+# Add security labels
+LABEL org.opencontainers.image.security.capabilities="CHOWN,DAC_OVERRIDE,SETGID,SETUID"
+LABEL org.opencontainers.image.security.seccomp=unconfined
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -60,6 +71,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Expose port
 EXPOSE 8001
+
+# Switch to non-root user
+USER mcp
 
 # Run the MCP API
 CMD ["uvicorn", "src.codestory_mcp.main:app", "--host", "0.0.0.0", "--port", "8001"]
