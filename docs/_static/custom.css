@@ -1,0 +1,99 @@
+/* Custom styles for Code Story documentation */
+
+/* Improve code block styling */
+div.highlight {
+    border-radius: 4px;
+    margin-bottom: 1.5em;
+}
+
+/* Make headings more prominent */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+}
+
+/* Improve table styling */
+table.docutils {
+    border-radius: 4px;
+    margin-bottom: 1.5em;
+    width: 100%;
+}
+
+table.docutils td, table.docutils th {
+    padding: 8px 12px;
+}
+
+/* Improve note and warning admonitions */
+.admonition {
+    border-radius: 4px;
+    padding: 12px 15px;
+    margin-bottom: 1.5em;
+}
+
+.admonition-title {
+    margin: -12px -15px 12px -15px;
+    padding: 8px 15px;
+    border-radius: 4px 4px 0 0;
+    font-weight: 600;
+}
+
+/* Mermaid diagram improvements */
+.mermaid {
+    text-align: center;
+    margin: 1.5em 0;
+}
+
+/* Responsive image handling */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Improve TOC styling */
+.toctree-wrapper.compound {
+    margin-bottom: 2em;
+}
+
+/* Custom API styling */
+.class, .function, .method {
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.class .property {
+    margin-left: 1.5em;
+}
+
+/* Search box improvements */
+.search {
+    margin-bottom: 1.5em;
+}
+
+/* Navigation panel improvements */
+.wy-menu-vertical {
+    line-height: 1.4;
+}
+
+.wy-menu-vertical a {
+    padding: 6px 10px;
+}
+
+/* Copybutton improvements */
+button.copybtn {
+    opacity: 0.3;
+}
+
+button.copybtn:hover {
+    opacity: 1;
+}
+
+/* Improve table wrapping on mobile */
+@media screen and (max-width: 768px) {
+    table.docutils {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
