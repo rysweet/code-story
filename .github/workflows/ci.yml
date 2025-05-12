@@ -72,16 +72,35 @@ jobs:
     needs: lint
     services:
       neo4j:
-        image: neo4j:5.13-community
+        image: neo4j:5.18.0
         env:
           NEO4J_AUTH: neo4j/password
+          NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+          NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+          NEO4J_dbms_memory_heap_initial__size: 512m
+          NEO4J_dbms_memory_heap_max__size: 1G
+          NEO4J_dbms_memory_pagecache_size: 512m
+          NEO4J_initial_dbms_default__database: codestory-test
+          NEO4J_dbms_jvm_additional: -XX:+ExitOnOutOfMemoryError
+          NEO4J_server_default__listen__address: 0.0.0.0
+          NEO4J_dbms_memory_transaction_max__size: 512M
         ports:
           - 7474:7474
           - 7687:7687
+        options: >-
+          --health-cmd "curl -f http://localhost:7474/browser/ || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
-        image: redis:7
+        image: redis:7.2.4-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12
@@ -100,14 +119,62 @@ jobs:
           poetry install --no-interaction --extras azure
           # Ensure email-validator is available
           poetry run pip install email-validator
+      - name: Initialize Neo4j database
+        run: |
+          # Wait for Neo4j to be fully available
+          for i in {1..30}; do
+            if curl -s http://localhost:7474/browser/ > /dev/null; then
+              echo "Neo4j is up and running"
+              break
+            fi
+            echo "Waiting for Neo4j to start... ($i/30)"
+            sleep 2
+          done
+
+          # Initialize Neo4j with constraints and indexes
+          cat > init_test_db.cypher << 'EOF'
+          // Schema Initialization for CI
+          MATCH (n) DETACH DELETE n;
+          CREATE CONSTRAINT unique_file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE;
+          CREATE CONSTRAINT unique_directory_path IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE;
+          CREATE CONSTRAINT unique_function_id IF NOT EXISTS FOR (f:Function) REQUIRE f.id IS UNIQUE;
+          CREATE CONSTRAINT unique_class_id IF NOT EXISTS FOR (c:Class) REQUIRE c.id IS UNIQUE;
+          CREATE INDEX file_name IF NOT EXISTS FOR (f:File) ON (f.name);
+          EOF
+
+          # Run the cypher script
+          cat init_test_db.cypher | poetry run python -c "
+          from neo4j import GraphDatabase
+          uri = 'bolt://localhost:7687'
+          driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
+          with driver.session(database='codestory-test') as session:
+              session.run('''$(cat init_test_db.cypher)''')
+          driver.close()
+          print('Neo4j database initialized')
+          "
+      - name: Set up environment
+        run: |
+          # Set up environment variables for tests
+          echo "NEO4J_URI=bolt://localhost:7687" >> $GITHUB_ENV
+          echo "NEO4J_USERNAME=neo4j" >> $GITHUB_ENV
+          echo "NEO4J_PASSWORD=password" >> $GITHUB_ENV
+          echo "NEO4J_DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "NEO4J__URI=bolt://localhost:7687" >> $GITHUB_ENV
+          echo "NEO4J__USERNAME=neo4j" >> $GITHUB_ENV
+          echo "NEO4J__PASSWORD=password" >> $GITHUB_ENV
+          echo "NEO4J__DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "REDIS_URI=redis://localhost:6379/0" >> $GITHUB_ENV
+          echo "REDIS__URI=redis://localhost:6379/0" >> $GITHUB_ENV
+          echo "REDIS_HOST=localhost" >> $GITHUB_ENV
+          echo "REDIS_PORT=6379" >> $GITHUB_ENV
+          echo "OPENAI_API_KEY=sk-test-key-openai" >> $GITHUB_ENV
+          echo "OPENAI__API_KEY=sk-test-key-openai" >> $GITHUB_ENV
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH" >> $GITHUB_ENV
+
+          # Create log directory
+          mkdir -p logs
       - name: Run unit tests
         run: poetry run pytest tests/unit -v
-        env:
-          NEO4J_URI: bolt://localhost:7687
-          NEO4J_USERNAME: neo4j
-          NEO4J_PASSWORD: password
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
       - name: Generate coverage report
         run: poetry run pytest tests/unit -v --cov=src --cov-report=xml
       - name: Upload coverage report
@@ -115,6 +182,138 @@ jobs:
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test-python, test-gui]
+    services:
+      neo4j:
+        image: neo4j:5.18.0
+        env:
+          NEO4J_AUTH: neo4j/password
+          NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+          NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+          NEO4J_dbms_memory_heap_initial__size: 512m
+          NEO4J_dbms_memory_heap_max__size: 1G
+          NEO4J_dbms_memory_pagecache_size: 512m
+          NEO4J_initial_dbms_default__database: codestory-test
+          NEO4J_dbms_jvm_additional: -XX:+ExitOnOutOfMemoryError
+          NEO4J_server_default__listen__address: 0.0.0.0
+          NEO4J_dbms_memory_transaction_max__size: 512M
+        ports:
+          - 7474:7474
+          - 7687:7687
+        options: >-
+          --health-cmd "curl -f http://localhost:7474/browser/ || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7.2.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --extras azure
+          # Ensure email-validator is available
+          poetry run pip install email-validator
+      - name: Initialize Neo4j database
+        run: |
+          # Initialize Neo4j with fixtures
+          mkdir -p tests/fixtures/cypher
+
+          # Create schema initialization script
+          cat > tests/fixtures/cypher/01_init_schema.cypher << 'EOF'
+          // Schema Initialization for CI
+          MATCH (n) DETACH DELETE n;
+          CREATE CONSTRAINT unique_file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE;
+          CREATE CONSTRAINT unique_directory_path IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE;
+          CREATE CONSTRAINT unique_function_id IF NOT EXISTS FOR (f:Function) REQUIRE f.id IS UNIQUE;
+          CREATE CONSTRAINT unique_class_id IF NOT EXISTS FOR (c:Class) REQUIRE c.id IS UNIQUE;
+          CREATE INDEX file_name IF NOT EXISTS FOR (f:File) ON (f.name);
+          EOF
+
+          # Run the cypher script using Neo4j driver
+          poetry run python -c "
+          from neo4j import GraphDatabase
+          uri = 'bolt://localhost:7687'
+          driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
+          with driver.session(database='codestory-test') as session:
+              with open('tests/fixtures/cypher/01_init_schema.cypher', 'r') as f:
+                  script = f.read()
+                  session.run(script)
+          driver.close()
+          print('Neo4j database initialized for integration tests')
+          "
+      - name: Set up environment variables
+        run: |
+          # Set up environment variables for tests
+          echo "NEO4J_URI=bolt://localhost:7687" >> $GITHUB_ENV
+          echo "NEO4J_USERNAME=neo4j" >> $GITHUB_ENV
+          echo "NEO4J_PASSWORD=password" >> $GITHUB_ENV
+          echo "NEO4J_DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "NEO4J__URI=bolt://localhost:7687" >> $GITHUB_ENV
+          echo "NEO4J__USERNAME=neo4j" >> $GITHUB_ENV
+          echo "NEO4J__PASSWORD=password" >> $GITHUB_ENV
+          echo "NEO4J__DATABASE=codestory-test" >> $GITHUB_ENV
+          echo "REDIS_URI=redis://localhost:6379/0" >> $GITHUB_ENV
+          echo "REDIS__URI=redis://localhost:6379/0" >> $GITHUB_ENV
+          echo "REDIS_HOST=localhost" >> $GITHUB_ENV
+          echo "REDIS_PORT=6379" >> $GITHUB_ENV
+          echo "OPENAI_API_KEY=sk-test-key-openai" >> $GITHUB_ENV
+          echo "OPENAI__API_KEY=sk-test-key-openai" >> $GITHUB_ENV
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH" >> $GITHUB_ENV
+
+          # Create log directory
+          mkdir -p logs
+      - name: Start Celery worker
+        run: |
+          # Start a celery worker in the background for integration tests
+          poetry run celery -A codestory.ingestion_pipeline.celery_app:app worker \
+            -l info -Q ingestion --detach \
+            --logfile=logs/celery.log \
+            --pidfile=.celery.pid
+
+          # Wait for worker to start
+          sleep 5
+
+          # Verify worker is running
+          if [[ -f .celery.pid ]] && kill -0 $(cat .celery.pid) 2>/dev/null; then
+            echo "Celery worker started successfully with PID: $(cat .celery.pid)"
+          else
+            echo "Warning: Celery worker may not have started properly"
+            cat logs/celery.log || echo "No celery log file found"
+          fi
+      - name: Run basic integration tests
+        run: |
+          # Run the most stable integration tests first
+          poetry run pytest tests/integration/test_graphdb -v
+
+          # Run a subset of ingestion pipeline tests that don't require full Celery
+          poetry run pytest tests/integration/test_ingestion_pipeline/test_filesystem_direct.py -v
+      - name: Run advanced integration tests
+        run: |
+          # Run more comprehensive integration tests
+          poetry run pytest tests/integration/test_ingestion_pipeline -v -k "not test_full_pipeline_integration"
 
   test-gui:
     name: GUI Tests
