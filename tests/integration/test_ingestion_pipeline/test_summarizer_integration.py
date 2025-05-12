@@ -168,16 +168,16 @@ Welcome to the documentation for the sample repository.
 @pytest.fixture
 def neo4j_connector():
     """Create a Neo4j connector for testing."""
-    settings = get_settings()
+    # Use direct connection parameters for test environment
     connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        database=settings.neo4j.database,
+        uri="bolt://localhost:7688",  # Test port from docker-compose.test.yml
+        username="neo4j",
+        password="password",
+        database="codestory-test",
     )
 
     # Clear the database before each test
-    connector.run_query("MATCH (n) DETACH DELETE n")
+    connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
 
     yield connector
 
@@ -215,9 +215,10 @@ def initialized_repo(sample_repo, neo4j_connector):
     # In a real scenario, these would be created by the Blarify step
 
     # Find the app.py file
-    app_file = neo4j_connector.run_query(
-        "MATCH (f:File {path: 'src/main/app.py'}) RETURN ID(f) as id", fetch_one=True
+    app_file_results = neo4j_connector.execute_query(
+        "MATCH (f:File {path: 'src/main/app.py'}) RETURN ID(f) as id"
     )
+    app_file = app_file_results[0] if app_file_results and len(app_file_results) > 0 else None
 
     if app_file:
         app_file_id = app_file["id"]
@@ -235,9 +236,10 @@ def initialized_repo(sample_repo, neo4j_connector):
         RETURN ID(c) as id
         """
 
-        class_result = neo4j_connector.run_query(
-            class_query, parameters={"file_id": app_file_id}, fetch_one=True
+        class_results = neo4j_connector.execute_query(
+            class_query, params={"file_id": app_file_id}
         )
+        class_result = class_results[0] if class_results and len(class_results) > 0 else None
 
         class_id = class_result["id"]
 
@@ -266,7 +268,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         ]
 
         for query in method_queries:
-            neo4j_connector.run_query(query, parameters={"class_id": class_id})
+            neo4j_connector.execute_query(query, params={"class_id": class_id}, write=True)
 
         # Add a Function node for main
         main_query = """
@@ -280,7 +282,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         CREATE (file)-[:CONTAINS]->(f)
         """
 
-        neo4j_connector.run_query(main_query, parameters={"file_id": app_file_id})
+        neo4j_connector.execute_query(main_query, params={"file_id": app_file_id}, write=True)
 
     # Return the sample repository path
     return sample_repo
@@ -313,9 +315,10 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 
     # Verify that summaries were created in Neo4j
     # 1. Count the number of Summary nodes
-    summary_count = neo4j_connector.run_query(
-        "MATCH (s:Summary) RETURN COUNT(s) as count", fetch_one=True
-    )["count"]
+    summary_result = neo4j_connector.execute_query(
+        "MATCH (s:Summary) RETURN COUNT(s) as count"
+    )
+    summary_count = summary_result[0]["count"] if summary_result and len(summary_result) > 0 else 0
 
     # We should have summaries for:
     # - The repository
@@ -328,78 +331,78 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
     assert summary_count >= 10, f"Expected at least 10 summaries, got {summary_count}"
 
     # 2. Check that file nodes have summaries
-    file_summaries = neo4j_connector.run_query(
+    file_summaries_result = neo4j_connector.execute_query(
         """
         MATCH (f:File)-[:HAS_SUMMARY]->(s:Summary)
         RETURN COUNT(s) as count
-        """,
-        fetch_one=True,
-    )["count"]
+        """
+    )
+    file_summaries = file_summaries_result[0]["count"] if file_summaries_result and len(file_summaries_result) > 0 else 0
 
     assert (
         file_summaries >= 4
     ), f"Expected summaries for at least 4 files, got {file_summaries}"
 
     # 3. Check that directory nodes have summaries
-    dir_summaries = neo4j_connector.run_query(
+    dir_summaries_result = neo4j_connector.execute_query(
         """
         MATCH (d:Directory)-[:HAS_SUMMARY]->(s:Summary)
         RETURN COUNT(s) as count
-        """,
-        fetch_one=True,
-    )["count"]
+        """
+    )
+    dir_summaries = dir_summaries_result[0]["count"] if dir_summaries_result and len(dir_summaries_result) > 0 else 0
 
     assert (
         dir_summaries >= 4
     ), f"Expected summaries for at least 4 directories, got {dir_summaries}"
 
     # 4. Check that class nodes have summaries
-    class_summaries = neo4j_connector.run_query(
+    class_summaries_result = neo4j_connector.execute_query(
         """
         MATCH (c:Class)-[:HAS_SUMMARY]->(s:Summary)
         RETURN COUNT(s) as count
-        """,
-        fetch_one=True,
-    )["count"]
+        """
+    )
+    class_summaries = class_summaries_result[0]["count"] if class_summaries_result and len(class_summaries_result) > 0 else 0
 
     assert (
         class_summaries >= 1
     ), f"Expected summaries for at least 1 class, got {class_summaries}"
 
     # 5. Check that method nodes have summaries
-    method_summaries = neo4j_connector.run_query(
+    method_summaries_result = neo4j_connector.execute_query(
         """
         MATCH (m:Method)-[:HAS_SUMMARY]->(s:Summary)
         RETURN COUNT(s) as count
-        """,
-        fetch_one=True,
-    )["count"]
+        """
+    )
+    method_summaries = method_summaries_result[0]["count"] if method_summaries_result and len(method_summaries_result) > 0 else 0
 
     assert (
         method_summaries >= 2
     ), f"Expected summaries for at least 2 methods, got {method_summaries}"
 
     # 6. Check that function nodes have summaries
-    function_summaries = neo4j_connector.run_query(
+    function_summaries_result = neo4j_connector.execute_query(
         """
         MATCH (f:Function)-[:HAS_SUMMARY]->(s:Summary)
         RETURN COUNT(s) as count
-        """,
-        fetch_one=True,
-    )["count"]
+        """
+    )
+    function_summaries = function_summaries_result[0]["count"] if function_summaries_result and len(function_summaries_result) > 0 else 0
 
     assert (
         function_summaries >= 1
     ), f"Expected summaries for at least 1 function, got {function_summaries}"
 
     # 7. Check summary content
-    sample_summary = neo4j_connector.run_query(
+    sample_summary_result = neo4j_connector.execute_query(
         """
         MATCH (s:Summary)
         RETURN s.text as text LIMIT 1
-        """,
-        fetch_one=True,
-    )["text"]
+        """
+    )
+    sample_summary = sample_summary_result[0]["text"] if sample_summary_result and len(sample_summary_result) > 0 else ""
 
     assert (
         "generated summary" in sample_summary.lower()
@@ -437,9 +440,10 @@ def test_summarizer_step_ingestion_update(
     assert status["status"] == "COMPLETED", f"Initial run failed: {status.get('error')}"
 
     # Record the number of summaries
-    initial_summary_count = neo4j_connector.run_query(
-        "MATCH (s:Summary) RETURN COUNT(s) as count", fetch_one=True
-    )["count"]
+    initial_summary_result = neo4j_connector.execute_query(
+        "MATCH (s:Summary) RETURN COUNT(s) as count"
+    )
+    initial_summary_count = initial_summary_result[0]["count"] if initial_summary_result and len(initial_summary_result) > 0 else 0
 
     # Modify the repository by adding a new file
     new_file_path = Path(initialized_repo) / "src" / "main" / "new_module.py"
@@ -470,16 +474,19 @@ def new_function():
     ), f"Filesystem update failed: {status.get('error')}"
 
     # Find the new file node
-    new_file = neo4j_connector.find_node("File", {"path": "src/main/new_module.py"})
-    assert new_file is not None, "New file was not added to the database"
+    new_file_check = neo4j_connector.execute_query(
+        "MATCH (f:File {path: 'src/main/new_module.py'}) RETURN f LIMIT 1"
+    )
+    assert new_file_check and len(new_file_check) > 0, "New file was not added to the database"
 
     # Add a Function node for the new file
-    new_file_id = neo4j_connector.run_query(
-        "MATCH (f:File {path: 'src/main/new_module.py'}) RETURN ID(f) as id",
-        fetch_one=True,
-    )["id"]
+    new_file_id_result = neo4j_connector.execute_query(
+        "MATCH (f:File {path: 'src/main/new_module.py'}) RETURN ID(f) as id"
+    )
+    new_file_id = new_file_id_result[0]["id"] if new_file_id_result and len(new_file_id_result) > 0 else None
+    assert new_file_id is not None, "Could not get ID for the new file"
 
-    neo4j_connector.run_query(
+    neo4j_connector.execute_query(
         """
         CREATE (f:Function {
             name: 'new_function',
@@ -490,7 +497,8 @@ def new_function():
         MATCH (file:File) WHERE ID(file) = $file_id
         CREATE (file)-[:CONTAINS]->(f)
         """,
-        parameters={"file_id": new_file_id},
+        params={"file_id": new_file_id},
+        write=True
     )
 
     # Run the summarizer update
@@ -511,9 +519,10 @@ def new_function():
     assert status["status"] == "COMPLETED", f"Update failed: {status.get('error')}"
 
     # Verify that new summaries were created
-    updated_summary_count = neo4j_connector.run_query(
-        "MATCH (s:Summary) RETURN COUNT(s) as count", fetch_one=True
-    )["count"]
+    updated_summary_result = neo4j_connector.execute_query(
+        "MATCH (s:Summary) RETURN COUNT(s) as count"
+    )
+    updated_summary_count = updated_summary_result[0]["count"] if updated_summary_result and len(updated_summary_result) > 0 else 0
 
     # We should have at least one new summary for the new file
     assert (
@@ -521,13 +530,13 @@ def new_function():
     ), f"Expected more summaries after update, but got {updated_summary_count} (was {initial_summary_count})"
 
     # Check that the new file has a summary
-    new_file_summary = neo4j_connector.run_query(
+    new_file_summary_result = neo4j_connector.execute_query(
         """
         MATCH (f:File {path: 'src/main/new_module.py'})-[:HAS_SUMMARY]->(s:Summary)
         RETURN s.text as text
-        """,
-        fetch_one=True,
+        """
     )
+    new_file_summary = new_file_summary_result[0] if new_file_summary_result and len(new_file_summary_result) > 0 else None
 
     assert new_file_summary is not None, "New file does not have a summary"
     assert (
