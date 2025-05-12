@@ -133,7 +133,7 @@ jobs:
         run: npm ci
       - name: Run Vitest
         working-directory: .
-        run: npm test -- --environment jsdom
+        run: npm test
 
   # Image building and pushing to registry - commented out for now
   # Uncomment and configure when ready for centralized image distribution
