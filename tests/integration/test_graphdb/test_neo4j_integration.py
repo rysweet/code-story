@@ -229,11 +229,17 @@ def test_schema_verification(neo4j_connector: Neo4jConnector) -> None:
 
 
 def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
-    """Test vector similarity search functionality."""
+    """Test vector similarity search functionality using Neo4j GDS."""
     # Create test nodes with embeddings
     embedding1 = [0.1, 0.2, 0.3, 0.4]
     embedding2 = [0.5, 0.6, 0.7, 0.8]
     embedding3 = [0.9, 0.8, 0.7, 0.6]
+
+    # Clear any existing nodes first
+    neo4j_connector.execute_query(
+        "MATCH (n:VectorNode) DETACH DELETE n",
+        write=True,
+    )
 
     # Create nodes with test embeddings
     neo4j_connector.execute_query(
@@ -260,27 +266,33 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         write=True,
     )
 
-    # Create vector index for similarity search (or use existing one)
+    # Create vector index for similarity search
+    # First drop any existing index with the same name to avoid conflicts
     try:
         neo4j_connector.execute_query(
-            """
-            CREATE VECTOR INDEX node_embedding 
-            FOR (n:VectorNode) 
-            ON (n.embedding)
-            OPTIONS {indexConfig: {
-                `vector.dimensions`: 4,
-                `vector.similarity_function`: 'cosine'
-            }}
-        """,
+            "DROP INDEX node_embedding IF EXISTS",
             write=True,
         )
     except Exception as e:
-        # If the error is because the index already exists, that's fine
-        if "already exists" not in str(e):
-            raise e
+        # Ignore errors when dropping index
+        print(f"Warning: Failed to drop existing index: {str(e)}")
 
-    # Wait for index to be available
-    time.sleep(1)
+    # Create the vector index
+    neo4j_connector.execute_query(
+        """
+        CREATE VECTOR INDEX node_embedding
+        FOR (n:VectorNode)
+        ON (n.embedding)
+        OPTIONS {indexConfig: {
+            `vector.dimensions`: 4,
+            `vector.similarity_function`: 'cosine'
+        }}
+    """,
+        write=True,
+    )
+
+    # Wait for index to be fully available
+    time.sleep(2)
 
     # Test similarity search
     # Query with embedding similar to Node3

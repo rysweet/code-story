@@ -52,9 +52,7 @@ logger = logging.getLogger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def retry_on_transient(
-    max_retries: int = 3, backoff_factor: float = 1.5
-) -> Callable[[F], F]:
+def retry_on_transient(max_retries: int = 3, backoff_factor: float = 1.5) -> Callable[[F], F]:
     """Decorator for retrying operations on transient Neo4j errors.
 
     Args:
@@ -155,9 +153,7 @@ class Neo4jConnector:
             self.database = database or "neo4j"
 
             # Set default configuration options
-            self.max_connection_pool_size = config_options.get(
-                "max_connection_pool_size", 50
-            )
+            self.max_connection_pool_size = config_options.get("max_connection_pool_size", 50)
             self.connection_timeout = config_options.get("connection_timeout", 30)
 
             # In tests we provide all required parameters
@@ -175,16 +171,12 @@ class Neo4jConnector:
                     # Fall back to settings if parameters not provided
                     self.uri = self.uri or settings.neo4j.uri
                     self.username = self.username or settings.neo4j.username
-                    self.password = (
-                        self.password or settings.neo4j.password.get_secret_value()
-                    )
+                    self.password = self.password or settings.neo4j.password.get_secret_value()
                     self.database = self.database or settings.neo4j.database
 
                     # Get additional configuration from settings if not provided in config_options
                     if "max_connection_pool_size" not in config_options:
-                        self.max_connection_pool_size = (
-                            settings.neo4j.max_connection_pool_size
-                        )
+                        self.max_connection_pool_size = settings.neo4j.max_connection_pool_size
 
                     if "connection_timeout" not in config_options:
                         self.connection_timeout = settings.neo4j.connection_timeout
@@ -274,13 +266,9 @@ class Neo4jConnector:
             session = self.driver.session(database=self.database)
             try:
                 if write:
-                    result = session.execute_write(
-                        self._transaction_function, query, params or {}
-                    )
+                    result = session.execute_write(self._transaction_function, query, params or {})
                 else:
-                    result = session.execute_read(
-                        self._transaction_function, query, params or {}
-                    )
+                    result = session.execute_read(self._transaction_function, query, params or {})
 
                 return result
             finally:
@@ -332,9 +320,7 @@ class Neo4jConnector:
 
         try:
             query_type = QueryType.WRITE if write else QueryType.READ
-            logger.debug(
-                f"Executing {len(queries)} {query_type.value} queries in transaction"
-            )
+            logger.debug(f"Executing {len(queries)} {query_type.value} queries in transaction")
 
             # Special handling for mock driver in tests
             if isinstance(self.driver, MagicMock):
@@ -379,9 +365,7 @@ class Neo4jConnector:
                 cause=e,
             )
 
-    def _transaction_function(
-        self, tx, query: str, params: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _transaction_function(self, tx, query: str, params: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Execute a single query in a transaction.
 
         Args:
@@ -452,9 +436,7 @@ class Neo4jConnector:
             SchemaError: If the index creation fails
         """
         try:
-            create_custom_vector_index(
-                self, label, property_name, dimensions, similarity
-            )
+            create_custom_vector_index(self, label, property_name, dimensions, similarity)
             logger.info(f"Vector index created for {label}.{property_name}")
         except Exception as e:
             logger.error(f"Failed to create vector index: {str(e)}")
@@ -489,9 +471,7 @@ class Neo4jConnector:
             Dict: The found node data or None if not found
         """
         # Create a match condition for each property
-        match_conditions = " AND ".join(
-            [f"n.{key} = ${key}" for key in properties.keys()]
-        )
+        match_conditions = " AND ".join([f"n.{key} = ${key}" for key in properties.keys()])
 
         query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
         result = self.execute_query(query, params=properties)
@@ -566,84 +546,29 @@ class Neo4jConnector:
         start_time = time.time()
 
         try:
-            # In test environment, use manual calculation of cosine similarity
-            if os.environ.get("CODESTORY_TEST_ENV") == "true" or self.database == "testdb":
-                logger.info("Using manual cosine similarity calculation for tests")
+            # Use GDS for all environments (including tests)
+            # Build the Cypher query with optional similarity cutoff
+            cypher = f"""
+            MATCH (n:{node_label})
+            WHERE n.{property_name} IS NOT NULL
+            WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
+            """
 
-                # First get all nodes with the label
-                cypher = f"""
-                MATCH (n:{node_label})
-                WHERE n.{property_name} IS NOT NULL
-                RETURN n
-                """
+            if similarity_cutoff is not None:
+                cypher += f"\nWHERE score >= {similarity_cutoff}"
 
-                nodes = self.execute_query(cypher)
+            cypher += """
+            ORDER BY score DESC
+            LIMIT $limit
+            RETURN n, score
+            """
 
-                # Calculate similarity scores manually
-                results = []
-                for node_data in nodes:
-                    node = node_data['n']
+            result = self.execute_query(cypher, {"embedding": query_embedding, "limit": limit})
 
-                    # Skip nodes without embeddings
-                    if property_name not in node:
-                        continue
+            # Record metric
+            record_vector_search(node_label, time.time() - start_time)
 
-                    # Get the node's embedding
-                    node_embedding = node[property_name]
-
-                    # Calculate cosine similarity manually
-                    dot_product = sum(a * b for a, b in zip(query_embedding, node_embedding))
-                    magnitude_a = sum(a * a for a in query_embedding) ** 0.5
-                    magnitude_b = sum(b * b for b in node_embedding) ** 0.5
-
-                    # Avoid division by zero
-                    if magnitude_a == 0 or magnitude_b == 0:
-                        score = 0
-                    else:
-                        score = dot_product / (magnitude_a * magnitude_b)
-
-                    # Apply similarity cutoff if specified
-                    if similarity_cutoff is not None and score < similarity_cutoff:
-                        continue
-
-                    results.append({"n": node, "score": score})
-
-                # Sort by score in descending order
-                results.sort(key=lambda x: x["score"], reverse=True)
-
-                # Apply limit
-                results = results[:limit]
-
-                # Record metric
-                record_vector_search(node_label, time.time() - start_time)
-
-                return results
-            else:
-                # Use GDS for production environments
-                # Build the Cypher query with optional similarity cutoff
-                cypher = f"""
-                MATCH (n:{node_label})
-                WHERE n.{property_name} IS NOT NULL
-                WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
-                """
-
-                if similarity_cutoff is not None:
-                    cypher += f"\nWHERE score >= {similarity_cutoff}"
-
-                cypher += """
-                ORDER BY score DESC
-                LIMIT $limit
-                RETURN n, score
-                """
-
-                result = self.execute_query(
-                    cypher, {"embedding": query_embedding, "limit": limit}
-                )
-
-                # Record metric
-                record_vector_search(node_label, time.time() - start_time)
-
-                return result
+            return result
 
         except Exception as e:
             logger.error(f"Vector search failed: {str(e)}")
@@ -720,9 +645,7 @@ class Neo4jConnector:
 
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, lambda: self.execute_query(query, params, write)
-        )
+        return await loop.run_in_executor(None, lambda: self.execute_query(query, params, write))
 
     async def execute_many_async(
         self,

@@ -1,8 +1,11 @@
-// Vector Test Data for similarity search testing
+// Vector Test Data for similarity search testing using GDS
 // This file creates test nodes with embeddings for vector similarity search tests
 
 // First clean up any existing test vector nodes
 MATCH (n:VectorNode) DETACH DELETE n;
+
+// Drop existing vector index if it exists
+DROP INDEX node_embedding IF EXISTS;
 
 // Create test nodes with embeddings of various dimensions
 CREATE (n:VectorNode {
@@ -23,9 +26,9 @@ CREATE (n:VectorNode {
     embedding: [0.9, 0.8, 0.7, 0.6]
 });
 
-// Create a vector index for similarity search
-CREATE VECTOR INDEX node_embedding IF NOT EXISTS 
-FOR (n:VectorNode) 
+// Create a vector index for similarity search with GDS
+CREATE VECTOR INDEX node_embedding
+FOR (n:VectorNode)
 ON (n.embedding)
 OPTIONS {
     indexConfig: {
