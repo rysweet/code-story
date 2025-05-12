@@ -83,6 +83,11 @@ html_title = "Code Story Documentation"
 html_logo = None  # Add a logo image path if available
 html_favicon = None  # Add a favicon path if available
 
+# Add custom CSS
+html_css_files = [
+    "custom.css",
+]
+
 # Theme options
 html_theme_options = {
     "logo_only": False,

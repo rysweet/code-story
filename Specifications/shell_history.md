@@ -5,6 +5,14 @@
 - `cd /Users/ryan/src/msec/code-story && mkdir -p docs/{_build,_static,_templates,architecture,user_guides/workflows,developer_guides/extending,api,deployment}` - Creating documentation directory structure
 - `cd /Users/ryan/src/msec/code-story && ls -la docs` - Listing documentation directories
 - `cd /Users/ryan/src/msec/code-story && cat specs/16-documentation/documentation.md` - Reviewing documentation specifications
+- `cd /Users/ryan/src/msec/code-story && mkdir -p docs/_static/images` - Creating images directory for documentation
+- `cd /Users/ryan/src/msec/code-story && git add -A` - Adding all documentation files to git
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking git status
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Complete documentation implementation with Sphinx and Markdown support"` - Committing documentation implementation
+- `cd /Users/ryan/src/msec/code-story && git push` - Pushing changes to GitHub
+- `cd /Users/ryan/src/msec/code-story && git add docs/_static/custom.css docs/user_guides/installation.md docs/user_guides/cli_guide.md docs/architecture/components.md docs/developer_guides/extending/pipeline_steps.md` - Adding additional documentation files
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add detailed documentation content"` - Committing additional documentation content
+- `cd /Users/ryan/src/msec/code-story && git push` - Pushing changes to GitHub
 
 ## May 6, 2025
 - `git checkout -b claude-1st-impl` - Creating a new branch for implementation
