@@ -136,7 +136,7 @@ class FileSystemStep(PipelineStep):
             print(f"Task is ready. Successful: {result.successful()}")
             if result.successful():
                 try:
-                    task_result = result.get()
+                    task_result = result.result  # Fixed: Use result directly instead of blocking get()
                     print(f"Task result: {task_result}")
                     status_info.update(
                         {

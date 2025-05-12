@@ -188,7 +188,8 @@ class PipelineManager:
 
         # Get status from Celery
         status_task = get_job_status.apply_async(args=[task_id])
-        status_result = status_task.get()
+        # Add timeout for robustness - this is not in a task so it's not affected by the anti-pattern
+        status_result = status_task.get(timeout=30)
 
         # Update job info with latest status
         job_info.update(status_result)
@@ -224,7 +225,8 @@ class PipelineManager:
 
         # Stop the job
         stop_task = stop_job.apply_async(args=[task_id])
-        stop_result = stop_task.get()
+        # Add timeout for robustness - this is not in a task so it's not affected by the anti-pattern
+        stop_result = stop_task.get(timeout=30)
 
         # Update job info with stop result
         job_info.update(stop_result)
@@ -256,7 +258,8 @@ class PipelineManager:
 
         # Cancel the job (same as stop for Celery)
         stop_task = stop_job.apply_async(args=[task_id])
-        stop_result = stop_task.get()
+        # Add timeout for robustness - this is not in a task so it's not affected by the anti-pattern
+        stop_result = stop_task.get(timeout=30)
 
         # Update status to CANCELLED instead of STOPPED
         if stop_result["status"] == StepStatus.STOPPED:

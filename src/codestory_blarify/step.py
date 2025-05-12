@@ -145,7 +145,7 @@ class BlarifyStep(PipelineStep):
                     return {
                         "status": StepStatus.COMPLETED,
                         "message": "Task completed successfully",
-                        "result": result.get(),
+                        "result": result.result,  # Fixed: Use result directly instead of blocking get()
                     }
                 elif result.state == "FAILURE":
                     return {
@@ -179,7 +179,7 @@ class BlarifyStep(PipelineStep):
             return {
                 "status": StepStatus.COMPLETED,
                 "message": "Task completed successfully",
-                "result": result.get(),
+                "result": result.result,  # Fixed: Use result directly instead of blocking get()
             }
         elif result.state == "FAILURE":
             return {
