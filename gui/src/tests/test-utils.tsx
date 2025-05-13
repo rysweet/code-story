@@ -1,7 +1,7 @@
 import React, { ReactElement } from 'react';
 import { render as rtlRender, RenderOptions } from '@testing-library/react';
-import { MantineProvider } from '@mantine/core';
 import { vi } from 'vitest';
+import { MantineTestProvider } from './MantineTestProvider';
 
 /**
  * Custom render function that wraps components with necessary providers
@@ -10,33 +10,27 @@ const render = (
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'> & {
     colorScheme?: 'light' | 'dark';
+    withRouter?: boolean;
+    withRedux?: boolean;
   }
 ) => {
-  const { colorScheme = 'light', ...renderOptions } = options || {};
+  const {
+    colorScheme = 'light',
+    withRouter = false,
+    withRedux = false,
+    ...renderOptions
+  } = options || {};
 
-  // Mock the Mantine hooks used in the components
-  vi.mock('@mantine/core', async () => {
-    const actual = await vi.importActual('@mantine/core');
-    return {
-      ...actual,
-      useMantineColorScheme: () => ({
-        colorScheme,
-        toggleColorScheme: vi.fn(),
-        setColorScheme: vi.fn(),
-      }),
-    };
-  });
-
-  // Provide the Mantine context
+  // Provide the Mantine context using our dedicated provider
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
     return (
-      <MantineProvider
-        theme={{ colorScheme }}
-        withNormalizeCSS
-        withGlobalStyles
+      <MantineTestProvider
+        colorScheme={colorScheme}
+        withRouter={withRouter}
+        withRedux={withRedux}
       >
         {children}
-      </MantineProvider>
+      </MantineTestProvider>
     );
   };
 

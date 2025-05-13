@@ -21,7 +21,7 @@ def neo4j_connector():
         uri="bolt://localhost:7688",  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
-        database="codestory-test",  # Database defined in docker-compose.test.yml
+        database="testdb",  # Database defined in docker-compose.test.yml
     )
 
     try:
@@ -49,8 +49,8 @@ def test_client(neo4j_connector):
     os.environ["CODESTORY_SERVICE_AUTH_ENABLED"] = "false"
 
     # Set up test environment variables for Neo4j
-    os.environ["NEO4J_DATABASE"] = "codestory-test"
-    os.environ["CS_NEO4J_DATABASE"] = "codestory-test"
+    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["CS_NEO4J_DATABASE"] = "testdb"
     os.environ["NEO4J_URI"] = "bolt://localhost:7688"
     os.environ["CS_NEO4J_URI"] = "bolt://localhost:7688"
     os.environ["NEO4J_USERNAME"] = "neo4j"
@@ -59,8 +59,8 @@ def test_client(neo4j_connector):
     os.environ["CS_NEO4J_PASSWORD"] = "password"
 
     # Also set these for internal services and components
-    os.environ["GRAPHDB_DATABASE"] = "codestory-test"
-    os.environ["CODESTORY_NEO4J_DATABASE"] = "codestory-test"
+    os.environ["GRAPHDB_DATABASE"] = "testdb"
+    os.environ["CODESTORY_NEO4J_DATABASE"] = "testdb"
 
     # Create a test user instance for authentication
     test_user = {
@@ -87,7 +87,7 @@ def test_client(neo4j_connector):
     @asynccontextmanager
     async def test_lifespan(app):
         # Explicitly set the database name
-        neo4j_connector.database = "codestory-test"
+        neo4j_connector.database = "testdb"
         app.state.db = neo4j_connector
         yield
 
@@ -112,7 +112,7 @@ def test_client(neo4j_connector):
         }
 
         # Ensure any new Neo4j connectors use the test database
-        os.environ["NEO4J_DATABASE"] = "codestory-test"
+        os.environ["NEO4J_DATABASE"] = "testdb"
 
         test_client = TestClient(app)
         yield test_client
@@ -136,7 +136,7 @@ def test_client(neo4j_connector):
 def test_config_api_simple(test_client):
     """Test the configuration API endpoints with basic validation."""
     # Ensure DB is configured correctly for any new connectors
-    os.environ["NEO4J_DATABASE"] = "codestory-test"
+    os.environ["NEO4J_DATABASE"] = "testdb"
 
     # Test GET /v1/config
     response = test_client.get("/v1/config")

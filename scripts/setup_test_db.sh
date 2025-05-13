@@ -38,7 +38,7 @@ docker-compose -f docker-compose.test.yml exec -T neo4j cypher-shell -u neo4j -p
 export NEO4J_URI="bolt://localhost:7688"
 export NEO4J_USERNAME="neo4j"
 export NEO4J_PASSWORD="password"
-export NEO4J_DATABASE="codestory-test"
+export NEO4J_DATABASE="testdb"
 
 echo "Neo4j test environment is ready. Environment variables have been set:"
 echo "NEO4J_URI=$NEO4J_URI"

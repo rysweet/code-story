@@ -6,7 +6,7 @@ import time
 from typing import Dict, List, Any, Generator
 
 # Set environment variables for tests
-os.environ["NEO4J_DATABASE"] = "testdb"
+os.environ["NEO4J_DATABASE"] = "testdb"  # Match the database name in docker-compose.test.yml
 os.environ["CODESTORY_TEST_ENV"] = "true"
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -28,15 +28,15 @@ from codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
 def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     """Create a Neo4j connector for testing with a test container."""
     # Force testdb usage - using environment variables or defaults
-    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7688")
     username = os.environ.get("NEO4J_USERNAME", "neo4j")
     password = os.environ.get("NEO4J_PASSWORD", "password")
-    database = os.environ.get("NEO4J_DATABASE", "testdb")
+    database = "testdb"  # Force database to match the docker-compose.test.yml
 
     print(f"Using Neo4j connection: {uri}, database: {database}")
 
-    # Create connector with forced parameters
-    # First set the env var for the database directly
+    # Set environment variables for test
+    os.environ["NEO4J_DATABASE"] = database
     os.environ["CODESTORY_TEST_DB"] = database
 
     connector = Neo4jConnector(
