@@ -42,7 +42,7 @@ import Layout from '../Layout';
 
 describe('Layout', () => {
   // Setup localStorage mock for each test in this suite
-  vi.beforeEach(() => {
+  beforeEach(() => {
     const localStorageMock = {
       getItem: vi.fn((key) => key === 'colorScheme' ? 'light' : null),
       setItem: vi.fn(),

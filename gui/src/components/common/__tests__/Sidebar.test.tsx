@@ -74,13 +74,15 @@ describe('Sidebar', () => {
       </MantineProvider>
     );
 
-    // There should be 6 navigation links
+    // There should be navigation links
     const navLinks = screen.getAllByTestId('nav-link');
-    expect(navLinks.length).toBe(6);
+    expect(navLinks).toBeDefined();
+    expect(navLinks.length).toEqual(6);
 
     // Check for icons
     const icons = screen.getAllByTestId('nav-icon');
-    expect(icons.length).toBe(6);
+    expect(icons).toBeDefined();
+    expect(icons.length).toEqual(6);
   });
 
   it('should render full labels and descriptions when not collapsed', () => {
@@ -92,11 +94,13 @@ describe('Sidebar', () => {
 
     // Labels should exist
     const labels = screen.getAllByTestId('nav-label');
-    expect(labels.length).toBe(6);
+    expect(labels).toBeDefined();
+    expect(labels.length).toEqual(6);
 
     // Descriptions should exist
     const descriptions = screen.getAllByTestId('nav-description');
-    expect(descriptions.length).toBe(6);
+    expect(descriptions).toBeDefined();
+    expect(descriptions.length).toEqual(6);
   });
 
   it('should not render labels and descriptions when collapsed', () => {
@@ -107,8 +111,10 @@ describe('Sidebar', () => {
     );
 
     // Labels and descriptions should not exist (element may exist but be empty)
-    expect(screen.queryAllByTestId('nav-label').length).toBe(0);
-    expect(screen.queryAllByTestId('nav-description').length).toBe(0);
+    const labels = screen.queryAllByTestId('nav-label');
+    const descriptions = screen.queryAllByTestId('nav-description');
+    expect(labels.length).toEqual(0);
+    expect(descriptions.length).toEqual(0);
   });
 
   it('should highlight the active navigation item', () => {
@@ -122,11 +128,11 @@ describe('Sidebar', () => {
     const navLinks = screen.getAllByTestId('nav-link');
 
     // Check that the Graph item is active (first in the list)
-    expect(navLinks[0]).toHaveAttribute('data-active', 'true');
+    expect(navLinks[0].getAttribute('data-active')).toBe('true');
 
     // Other items should not be active
     for (let i = 1; i < navLinks.length; i++) {
-      expect(navLinks[i]).toHaveAttribute('data-active', 'false');
+      expect(navLinks[i].getAttribute('data-active')).toBe('false');
     }
   });
 
@@ -160,7 +166,7 @@ describe('Sidebar', () => {
     expect(badges.length).toBeGreaterThan(0);
 
     // The badge should say "Jobs"
-    expect(badges[0]).toHaveTextContent('Jobs');
+    expect(badges[0].textContent).toContain('Jobs');
   });
 
   it('should not show badges when collapsed', () => {

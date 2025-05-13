@@ -74,7 +74,7 @@ describe('ErrorBoundary', () => {
       </MantineProvider>
     );
 
-    expect(screen.getByText('Test content')).toBeInTheDocument();
+    expect(screen.getByText('Test content')).toBeDefined();
   });
 
   it('should render error message when an error occurs', () => {
@@ -87,27 +87,27 @@ describe('ErrorBoundary', () => {
     );
 
     const alert = screen.getByTestId('alert');
-    expect(alert).toHaveAttribute('data-title', 'Something went wrong');
-    expect(alert).toHaveAttribute('data-color', 'red');
-    expect(alert).toHaveAttribute('data-variant', 'filled');
+    expect(alert.getAttribute('data-title')).toEqual('Something went wrong');
+    expect(alert.getAttribute('data-color')).toEqual('red');
+    expect(alert.getAttribute('data-variant')).toEqual('filled');
 
-    expect(screen.getByTestId('alert-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('alert-icon')).toBeDefined();
 
     // Get all text elements and check their contents
     const textElements = screen.getAllByTestId('text');
     const errorElement = textElements.find(el =>
       el.textContent === 'An error occurred while rendering this component.'
     );
-    expect(errorElement).toBeInTheDocument();
+    expect(errorElement).toBeDefined();
 
     // Error message should be displayed
     const errorMessages = screen.getAllByTestId('text');
     const errorMessageElement = errorMessages.find(el => el.textContent === 'Test error');
     expect(errorMessageElement).toBeDefined();
-    expect(errorMessageElement).toBeInTheDocument();
 
     // Try again button should be displayed
-    expect(screen.getByTestId('button')).toHaveTextContent('Try again');
+    const button = screen.getByTestId('button');
+    expect(button.textContent).toContain('Try again');
   });
 
   it('should render custom fallback when provided', () => {
@@ -119,7 +119,7 @@ describe('ErrorBoundary', () => {
       </MantineProvider>
     );
 
-    expect(screen.getByText('Custom fallback component')).toBeInTheDocument();
+    expect(screen.getByText('Custom fallback component')).toBeDefined();
   });
 
   it('should reset error state when Try Again button is clicked', () => {
@@ -134,8 +134,9 @@ describe('ErrorBoundary', () => {
       </MantineProvider>
     );
 
-    const tryAgainButton = screen.getByText('Try again');
-    fireEvent.click(tryAgainButton);
+    // Get the Try again button from the first error boundary
+    const tryAgainButtons = screen.getAllByText('Try again');
+    fireEvent.click(tryAgainButtons[0]);
 
     // Check that setState was called to reset the error state
     expect(ErrorBoundary.prototype.setState).toHaveBeenCalledWith({
