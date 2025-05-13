@@ -546,22 +546,70 @@ class Neo4jConnector:
         start_time = time.time()
 
         try:
-            # Use GDS for all environments (including tests)
-            # Build the Cypher query with optional similarity cutoff
-            cypher = f"""
-            MATCH (n:{node_label})
-            WHERE n.{property_name} IS NOT NULL
-            WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
-            """
+            # First check if GDS plugin is available
+            has_gds = True
+            try:
+                # Try a simple GDS function call to check if it's available
+                check_query = "RETURN gds.version() AS version"
+                self.execute_query(check_query)
+            except Exception as e:
+                # GDS plugin is not available, log a warning
+                logger.warning(f"Graph Data Science plugin not available: {str(e)}. Using fallback method.")
+                has_gds = False
 
-            if similarity_cutoff is not None:
-                cypher += f"\nWHERE score >= {similarity_cutoff}"
+            if has_gds:
+                # Use GDS for vector similarity when available
+                cypher = f"""
+                MATCH (n:{node_label})
+                WHERE n.{property_name} IS NOT NULL
+                WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
+                """
 
-            cypher += """
-            ORDER BY score DESC
-            LIMIT $limit
-            RETURN n, score
-            """
+                if similarity_cutoff is not None:
+                    cypher += f"\nWHERE score >= {similarity_cutoff}"
+
+                cypher += """
+                ORDER BY score DESC
+                LIMIT $limit
+                RETURN n, score
+                """
+            else:
+                # Fallback method using pure Cypher
+                # This is less efficient but works without GDS
+                # Implementing a basic vector similarity in pure Cypher
+                # This calculates cosine similarity manually
+                cypher = f"""
+                MATCH (n:{node_label})
+                WHERE n.{property_name} IS NOT NULL
+                WITH n, n.{property_name} AS vec1, $embedding AS vec2
+
+                // Calculate dot product
+                WITH n,
+                     REDUCE(dot = 0.0, i IN RANGE(0, SIZE(vec1)-1) |
+                         dot + vec1[i] * vec2[i]) AS dotProduct,
+
+                     // Calculate magnitudes
+                     SQRT(REDUCE(mag1 = 0.0, i IN RANGE(0, SIZE(vec1)-1) |
+                         mag1 + vec1[i] * vec1[i])) AS mag1,
+                     SQRT(REDUCE(mag2 = 0.0, i IN RANGE(0, SIZE(vec2)-1) |
+                         mag2 + vec2[i] * vec2[i])) AS mag2
+
+                // Calculate cosine similarity
+                WITH n,
+                     CASE
+                         WHEN mag1 * mag2 = 0 THEN 0
+                         ELSE dotProduct / (mag1 * mag2)
+                     END AS score
+                """
+
+                if similarity_cutoff is not None:
+                    cypher += f"\nWHERE score >= {similarity_cutoff}"
+
+                cypher += """
+                ORDER BY score DESC
+                LIMIT $limit
+                RETURN n, score
+                """
 
             result = self.execute_query(cypher, {"embedding": query_embedding, "limit": limit})
 

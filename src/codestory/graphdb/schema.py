@@ -145,20 +145,31 @@ def create_custom_vector_index(
     Raises:
         SchemaError: If the index creation fails
     """
-    query = get_vector_index_query(label, property_name, dimensions, similarity)
-
+    # First check if GDS plugin is available
+    has_gds = True
     try:
-        connector.execute_query(query, write=True)
+        # Try a simple GDS function call to check if it's available
+        check_query = "RETURN gds.version() AS version"
+        connector.execute_query(check_query)
     except Exception as e:
-        raise SchemaError(
-            f"Failed to create vector index on {label}.{property_name}",
-            operation="create_vector_index",
-            cause=e,
-            label=label,
-            property=property_name,
-            dimensions=dimensions,
-            similarity=similarity,
-        )
+        # GDS plugin is not available, log a warning
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Graph Data Science plugin not available: {str(e)}. Vector indexes will not be created.")
+        has_gds = False
+        # Return early instead of raising an error - vector search will use fallback method
+        return
+
+    if has_gds:
+        query = get_vector_index_query(label, property_name, dimensions, similarity)
+        try:
+            connector.execute_query(query, write=True)
+        except Exception as e:
+            # Log the error but don't fail, as we can still use the fallback method
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to create vector index on {label}.{property_name}: {str(e)}")
+            logger.warning("Vector searches will still work using a fallback algorithm, but will be less efficient.")
 
 
 def initialize_schema(connector, force: bool = False) -> None:
