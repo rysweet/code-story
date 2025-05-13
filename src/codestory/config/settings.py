@@ -291,10 +291,15 @@ class Settings(BaseSettings):
         if os.path.exists(config_file):
             try:
                 with open(config_file, "rb") as f:
+                    print(f"Loading config from {config_file}")
                     toml_data = tomli.load(f)
+                    print(f"Config loaded, keys: {', '.join(toml_data.keys())}")
                     toml_settings = flatten_dict(toml_data)
+                    print(f"Flattened settings created, length: {len(toml_settings)}")
             except Exception as e:
                 print(f"Error loading {config_file}: {e}")
+                import traceback
+                traceback.print_exc()
         elif in_test_env:
             # Provide default settings for tests if no config file is found
             print("No test configuration found. Using default test settings.")
@@ -387,6 +392,42 @@ class Settings(BaseSettings):
         # Merge settings, with environment variables taking precedence
         merged_settings = {**toml_settings, **data}
 
+        # Debug the settings before initialization
+        print(f"Merged settings keys: {', '.join(merged_settings.keys())}")
+        print(f"Number of merged settings: {len(merged_settings)}")
+
+        # Check if we have flattened settings (looking for keys with separator)
+        has_flattened = any("__" in k for k in merged_settings.keys())
+
+        if has_flattened:
+            print("Detected flattened settings, converting to nested structure...")
+            # Convert flattened settings to nested structure
+            nested_settings = unflatten_dict(merged_settings)
+            print(f"Nested settings top-level keys: {', '.join(nested_settings.keys())}")
+
+            # Ensure all required fields exist
+            required_fields = ["neo4j", "redis", "openai", "azure_openai", "service",
+                           "ingestion", "plugins", "telemetry", "interface", "azure"]
+            for field in required_fields:
+                if field not in nested_settings:
+                    print(f"Adding missing required nested field: {field}")
+                    nested_settings[field] = {}
+
+            # Initialize with nested settings
+            print("Initializing with nested settings")
+            super().__init__(**nested_settings)
+            return
+
+        # If not using nested settings, create empty settings directly for required fields
+        if in_test_env:
+            required_fields = ["neo4j", "redis", "openai", "azure_openai", "service",
+                           "ingestion", "plugins", "telemetry", "interface", "azure"]
+            for field in required_fields:
+                # Check if the field exists in any form (flat or nested)
+                if not any(k.startswith(f"{field}__") or k == field for k in merged_settings.keys()):
+                    print(f"Adding missing required field: {field}")
+                    merged_settings[field] = {}
+
         super().__init__(**merged_settings)
 
         # Load secrets from KeyVault if configured
@@ -468,6 +509,35 @@ def flatten_dict(
         else:
             items.append((new_key, v))
     return dict(items)
+
+def unflatten_dict(
+    d: Dict[str, Any], sep: str = "__"
+) -> Dict[str, Any]:
+    """Unflatten a dictionary with separator in keys into nested dictionaries.
+
+    Example:
+        {"neo4j__uri": "bolt://localhost:7687"} -> {"neo4j": {"uri": "bolt://localhost:7687"}}
+    """
+    result = {}
+    for key, value in d.items():
+        parts = key.split(sep)
+
+        # Handle top-level keys without separator
+        if len(parts) == 1:
+            result[key] = value
+            continue
+
+        # Navigate to the right nested dictionary
+        current = result
+        for part in parts[:-1]:
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+
+        # Set the value in the deepest level
+        current[parts[-1]] = value
+
+    return result
 
 
 @lru_cache()

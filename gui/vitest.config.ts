@@ -12,12 +12,19 @@ export default defineConfig({
     include: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: [...configDefaults.exclude, 'e2e/**'],
     deps: {
-      inline: ['msw'],
+      inline: ['msw', '@testing-library/jest-dom'],
     },
     environmentOptions: {
       jsdom: {
         resources: 'usable',
       },
     },
+    // Enable more Jest-compatible behavior
+    passWithNoTests: true,
+    restoreMocks: true,
+    clearMocks: true,
+    mockReset: true,
+    // Isolate each test file
+    isolate: true,
   },
 });

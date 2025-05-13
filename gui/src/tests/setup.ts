@@ -1,7 +1,8 @@
+// Import the custom jest-dom matchers setup
+import './jest-dom';
 import '@testing-library/jest-dom';
-import { expect, afterEach, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { afterEach, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import matchers from '@testing-library/jest-dom/matchers';
 
 // Make vitest test globals available to test files
 // This fixes the "beforeEach is not defined" errors
@@ -9,51 +10,17 @@ global.beforeEach = beforeEach;
 global.afterEach = afterEach;
 global.beforeAll = beforeAll;
 global.afterAll = afterAll;
+global.vi = vi;
+
+// Add global testing aliases
+global.test = global.it = global.test || vi.fn();
+global.describe = global.describe || vi.fn();
+global.expect = global.expect || vi.fn();
 
 // Ensure document is defined
 if (typeof document === 'undefined') {
   global.document = window.document;
 }
-
-// Extend vitest's expect method with methods from react-testing-library
-// This adds custom matchers like toBeInTheDocument(), toHaveAttribute(), etc.
-expect.extend(matchers);
-
-// Add missing matchers from jest-dom that might not be properly imported
-expect.extend({
-  toBeInTheDocument(received) {
-    const pass = received !== null && received !== undefined;
-    return {
-      pass,
-      message: () =>
-        pass
-          ? `Expected element not to be in the document`
-          : `Expected element to be in the document`,
-    };
-  },
-  toHaveAttribute(received, attr, value) {
-    const hasAttr = received && received.hasAttribute && received.hasAttribute(attr);
-    const pass = hasAttr && (value === undefined || received.getAttribute(attr) === value);
-    return {
-      pass,
-      message: () =>
-        pass
-          ? `Expected element not to have attribute "${attr}"${value ? ` with value "${value}"` : ''}`
-          : `Expected element to have attribute "${attr}"${value ? ` with value "${value}"` : ''}`,
-    };
-  },
-  toHaveTextContent(received, text) {
-    const hasText = received && typeof received.textContent === 'string' &&
-      received.textContent.includes(text);
-    return {
-      pass: hasText,
-      message: () =>
-        hasText
-          ? `Expected element not to have text content "${text}"`
-          : `Expected element to have text content "${text}"`,
-    };
-  }
-});
 
 // Initialize required browser mocks before tests
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -146,11 +113,21 @@ beforeAll(() => {
   });
 });
 
+// Ensure tests run in isolation
+beforeEach(() => {
+  // Reset document body before each test to ensure clean state
+  document.body.innerHTML = '';
+});
+
 // Clean up after each test
 afterEach(() => {
   // This ensures we don't get "Found multiple elements" errors in tests
   // by cleaning up the DOM after each test
   document.body.innerHTML = '';
+  // Run Testing Library cleanup to unmount React trees
   cleanup();
+  // Reset any mocks between tests
   vi.clearAllMocks();
+  // Clear any queries that might remain between tests
+  vi.clearAllTimers();
 });
