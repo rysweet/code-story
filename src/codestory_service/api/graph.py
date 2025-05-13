@@ -83,7 +83,7 @@ async def execute_cypher_query(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error executing query: {e!s}",
-        )
+        ) from e
 
 
 @query_router.post(
@@ -120,7 +120,7 @@ async def execute_vector_search(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error executing vector search: {e!s}",
-        )
+        ) from e
 
 
 @query_router.post(
@@ -160,7 +160,7 @@ async def find_path(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error finding paths: {e!s}",
-        )
+        ) from e
 
 
 @ask_router.post(
@@ -197,7 +197,7 @@ async def ask_question(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error answering question: {e!s}",
-        )
+        ) from e
 
 
 @visualization_router.get(
@@ -207,14 +207,30 @@ async def ask_question(
     description="Generate an interactive HTML visualization of the code graph.",
 )
 async def generate_visualization(
-    type: VisualizationType = Query(VisualizationType.FORCE, description="Type of visualization"),
-    theme: VisualizationTheme = Query(VisualizationTheme.AUTO, description="Color theme"),
-    focus_node_id: str | None = Query(None, description="Node ID to focus on"),
-    depth: int = Query(2, description="Depth of relationships to include from focus node", ge=1, le=5),
-    max_nodes: int = Query(100, description="Maximum number of nodes to display initially", ge=10, le=500),
-    node_types: str | None = Query(None, description="Comma-separated list of node types to include"),
-    search_query: str | None = Query(None, description="Text search to filter nodes"),
-    include_orphans: bool = Query(False, description="Whether to include nodes with no connections"),
+    type: VisualizationType = Query(
+        VisualizationType.FORCE, description="Type of visualization"
+    ),
+    theme: VisualizationTheme = Query(
+        VisualizationTheme.AUTO, description="Color theme"
+    ),
+    focus_node_id: str | None = Query(
+        None, description="Node ID to focus on"
+    ),
+    depth: int = Query(
+        2, description="Depth of relationships to include from focus node", ge=1, le=5
+    ),
+    max_nodes: int = Query(
+        100, description="Maximum number of nodes to display initially", ge=10, le=500
+    ),
+    node_types: str | None = Query(
+        None, description="Comma-separated list of node types to include"
+    ),
+    search_query: str | None = Query(
+        None, description="Text search to filter nodes"
+    ),
+    include_orphans: bool = Query(
+        False, description="Whether to include nodes with no connections"
+    ),
     graph_service: GraphService = Depends(get_graph_service),
     user: dict = Depends(get_current_user),
 ) -> HTMLResponse:
@@ -247,6 +263,13 @@ async def generate_visualization(
             parsed_node_types = [nt.strip() for nt in node_types.split(",")]
         
         # Create visualization request
+        has_custom_filter = (
+            parsed_node_types or 
+            search_query is not None or 
+            max_nodes != 100 or 
+            include_orphans
+        )
+        
         request = VisualizationRequest(
             type=type,
             theme=theme,
@@ -257,7 +280,7 @@ async def generate_visualization(
                 "search_query": search_query,
                 "max_nodes": max_nodes,
                 "include_orphans": include_orphans,
-            } if (parsed_node_types or search_query is not None or max_nodes != 100 or include_orphans) else None
+            } if has_custom_filter else None
         )
         
         # Generate HTML
@@ -270,7 +293,7 @@ async def generate_visualization(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating visualization: {e!s}",
-        )
+        ) from e
 
 
 # Legacy endpoint for backward compatibility with CLI - redirects to the v1 endpoint
@@ -279,7 +302,7 @@ async def generate_visualization(
     "/legacy",
     response_class=HTMLResponse,
     summary="Generate graph visualization (legacy endpoint)",
-    description="Legacy endpoint for generating an interactive HTML visualization of the code graph.",
+    description="Legacy endpoint for generating an interactive HTML visualization.",
     include_in_schema=False  # Hide from API docs
 )
 async def generate_visualization_legacy(
@@ -289,6 +312,7 @@ async def generate_visualization_legacy(
     user: dict = Depends(get_current_user),
 ) -> HTMLResponse:
     """Legacy endpoint for generating an interactive HTML visualization of the code graph.
+
     This is for backward compatibility with the CLI and GUI.
 
     Args:
@@ -330,4 +354,4 @@ async def generate_visualization_legacy(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating visualization: {e!s}",
-        )
+        ) from e

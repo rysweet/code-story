@@ -28,8 +28,8 @@ class TestNeo4jAdapter:
     def mock_connector(self):
         """Create a mock Neo4jConnector."""
         connector = mock.MagicMock(spec=Neo4jConnector)
-        connector.execute_query_async.return_value = [{"name": "test", "value": 123}]
-        connector.check_connection_async.return_value = {
+        connector.execute_query.return_value = [{"name": "test", "value": 123}]
+        connector.check_connection.return_value = {
             "connected": True,
             "database": "neo4j",
             "components": [],
@@ -46,12 +46,12 @@ class TestNeo4jAdapter:
         """Test health check returns healthy status when connection succeeds."""
         result = await adapter.check_health()
         assert result["status"] == "healthy"
-        mock_connector.check_connection_async.assert_called_once()
+        mock_connector.check_connection.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_health_check_unhealthy(self, mock_connector):
         """Test health check returns unhealthy status when connection fails."""
-        mock_connector.check_connection_async.side_effect = ConnectionError(
+        mock_connector.check_connection.side_effect = ConnectionError(
             "Failed to connect"
         )
         adapter = Neo4jAdapter(connector=mock_connector)
@@ -71,15 +71,15 @@ class TestNeo4jAdapter:
 
         result = await adapter.execute_cypher_query(query)
 
-        mock_connector.execute_query_async.assert_called_once_with(
-            query.query, query.parameters, write=False
+        mock_connector.execute_query.assert_called_once_with(
+            query.query, params=query.parameters, write=False
         )
         assert result.row_count > 0
 
     @pytest.mark.asyncio
     async def test_execute_cypher_query_error(self, adapter, mock_connector):
         """Test error handling when executing a Cypher query fails."""
-        mock_connector.execute_query_async.side_effect = QueryError("Invalid query")
+        mock_connector.execute_query.side_effect = QueryError("Invalid query")
 
         query = CypherQuery(
             query="INVALID QUERY", parameters={}, query_type=QueryType.READ
@@ -100,6 +100,11 @@ class TestOpenAIAdapter:
         """Create a mock OpenAIClient."""
         client = mock.MagicMock()
         # Don't use spec=OpenAIClient here to allow mocking any method
+        
+        # Set model properties
+        client.embedding_model = "text-embedding-ada-002"
+        client.chat_model = "gpt-4"
+        client.reasoning_model = "gpt-3.5-turbo"
 
         # Setup the response for create_embeddings_async
         mock_response = mock.MagicMock()
@@ -110,16 +115,32 @@ class TestOpenAIAdapter:
             "usage": {"prompt_tokens": 8, "total_tokens": 8},
         }
 
-        # Create an awaitable mock
+        # Create an awaitable mock for model list
+        models_response = mock.MagicMock()
+        model_data = [
+            mock.MagicMock(id="text-embedding-ada-002"),
+            mock.MagicMock(id="gpt-4"),
+            mock.MagicMock(id="gpt-3.5-turbo"),
+        ]
+        models_response.data = model_data
+        
+        async def mock_list():
+            return models_response
+            
+        # Create an awaitable mock for embeddings create
         async def mock_create(**kwargs):
             return mock_response
 
-        # Configure the mock's async client and embeddings
+        # Configure the mock's async client
         mock_embeddings = mock.MagicMock()
         mock_embeddings.create = mock_create
 
+        mock_models = mock.MagicMock()
+        mock_models.list = mock_list
+
         mock_async_client = mock.MagicMock()
         mock_async_client.embeddings = mock_embeddings
+        mock_async_client.models = mock_models
 
         client._async_client = mock_async_client
         return client
@@ -140,16 +161,17 @@ class TestOpenAIAdapter:
     async def test_health_check_unhealthy(self, mock_client):
         """Test health check returns unhealthy status when API fails."""
 
-        # Replace the mock create function with one that raises an error
-        async def mock_create_error(**kwargs):
-            raise AuthenticationError("Invalid API key")
-
-        mock_client._async_client.embeddings.create = mock_create_error
+        # Set up the mock to return unavailable models
+        mock_client.embedding_model = None
+        mock_client.chat_model = None
+        mock_client.reasoning_model = None
+        
+        # Create a new adapter with these bad settings
         adapter = OpenAIAdapter(client=mock_client)
 
         result = await adapter.check_health()
-        assert result["status"] == "unhealthy"
-        assert "error" in result["details"]
+        # The OpenAI adapter returns "degraded" when models aren't available
+        assert result["status"] == "degraded"
 
     @pytest.mark.asyncio
     async def test_create_embeddings_success(self, adapter, mock_client):

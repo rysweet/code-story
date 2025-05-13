@@ -352,7 +352,10 @@ class NodeFilter(BaseModel):
         default=None, description="Text search to filter nodes"
     )
     max_nodes: int = Field(
-        default=100, description="Maximum number of nodes to display initially", ge=10, le=500
+        default=100, 
+        description="Maximum number of nodes to display initially", 
+        ge=10, 
+        le=500
     )
     include_orphans: bool = Field(
         default=False, description="Whether to include nodes with no connections"
@@ -375,5 +378,8 @@ class VisualizationRequest(BaseModel):
         default=None, description="Node ID to focus the visualization on"
     )
     depth: int = Field(
-        default=2, description="Depth of relationships to include from focus node", ge=1, le=5
+        default=2, 
+        description="Depth of relationships to include from focus node", 
+        ge=1, 
+        le=5
     )
