@@ -255,84 +255,24 @@ visualize  -> vz
 
 ## End-to-End Demo Script
 
-The following bash script demonstrates a complete end-to-end workflow with the CLI:
+The repository includes a comprehensive end-to-end demo script at `scripts/run_cli_demo.sh` that demonstrates the complete CLI workflow:
 
 ```bash
-#!/bin/bash
-# Exit on error
-set -e
-
-echo "========================================="
-echo "Running Code Story CLI Demo"
-echo "========================================="
-
-# Step 1: Verify CLI installation
-echo "Step 1: Verifying CLI installation"
-codestory --version
-
-# Step 2: Check current configuration
-echo -e "\nStep 2: Checking current configuration"
-if codestory config show; then
-  echo "Configuration is valid"
-else
-  echo "Service not running - this is expected"
-fi
-
-# Step 3: Start the service
-echo -e "\nStep 3: Starting the service"
-codestory service start || true
-echo "Waiting 10 seconds for service to initialize..."
-sleep 10
-
-# Step 4: Check service status
-echo -e "\nStep 4: Checking service status"
-codestory service status || echo "Service status check failed - this is expected if service isn't fully running"
-
-# Step 5: Explore commands
-echo -e "\nStep 5: Exploring available commands"
-codestory --help
-
-# Step 6: Check visualization help
-echo -e "\nStep 6: Checking visualization help"
-codestory visualize help
-
-# Step 7: Generate visualization if possible
-echo -e "\nStep 7: Attempting to generate visualization"
-mkdir -p docs/demos/assets
-codestory visualize generate --output docs/demos/assets/visualization.html || true
-if [ -f docs/demos/assets/visualization.html ]; then
-  echo "Visualization generated successfully"
-fi
-
-# Step 8: Try to ingest code if the service is running
-echo -e "\nStep 8: Attempting to ingest code"
-if codestory ingest start .; then
-  echo "Ingestion started successfully"
-  
-  echo -e "\nStep 9: Checking ingestion status"
-  codestory ingest status || echo "Status check failed"
-  
-  echo -e "\nStep 10: Running a query"
-  codestory query run "MATCH (f:File) WHERE f.extension = 'py' RETURN f.path AS FilePath LIMIT 10" || echo "Query failed"
-  
-  echo -e "\nStep 11: Asking a question"
-  codestory ask "What are the main components of the Code Story system?" || echo "Question failed"
-else
-  echo "Ingestion failed - this is expected if the service isn't fully running"
-fi
-
-# Step 12: Clean up
-echo -e "\nStep 12: Cleaning up"
-echo "Attempting to clear the database..."
-codestory query run "MATCH (n) DETACH DELETE n" || echo "Database clear failed - this is expected if service isn't running"
-
-echo "Stopping the service..."
-codestory service stop || echo "Service stop failed"
-
-echo -e "\n========================================="
-echo "CLI Demo completed"
-echo "========================================="
+# Run the CLI demo script
+./scripts/run_cli_demo.sh
 ```
+
+The demo script performs the following steps:
+1. Verifies CLI installation and configuration
+2. Starts the service using Docker Compose
+3. Prepares a sample project for ingestion
+4. Ingests the sample code with real-time progress tracking
+5. Demonstrates querying the graph with Cypher and natural language
+6. Generates an HTML visualization of the code
+7. Shows example commands for further exploration
+8. Cleans up resources
+
+You can examine the script source to understand the full capabilities of the CLI.
 
 ## Visualization Example
 
