@@ -7,7 +7,13 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: './src/tests/setup.ts',
+    // We need to use globalSetup for some configurations that must happen before JSDOM
+    globalSetup: './src/tests/global-setup.js',
+    setupFiles: [
+      './src/tests/testing-environment.ts',
+      './src/tests/setup.ts',
+      './src/tests/testing-setup.tsx'
+    ],
     css: false,
     include: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: [...configDefaults.exclude, 'e2e/**'],

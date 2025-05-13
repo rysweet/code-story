@@ -22,126 +22,11 @@ from codestory.config.settings import (
 )
 
 
-def get_test_settings() -> Settings:
-    """Return settings configured for unit tests."""
-    # Define neo4j test settings
-    neo4j = Neo4jSettings(
-        uri="bolt://localhost:7687",
-        username="neo4j",
-        password="password",
-        database="codestory-test",
-    )
-
-    # Define redis test settings
-    redis = RedisSettings(
-        uri="redis://localhost:6379/0",
-    )
-
-    # Define OpenAI test settings
-    openai = OpenAISettings(
-        api_key="sk-test-key-openai",  # Fake key for testing
-        endpoint="https://api.openai.com/v1",
-        embedding_model="text-embedding-3-small",
-        chat_model="gpt-4o",
-        reasoning_model="gpt-4o",
-    )
-
-    # Define Azure OpenAI test settings
-    azure_openai = AzureOpenAISettings(
-        api_key="test-azure-key",  # Fake key for testing
-        endpoint="https://test-azure-endpoint.openai.azure.com",
-        deployment_id="gpt-4o",
-        api_version="2024-05-01",
-        embedding_model="text-embedding-3-small",
-        chat_model="gpt-4o",
-        reasoning_model="gpt-4o",
-    )
-
-    # Define service test settings
-    service = ServiceSettings(
-        host="127.0.0.1",
-        port=8000,
-        workers=1,
-        log_level="DEBUG",
-        environment="testing",
-        enable_telemetry=False,
-        worker_concurrency=1,
-    )
-
-    # Define ingestion test settings
-    ingestion = IngestionSettings(
-        config_path="pipeline_config.yml",
-        chunk_size=1024,
-        chunk_overlap=200,
-        embedding_model="text-embedding-3-small",
-        embedding_dimensions=1536,
-        max_retries=3,
-        retry_backoff_factor=2.0,
-        concurrency=1,
-        steps={},
-    )
-
-    # Define plugins test settings
-    plugins = PluginSettings(
-        enabled=["filesystem"],
-        plugin_directory="plugins",
-    )
-
-    # Define telemetry test settings
-    telemetry = TelemetrySettings(
-        metrics_port=9090,
-        metrics_endpoint="/metrics",
-        trace_sample_rate=1.0,
-        log_format="json",
-    )
-
-    # Define interface test settings
-    interface = InterfaceSettings(
-        theme="light",
-        default_view="graph",
-        graph_layout="force",
-        max_nodes=1000,
-        max_edges=5000,
-        auto_refresh=False,
-        refresh_interval=30,
-    )
-
-    # Define Azure test settings
-    azure = AzureSettings(
-        keyvault_name="test-key-vault",
-        tenant_id="test-tenant-id",
-        client_id="test-client-id",
-        client_secret="test-client-secret",
-    )
-
-    # Create test settings instance
-    settings = Settings(
-        neo4j=neo4j,
-        redis=redis,
-        openai=openai,
-        azure_openai=azure_openai,
-        service=service,
-        ingestion=ingestion,
-        plugins=plugins,
-        telemetry=telemetry,
-        interface=interface,
-        azure=azure,
-    )
-
-    return settings
-
-
 @pytest.fixture(scope="session", autouse=True)
 def mock_settings():
     """Mock the settings module to use test settings for all unit tests."""
-    # Patch the get_settings function at module import time
-    # This is critical since some modules import and call get_settings() during module loading
-
-    # Import the module first to ensure it exists before patching
-    from codestory.config.settings import get_settings as original_get_settings
-
-    # Create and directly assign the test settings instance
-    test_settings = get_test_settings()
+    # Import the test settings module to setup test settings
+    from tests.unit.test_settings import setup_test_settings, test_settings
 
     # Override required methods for correct behavior in tests
     from unittest.mock import MagicMock
@@ -155,6 +40,9 @@ def mock_settings():
     # Apply the patch to __getattr__ to handle nested attribute access
     test_settings.__getattr__ = lambda name: getattr_mock(test_settings, name)
 
+    # Apply the patches
+    patches = setup_test_settings()
+
     # Patch at every level to make sure it's used everywhere
     import sys
     import importlib
@@ -163,13 +51,13 @@ def mock_settings():
     # Force reload the module to ensure patches take effect
     importlib.reload(settings_module)
 
-    # Extremely aggressive patching for tests
-    with patch("codestory.config.settings.Settings.__init__", return_value=None):
-        with patch("codestory.config.settings.Settings.__new__", return_value=test_settings):
-            with patch("codestory.config.settings.get_settings", return_value=test_settings):
-                with patch.object(sys.modules["codestory.config.settings"], "get_settings", return_value=test_settings):
-                    # Apply the patch for all tests
-                    yield
+    try:
+        # Apply the patch for all tests
+        yield test_settings
+    finally:
+        # Stop the patches when tests are done
+        for p in patches:
+            p.stop()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -192,13 +80,13 @@ def load_env_vars():
     os.environ["NEO4J_URI"] = "bolt://localhost:7687"
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "codestory-test"
+    os.environ["NEO4J_DATABASE"] = "testdb"
 
     # Double underscore format for Pydantic nested settings
     os.environ["NEO4J__URI"] = "bolt://localhost:7687"
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "codestory-test"
+    os.environ["NEO4J__DATABASE"] = "testdb"
 
     # Redis settings
     os.environ["REDIS_URI"] = "redis://localhost:6379/0"
@@ -235,6 +123,9 @@ def load_env_vars():
 
     # Azure settings
     os.environ["AZURE__KEYVAULT_NAME"] = "test-key-vault"
+
+    # Mark as test environment
+    os.environ["CODESTORY_TEST_ENV"] = "true"
 
 
 @pytest.fixture(scope="function")
