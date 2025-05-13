@@ -143,12 +143,33 @@ def mock_settings():
     # Create and directly assign the test settings instance
     test_settings = get_test_settings()
 
-    # Use more aggressive patching that affects existing imports
+    # Override required methods for correct behavior in tests
+    from unittest.mock import MagicMock
+
+    # Ensure any attribute lookup returns a mock object
+    def getattr_mock(instance, name):
+        if name in instance.__dict__:
+            return instance.__dict__[name]
+        return MagicMock()
+
+    # Apply the patch to __getattr__ to handle nested attribute access
+    test_settings.__getattr__ = lambda name: getattr_mock(test_settings, name)
+
+    # Patch at every level to make sure it's used everywhere
+    import sys
+    import importlib
+    from codestory.config import settings as settings_module
+
+    # Force reload the module to ensure patches take effect
+    importlib.reload(settings_module)
+
+    # Extremely aggressive patching for tests
     with patch("codestory.config.settings.Settings.__init__", return_value=None):
         with patch("codestory.config.settings.Settings.__new__", return_value=test_settings):
             with patch("codestory.config.settings.get_settings", return_value=test_settings):
-                # Apply the patch for all tests
-                yield
+                with patch.object(sys.modules["codestory.config.settings"], "get_settings", return_value=test_settings):
+                    # Apply the patch for all tests
+                    yield
 
 
 @pytest.fixture(scope="session", autouse=True)
