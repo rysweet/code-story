@@ -251,15 +251,50 @@ class Settings(BaseSettings):
 
     def __init__(self, **data: Any) -> None:
         """Initialize settings with layered configuration."""
+        # Check if we're in a test environment
+        in_test_env = os.environ.get("CODESTORY_TEST_ENV") == "true" or os.environ.get("NEO4J_DATABASE") == "testdb"
+
         # Load settings from .codestory.toml if it exists
         toml_settings = {}
-        if os.path.exists(self._CONFIG_FILE):
+        config_file = self._CONFIG_FILE
+
+        # For tests, use the test configuration
+        if in_test_env:
+            # Look for test_config.toml in various locations
+            test_config_paths = [
+                os.path.join(get_project_root(), "tests/fixtures/test_config.toml"),
+                os.path.join(os.getcwd(), "tests/fixtures/test_config.toml"),
+                os.path.join(os.getcwd(), "test_config.toml"),
+            ]
+
+            for test_path in test_config_paths:
+                if os.path.exists(test_path):
+                    config_file = test_path
+                    break
+
+        if os.path.exists(config_file):
             try:
-                with open(self._CONFIG_FILE, "rb") as f:
+                with open(config_file, "rb") as f:
                     toml_data = tomli.load(f)
                     toml_settings = flatten_dict(toml_data)
             except Exception as e:
-                print(f"Error loading {self._CONFIG_FILE}: {e}")
+                print(f"Error loading {config_file}: {e}")
+        elif in_test_env:
+            # Provide default settings for tests if no config file is found
+            print("No test configuration found. Using default test settings.")
+            toml_settings = {
+                "neo4j__uri": "bolt://localhost:7687",
+                "neo4j__username": "neo4j",
+                "neo4j__password": "password",
+                "neo4j__database": "testdb",
+                "redis__uri": "redis://localhost:6379/0",
+                "openai__api_key": "sk-test-key-openai",
+                "azure_openai__api_key": "sk-test-key-azure",
+                "azure_openai__endpoint": "https://test-openai.openai.azure.com/",
+                "azure_openai__deployment_id": "gpt-4o",
+                "service__environment": "testing",
+                "interface__theme": "dark"
+            }
 
         # Merge settings, with environment variables taking precedence
         merged_settings = {**toml_settings, **data}

@@ -1,0 +1,68 @@
+# Test configuration file for CI environments
+
+[neo4j]
+uri = "bolt://localhost:7687"
+username = "neo4j"
+password = "password"
+database = "testdb"
+
+[redis]
+uri = "redis://localhost:6379/0"
+
+[openai]
+api_key = "sk-test-key-openai"
+embedding_model = "text-embedding-3-small"
+chat_model = "gpt-4o"
+reasoning_model = "gpt-4o"
+
+[azure_openai]
+api_key = "sk-test-key-azure"
+endpoint = "https://test-openai.openai.azure.com/"
+deployment_id = "gpt-4o"
+embedding_model = "text-embedding-3-small"
+chat_model = "gpt-4o"
+reasoning_model = "gpt-4o"
+
+[service]
+host = "0.0.0.0"
+port = 8000
+workers = 4
+log_level = "INFO"
+environment = "testing"
+enable_telemetry = true
+worker_concurrency = 4
+
+[ingestion]
+config_path = "pipeline_config.yml"
+chunk_size = 1024
+chunk_overlap = 200
+embedding_model = "text-embedding-3-small"
+embedding_dimensions = 1536
+max_retries = 3
+retry_backoff_factor = 2.0
+concurrency = 5
+
+[plugins]
+enabled = ["blarify", "filesystem", "summarizer", "docgrapher"]
+plugin_directory = "plugins"
+
+[telemetry]
+metrics_port = 9090
+metrics_endpoint = "/metrics"
+trace_sample_rate = 1.0
+log_format = "json"
+
+[interface]
+theme = "dark"
+default_view = "graph"
+graph_layout = "force"
+max_nodes = 1000
+max_edges = 5000
+auto_refresh = true
+refresh_interval = 30
+
+[azure]
+keyvault_name = ""
+tenant_id = ""
+client_id = ""
+client_secret = ""
