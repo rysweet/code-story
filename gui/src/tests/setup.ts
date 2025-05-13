@@ -1,7 +1,14 @@
 import '@testing-library/jest-dom';
-import { expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
+import { expect, afterEach, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import matchers from '@testing-library/jest-dom/matchers';
+
+// Make vitest test globals available to test files
+// This fixes the "beforeEach is not defined" errors
+global.beforeEach = beforeEach;
+global.afterEach = afterEach;
+global.beforeAll = beforeAll;
+global.afterAll = afterAll;
 
 // Ensure document is defined
 if (typeof document === 'undefined') {
@@ -141,6 +148,9 @@ beforeAll(() => {
 
 // Clean up after each test
 afterEach(() => {
+  // This ensures we don't get "Found multiple elements" errors in tests
+  // by cleaning up the DOM after each test
+  document.body.innerHTML = '';
   cleanup();
   vi.clearAllMocks();
 });

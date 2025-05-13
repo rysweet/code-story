@@ -1,6 +1,7 @@
 """Settings module implementing layered configuration with precedence rules."""
 
 import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Any, List, Literal, Optional, ClassVar
@@ -252,7 +253,17 @@ class Settings(BaseSettings):
     def __init__(self, **data: Any) -> None:
         """Initialize settings with layered configuration."""
         # Check if we're in a test environment
-        in_test_env = os.environ.get("CODESTORY_TEST_ENV") == "true" or os.environ.get("NEO4J_DATABASE") == "testdb"
+        in_test_env = (
+            os.environ.get("CODESTORY_TEST_ENV") == "true" or
+            os.environ.get("NEO4J_DATABASE") == "testdb" or
+            "pytest" in sys.modules or
+            os.environ.get("GITHUB_ACTIONS") == "true"
+        )
+
+        # Print debug info in test environments
+        if in_test_env:
+            print(f"Detected test environment. Current directory: {os.getcwd()}")
+            print(f"Project root: {get_project_root()}")
 
         # Load settings from .codestory.toml if it exists
         toml_settings = {}
@@ -265,12 +276,17 @@ class Settings(BaseSettings):
                 os.path.join(get_project_root(), "tests/fixtures/test_config.toml"),
                 os.path.join(os.getcwd(), "tests/fixtures/test_config.toml"),
                 os.path.join(os.getcwd(), "test_config.toml"),
+                # Additional paths for CI
+                "/home/runner/work/code-story/code-story/tests/fixtures/test_config.toml",
             ]
 
             for test_path in test_config_paths:
                 if os.path.exists(test_path):
                     config_file = test_path
+                    print(f"Found test config at: {test_path}")
                     break
+                else:
+                    print(f"Test config not found at: {test_path}")
 
         if os.path.exists(config_file):
             try:
@@ -283,17 +299,89 @@ class Settings(BaseSettings):
             # Provide default settings for tests if no config file is found
             print("No test configuration found. Using default test settings.")
             toml_settings = {
+                # Neo4j settings
                 "neo4j__uri": "bolt://localhost:7687",
                 "neo4j__username": "neo4j",
                 "neo4j__password": "password",
                 "neo4j__database": "testdb",
+                "neo4j__connection_timeout": 30,
+                "neo4j__max_connection_pool_size": 50,
+                "neo4j__connection_acquisition_timeout": 60,
+
+                # Redis settings
                 "redis__uri": "redis://localhost:6379/0",
+
+                # OpenAI settings
                 "openai__api_key": "sk-test-key-openai",
+                "openai__endpoint": "https://api.openai.com/v1",
+                "openai__embedding_model": "text-embedding-3-small",
+                "openai__chat_model": "gpt-4o",
+                "openai__reasoning_model": "gpt-4o",
+                "openai__api_version": "2025-03-01-preview",
+                "openai__max_retries": 3,
+                "openai__retry_backoff_factor": 2.0,
+                "openai__temperature": 0.1,
+                "openai__max_tokens": 4096,
+                "openai__timeout": 60.0,
+
+                # Azure OpenAI settings
                 "azure_openai__api_key": "sk-test-key-azure",
                 "azure_openai__endpoint": "https://test-openai.openai.azure.com/",
                 "azure_openai__deployment_id": "gpt-4o",
+                "azure_openai__api_version": "2024-05-01",
+                "azure_openai__embedding_model": "text-embedding-3-small",
+                "azure_openai__chat_model": "gpt-4o",
+                "azure_openai__reasoning_model": "gpt-4o",
+
+                # Service settings
+                "service__host": "0.0.0.0",
+                "service__port": 8000,
+                "service__workers": 4,
+                "service__log_level": "INFO",
                 "service__environment": "testing",
-                "interface__theme": "dark"
+                "service__enable_telemetry": True,
+                "service__worker_concurrency": 4,
+
+                # Ingestion settings
+                "ingestion__config_path": "pipeline_config.yml",
+                "ingestion__chunk_size": 1024,
+                "ingestion__chunk_overlap": 200,
+                "ingestion__embedding_model": "text-embedding-3-small",
+                "ingestion__embedding_dimensions": 1536,
+                "ingestion__max_retries": 3,
+                "ingestion__retry_backoff_factor": 2.0,
+                "ingestion__concurrency": 5,
+                "ingestion__steps": {
+                    "blarify": {"timeout": 300, "docker_image": "codestory/blarify:latest"},
+                    "filesystem": {"ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]},
+                    "summarizer": {"max_concurrency": 5, "max_tokens_per_file": 8000},
+                    "docgrapher": {"enabled": True},
+                },
+
+                # Plugin settings
+                "plugins__enabled": ["blarify", "filesystem", "summarizer", "docgrapher"],
+                "plugins__plugin_directory": "plugins",
+
+                # Telemetry settings
+                "telemetry__metrics_port": 9090,
+                "telemetry__metrics_endpoint": "/metrics",
+                "telemetry__trace_sample_rate": 1.0,
+                "telemetry__log_format": "json",
+
+                # Interface settings
+                "interface__theme": "dark",
+                "interface__default_view": "graph",
+                "interface__graph_layout": "force",
+                "interface__max_nodes": 1000,
+                "interface__max_edges": 5000,
+                "interface__auto_refresh": True,
+                "interface__refresh_interval": 30,
+
+                # Azure settings
+                "azure__keyvault_name": "",
+                "azure__tenant_id": "",
+                "azure__client_id": "",
+                "azure__client_secret": ""
             }
 
         # Merge settings, with environment variables taking precedence
