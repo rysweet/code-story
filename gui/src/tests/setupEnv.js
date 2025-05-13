@@ -78,14 +78,28 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
 
 // Define global test functions (for Jest compatibility)
 global.jest = {
-  fn: () => jest.fn(),
+  fn: function() { return function() {}; },
 };
 
-// Make Jest-like functions available globally
-global.beforeEach = global.beforeEach || function() {};
-global.afterEach = global.afterEach || function() {};
-global.beforeAll = global.beforeAll || function() {};
-global.afterAll = global.afterAll || function() {};
+// Define Jest compatibility functions
+function noop() {}
+
+// Make Jest-like functions always available globally
+if (typeof global.beforeEach !== 'function') {
+  global.beforeEach = noop;
+}
+
+if (typeof global.afterEach !== 'function') {
+  global.afterEach = noop;
+}
+
+if (typeof global.beforeAll !== 'function') {
+  global.beforeAll = noop;
+}
+
+if (typeof global.afterAll !== 'function') {
+  global.afterAll = noop;
+}
 
 // Setup automatic cleanup between tests
 if (typeof global.afterEach === 'function') {
