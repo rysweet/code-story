@@ -61,3 +61,7 @@ docker-volumes/
 tmp/
 **/.claude/settings.local.json
 scripts/test_vector_fallback.py
+
+# Temporary files
+*.bak
+codestory-graph-*.html
