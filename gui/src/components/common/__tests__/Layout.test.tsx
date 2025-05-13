@@ -37,23 +37,23 @@ vi.mock('../Layout', () => ({
   )
 }));
 
-// Mock localStorage
-beforeEach(() => {
-  const localStorageMock = {
-    getItem: vi.fn((key) => key === 'colorScheme' ? 'light' : null),
-    setItem: vi.fn(),
-    clear: vi.fn()
-  };
-
-  if (typeof window !== 'undefined') {
-    Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-  }
-});
-
 // Import the component
 import Layout from '../Layout';
 
 describe('Layout', () => {
+  // Setup localStorage mock for each test in this suite
+  vi.beforeEach(() => {
+    const localStorageMock = {
+      getItem: vi.fn((key) => key === 'colorScheme' ? 'light' : null),
+      setItem: vi.fn(),
+      clear: vi.fn()
+    };
+
+    if (window) {
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+    }
+  });
+
   it('should render the main layout structure', () => {
     render(
       <MemoryRouter>

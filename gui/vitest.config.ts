@@ -1,9 +1,15 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { configDefaults } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
@@ -27,7 +33,13 @@ export default defineConfig({
     restoreMocks: true,
     clearMocks: true,
     mockReset: true,
+    // Expose globals explicitly
+    define: {
+      'globalThis.beforeEach': 'beforeEach',
+      'globalThis.afterEach': 'afterEach',
+      'window.matchMedia': 'matchMedia',
+    },
     // Isolate each test file
-    isolate: true,
+    isolate: false, // Set to false to allow proper setup of global mocks
   },
 });

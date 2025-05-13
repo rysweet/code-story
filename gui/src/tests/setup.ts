@@ -3,35 +3,58 @@
  * This is the primary setup file that's loaded for all tests
  */
 
-// Import our environment setup which mocks browser APIs
-import './testing-environment';
-
-// Import our Jest-DOM setup (after environment setup)
-import './jest-dom';
+// Import our Jest-DOM setup - provides all custom testing matchers
+import './jest-dom-setup';
 
 // Import React Testing Library cleanup
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 
-// Make vitest test globals available to test files
+// Make sure the window and document exist
+if (typeof window === 'undefined') {
+  global.window = {} as any;
+}
+
+if (typeof document === 'undefined') {
+  global.document = {} as any;
+}
+
+// Create matchMedia mock if it doesn't exist
+if (!global.matchMedia) {
+  global.matchMedia = vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
+// Make sure window.matchMedia is defined
+if (!window.matchMedia) {
+  window.matchMedia = global.matchMedia;
+}
+
+// Define global Jest-compatible functions
+global.jest = {
+  fn: vi.fn,
+  mock: vi.mock,
+  spyOn: vi.spyOn,
+};
+
+// Create global Jest-compatible aliases
 global.beforeEach = beforeEach;
 global.afterEach = afterEach;
 global.beforeAll = beforeAll;
 global.afterAll = afterAll;
-global.vi = vi;
+global.test = global.it = vi.it;
+global.describe = vi.describe;
+global.expect = vi.expect;
 
-// Add global testing aliases for compatibility with older tests
-global.test = global.it = global.test || vi.fn();
-global.describe = global.describe || vi.fn();
-global.expect = global.expect || vi.fn();
-
-// Ensure document is defined
-if (typeof document === 'undefined') {
-  global.document = window.document;
-}
-
-// Clean up after each test - this is in addition to the cleanup in testing-environment.ts
-// to ensure both approaches work
+// Clean up after each test
 afterEach(() => {
   // Run Testing Library cleanup to unmount React trees
   cleanup();
