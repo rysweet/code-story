@@ -171,3 +171,46 @@ class TestVisualizeCommands:
         assert result.exit_code == 0
         assert "Code Story Graph Visualization" in result.output
         assert "Visualization Types" in result.output
+        
+        
+    def test_visualize_service_auto_start(self, cli_runner: CliRunner, mock_service_client: MagicMock) -> None:
+        """Test visualize generate with service auto-start."""
+        # Setup the mock client to simulate the service starting
+        first_call = True
+        
+        def side_effect(*args, **kwargs):
+            nonlocal first_call
+            if first_call:
+                first_call = False
+                raise Exception("Service not available")
+            return "<html><body>Auto-started service test visualization</body></html>"
+            
+        mock_service_client.generate_visualization.side_effect = side_effect
+        
+        # Create temporary directory for test output
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "viz.html")
+            
+            # Mock subprocess and time to simulate starting the service
+            with patch("subprocess.Popen") as mock_popen:
+                with patch("time.sleep"):
+                    # Setup mock process
+                    mock_process = MagicMock()
+                    mock_popen.return_value = mock_process
+                    
+                    # Mock webrowser to prevent opening
+                    with patch("codestory.cli.commands.visualize.webbrowser.open"):
+                        with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
+                            result = cli_runner.invoke(
+                                app,
+                                ["visualize", "generate", "--output", output_path, "--no-browser"]
+                            )
+                            
+                            # Check result - should show service was started and visualization generated
+                            assert result.exit_code == 0
+                            assert "Starting service automatically" in result.output
+                            assert "Visualization generated successfully" in result.output
+                            
+                            # Service should have been started
+                            mock_popen.assert_called_once()
+                            mock_service_client.generate_visualization.call_count >= 2

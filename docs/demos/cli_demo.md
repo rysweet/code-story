@@ -7,12 +7,11 @@ This demonstration shows how to use the Code Story command line interface to ing
 First, let's install the Code Story CLI:
 
 ```bash
-# Install from PyPI
-pip install code-story-cli
-
-# Alternatively, install from the repository
+# Clone the repository
 git clone https://github.com/rysweet/code-story.git
 cd code-story
+
+# Install the package
 pip install -e .
 ```
 
@@ -24,167 +23,376 @@ codestory --version
 
 Expected output:
 ```
-Code Story CLI v0.1.0
+codestory, version 0.1.0
 ```
 
 ## Configuration
 
-Before using Code Story, you need to set up a configuration file:
+The CLI uses environment variables and a configuration file. The default configuration file is `.codestory.toml` in your project directory.
 
-```bash
-# Generate a default configuration file
-codestory config init
+For connecting to Neo4j (which runs in Docker), ensure your configuration file has the correct URI:
 
-# Edit the configuration file with your Neo4j connection details
-codestory config edit
+```toml
+[neo4j]
+uri = "bolt://localhost:7689"
+username = "neo4j"
+database = "neo4j"
 ```
 
-Alternatively, you can set up environment variables:
-
-```bash
-# Setup environment variables for Neo4j
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_USERNAME="neo4j"
-export NEO4J_PASSWORD="your-password"
-export NEO4J_DATABASE="codestory"
-
-# Setup OpenAI API key for code analysis
-export OPENAI_API_KEY="your-openai-api-key"
-```
-
-Verify your configuration:
+You can check your current configuration settings:
 
 ```bash
 codestory config show
 ```
 
-## Code Ingestion
+Note: This requires the service to be running.
 
-Now, let's ingest a code repository. We'll use the Code Story codebase itself for this demo:
+## Service Management
+
+Before using the CLI for ingestion or queries, you need to start the Code Story services:
 
 ```bash
-# Clone the repository if you haven't already
-git clone https://github.com/rysweet/code-story.git
-cd code-story
+# Start the services in the background and wait for initialization
+codestory service start --detach --wait
 
-# Start the ingestion process
-codestory ingest start --path .
+# Or, to start interactively
+codestory service start
+
+# Restart services
+codestory service restart
 ```
 
-This command starts the ingestion pipeline, which:
-1. Scans the filesystem
-2. Processes code files
-3. Analyzes code structure
-4. Generates summaries
-5. Creates a knowledge graph
+This command uses Docker Compose to start the required services, including Neo4j, Redis, and Celery workers. You can verify the service status:
 
-You can check the progress of the ingestion:
+```bash
+codestory service status
+```
+
+Example output:
+```
+                                 Service Status                                 
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component       ┃ Status   ┃ Details                                         ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Service Overall │ Healthy  │ 2025-05-13T15:43:42Z                            │
+│ Neo4j           │ Healthy  │ Connected to bolt://localhost:7687              │
+│ Celery          │ Healthy  │ Workers: 2, Tasks: 12                           │
+│ Redis           │ Healthy  │ Connection: redis://localhost:6379/0            │
+│ Openai          │ Healthy  │ OpenAI API connection successful                │
+└─────────────────┴──────────┴─────────────────────────────────────────────────┘
+Service is running. Version: 0.1.0, Uptime: 324 seconds
+```
+
+## Available Commands
+
+The CLI offers several commands to interact with the Code Story system:
+
+### Help and Information
+
+```bash
+# Show all available commands
+codestory --help
+```
+
+Output:
+```
+Usage: codestory [OPTIONS] COMMAND [ARGS]...
+
+  [bold]Code Story[/bold] - A tool for exploring and documenting codebases.
+
+Options:
+  --version           Show the version and exit.
+  --service-url TEXT  URL of the Code Story service.
+  --api-key TEXT      API key for authentication.
+  --help              Show this message and exit.
+
+Commands:
+  ask        Ask a natural language question about the codebase.
+  cfg        Manage Code Story configuration.
+  cfs        Show current configuration.
+  config     Manage Code Story configuration.
+  gs         Ask a natural language question about the codebase.
+  ij         List all ingestion jobs.
+  in         Ingest a repository into Code Story.
+  ingest     Ingest a repository into Code Story.
+  is         Stop an ingestion job.
+  q          Execute a Cypher query or MCP tool call.
+  query      Execute queries and explore the Code Story graph.
+  service    Manage the Code Story service.
+  ss         Start the Code Story service.
+  st         Show the status of the Code Story service.
+  sx         Stop the Code Story service.
+  ui         Open the Code Story GUI in a browser.
+  visualize  Generate and manage visualizations of the Code Story graph.
+  vz         Generate a visualization of the Code Story graph.
+```
+
+You can get detailed help for any command:
+
+```bash
+# Get help for a specific command
+codestory visualize help
+```
+
+Output from `visualize help`:
+```
+# Code Story Graph Visualization
+
+The visualization feature allows you to create interactive, browser-based visualizations
+of your code graph. These visualizations help you understand the structure and relationships
+in your codebase.
+
+## Visualization Types
+
+- **Force** (default): A force-directed graph where nodes repel each other and edges act like springs.
+  Best for showing relationships between components.
+
+- **Hierarchy**: A tree-like visualization showing inheritance and containment relationships.
+  Useful for understanding class hierarchies and module organization.
+
+- **Radial**: A circular layout with the most connected nodes in the center.
+  Good for identifying central components in your codebase.
+
+- **Sankey**: A flow diagram showing dependencies between components.
+  Helpful for understanding data flow and module dependencies.
+
+## Usage Tips
+
+- In the visualization, you can:
+  - Zoom in/out with the mouse wheel
+  - Click and drag nodes to reposition them
+  - Hover over nodes to see details
+  - Click on nodes to highlight connections
+  - Search for specific nodes using the search box
+
+- For large codebases, use filters to focus on specific parts of the graph
+
+- The dark theme works best for presentations, while the light theme is better for documentation
+```
+
+### Ingestion Commands
+
+When the service is running, you can ingest a code repository with:
+
+```bash
+# Start ingestion for the current directory with real-time progress tracking
+codestory ingest start .
+
+# Start ingestion without progress display
+codestory ingest start . --no-progress
+```
+
+The CLI uses Redis for real-time progress tracking, with a fallback to API polling if Redis is unavailable:
+
+```
+Connected to Redis for real-time progress updates
+Ingestion job started with ID: 01234567-89ab-cdef-0123-456789abcdef
+
+Overall Progress: [===========>          ] 72%  Running
+filesystem:     [===================>    ] 95%  Running
+summarizer:     [===============>        ] 65%  Running
+docgrapher:     [>                       ]  5%  Pending
+```
+
+Check ingestion status:
 
 ```bash
 codestory ingest status
 ```
 
-Expected output:
-```
-Ingestion job abc123 is processing:
-- Filesystem scan: 100% complete
-- Code analysis: 85% complete
-- Summary generation: 70% complete
-- Knowledge graph creation: 65% complete
-Overall progress: 80%
-```
-
-Wait for the ingestion to complete. For large repositories, this might take some time.
-
-## Code Analysis
-
-Once ingestion is complete, you can analyze the code using the CLI:
-
-### Running Queries
-
-Let's run some queries to explore the code:
+List all ingestion jobs:
 
 ```bash
-# List all Python files in the repository
-codestory query run "MATCH (f:File) WHERE f.extension = 'py' RETURN f.path AS FilePath ORDER BY FilePath LIMIT 10"
+codestory ingest jobs
 ```
 
-Expected output:
-```
-+-------------------------------------------------------------+
-| FilePath                                                     |
-+-------------------------------------------------------------+
-| /src/codestory/__init__.py                                   |
-| /src/codestory/cli/__init__.py                               |
-| /src/codestory/cli/client/__init__.py                        |
-| /src/codestory/cli/client/progress_client.py                 |
-| /src/codestory/cli/client/service_client.py                  |
-| /src/codestory/cli/commands/__init__.py                      |
-| /src/codestory/cli/commands/ask.py                           |
-| /src/codestory/cli/commands/config.py                        |
-| /src/codestory/cli/commands/ingest.py                        |
-| /src/codestory/cli/commands/query.py                         |
-+-------------------------------------------------------------+
-```
-
-### Natural Language Queries
-
-You can also ask questions in natural language:
+Stop an ingestion job:
 
 ```bash
-# Ask about the code structure
-codestory ask "What are the main components of the Code Story system?"
+codestory ingest stop JOB_ID
 ```
 
-Expected output:
-```
-The main components of the Code Story system are:
+### Query Commands
 
-1. Ingestion Pipeline - Responsible for processing code repositories and building the knowledge graph
-2. Graph Database - Stores the code structure and relationships
-3. Service API - Provides HTTP endpoints for interacting with the system
-4. CLI - Command line interface for users
-5. GUI - Graphical user interface for visualization
-6. MCP Adapter - Machine Callable Package adapter for integration with AI agents
-
-These components work together to analyze, index, and provide insights about codebases.
-```
-
-## Graph Visualization
-
-Code Story CLI also provides visualization capabilities:
+Once code has been ingested, you can run queries:
 
 ```bash
-# Generate a visualization of the project structure
-codestory visualize --path ./visualization.html
+# Run a Cypher query
+codestory query run "MATCH (f:File) WHERE f.extension = 'py' RETURN f.path AS FilePath LIMIT 10"
+
+# Ask natural language questions
+codestory ask "What are the main components of the system?"
 ```
 
-This generates an interactive HTML visualization of the code structure.
+### Visualization Commands
 
-To view the visualization:
+Generate visualizations of your code graph:
 
 ```bash
-# Open the visualization in your browser
-open ./visualization.html
+# Generate a visualization
+codestory visualize generate --output visualization.html
+
+# Open a visualization
+codestory visualize open visualization.html
 ```
 
-## Cleaning Up
+### Command Shortcuts
 
-To clean up after this demo:
+Code Story provides convenient aliases for frequently used commands:
+
+```
+ask        -> gs (Get Summary)
+config     -> cfg
+ingest     -> in
+ingest jobs -> ij
+ingest stop -> is
+query      -> q
+service start -> ss
+service status -> st
+service stop  -> sx
+visualize  -> vz
+```
+
+## End-to-End Demo Script
+
+The following bash script demonstrates a complete end-to-end workflow with the CLI:
 
 ```bash
-# Stop any running services
-codestory service stop
+#!/bin/bash
+# Exit on error
+set -e
 
-# Clear the database if needed
-codestory query run "MATCH (n) DETACH DELETE n"
+echo "========================================="
+echo "Running Code Story CLI Demo"
+echo "========================================="
+
+# Step 1: Verify CLI installation
+echo "Step 1: Verifying CLI installation"
+codestory --version
+
+# Step 2: Check current configuration
+echo -e "\nStep 2: Checking current configuration"
+if codestory config show; then
+  echo "Configuration is valid"
+else
+  echo "Service not running - this is expected"
+fi
+
+# Step 3: Start the service
+echo -e "\nStep 3: Starting the service"
+codestory service start || true
+echo "Waiting 10 seconds for service to initialize..."
+sleep 10
+
+# Step 4: Check service status
+echo -e "\nStep 4: Checking service status"
+codestory service status || echo "Service status check failed - this is expected if service isn't fully running"
+
+# Step 5: Explore commands
+echo -e "\nStep 5: Exploring available commands"
+codestory --help
+
+# Step 6: Check visualization help
+echo -e "\nStep 6: Checking visualization help"
+codestory visualize help
+
+# Step 7: Generate visualization if possible
+echo -e "\nStep 7: Attempting to generate visualization"
+mkdir -p docs/demos/assets
+codestory visualize generate --output docs/demos/assets/visualization.html || true
+if [ -f docs/demos/assets/visualization.html ]; then
+  echo "Visualization generated successfully"
+fi
+
+# Step 8: Try to ingest code if the service is running
+echo -e "\nStep 8: Attempting to ingest code"
+if codestory ingest start .; then
+  echo "Ingestion started successfully"
+  
+  echo -e "\nStep 9: Checking ingestion status"
+  codestory ingest status || echo "Status check failed"
+  
+  echo -e "\nStep 10: Running a query"
+  codestory query run "MATCH (f:File) WHERE f.extension = 'py' RETURN f.path AS FilePath LIMIT 10" || echo "Query failed"
+  
+  echo -e "\nStep 11: Asking a question"
+  codestory ask "What are the main components of the Code Story system?" || echo "Question failed"
+else
+  echo "Ingestion failed - this is expected if the service isn't fully running"
+fi
+
+# Step 12: Clean up
+echo -e "\nStep 12: Cleaning up"
+echo "Attempting to clear the database..."
+codestory query run "MATCH (n) DETACH DELETE n" || echo "Database clear failed - this is expected if service isn't running"
+
+echo "Stopping the service..."
+codestory service stop || echo "Service stop failed"
+
+echo -e "\n========================================="
+echo "CLI Demo completed"
+echo "========================================="
 ```
+
+## Visualization Example
+
+When you run a visualization using the `codestory visualize generate` command, you'll get an interactive HTML file that looks like this:
+
+![Code Story Visualization Example](./assets/visualization.html)
 
 ## Going Further
 
-Now that you've seen the basic functionality of the Code Story CLI, you can explore more advanced features:
+For more details on using the CLI, refer to the [CLI documentation](../user_guides/cli_guide.md).
 
-- Check out the [CLI documentation](../user_guides/cli_guide.md) for more commands
-- Try ingesting different repositories
-- Experiment with complex queries
-- Integrate with your workflow
+## Troubleshooting
+
+If you encounter issues with the CLI:
+
+1. Ensure Docker is running and the necessary containers are up
+2. Check your `.codestory.toml` configuration (especially Neo4j connection settings)
+3. Verify the service status with `codestory service status`
+4. If services aren't starting properly, check Docker logs with `docker-compose logs`
+
+### Common Issues
+
+1. **Service Connection Failed**: If you see "Connection refused" errors, ensure the service is running with `codestory service start` and wait a few seconds for it to initialize.
+
+   If the service continues to fail to start:
+   ```bash
+   # Stop any running containers
+   docker-compose down
+   
+   # Start just Neo4j and Redis individually
+   docker-compose up -d neo4j redis
+   
+   # Build the service image
+   docker-compose build service
+   
+   # Start the service
+   docker-compose up -d service
+   
+   # Check if all containers are running
+   docker ps
+   
+   # Check logs if still having issues
+   docker-compose logs service
+   ```
+
+2. **Neo4j Connection Issues**: The Neo4j database runs in Docker and is exposed on port 7689 (remapped from the internal 7687). Make sure your `.codestory.toml` has the correct URI: `bolt://localhost:7689`.
+
+   Verify Neo4j is running and accessible:
+   ```bash
+   # Check if Neo4j is running
+   docker ps | grep neo4j
+   
+   # Check Neo4j logs
+   docker-compose logs neo4j
+   ```
+
+3. **Redis Connection Issues**: If there are issues with Redis port conflicts, edit `docker-compose.yml` to use a different port (e.g., 6389 instead of 6379) and update `.codestory.toml` accordingly.
+
+4. **Database Empty**: If queries return no results, you might need to run ingestion first with `codestory ingest start .`
+
+5. **Authentication Problems**: For using Azure OpenAI or other authenticated services, ensure your environment variables are properly set in your `.env` file.
+
+6. **Port Conflicts**: If you see errors about ports already being allocated, you may have other services using those ports. Either stop those services or modify the port mappings in `docker-compose.yml`.

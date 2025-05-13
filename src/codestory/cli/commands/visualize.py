@@ -114,9 +114,54 @@ def generate(
 
         except Exception as e:
             console.print(f"[bold red]Error:[/] {str(e)}")
-            console.print("[yellow]Is the Code Story service running?[/]")
-            console.print("Try starting it with: [cyan]codestory service start[/]")
-            return
+            console.print("[bold red]The Code Story service must be running.[/]")
+            console.print("Starting service automatically...")
+            
+            # Try to start the service
+            import subprocess
+            import time
+            
+            try:
+                # Start the service in the background
+                subprocess.Popen(["codestory", "service", "start"], 
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE)
+                
+                # Wait for service to start (up to 10 seconds)
+                service_started = False
+                for _ in range(10):
+                    time.sleep(1)
+                    try:
+                        client = ctx.obj["client"]
+                        # Try a request to see if service is responsive
+                        html_content = client.generate_visualization(params)
+                        service_started = True
+                        break
+                    except Exception:
+                        console.print("[yellow]Waiting for service to start...[/]")
+                
+                if not service_started:
+                    raise Exception("Failed to start the service automatically")
+                
+                # Determine output path
+                if output:
+                    output_path = os.path.abspath(output)
+                else:
+                    # Create a file in the current directory
+                    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                    output_path = os.path.abspath(f"codestory-graph-{timestamp}.html")
+
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+                # Write visualization to file
+                with open(output_path, "w") as f:
+                    f.write(html_content)
+            
+            except Exception as start_error:
+                console.print(f"[bold red]Failed to start service:[/] {str(start_error)}")
+                console.print("[bold red]Please start the service manually:[/] codestory service start")
+                return
 
     # Show success message
     if output_path:
@@ -257,3 +302,4 @@ def viz_help(ctx: click.Context) -> None:
             expand=False,
         )
     )
+
