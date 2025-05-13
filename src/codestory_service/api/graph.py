@@ -2,25 +2,29 @@
 
 This module provides endpoints for querying the graph database, including
 Cypher queries, vector search, path finding, and natural language queries.
+It also provides visualization endpoints for generating graph visualizations.
 """
 
 import logging
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import HTMLResponse
 
 from ..application.graph_service import GraphService, get_graph_service
 from ..domain.graph import (
+    AskAnswer,
+    AskRequest,
     CypherQuery,
+    PathRequest,
+    PathResult,
     QueryResult,
     VectorQuery,
     VectorResult,
-    PathRequest,
-    PathResult,
-    AskRequest,
-    AskAnswer,
+    VisualizationRequest,
+    VisualizationTheme,
+    VisualizationType,
 )
-from ..infrastructure.msal_validator import get_current_user, require_role
+from ..infrastructure.msal_validator import get_current_user
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -30,6 +34,9 @@ query_router = APIRouter(prefix="/v1/query", tags=["query"])
 
 # Create router for ask endpoint
 ask_router = APIRouter(prefix="/v1/ask", tags=["ask"])
+
+# Create router for visualization endpoint
+visualization_router = APIRouter(prefix="/v1/visualize", tags=["visualization"])
 
 
 @query_router.post(
@@ -70,12 +77,12 @@ async def execute_cypher_query(
         logger.info(f"Executing Cypher query: {query.query[:100]}...")
         return await graph_service.execute_cypher_query(query)
     except Exception as e:
-        logger.error(f"Error executing Cypher query: {str(e)}")
+        logger.error(f"Error executing Cypher query: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error executing query: {str(e)}",
+            detail=f"Error executing query: {e!s}",
         )
 
 
@@ -107,12 +114,12 @@ async def execute_vector_search(
         logger.info(f"Executing vector search: {query.query[:100]}...")
         return await graph_service.execute_vector_search(query)
     except Exception as e:
-        logger.error(f"Error executing vector search: {str(e)}")
+        logger.error(f"Error executing vector search: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error executing vector search: {str(e)}",
+            detail=f"Error executing vector search: {e!s}",
         )
 
 
@@ -147,12 +154,12 @@ async def find_path(
         )
         return await graph_service.find_path(path_request)
     except Exception as e:
-        logger.error(f"Error finding paths: {str(e)}")
+        logger.error(f"Error finding paths: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error finding paths: {str(e)}",
+            detail=f"Error finding paths: {e!s}",
         )
 
 
@@ -184,10 +191,143 @@ async def ask_question(
         logger.info(f"Answering question: {request.question}")
         return await graph_service.answer_question(request)
     except Exception as e:
-        logger.error(f"Error answering question: {str(e)}")
+        logger.error(f"Error answering question: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error answering question: {str(e)}",
+            detail=f"Error answering question: {e!s}",
+        )
+
+
+@visualization_router.get(
+    "",
+    response_class=HTMLResponse,
+    summary="Generate graph visualization",
+    description="Generate an interactive HTML visualization of the code graph.",
+)
+async def generate_visualization(
+    type: VisualizationType = Query(VisualizationType.FORCE, description="Type of visualization"),
+    theme: VisualizationTheme = Query(VisualizationTheme.AUTO, description="Color theme"),
+    focus_node_id: str | None = Query(None, description="Node ID to focus on"),
+    depth: int = Query(2, description="Depth of relationships to include from focus node", ge=1, le=5),
+    max_nodes: int = Query(100, description="Maximum number of nodes to display initially", ge=10, le=500),
+    node_types: str | None = Query(None, description="Comma-separated list of node types to include"),
+    search_query: str | None = Query(None, description="Text search to filter nodes"),
+    include_orphans: bool = Query(False, description="Whether to include nodes with no connections"),
+    graph_service: GraphService = Depends(get_graph_service),
+    user: dict = Depends(get_current_user),
+) -> HTMLResponse:
+    """Generate an interactive HTML visualization of the code graph.
+
+    Args:
+        type: Type of visualization (force, hierarchy, radial, sankey)
+        theme: Color theme (light, dark, auto)
+        focus_node_id: Node ID to focus the visualization on
+        depth: Depth of relationships to include from focus node
+        max_nodes: Maximum number of nodes to display initially
+        node_types: Comma-separated list of node types to include
+        search_query: Text search to filter nodes
+        include_orphans: Whether to include nodes with no connections
+        graph_service: Graph service instance
+        user: Current authenticated user
+
+    Returns:
+        HTMLResponse with the graph visualization
+
+    Raises:
+        HTTPException: If visualization generation fails
+    """
+    try:
+        logger.info(f"Generating graph visualization of type: {type}, theme: {theme}")
+        
+        # Parse node_types if provided
+        parsed_node_types = None
+        if node_types:
+            parsed_node_types = [nt.strip() for nt in node_types.split(",")]
+        
+        # Create visualization request
+        request = VisualizationRequest(
+            type=type,
+            theme=theme,
+            focus_node_id=focus_node_id,
+            depth=depth,
+            filter={
+                "node_types": parsed_node_types,
+                "search_query": search_query,
+                "max_nodes": max_nodes,
+                "include_orphans": include_orphans,
+            } if (parsed_node_types or search_query is not None or max_nodes != 100 or include_orphans) else None
+        )
+        
+        # Generate HTML
+        html_content = await graph_service.generate_visualization(request)
+        return HTMLResponse(content=html_content, media_type="text/html")
+    except Exception as e:
+        logger.error(f"Error generating visualization: {e!s}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating visualization: {e!s}",
+        )
+
+
+# Legacy endpoint for backward compatibility with CLI - redirects to the v1 endpoint
+# This is mounted at the root level in main.py
+@visualization_router.get(
+    "/legacy",
+    response_class=HTMLResponse,
+    summary="Generate graph visualization (legacy endpoint)",
+    description="Legacy endpoint for generating an interactive HTML visualization of the code graph.",
+    include_in_schema=False  # Hide from API docs
+)
+async def generate_visualization_legacy(
+    type: str = Query("force", description="Type of visualization"),
+    theme: str = Query("auto", description="Color theme"),
+    graph_service: GraphService = Depends(get_graph_service),
+    user: dict = Depends(get_current_user),
+) -> HTMLResponse:
+    """Legacy endpoint for generating an interactive HTML visualization of the code graph.
+    This is for backward compatibility with the CLI and GUI.
+
+    Args:
+        type: Type of visualization (force, hierarchy, radial, sankey)
+        theme: Color theme (light, dark, auto)
+        graph_service: Graph service instance
+        user: Current authenticated user
+
+    Returns:
+        HTMLResponse with the graph visualization
+    """
+    # Convert string params to enum values
+    viz_type = VisualizationType.FORCE
+    try:
+        viz_type = VisualizationType(type)
+    except ValueError:
+        logger.warning(f"Invalid visualization type: {type}, using default: force")
+    
+    viz_theme = VisualizationTheme.AUTO
+    try:
+        viz_theme = VisualizationTheme(theme)
+    except ValueError:
+        logger.warning(f"Invalid visualization theme: {theme}, using default: auto")
+    
+    # Create visualization request with limited parameters for backward compatibility
+    request = VisualizationRequest(
+        type=viz_type,
+        theme=viz_theme,
+    )
+    
+    # Generate HTML
+    try:
+        html_content = await graph_service.generate_visualization(request)
+        return HTMLResponse(content=html_content, media_type="text/html")
+    except Exception as e:
+        logger.error(f"Error generating visualization: {e!s}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating visualization: {e!s}",
         )
