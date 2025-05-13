@@ -123,34 +123,29 @@ jobs:
           poetry run pip install email-validator
       - name: Initialize Neo4j database
         run: |
-          # Wait for Neo4j to be fully available
-          for i in {1..30}; do
-            if curl -s http://localhost:7474/browser/ > /dev/null; then
-              echo "Neo4j is up and running"
-              break
-            fi
-            echo "Waiting for Neo4j to start... ($i/30)"
-            sleep 2
-          done
-
           # Initialize Neo4j with constraints and indexes
-          cat > init_test_db.cypher << 'EOF'
-          // Schema Initialization for CI
-          MATCH (n) DETACH DELETE n;
-          CREATE CONSTRAINT unique_file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE;
-          CREATE CONSTRAINT unique_directory_path IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE;
-          CREATE CONSTRAINT unique_function_id IF NOT EXISTS FOR (f:Function) REQUIRE f.id IS UNIQUE;
-          CREATE CONSTRAINT unique_class_id IF NOT EXISTS FOR (c:Class) REQUIRE c.id IS UNIQUE;
-          CREATE INDEX file_name IF NOT EXISTS FOR (f:File) ON (f.name);
-          EOF
-
-          # Run the cypher script
-          cat init_test_db.cypher | poetry run python -c "
+          # Run the cypher script one statement at a time
+          poetry run python -c "
           from neo4j import GraphDatabase
           uri = 'bolt://localhost:7687'
           driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
+          
+          # Execute each statement separately
           with driver.session(database='testdb') as session:
-              session.run('''$(cat init_test_db.cypher)''')
+              # First clean the database
+              print('Cleaning database...')
+              session.run('MATCH (n) DETACH DELETE n')
+              print('Database cleaned')
+              
+              # Then create constraints
+              print('Creating constraints and indexes...')
+              session.run('CREATE CONSTRAINT unique_file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE')
+              session.run('CREATE CONSTRAINT unique_directory_path IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE')
+              session.run('CREATE CONSTRAINT unique_function_id IF NOT EXISTS FOR (f:Function) REQUIRE f.id IS UNIQUE')
+              session.run('CREATE CONSTRAINT unique_class_id IF NOT EXISTS FOR (c:Class) REQUIRE c.id IS UNIQUE')
+              session.run('CREATE INDEX file_name IF NOT EXISTS FOR (f:File) ON (f.name)')
+              print('Constraints and indexes created')
+          
           driver.close()
           print('Neo4j database initialized')
           "
@@ -261,10 +256,23 @@ jobs:
           from neo4j import GraphDatabase
           uri = 'bolt://localhost:7687'
           driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
+          
+          # Execute each statement separately
           with driver.session(database='testdb') as session:
-              with open('tests/fixtures/cypher/01_init_schema.cypher', 'r') as f:
-                  script = f.read()
-                  session.run(script)
+              # First clean the database
+              print('Cleaning database...')
+              session.run('MATCH (n) DETACH DELETE n')
+              print('Database cleaned')
+              
+              # Then create constraints
+              print('Creating constraints and indexes...')
+              session.run('CREATE CONSTRAINT unique_file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE')
+              session.run('CREATE CONSTRAINT unique_directory_path IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE')
+              session.run('CREATE CONSTRAINT unique_function_id IF NOT EXISTS FOR (f:Function) REQUIRE f.id IS UNIQUE')
+              session.run('CREATE CONSTRAINT unique_class_id IF NOT EXISTS FOR (c:Class) REQUIRE c.id IS UNIQUE')
+              session.run('CREATE INDEX file_name IF NOT EXISTS FOR (f:File) ON (f.name)')
+              print('Constraints and indexes created')
+          
           driver.close()
           print('Neo4j database initialized for integration tests')
           "
