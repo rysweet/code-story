@@ -20,13 +20,13 @@ COPY pyproject.toml poetry.lock* /app/
 RUN poetry config virtualenvs.create false
 
 # Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root --only main
+RUN poetry install --no-interaction --no-ansi --no-root --only main --extras azure
 
 # Copy project
 COPY . /app/
 
 # Install project
-RUN poetry install --no-interaction --no-ansi --only main
+RUN poetry install --no-interaction --no-ansi --only main --extras azure
 
 # Development stage
 FROM builder as development
@@ -48,7 +48,11 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl=7.88.* \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+# Explicitly install Azure packages
+RUN pip install azure-identity azure-keyvault-secrets
 
 # Create a non-root user to run the application
 RUN groupadd -r codestory && useradd -r -g codestory codestory

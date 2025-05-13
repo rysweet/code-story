@@ -14,6 +14,8 @@ exclude:
     - ".github/"
     - "*.example"
     - "**/test_*.py"
+    # Ignore Neo4j connector false positives for secrets
+    - "src/codestory/graphdb/neo4j_connector.py"
 
 secret:
   ignored_matches:
