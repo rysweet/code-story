@@ -296,9 +296,16 @@ Code Story uses two main configuration files:
    - UI preferences
    - Advanced settings
 
-### Minimum Required Configuration
+### Required Configuration
 
-At minimum, you'll need a `.env` file with these essential settings:
+Code Story requires a `.env` file with essential connection settings. A comprehensive template file `.env.template` is provided in the repository that you can copy and modify:
+
+```bash
+# Create your .env file from the template
+cp .env.template .env
+```
+
+At minimum, ensure these required settings are configured correctly:
 
 ```
 # Core settings
@@ -306,19 +313,21 @@ ENVIRONMENT=development
 LOG_LEVEL=INFO
 
 # Neo4j settings 
-NEO4J__URI=bolt://localhost:7687
+NEO4J__URI=bolt://localhost:7687  # For local development
 NEO4J__USERNAME=neo4j
 NEO4J__PASSWORD=password
 
 # Service settings
-SERVICE__HOST=localhost
+SERVICE__HOST=localhost  # For local development
 SERVICE__PORT=8000
 
 # Redis settings
-REDIS__URI=redis://localhost:6379
+REDIS__URI=redis://localhost:6379  # For local development
 ```
 
-For Docker environments, use:
+#### Docker Environment Configuration
+
+When running with Docker Compose, use these connection settings instead:
 
 ```
 NEO4J__URI=bolt://neo4j:7687
@@ -326,14 +335,7 @@ REDIS__URI=redis://redis:6379
 SERVICE__HOST=0.0.0.0
 ```
 
-A template file `.env.minimal` is provided in the repository that you can copy to `.env` to get started quickly:
-
-```bash
-# Create a basic .env file from the minimal template
-cp .env.minimal .env
-
-# For Docker environments, adjust the connection settings manually
-```
+The CLI demo script can automatically configure the correct settings for Docker environments.
 
 ### Managing Configuration
 

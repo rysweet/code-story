@@ -17,26 +17,47 @@ codestory --version || python -m codestory.cli.main --version
 # Step 2: Setup and check configuration
 echo -e "\nStep 2: Setting up and checking configuration"
 
-# Create minimal .env file for the demo
-echo -e "Creating minimal configuration..."
-MINIMAL_ENV=".env.minimal"
+# Create .env file for the demo if needed
+echo -e "Checking configuration setup..."
+TEMPLATE_ENV=".env.template"
 ENV_FILE=".env"
 
-if [ -f "$MINIMAL_ENV" ]; then
-  # Show the minimal required configuration
-  echo -e "A minimal configuration requires these settings:"
-  grep -v "^#" "$MINIMAL_ENV" | grep -v "^$" | sed 's/^/  /'
+if [ -f "$TEMPLATE_ENV" ]; then
+  # Show the required configuration
+  echo -e "A working configuration requires these essential settings:"
+  echo -e "  NEO4J__URI=bolt://localhost:7687 (or bolt://neo4j:7687 for Docker)"
+  echo -e "  NEO4J__USERNAME=neo4j"
+  echo -e "  NEO4J__PASSWORD=password"
+  echo -e "  REDIS__URI=redis://localhost:6379 (or redis://redis:6379 for Docker)"
+  echo -e "  SERVICE__HOST=localhost (or 0.0.0.0 for Docker)"
+  echo -e "  SERVICE__PORT=8000"
   
-  # Copy minimal config if needed
+  # Copy template if needed
   if [ ! -f "$ENV_FILE" ]; then
-    echo -e "Creating .env file from minimal template..."
-    cp "$MINIMAL_ENV" "$ENV_FILE"
-    echo -e "✅ Created $ENV_FILE with minimal configuration"
+    echo -e "\nCreating .env file from template..."
+    # Extract just the required settings from the template
+    sed -n '/^# REQUIRED SETTINGS/,/^# OPTIONAL SETTINGS/p' "$TEMPLATE_ENV" | \
+    grep -v '^#===' | \
+    grep -v "^# OPTIONAL" > "$ENV_FILE"
+    
+    # For Docker environment, uncomment Docker settings
+    if [ "$USE_DOCKER" = "true" ] || [ -f "docker-compose.yml" ]; then
+      echo -e "Configuring for Docker environment..."
+      sed -i.bak 's/^# NEO4J__URI=bolt:\/\/neo4j:7687/NEO4J__URI=bolt:\/\/neo4j:7687/' "$ENV_FILE"
+      sed -i.bak 's/^NEO4J__URI=bolt:\/\/localhost:7687/# NEO4J__URI=bolt:\/\/localhost:7687/' "$ENV_FILE"
+      sed -i.bak 's/^# REDIS__URI=redis:\/\/redis:6379/REDIS__URI=redis:\/\/redis:6379/' "$ENV_FILE"
+      sed -i.bak 's/^REDIS__URI=redis:\/\/localhost:6379/# REDIS__URI=redis:\/\/localhost:6379/' "$ENV_FILE"
+      sed -i.bak 's/^# SERVICE__HOST=0.0.0.0/SERVICE__HOST=0.0.0.0/' "$ENV_FILE"
+      sed -i.bak 's/^SERVICE__HOST=localhost/# SERVICE__HOST=localhost/' "$ENV_FILE"
+      rm -f "$ENV_FILE.bak"
+    fi
+    
+    echo -e "✅ Created $ENV_FILE with required configuration"
   else
-    echo -e "Using existing $ENV_FILE file"
+    echo -e "✅ Using existing $ENV_FILE file"
   fi
 else
-  echo -e "❌ Minimal configuration template not found. Using existing configuration."
+  echo -e "⚠️ Template file not found. Using existing configuration."
 fi
 
 # Check the configuration

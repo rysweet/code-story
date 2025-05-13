@@ -187,6 +187,86 @@ def edit_config(ctx: click.Context) -> None:
             os.unlink(temp_file_path)
 
 
+@config.command(name="setup-env", help="Create a new .env file from template.")
+@click.option(
+    "--force", is_flag=True, help="Overwrite existing .env file if it exists."
+)
+@click.option(
+    "--docker", is_flag=True, help="Configure for Docker container networking."
+)
+@click.pass_context
+def setup_env(ctx: click.Context, force: bool = False, docker: bool = False) -> None:
+    """
+    Create a new .env file from the template.
+    
+    This command creates a new .env file with bootstrap settings required to
+    connect to Neo4j, Redis, and other services. Use this when setting up
+    Code Story for the first time.
+    """
+    console: Console = ctx.obj["console"]
+    
+    # Get project root to locate template
+    from codestory.config.settings import get_project_root
+    project_root = get_project_root()
+    
+    # Template path and destination path
+    template_path = os.path.join(project_root, ".env.template")
+    env_path = os.path.join(os.getcwd(), ".env")
+    
+    # Check if destination already exists
+    if os.path.exists(env_path) and not force:
+        console.print("[yellow]Warning:[/] .env file already exists.")
+        if not Confirm.ask("Overwrite existing .env file?"):
+            console.print("Setup cancelled.")
+            return
+    
+    # Check if template exists
+    if not os.path.exists(template_path):
+        console.print(f"[bold red]Error:[/] Template file not found at {template_path}")
+        return
+    
+    try:
+        # Read template
+        with open(template_path, "r") as f:
+            template_content = f.read()
+        
+        # Modify for Docker if needed
+        if docker:
+            # Uncomment Docker settings
+            template_content = template_content.replace(
+                "# NEO4J__URI=bolt://neo4j:7687", 
+                "NEO4J__URI=bolt://neo4j:7687"
+            )
+            template_content = template_content.replace(
+                "# REDIS__URI=redis://redis:6379", 
+                "REDIS__URI=redis://redis:6379"
+            )
+            template_content = template_content.replace(
+                "# SERVICE__HOST=0.0.0.0", 
+                "SERVICE__HOST=0.0.0.0"
+            )
+            # Comment out localhost settings
+            template_content = template_content.replace(
+                "NEO4J__URI=bolt://localhost:7687", 
+                "# NEO4J__URI=bolt://localhost:7687"
+            )
+            template_content = template_content.replace(
+                "REDIS__URI=redis://localhost:6379", 
+                "# REDIS__URI=redis://localhost:6379"
+            )
+        
+        # Write to destination
+        with open(env_path, "w") as f:
+            f.write(template_content)
+        
+        console.print(f"[green]Successfully created[/] .env file at {env_path}")
+        console.print("Edit this file to add your API keys and customize settings.")
+        
+    except Exception as e:
+        console.print(f"[bold red]Error creating .env file:[/] {str(e)}")
+        return
+
+
 def _display_config_table(
     console: Console, config_data: Dict[str, Any], sensitive: bool = False
 ) -> None:

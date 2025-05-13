@@ -271,11 +271,13 @@ class Settings(BaseSettings):
         
         # Load settings from config files with the following precedence:
         # 1. Custom config file specified via CODESTORY_CONFIG_FILE env var
-        # 2. .codestory.toml in the current directory
-        # 3. .codestory.default.toml in the project root
+        # 2. .env file for bootstrap settings
+        # 3. .codestory.toml in the current directory
+        # 4. .codestory.default.toml in the project root
         toml_settings = {}
         config_file = self._CONFIG_FILE
         config_files_to_try = []
+        env_files_to_try = []
         
         # For tests, use the test configuration
         if in_test_env:
@@ -307,8 +309,8 @@ class Settings(BaseSettings):
             default_config_path = os.path.join(get_project_root(), self._DEFAULT_CONFIG_FILE)
             if os.path.exists(default_config_path):
                 config_files_to_try.append(default_config_path)
-
-        # Try to load the first available config file
+                
+        # Try to load the first available TOML config file
         config_loaded = False
         for cf in config_files_to_try:
             if os.path.exists(cf):
@@ -316,7 +318,7 @@ class Settings(BaseSettings):
                     with open(cf, "rb") as f:
                         # Use logging instead of print for debug output
                         if in_test_env:
-                            print(f"Loading config from {cf}")
+                            print(f"Loading TOML config from {cf}")
                         toml_data = tomli.load(f)
                         if in_test_env:
                             print(f"Config loaded, keys: {', '.join(toml_data.keys())}")
