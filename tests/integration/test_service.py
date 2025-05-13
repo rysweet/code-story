@@ -284,6 +284,124 @@ def test_v1_health_check(test_client):
                 mock_celery_health.assert_called_once()
                 mock_openai_health.assert_called_once()
 
+@pytest.mark.integration
+def test_health_check_degraded_service(test_client):
+    """Test health check returns degraded status when some components fail.
+    
+    This test verifies that:
+    1. The service returns HTTP 200 even when components are degraded
+    2. The overall status properly reflects component failures 
+    3. Individual component statuses are reported correctly
+    """
+    # Mock Neo4j as healthy
+    with mock.patch(
+        "codestory_service.infrastructure.neo4j_adapter.Neo4jAdapter.check_health"
+    ) as mock_neo4j_health:
+        mock_neo4j_health.return_value = {
+            "status": "healthy",
+            "details": {"database": "testdb"},
+        }
+
+        # Mock Celery as degraded
+        with mock.patch(
+            "codestory_service.infrastructure.celery_adapter.CeleryAdapter.check_health"
+        ) as mock_celery_health:
+            mock_celery_health.return_value = {
+                "status": "degraded",
+                "details": {
+                    "active_workers": 1, 
+                    "expected_workers": 2,
+                    "message": "Fewer workers than expected"
+                },
+            }
+
+            # Mock OpenAI as unhealthy
+            with mock.patch(
+                "codestory_service.infrastructure.openai_adapter.OpenAIAdapter.check_health"
+            ) as mock_openai_health:
+                mock_openai_health.return_value = {
+                    "status": "unhealthy",
+                    "details": {
+                        "error": "API authentication failed",
+                        "message": "Service running in limited mode"
+                    },
+                }
+
+                # Test both endpoints for consistent behavior
+                endpoints = ["/v1/health", "/health"]
+                
+                for endpoint in endpoints:
+                    # Test the health check endpoint
+                    response = test_client.get(endpoint)
+                    
+                    # Should still return 200 OK even though components are failing
+                    assert response.status_code == 200
+                    data = response.json()
+                    
+                    # Overall status should be degraded
+                    assert data["status"] == "degraded"
+                    assert "components" in data
+                    
+                    # Check individual component statuses
+                    assert data["components"]["neo4j"]["status"] == "healthy"
+                    assert data["components"]["celery"]["status"] == "degraded"
+                    assert data["components"]["openai"]["status"] == "unhealthy"
+                    
+                    # Check that details are preserved
+                    assert "expected_workers" in data["components"]["celery"]["details"]
+                    assert "error" in data["components"]["openai"]["details"]
+
+@pytest.mark.integration
+def test_health_check_all_components_unhealthy(test_client):
+    """Test health check behavior when all components are unhealthy.
+    
+    This test verifies that:
+    1. The service returns HTTP 200 even when all components are unhealthy
+    2. The overall status is marked as unhealthy
+    3. Individual component statuses show as unhealthy
+    """
+    # Mock all components as unhealthy
+    with mock.patch(
+        "codestory_service.infrastructure.neo4j_adapter.Neo4jAdapter.check_health"
+    ) as mock_neo4j_health:
+        mock_neo4j_health.return_value = {
+            "status": "unhealthy",
+            "details": {"error": "Database connection failed"},
+        }
+
+        with mock.patch(
+            "codestory_service.infrastructure.celery_adapter.CeleryAdapter.check_health"
+        ) as mock_celery_health:
+            mock_celery_health.return_value = {
+                "status": "unhealthy",
+                "details": {"error": "No workers available"},
+            }
+
+            with mock.patch(
+                "codestory_service.infrastructure.openai_adapter.OpenAIAdapter.check_health"
+            ) as mock_openai_health:
+                mock_openai_health.return_value = {
+                    "status": "unhealthy",
+                    "details": {"error": "API authentication failed"},
+                }
+
+                # Test both endpoints
+                for endpoint in ["/v1/health", "/health"]:
+                    response = test_client.get(endpoint)
+                    
+                    # Should still return 200 OK
+                    assert response.status_code == 200
+                    data = response.json()
+                    
+                    # Overall status should be unhealthy
+                    assert data["status"] == "unhealthy"
+                    assert "components" in data
+                    
+                    # Check all components show as unhealthy
+                    assert data["components"]["neo4j"]["status"] == "unhealthy"
+                    assert data["components"]["celery"]["status"] == "unhealthy"
+                    assert data["components"]["openai"]["status"] == "unhealthy"
+
 
 @pytest.mark.integration
 def test_openapi_docs(test_client):

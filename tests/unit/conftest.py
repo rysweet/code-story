@@ -113,7 +113,7 @@ def load_env_vars():
     os.environ["INGESTION__CONFIG_PATH"] = "pipeline_config.yml"
 
     # Plugins settings
-    os.environ["PLUGINS__ENABLED"] = "filesystem"
+    os.environ["PLUGINS__ENABLED"] = '["filesystem"]'
 
     # Telemetry settings
     os.environ["TELEMETRY__METRICS_PORT"] = "9090"

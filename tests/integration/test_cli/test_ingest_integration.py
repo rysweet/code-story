@@ -42,6 +42,23 @@ class TestIngestCommands:
         
         # The status should show at least one step (e.g., "filesystem")
         assert "filesystem" in status_result.output.lower() or "running" in status_result.output.lower()
+        
+    @pytest.mark.integration
+    def test_ingest_start_command_format(self, cli_runner: CliRunner) -> None:
+        """Test that 'ingest start' uses positional arguments correctly."""
+        # Test with incorrect option format
+        invalid_result = cli_runner.invoke(app, ["ingest", "start", "--path", "."])
+        
+        # Should fail with an error about unrecognized option
+        assert invalid_result.exit_code != 0
+        assert "Error: No such option: --path" in invalid_result.output
+        
+        # The correct format (with positional arg) should parse correctly
+        # We're not actually running the ingestion, just checking the command parsing
+        help_result = cli_runner.invoke(app, ["ingest", "start", "--help"])
+        assert help_result.exit_code == 0
+        assert "Usage: app ingest start [OPTIONS] REPOSITORY_PATH" in help_result.output
+        assert "REPOSITORY_PATH is the path to the repository to ingest" in help_result.output
     
     @pytest.mark.integration
     @pytest.mark.require_service
