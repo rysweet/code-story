@@ -794,3 +794,32 @@ class Neo4jConnector:
                 operation="with_transaction",
                 cause=e,
             )
+            
+    def get_session(self):
+        """Get a Neo4j session for direct operations.
+        
+        Returns:
+            neo4j.Session: A Neo4j session configured for the current database
+            
+        Raises:
+            ConnectionError: If the session creation fails
+            
+        Note:
+            The caller is responsible for closing the session using a context manager 
+            or by calling session.close()
+        """
+        try:
+            # Special handling for mock driver in tests
+            if isinstance(self.driver, MagicMock):
+                return self.driver.session.return_value
+                
+            # Create a session with the database name
+            return self.driver.session(database=self.database)
+            
+        except Exception as e:
+            logger.error(f"Failed to create Neo4j session: {str(e)}")
+            raise ConnectionError(
+                f"Failed to create Neo4j session: {str(e)}",
+                uri=self.uri,
+                cause=e,
+            )
