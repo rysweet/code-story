@@ -1,5 +1,22 @@
 # Shell Command History
 
+## May 13, 2025 (Visualization Endpoint Implementation and Fixes)
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_api.py::TestVisualizationAPI -v` - Running visualization API tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_infrastructure.py` - Running infrastructure tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/` - Running all service unit tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_cli/test_visualize_integration.py -v` - Running visualization CLI integration tests
+- `cd /Users/ryan/src/msec/code-story && python -m flake8 src/codestory_service/api/graph.py src/codestory_service/domain/graph.py` - Running linting on visualization files
+- `cd /Users/ryan/src/msec/code-story && pip install flake8 && python -m flake8 src/codestory_service/api/graph.py src/codestory_service/domain/graph.py` - Installing and running linting
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_service.py -v` - Running service integration tests
+- `cd /Users/ryan/src/msec/code-story && python -m ruff check src/codestory_service/api/graph.py src/codestory_service/domain/graph.py` - Running ruff linting
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_demos/test_cli_demo.py -v` - Running CLI demo tests
+- `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.main visualize --help` - Testing the CLI visualization command
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking git status
+- `cd /Users/ryan/src/msec/code-story && git add src/codestory_service/api/graph.py src/codestory_service/domain/graph.py tests/unit/test_codestory_service/test_infrastructure.py` - Staging files for commit
+- `cd /Users/ryan/src/msec/code-story && git commit` - Creating commit
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking status after commit
+- `cd /Users/ryan/src/msec/code-story && git push` - Pushing changes to GitHub
+
 ## May 13, 2025 (Neo4j GDS Updates)
 - `head -n 50 /Users/ryan/src/msec/code-story/src/codestory/graphdb/neo4j_connector.py` - Viewing beginning of neo4j_connector.py file
 - `grep -A 50 "def create_connector" /Users/ryan/src/msec/code-story/src/codestory/graphdb/neo4j_connector.py` - View the create_connector function definition
