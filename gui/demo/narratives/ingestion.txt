@@ -1,0 +1,10 @@
+Code Ingestion
+
+The ingestion process analyzes your codebase to build a knowledge graph. This involves:
+
+1. Scanning the filesystem for code files
+2. Analyzing code structure and relationships
+3. Generating natural language summaries using AI
+4. Creating a graph representation in Neo4j
+
+You can ingest any local or remote Git repository. The process runs as a background job, and you can monitor its progress in real-time.

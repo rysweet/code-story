@@ -61,6 +61,17 @@ deployment/azure
 ```{toctree}
 :maxdepth: 1
 :hidden:
+:caption: Demos
+
+demos/index
+demos/cli_demo
+demos/gui_demo
+demos/mcp_demo
+```
+
+```{toctree}
+:maxdepth: 1
+:hidden:
 :caption: Contributing
 
 contributing

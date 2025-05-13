@@ -1,0 +1,12 @@
+Welcome to the Code Story Demo!
+
+Code Story converts codebases into richly-linked knowledge graphs with natural language summaries. This demo will walk you through the main features of the system.
+
+The GUI provides a visual interface for:
+- Configuring connection settings
+- Ingesting code repositories
+- Exploring the code graph
+- Asking questions about the code
+- Using the MCP tools
+
+Let's start by configuring the system.

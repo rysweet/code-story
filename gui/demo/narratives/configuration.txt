@@ -1,0 +1,12 @@
+Configuration Settings
+
+Before using Code Story, we need to configure connections to:
+1. Neo4j graph database - Stores the code knowledge graph
+2. OpenAI API - Provides the AI analysis capabilities
+
+The configuration page allows you to set:
+- Database connection details
+- API keys for AI services
+- Processing parameters
+
+These settings can also be provided through environment variables or a configuration file.

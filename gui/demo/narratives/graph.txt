@@ -1,0 +1,12 @@
+Graph Visualization
+
+The graph view provides an interactive visualization of your codebase. 
+
+Key features:
+- 3D visualization of code relationships
+- Color-coded nodes for different entity types (files, functions, classes)
+- Interactive exploration - click nodes to see details
+- Filtering by node type, relationship, or search terms
+- Ability to focus on specific parts of the codebase
+
+This visualization helps you understand the structure and relationships in your code at a glance.

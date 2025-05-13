@@ -1,0 +1,11 @@
+MCP (Machine Callable Packages) Playground
+
+The MCP interface allows AI assistants and agents to interact with your codebase programmatically.
+
+Available tools include:
+- search_graph: Run Cypher queries against the code graph
+- path_to: Find relationships between code entities
+- similar_code: Find similar code patterns
+- summarize_node: Get detailed summaries of code entities
+
+This playground lets you test these tools directly before integrating them with agents or IDE extensions.
