@@ -284,13 +284,30 @@ The default configuration is designed to work with the standard docker-compose s
 
 ### Docker Compose Integration
 
-The CLI automatically maps container service names to localhost with appropriate ports:
+The CLI automatically detects and works with Docker Compose services. When using Docker Compose, the CLI maps container service names to localhost with appropriate ports:
 
 | Container Service | CLI Connection |
 |-------------------|----------------|
 | `neo4j:7687` | `localhost:7687` |
 | `redis:6379` | `localhost:6379` |
 | `service:8000` | `localhost:8000` |
+
+#### Using the CLI with Docker Compose
+
+The service commands (`start`, `stop`, `restart`) automatically work with Docker Compose if a `docker-compose.yml` file is detected:
+
+```bash
+# Start services using Docker Compose
+cs service start
+
+# Check status of services running in Docker
+cs service status
+
+# Stop services
+cs service stop
+```
+
+A full demo script showing how to use the CLI with Docker Compose is available in `scripts/run_cli_demo_docker.sh`.
 
 ## Troubleshooting
 
