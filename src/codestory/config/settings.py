@@ -277,7 +277,6 @@ class Settings(BaseSettings):
         toml_settings = {}
         config_file = self._CONFIG_FILE
         config_files_to_try = []
-        env_files_to_try = []
         
         # For tests, use the test configuration
         if in_test_env:

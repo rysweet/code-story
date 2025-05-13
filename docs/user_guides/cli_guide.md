@@ -336,7 +336,6 @@ SERVICE__HOST=0.0.0.0
 ```
 
 The CLI demo script can automatically configure the correct settings for Docker environments.
-
 ### Managing Configuration
 
 Use the following commands to manage your configuration:
