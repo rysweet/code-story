@@ -17,17 +17,24 @@ fi
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "Checking CI status for branch: $CURRENT_BRANCH"
 
-# Get repository info from git config
-REPO_URL=$(git config --get remote.origin.url)
-REPO_NAME=$(basename -s .git "$REPO_URL")
-REPO_OWNER=$(dirname "$REPO_URL" | xargs basename)
-
-# Handle SSH vs HTTPS URLs
-if [[ "$REPO_URL" == *":"* ]]; then
-    # SSH format: git@github.com:owner/repo.git
-    REPO_OWNER=$(echo "$REPO_URL" | cut -d ':' -f 2 | cut -d '/' -f 1)
-    REPO_NAME=$(echo "$REPO_URL" | cut -d '/' -f 2 | sed 's/\.git$//')
+# Get repository info directly from GitHub CLI
+REPO_INFO=$(gh repo view --json nameWithOwner,url)
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to get repository information using 'gh repo view'."
+    echo "Make sure you are in a valid GitHub repository and have necessary permissions."
+    exit 1
 fi
+
+# Parse repository owner and name
+REPO_WITH_OWNER=$(echo "$REPO_INFO" | grep -o '"nameWithOwner":"[^"]*"' | cut -d'"' -f4)
+if [ -z "$REPO_WITH_OWNER" ]; then
+    echo "Error: Could not determine repository owner and name."
+    echo "Repository info: $REPO_INFO"
+    exit 1
+fi
+
+REPO_OWNER=$(echo "$REPO_WITH_OWNER" | cut -d'/' -f1)
+REPO_NAME=$(echo "$REPO_WITH_OWNER" | cut -d'/' -f2)
 
 # Check the workflow runs
 echo "Fetching latest workflow runs..."
