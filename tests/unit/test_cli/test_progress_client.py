@@ -37,7 +37,7 @@ class TestProgressClient:
             assert client.job_id == "test-123"
             assert client.callback == callback
             assert client.use_redis is True
-            assert client.channel == "status::test-123"
+            assert client.channel == "codestory:ingestion:progress:test-123"
             
             # Check Redis initialization
             mock_redis.assert_called_once_with("redis://localhost:6379")
@@ -70,9 +70,10 @@ class TestProgressClient:
             assert client.use_redis is False
             assert client.redis is None
             
-            # Check console output
-            console.print.assert_called_once()
-            assert "Warning" in console.print.call_args[0][0]
+            # Check console output - now we print both connecting message and warning
+            assert console.print.call_count == 2
+            assert "Connecting to Redis" in console.print.call_args_list[0][0][0]
+            assert "Warning" in console.print.call_args_list[1][0][0]
     
     def test_start_and_stop_redis_mode(self) -> None:
         """Test starting and stopping in Redis mode."""
@@ -155,7 +156,7 @@ class TestProgressClient:
             client._subscribe_redis()
             
             # Check pubsub usage
-            mock_pubsub.subscribe.assert_called_once_with("status::test-123")
+            mock_pubsub.subscribe.assert_called_once_with("codestory:ingestion:progress:test-123")
             mock_pubsub.unsubscribe.assert_called_once()
             mock_pubsub.close.assert_called_once()
             

@@ -239,6 +239,7 @@ class Settings(BaseSettings):
     azure: AzureSettings
 
     _CONFIG_FILE: ClassVar[str] = ".codestory.toml"
+    _DEFAULT_CONFIG_FILE: ClassVar[str] = ".codestory.default.toml"
     _ENV_FILE: ClassVar[str] = ".env"
 
     # Pydantic settings configuration
@@ -265,10 +266,17 @@ class Settings(BaseSettings):
             print(f"Detected test environment. Current directory: {os.getcwd()}")
             print(f"Project root: {get_project_root()}")
 
-        # Load settings from .codestory.toml if it exists
+        # Check for custom config file specified in environment variable
+        custom_config_file = os.environ.get("CODESTORY_CONFIG_FILE")
+        
+        # Load settings from config files with the following precedence:
+        # 1. Custom config file specified via CODESTORY_CONFIG_FILE env var
+        # 2. .codestory.toml in the current directory
+        # 3. .codestory.default.toml in the project root
         toml_settings = {}
         config_file = self._CONFIG_FILE
-
+        config_files_to_try = []
+        
         # For tests, use the test configuration
         if in_test_env:
             # Look for test_config.toml in various locations
@@ -283,23 +291,50 @@ class Settings(BaseSettings):
             for test_path in test_config_paths:
                 if os.path.exists(test_path):
                     config_file = test_path
+                    config_files_to_try = [test_path]
                     print(f"Found test config at: {test_path}")
                     break
                 else:
                     print(f"Test config not found at: {test_path}")
+        else:
+            # Normal operation - try configs in order of precedence
+            if custom_config_file:
+                config_files_to_try.append(custom_config_file)
+            
+            config_files_to_try.append(self._CONFIG_FILE)
+            
+            # Add default config as a fallback
+            default_config_path = os.path.join(get_project_root(), self._DEFAULT_CONFIG_FILE)
+            if os.path.exists(default_config_path):
+                config_files_to_try.append(default_config_path)
 
-        if os.path.exists(config_file):
-            try:
-                with open(config_file, "rb") as f:
-                    print(f"Loading config from {config_file}")
-                    toml_data = tomli.load(f)
-                    print(f"Config loaded, keys: {', '.join(toml_data.keys())}")
-                    toml_settings = flatten_dict(toml_data)
-                    print(f"Flattened settings created, length: {len(toml_settings)}")
-            except Exception as e:
-                print(f"Error loading {config_file}: {e}")
-                import traceback
-                traceback.print_exc()
+        # Try to load the first available config file
+        config_loaded = False
+        for cf in config_files_to_try:
+            if os.path.exists(cf):
+                try:
+                    with open(cf, "rb") as f:
+                        # Use logging instead of print for debug output
+                        if in_test_env:
+                            print(f"Loading config from {cf}")
+                        toml_data = tomli.load(f)
+                        if in_test_env:
+                            print(f"Config loaded, keys: {', '.join(toml_data.keys())}")
+                        toml_settings = flatten_dict(toml_data)
+                        if in_test_env:
+                            print(f"Flattened settings created, length: {len(toml_settings)}")
+                        config_loaded = True
+                        break
+                except Exception as e:
+                    if in_test_env:
+                        print(f"Error loading {cf}: {e}")
+                        import traceback
+                        traceback.print_exc()
+                    # Try the next config file
+        
+        # If no config files were loaded successfully
+        if not config_loaded and in_test_env:
+            pass
         elif in_test_env:
             # Provide default settings for tests if no config file is found
             print("No test configuration found. Using default test settings.")
@@ -392,29 +427,34 @@ class Settings(BaseSettings):
         # Merge settings, with environment variables taking precedence
         merged_settings = {**toml_settings, **data}
 
-        # Debug the settings before initialization
-        print(f"Merged settings keys: {', '.join(merged_settings.keys())}")
-        print(f"Number of merged settings: {len(merged_settings)}")
+        # Debug the settings before initialization (only in test environment)
+        if in_test_env:
+            print(f"Merged settings keys: {', '.join(merged_settings.keys())}")
+            print(f"Number of merged settings: {len(merged_settings)}")
 
         # Check if we have flattened settings (looking for keys with separator)
         has_flattened = any("__" in k for k in merged_settings.keys())
 
         if has_flattened:
-            print("Detected flattened settings, converting to nested structure...")
+            if in_test_env:
+                print("Detected flattened settings, converting to nested structure...")
             # Convert flattened settings to nested structure
             nested_settings = unflatten_dict(merged_settings)
-            print(f"Nested settings top-level keys: {', '.join(nested_settings.keys())}")
+            if in_test_env:
+                print(f"Nested settings top-level keys: {', '.join(nested_settings.keys())}")
 
             # Ensure all required fields exist
             required_fields = ["neo4j", "redis", "openai", "azure_openai", "service",
                            "ingestion", "plugins", "telemetry", "interface", "azure"]
             for field in required_fields:
                 if field not in nested_settings:
-                    print(f"Adding missing required nested field: {field}")
+                    if in_test_env:
+                        print(f"Adding missing required nested field: {field}")
                     nested_settings[field] = {}
 
             # Initialize with nested settings
-            print("Initializing with nested settings")
+            if in_test_env:
+                print("Initializing with nested settings")
             super().__init__(**nested_settings)
             return
 
@@ -425,7 +465,8 @@ class Settings(BaseSettings):
             for field in required_fields:
                 # Check if the field exists in any form (flat or nested)
                 if not any(k.startswith(f"{field}__") or k == field for k in merged_settings.keys()):
-                    print(f"Adding missing required field: {field}")
+                    if in_test_env:
+                        print(f"Adding missing required field: {field}")
                     merged_settings[field] = {}
 
         super().__init__(**merged_settings)

@@ -3,6 +3,7 @@ Service client for interacting with the Code Story service API.
 """
 
 import json
+import time
 import webbrowser
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
@@ -35,16 +36,24 @@ class ServiceClient:
         """
         self.settings = settings or get_settings()
 
-        # Get port from settings, with fallback to default port
+        # Get host and port from settings, with fallback to default
         try:
+            # Default to localhost for CLI usage
+            host = getattr(self.settings.service, "host", "localhost")
+            
+            # Always use localhost for CLI client
+            if host == "0.0.0.0":
+                host = "localhost"
+                
             port = getattr(self.settings.service, "port", 8000)
             # Convert to int in case it's a string or mock
             if not isinstance(port, int):
                 port = 8000
         except (AttributeError, ValueError):
+            host = "localhost"
             port = 8000
 
-        self.base_url = base_url or f"http://localhost:{port}/v1"
+        self.base_url = base_url or f"http://{host}:{port}/v1"
         self.api_key = api_key
 
         # Try to get API key from settings
@@ -88,13 +97,72 @@ class ServiceClient:
 
         Returns:
             Health check response data.
+        
+        This method attempts to call both the v1 health endpoint (/v1/health) and
+        the legacy endpoint (/health). It will try the legacy endpoint first, then
+        the v1 endpoint if that fails.
         """
+        error_messages = []
+        
+        # Try legacy endpoint first (/health)
         try:
             response = self.client.get("/health")
             response.raise_for_status()
-            return response.json()
+            health_data = response.json()
+            # Check if Celery/Redis status is included
+            if "components" not in health_data:
+                health_data["components"] = {}
+            return health_data
         except httpx.HTTPError as e:
-            raise ServiceError(f"Health check failed: {str(e)}")
+            error_messages.append(f"Legacy health endpoint failed: {str(e)}")
+            # Use print instead of debug if not available
+            if hasattr(self.console, "debug"):
+                self.console.debug(f"Legacy health endpoint failed: {str(e)}")
+            else:
+                print(f"Legacy health endpoint failed: {str(e)}")
+        
+        # If that fails, try the v1 endpoint
+        try:
+            response = self.client.get("/v1/health")
+            response.raise_for_status()
+            health_data = response.json()
+            # Check if Celery/Redis status is included
+            if "components" not in health_data:
+                health_data["components"] = {}
+            return health_data
+        except httpx.HTTPError as e:
+            error_messages.append(f"V1 health endpoint failed: {str(e)}")
+            # Use print instead of debug if not available
+            if hasattr(self.console, "debug"):
+                self.console.debug(f"V1 health endpoint failed: {str(e)}")
+            else:
+                print(f"V1 health endpoint failed: {str(e)}")
+        
+        # Try fallback to raw health check - some installations only return 200 but no valid JSON
+        try:
+            # Just check if the server is responding at all
+            response = self.client.request("GET", "/health")
+            if response.status_code == 200:
+                self.console.debug("Raw health check succeeded with status code 200 but invalid JSON")
+                return {
+                    "status": "degraded",
+                    "message": "Service is running but returned invalid health check data",
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "components": {
+                        "celery": {"status": "unknown"},
+                        "redis": {"status": "unknown"}
+                    }
+                }
+        except Exception as e:
+            error_messages.append(f"Raw health check failed: {str(e)}")
+            # Use print instead of debug if not available
+            if hasattr(self.console, "debug"):
+                self.console.debug(f"Raw health check failed: {str(e)}")
+            else:
+                print(f"Raw health check failed: {str(e)}")
+        
+        # If both failed, raise an error with both messages
+        raise ServiceError(f"Health check failed: {'; '.join(error_messages)}")
 
     def start_ingestion(self, repository_path: str) -> Dict[str, Any]:
         """

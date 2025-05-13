@@ -21,6 +21,7 @@ class TestServiceClient:
             mock_settings = MagicMock()
             mock_service = MagicMock()
             mock_service.port = 8000
+            mock_service.host = "localhost"  # Set host explicitly
             # Explicitly set api_key to None
             mock_service.api_key = None
             mock_settings.service = mock_service
@@ -99,18 +100,21 @@ class TestServiceClient:
         result = client.check_service_health()
         
         # Verify result
-        assert result == {"status": "healthy"}
-        client.client.get.assert_called_once_with("/health")
+        assert result["status"] == "healthy"
+        # First call to /health
+        client.client.get.assert_called_with("/health")
     
     def test_check_service_health_error(self) -> None:
         """Test health check with error."""
         # Mock response
         client = ServiceClient()
         client.client = MagicMock()
+        # Both endpoint calls will fail with HTTP error
         client.client.get.side_effect = httpx.HTTPError("Error")
+        client.client.request.side_effect = httpx.HTTPError("Error")
         
         # Check health
-        with pytest.raises(ServiceError, match="Health check failed: Error"):
+        with pytest.raises(ServiceError, match="Health check failed:"):
             client.check_service_health()
     
     def test_start_ingestion(self) -> None:

@@ -180,20 +180,47 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
     def update_progress(data: Dict[str, Any]) -> None:
         nonlocal step_tasks
 
-        # Update overall progress
-        overall_status = data.get("status", "running")
-        overall_progress = data.get("progress", 0)
+        # Handle different response formats (service API vs Celery/Redis format)
+        # Format conversion for Redis PubSub messages
+        if "job_id" in data and "step" in data:
+            from codestory.ingestion_pipeline.step import StepStatus
+            # This is a JobProgressEvent from Redis
+            overall_status = data.get("status", StepStatus.RUNNING).lower()
+            overall_progress = data.get("overall_progress", 0)
+            
+            # Convert to steps format
+            if "steps" not in data:
+                data["steps"] = [{
+                    "name": data.get("step", "Processing"),
+                    "status": overall_status,
+                    "progress": data.get("progress", 0),
+                    "message": data.get("message", "")
+                }]
+        else:
+            # Regular job status format
+            overall_status = data.get("status", "running").lower()
+            overall_progress = data.get("progress", 0)
 
+        # Update overall progress
         progress.update(
             overall_task, completed=overall_progress, status=overall_status.capitalize()
         )
 
         # Update step progress
         steps = data.get("steps", [])
+        
+        # If no steps but we have current_step info, create a step entry
+        if not steps and "current_step" in data:
+            steps = [{
+                "name": data.get("current_step", "Processing"),
+                "status": overall_status,
+                "progress": overall_progress,
+                "message": data.get("message", "")
+            }]
 
         for step in steps:
             step_name = step.get("name", "unknown")
-            step_status = step.get("status", "pending")
+            step_status = step.get("status", "pending").lower()
             step_progress = step.get("progress", 0)
 
             if step_name not in step_tasks:
@@ -223,6 +250,8 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
         callback=update_progress,
         console=console,
         settings=ctx.obj["settings"],
+        # Explicitly get Redis URL from settings if available
+        redis_url=ctx.obj["settings"].redis.uri if hasattr(ctx.obj["settings"], "redis") else None,
     )
 
     # Start tracking progress

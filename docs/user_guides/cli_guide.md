@@ -78,21 +78,26 @@ cs service restart
 ### Ingestion
 
 ```bash
-# Ingest a repository
-cs ingest /path/to/repo
+# Start ingestion of a repository with real-time progress tracking
+cs ingest start /path/to/repo
 
-# Ingest a specific branch
-cs ingest /path/to/repo --branch main
+# Start ingestion without progress display
+cs ingest start /path/to/repo --no-progress
 
 # Ingest with selected steps
-cs ingest /path/to/repo --steps filesystem,summarizer
+cs ingest start /path/to/repo --steps filesystem,summarizer
 
 # List active and completed jobs
-cs ingest list
+cs ingest jobs
 
 # Check status of a specific job
 cs ingest status JOB_ID
+
+# Cancel a running job
+cs ingest stop JOB_ID
 ```
+
+The ingestion commands use the Celery task queue behind the scenes to process tasks asynchronously. The CLI provides real-time progress tracking via Redis PubSub or HTTP polling as a fallback.
 
 ### Querying
 
@@ -187,14 +192,66 @@ cs query cypher "MATCH (f:File)-[:IMPORTS]->(m:Module) WHERE m.name = 'logging' 
 cs query search "SELECT.*FROM users" --node-type Method
 ```
 
+## Real-time Progress Updates
+
+The CLI provides real-time progress updates for long-running operations like ingestion jobs. These updates are delivered via two mechanisms:
+
+1. **Redis Pub/Sub (Preferred)**: The CLI connects directly to Redis to receive live updates from the background workers. This provides immediate feedback on job progress.
+
+2. **HTTP Polling (Fallback)**: If Redis is unavailable, the CLI falls back to polling the service API at regular intervals.
+
+The system automatically selects the best available method. When using Redis, you'll see more detailed and responsive updates.
+
+### Example with Redis Connection
+
+```bash
+# Start an ingestion job with real-time updates via Redis
+cs ingest start /path/to/repo
+# Connected to Redis for real-time progress updates
+# Job ID: 3f7a2d9e-5b1c-4c07-8f7d-a6b3c4d5e6f7
+# Overall Progress: [=======>              ] 42%  Running
+# filesystem      [===========>          ] 72%  Running
+```
+
+### Example with HTTP Polling (Fallback)
+
+```bash
+# Start an ingestion job with fallback polling
+cs ingest start /path/to/repo
+# Warning: Redis not available, falling back to polling
+# Job ID: 3f7a2d9e-5b1c-4c07-8f7d-a6b3c4d5e6f7
+# Overall Progress: [=======>              ] 42%  Running
+# filesystem      [===========>          ] 72%  Running
+```
+
+## Service Health Monitoring
+
+The `service status` command now provides detailed health information about all service components:
+
+```bash
+cs service status
+# Service Status
+# ┌─────────────────┬────────────┬──────────────────────────────────────┐
+# │ Component       │ Status     │ Details                              │
+# ├─────────────────┼────────────┼──────────────────────────────────────┤
+# │ Service Overall │ Healthy    │ 2024-05-13T15:30:45Z                 │
+# │ Neo4j           │ Healthy    │ Connected to bolt://localhost:7687   │
+# │ Redis           │ Healthy    │ Connection: redis://localhost:6379/0 │
+# │ Celery          │ Healthy    │ Workers: 2, Tasks: 15                │
+# │ OpenAI          │ Healthy    │ Model: gpt-4o                        │
+# └─────────────────┴────────────┴──────────────────────────────────────┘
+# Service is running. Version: 0.1.0, Uptime: 3602 seconds
+```
+
 ## Environment Variables
 
 The CLI respects the following environment variables:
 
 | Variable | Description |
 |----------|-------------|
-| `CODESTORY_CONFIG_PATH` | Path to configuration file |
+| `CODESTORY_CONFIG_FILE` | Path to configuration file |
 | `CODESTORY_SERVICE_URL` | URL of the Code Story service |
+| `CODESTORY_REDIS_URL` | URL of the Redis server for real-time updates |
 | `CODESTORY_LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `CODESTORY_NO_COLOR` | Disable colorized output if set to "1" |
 
@@ -213,6 +270,28 @@ cs --install-completion zsh
 cs --install-completion fish
 ```
 
+## Configuration
+
+The CLI uses a layered configuration approach with the following precedence:
+
+1. Environment variables
+2. Command-line options
+3. Custom config file specified via `CODESTORY_CONFIG_FILE`
+4. `.codestory.toml` in the current directory
+5. `.codestory.default.toml` in the project root
+
+The default configuration is designed to work with the standard docker-compose setup without any additional configuration.
+
+### Docker Compose Integration
+
+The CLI automatically maps container service names to localhost with appropriate ports:
+
+| Container Service | CLI Connection |
+|-------------------|----------------|
+| `neo4j:7687` | `localhost:7687` |
+| `redis:6379` | `localhost:6379` |
+| `service:8000` | `localhost:8000` |
+
 ## Troubleshooting
 
 If you encounter any issues with the CLI:
@@ -225,6 +304,8 @@ If you encounter any issues with the CLI:
 2. Check the connection settings:
    ```bash
    cs config get service.url
+   cs config get neo4j.uri
+   cs config get redis.uri
    ```
 
 3. Enable verbose output for detailed logs:
@@ -232,7 +313,17 @@ If you encounter any issues with the CLI:
    cs --verbose ingest status JOB_ID
    ```
 
-4. Reset the configuration if needed:
+4. Test Redis connectivity:
+   ```bash
+   redis-cli -u $(cs config get redis.uri) ping
+   ```
+
+5. Check Celery worker status:
+   ```bash
+   cs service status | grep Celery
+   ```
+
+6. Reset the configuration if needed:
    ```bash
    cs config reset
    ```
