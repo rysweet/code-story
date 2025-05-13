@@ -111,13 +111,13 @@ def load_env_vars():
     os.environ["NEO4J_URI"] = "bolt://localhost:7688"
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "codestory-test"
+    os.environ["NEO4J_DATABASE"] = "testdb"
 
     # Set Neo4j settings for the code-story app via double-underscore format
     os.environ["NEO4J__URI"] = "bolt://localhost:7688"
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "codestory-test"
+    os.environ["NEO4J__DATABASE"] = "testdb"
 
     # Set Redis settings
     # Test Redis runs on port 6380 instead of 6379 to avoid conflicts
@@ -206,7 +206,7 @@ def neo4j_connector():
         uri="bolt://localhost:7688",  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
-        database="codestory-test",  # Database defined in docker-compose.test.yml
+        database="testdb",  # Database defined in docker-compose.test.yml
     )
 
     # Clear the database before each test - this is a WRITE operation

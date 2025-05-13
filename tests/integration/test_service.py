@@ -44,7 +44,7 @@ def neo4j_connector():
         uri="bolt://localhost:7688",  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
-        database="codestory-test",  # Database defined in docker-compose.test.yml
+        database="testdb",  # Database defined in docker-compose.test.yml
     )
 
     try:
@@ -82,8 +82,8 @@ def test_client(neo4j_connector):
     # These will be used by various components that might create new Neo4j connectors
 
     # For the main application
-    os.environ["NEO4J_DATABASE"] = "codestory-test"
-    os.environ["CS_NEO4J_DATABASE"] = "codestory-test"
+    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["CS_NEO4J_DATABASE"] = "testdb"
     os.environ["NEO4J_URI"] = "bolt://localhost:7688"
     os.environ["CS_NEO4J_URI"] = "bolt://localhost:7688"
     os.environ["NEO4J_USERNAME"] = "neo4j"
@@ -92,8 +92,8 @@ def test_client(neo4j_connector):
     os.environ["CS_NEO4J_PASSWORD"] = "password"
 
     # Also set these for internal services and components
-    os.environ["GRAPHDB_DATABASE"] = "codestory-test"
-    os.environ["CODESTORY_NEO4J_DATABASE"] = "codestory-test"
+    os.environ["GRAPHDB_DATABASE"] = "testdb"
+    os.environ["CODESTORY_NEO4J_DATABASE"] = "testdb"
 
     # Create a test user instance for authentication
     test_user = {
@@ -131,7 +131,7 @@ def test_client(neo4j_connector):
         settings = get_settings()
 
         # Forcefully ensure the connector has the right database
-        neo4j_connector.database = "codestory-test"
+        neo4j_connector.database = "testdb"
         print(f"Neo4j connector database explicitly set to: {neo4j_connector.database}")
 
         # Create a new connector directly to validate environment variables are working
@@ -172,7 +172,7 @@ def test_client(neo4j_connector):
         }
 
         # Ensure any new Neo4j connectors use the test database
-        os.environ["NEO4J_DATABASE"] = "codestory-test"
+        os.environ["NEO4J_DATABASE"] = "testdb"
 
         test_client = TestClient(app)
         yield test_client
@@ -228,7 +228,7 @@ def test_v1_health_check(test_client):
         mock_neo4j_health.return_value = {
             "status": "healthy",
             "details": {
-                "database": "codestory-test",
+                "database": "testdb",
                 "version": "5.0",  # String not a dict
             },
         }
@@ -307,7 +307,7 @@ def test_query_api(test_client, neo4j_connector):
     the API with a mock to avoid database issues, and then cleans up.
     """
     # Ensure Neo4j database name is set correctly
-    os.environ["NEO4J_DATABASE"] = "codestory-test"
+    os.environ["NEO4J_DATABASE"] = "testdb"
 
     # Create a test node directly in the database
     neo4j_connector.execute_query(

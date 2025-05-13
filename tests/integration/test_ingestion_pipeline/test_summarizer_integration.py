@@ -350,7 +350,7 @@ def neo4j_connector():
         uri="bolt://localhost:7688",  # Test port from docker-compose.test.yml
         username="neo4j",
         password="password",
-        database="codestory-test",
+        database="testdb",
     )
 
     # Clear the database before each test

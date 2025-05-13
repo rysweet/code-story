@@ -36,7 +36,7 @@ def get_test_settings() -> Settings:
         uri="bolt://localhost:7688",  # Test port from docker-compose.test.yml
         username="neo4j",
         password="password",
-        database="codestory-test",
+        database="testdb",
     )
 
     # Define redis test settings

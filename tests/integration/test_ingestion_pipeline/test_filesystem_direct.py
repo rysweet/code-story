@@ -21,13 +21,13 @@ from ..test_config import get_test_settings
 os.environ["NEO4J__URI"] = "bolt://localhost:7688"
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "codestory-test"
+os.environ["NEO4J__DATABASE"] = "testdb"
 
 # Test settings for test connector
 TEST_URI = "bolt://localhost:7688"
 TEST_USERNAME = "neo4j"
 TEST_PASSWORD = "password"
-TEST_DATABASE = "codestory-test"
+TEST_DATABASE = "testdb"
 
 # Create Neo4j settings object for testing
 TEST_NEO4J_SETTINGS = Neo4jSettings(

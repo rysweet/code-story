@@ -16,7 +16,7 @@ import pytest
 os.environ["NEO4J__URI"] = "bolt://localhost:7688"
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "codestory-test"
+os.environ["NEO4J__DATABASE"] = "testdb"
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector

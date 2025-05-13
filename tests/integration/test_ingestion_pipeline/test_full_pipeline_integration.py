@@ -36,7 +36,7 @@ def ensure_services_running():
             uri="bolt://localhost:7688",
             username="neo4j",
             password="password",
-            database="codestory-test",
+            database="testdb",
         )
         connector.execute_query("RETURN 1 as test")
         connector.close()
@@ -56,7 +56,7 @@ def ensure_services_running():
                     uri="bolt://localhost:7688",
                     username="neo4j",
                     password="password",
-                    database="codestory-test",
+                    database="testdb",
                 )
                 connector.execute_query("RETURN 1 as test")
                 connector.close()
@@ -126,7 +126,7 @@ class TestFullPipelineIntegration(unittest.TestCase):
             uri="bolt://localhost:7688",
             username="neo4j",
             password="password",
-            database="codestory-test"
+            database="testdb"
         )
 
         # Start a Celery worker for the tests if needed
