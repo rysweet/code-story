@@ -27,11 +27,11 @@ from codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
 @pytest.fixture
 def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     """Create a Neo4j connector for testing with a test container."""
-    # Force testdb usage
-    uri = "bolt://localhost:7688"
-    username = "neo4j"
-    password = "password"
-    database = "testdb"
+    # Force testdb usage - using environment variables or defaults
+    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    username = os.environ.get("NEO4J_USERNAME", "neo4j")
+    password = os.environ.get("NEO4J_PASSWORD", "password")
+    database = os.environ.get("NEO4J_DATABASE", "testdb")
 
     print(f"Using Neo4j connection: {uri}, database: {database}")
 
