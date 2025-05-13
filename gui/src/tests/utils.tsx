@@ -3,7 +3,8 @@ import { render, RenderOptions } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { MantineProvider } from '@mantine/core';
+// Import our Mantine test provider from the test folder
+import { MantineTestProvider } from './MantineTestProvider';
 
 import uiReducer from '../store/slices/uiSlice';
 import configReducer from '../store/slices/configSlice';
@@ -82,7 +83,7 @@ export function renderWithProviders(
     // as we're mocking all the Mantine components directly
     return (
       <Provider store={store}>
-        {withMantine ? <MantineProvider>{content}</MantineProvider> : content}
+        {withMantine ? <MantineTestProvider>{content}</MantineTestProvider> : content}
       </Provider>
     );
   }
