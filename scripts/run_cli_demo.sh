@@ -14,13 +14,44 @@ PROJECT_ROOT=$(pwd)
 echo "Step 1: Verifying CLI installation"
 codestory --version || python -m codestory.cli.main --version
 
-# Step 2: Check current configuration
-echo -e "\nStep 2: Checking current configuration"
-if codestory config show 2>/dev/null; then
-  echo "Configuration is valid"
+# Step 2: Setup and check configuration
+echo -e "\nStep 2: Setting up and checking configuration"
+
+# Create minimal .env file for the demo
+echo -e "Creating minimal configuration..."
+MINIMAL_ENV=".env.minimal"
+ENV_FILE=".env"
+
+if [ -f "$MINIMAL_ENV" ]; then
+  # Show the minimal required configuration
+  echo -e "A minimal configuration requires these settings:"
+  grep -v "^#" "$MINIMAL_ENV" | grep -v "^$" | sed 's/^/  /'
+  
+  # Copy minimal config if needed
+  if [ ! -f "$ENV_FILE" ]; then
+    echo -e "Creating .env file from minimal template..."
+    cp "$MINIMAL_ENV" "$ENV_FILE"
+    echo -e "✅ Created $ENV_FILE with minimal configuration"
+  else
+    echo -e "Using existing $ENV_FILE file"
+  fi
 else
-  echo "Service not running or configuration not yet available - this is expected"
+  echo -e "❌ Minimal configuration template not found. Using existing configuration."
 fi
+
+# Check the configuration
+echo -e "\nChecking current configuration:"
+if codestory config show 2>/dev/null; then
+  echo "✅ Configuration is valid"
+else
+  echo "⚠️ Service not running or configuration not yet available - this is expected"
+fi
+
+# Show how to access configuration settings
+echo -e "\nTo view or modify configuration, you can use:"
+echo "  codestory config show          # View all settings"
+echo "  codestory config set key=value # Update a setting"
+echo "  vim .env                       # Edit bootstrap settings directly"
 
 # Step 3: Start the service and ensure it's running properly
 echo -e "\nStep 3: Starting the service"

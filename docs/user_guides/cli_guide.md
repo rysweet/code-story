@@ -277,8 +277,84 @@ The CLI uses a layered configuration approach with the following precedence:
 1. Environment variables
 2. Command-line options
 3. Custom config file specified via `CODESTORY_CONFIG_FILE`
-4. `.codestory.toml` in the current directory
-5. `.codestory.default.toml` in the project root
+4. `.env` file in the current directory (bootstrap settings)
+5. `.codestory.toml` in the current directory (application settings)
+6. `.codestory.default.toml` in the project root
+
+### Configuration Files
+
+Code Story uses two main configuration files:
+
+1. **`.env`** - Contains essential bootstrap settings:
+   - Connection URLs (Neo4j, Redis)
+   - API keys and credentials
+   - Host/port configurations
+
+2. **`.codestory.toml`** - Contains comprehensive application settings:
+   - Algorithm parameters
+   - Pipeline configuration
+   - UI preferences
+   - Advanced settings
+
+### Minimum Required Configuration
+
+At minimum, you'll need a `.env` file with these essential settings:
+
+```
+# Core settings
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+
+# Neo4j settings 
+NEO4J__URI=bolt://localhost:7687
+NEO4J__USERNAME=neo4j
+NEO4J__PASSWORD=password
+
+# Service settings
+SERVICE__HOST=localhost
+SERVICE__PORT=8000
+
+# Redis settings
+REDIS__URI=redis://localhost:6379
+```
+
+For Docker environments, use:
+
+```
+NEO4J__URI=bolt://neo4j:7687
+REDIS__URI=redis://redis:6379
+SERVICE__HOST=0.0.0.0
+```
+
+A template file `.env.minimal` is provided in the repository that you can copy to `.env` to get started quickly:
+
+```bash
+# Create a basic .env file from the minimal template
+cp .env.minimal .env
+
+# For Docker environments, adjust the connection settings manually
+```
+
+### Managing Configuration
+
+Use the following commands to manage your configuration:
+
+```bash
+# Show current configuration (sensitive values masked)
+codestory config show
+
+# Show configuration in JSON format
+codestory config show --format json
+
+# Show configuration including sensitive values
+codestory config show --sensitive
+
+# Update configuration values
+codestory config set neo4j.connection_timeout=60
+
+# Edit all configuration in your default text editor
+codestory config edit
+```
 
 The default configuration is designed to work with the standard docker-compose setup without any additional configuration.
 
