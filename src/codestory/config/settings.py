@@ -252,7 +252,16 @@ class Settings(BaseSettings):
     )
 
     def __init__(self, **data: Any) -> None:
-        """Initialize settings with layered configuration."""
+        """Initialize settings with layered configuration.
+        
+        Configuration is loaded with the following precedence:
+        1. Environment variables
+        2. Custom config file specified via CODESTORY_CONFIG_FILE env var
+        3. .env file in the current directory (bootstrap settings)
+        4. .codestory.toml in the current directory (application settings)
+        5. .codestory.default.toml in the project root
+        6. Default values in the settings classes
+        """
         # Check if we're in a test environment
         in_test_env = (
             os.environ.get("CODESTORY_TEST_ENV") == "true" or
@@ -271,11 +280,13 @@ class Settings(BaseSettings):
         
         # Load settings from config files with the following precedence:
         # 1. Custom config file specified via CODESTORY_CONFIG_FILE env var
-        # 2. .codestory.toml in the current directory
-        # 3. .codestory.default.toml in the project root
+        # 2. .env file for bootstrap settings
+        # 3. .codestory.toml in the current directory
+        # 4. .codestory.default.toml in the project root
         toml_settings = {}
         config_file = self._CONFIG_FILE
         config_files_to_try = []
+        env_files_to_try = []
         
         # For tests, use the test configuration
         if in_test_env:
@@ -298,17 +309,40 @@ class Settings(BaseSettings):
                     print(f"Test config not found at: {test_path}")
         else:
             # Normal operation - try configs in order of precedence
-            if custom_config_file:
+            
+            # First, set up environment files to try (bootstrap settings)
+            if custom_config_file and custom_config_file.endswith(".env"):
+                env_files_to_try.append(custom_config_file)
+            
+            # Look for .env file - these are bootstrap settings
+            env_files_to_try.extend([
+                self._ENV_FILE,                                        # .env in current directory
+                os.path.join(get_project_root(), self._ENV_FILE),     # .env in project root
+            ])
+            
+            # Now, set up TOML files to try (application settings)
+            if custom_config_file and custom_config_file.endswith(".toml"):
                 config_files_to_try.append(custom_config_file)
             
-            config_files_to_try.append(self._CONFIG_FILE)
+            config_files_to_try.append(self._CONFIG_FILE)  # .codestory.toml in current directory
             
             # Add default config as a fallback
             default_config_path = os.path.join(get_project_root(), self._DEFAULT_CONFIG_FILE)
             if os.path.exists(default_config_path):
                 config_files_to_try.append(default_config_path)
-
-        # Try to load the first available config file
+        
+        # Try to load environment files first
+        for env_file in env_files_to_try:
+            if os.path.exists(env_file) and env_file.endswith(".env"):
+                if in_test_env:
+                    print(f"Found .env file at: {env_file}")
+                
+                # We'll rely on Pydantic's built-in .env loading via model_config
+                # But we need to explicitly set which file to use
+                self.model_config["env_file"] = env_file
+                break
+                
+        # Try to load the first available TOML config file
         config_loaded = False
         for cf in config_files_to_try:
             if os.path.exists(cf):
@@ -316,7 +350,7 @@ class Settings(BaseSettings):
                     with open(cf, "rb") as f:
                         # Use logging instead of print for debug output
                         if in_test_env:
-                            print(f"Loading config from {cf}")
+                            print(f"Loading TOML config from {cf}")
                         toml_data = tomli.load(f)
                         if in_test_env:
                             print(f"Config loaded, keys: {', '.join(toml_data.keys())}")

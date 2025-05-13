@@ -14,13 +14,21 @@ PROJECT_ROOT=$(pwd)
 echo "Step 1: Verifying CLI installation"
 codestory --version || python -m codestory.cli.main --version
 
-# Step 2: Check current configuration
-echo -e "\nStep 2: Checking current configuration"
+# Step 2: Setup configuration
+echo -e "\nStep 2: Setting up configuration"
+echo "Creating a new .env file from template..."
+codestory config setup-env --force --docker || echo "Setup failed, continuing with existing configuration"
+
+echo -e "\nShowing current configuration:"
 if codestory config show 2>/dev/null; then
   echo "Configuration is valid"
 else
   echo "Service not running or configuration not yet available - this is expected"
 fi
+
+echo -e "\nShowing different configuration formats:"
+codestory config show --format json 2>/dev/null | head -n 20 || echo "Unable to show config in JSON format"
+codestory config show --format tree 2>/dev/null | head -n 10 || echo "Unable to show config in tree format"
 
 # Step 3: Start the service and ensure it's running properly
 echo -e "\nStep 3: Starting the service"

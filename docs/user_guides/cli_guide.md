@@ -277,8 +277,60 @@ The CLI uses a layered configuration approach with the following precedence:
 1. Environment variables
 2. Command-line options
 3. Custom config file specified via `CODESTORY_CONFIG_FILE`
-4. `.codestory.toml` in the current directory
-5. `.codestory.default.toml` in the project root
+4. `.env` file in the current directory (bootstrap settings)
+5. `.codestory.toml` in the current directory (application settings)
+6. `.codestory.default.toml` in the project root
+
+### Configuration Files
+
+Code Story uses two main configuration files:
+
+1. **`.env`** - Contains essential bootstrap settings:
+   - Connection URLs (Neo4j, Redis)
+   - API keys and credentials
+   - Host/port configurations
+
+2. **`.codestory.toml`** - Contains comprehensive application settings:
+   - Algorithm parameters
+   - Pipeline configuration
+   - UI preferences
+   - Advanced settings
+
+### Setting Up Configuration
+
+The CLI provides a command to help you create a new `.env` file:
+
+```bash
+# Create a new .env file with default settings
+codestory config setup-env
+
+# Create a .env file configured for Docker networking
+codestory config setup-env --docker
+
+# Overwrite an existing .env file
+codestory config setup-env --force
+```
+
+### Managing Configuration
+
+Use the following commands to manage your configuration:
+
+```bash
+# Show current configuration (sensitive values masked)
+codestory config show
+
+# Show configuration in JSON format
+codestory config show --format json
+
+# Show configuration including sensitive values
+codestory config show --sensitive
+
+# Update configuration values
+codestory config set neo4j.connection_timeout=60
+
+# Edit all configuration in your default text editor
+codestory config edit
+```
 
 The default configuration is designed to work with the standard docker-compose setup without any additional configuration.
 
