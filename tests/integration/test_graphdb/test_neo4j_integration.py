@@ -27,11 +27,12 @@ from codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
 @pytest.fixture
 def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     """Create a Neo4j connector for testing with a test container."""
-    # Force testdb usage - using environment variables or defaults
-    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7688")
-    username = os.environ.get("NEO4J_USERNAME", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD", "password")
-    database = "testdb"  # Force database to match the docker-compose.test.yml
+    # Use either NEO4J_URI or NEO4J__URI from environment (double underscore is for Settings)
+    # CI environment uses 7687, local docker-compose.test.yml uses 7688
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or "bolt://localhost:7688"
+    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
+    password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
+    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
 
     print(f"Using Neo4j connection: {uri}, database: {database}")
 

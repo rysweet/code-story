@@ -167,6 +167,9 @@ jobs:
           echo "OPENAI_API_KEY=sk-test-key-openai" >> $GITHUB_ENV
           echo "OPENAI__API_KEY=sk-test-key-openai" >> $GITHUB_ENV
           echo "PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH" >> $GITHUB_ENV
+          
+          # Set CI environment indicator - allows tests to detect CI environment
+          echo "CI=true" >> $GITHUB_ENV
 
           # Create log directory
           mkdir -p logs
@@ -294,6 +297,9 @@ jobs:
           echo "OPENAI_API_KEY=sk-test-key-openai" >> $GITHUB_ENV
           echo "OPENAI__API_KEY=sk-test-key-openai" >> $GITHUB_ENV
           echo "PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH" >> $GITHUB_ENV
+          
+          # Set CI environment indicator - allows tests to detect CI environment
+          echo "CI=true" >> $GITHUB_ENV
 
           # Create log directory
           mkdir -p logs
