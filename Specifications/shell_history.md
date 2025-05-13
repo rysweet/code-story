@@ -1,5 +1,26 @@
 # Shell Command History
 
+## May 13, 2025 (Neo4j GDS Updates)
+- `head -n 50 /Users/ryan/src/msec/code-story/src/codestory/graphdb/neo4j_connector.py` - Viewing beginning of neo4j_connector.py file
+- `grep -A 50 "def create_connector" /Users/ryan/src/msec/code-story/src/codestory/graphdb/neo4j_connector.py` - View the create_connector function definition
+- `cd /Users/ryan/src/msec/code-story && python -c "from codestory.graphdb import create_connector; print('Import successful')"` - Test importing create_connector
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_graphdb/test_neo4j_integration.py -v` - Run Neo4j integration tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_config_api.py -v` - Run config API tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest` - Run all tests
+- `chmod +x /Users/ryan/src/msec/code-story/scripts/check_ci_status.sh` - Make CI status checker script executable
+- `cd /Users/ryan/src/msec/code-story && git status` - Check git status
+- `cd /Users/ryan/src/msec/code-story && git diff src/codestory/graphdb/neo4j_connector.py` - Check changes to neo4j_connector.py
+- `cd /Users/ryan/src/msec/code-story && git diff src/codestory/graphdb/schema.py` - Check changes to schema.py
+- `cd /Users/ryan/src/msec/code-story && git diff tests/integration/test_graphdb/test_neo4j_integration.py` - Check changes to integration tests
+- `cd /Users/ryan/src/msec/code-story && git add scripts/check_ci_status.sh src/codestory/graphdb/neo4j_connector.py src/codestory/graphdb/schema.py tests/integration/test_graphdb/test_neo4j_integration.py` - Stage changes for commit
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Update Neo4j connector to require GDS for vector search`- Commit changes
+- `cd /Users/ryan/src/msec/code-story && git push` - Push changes to GitHub
+- `cd /Users/ryan/src/msec/code-story && ./scripts/check_ci_status.sh` - Check CI status
+- `sleep 30 && cd /Users/ryan/src/msec/code-story && ./scripts/check_ci_status.sh` - Wait and check CI status again
+- `sleep 60 && cd /Users/ryan/src/msec/code-story && ./scripts/check_ci_status.sh` - Wait longer and check CI status
+- `cd /Users/ryan/src/msec/code-story && gh run view 14988994867` - View details of CI/CD Pipeline
+- `cd /Users/ryan/src/msec/code-story && gh run view 14988994867 --log-failed` - View failed log for CI/CD Pipeline
+
 ## May 12, 2025 (Neo4j Integration Test Fixes)
 - `cd /Users/ryan/src/msec/code-story && ./scripts/run_integration_tests.sh tests/integration/test_graphdb/test_neo4j_integration.py::test_vector_search --force-restart` - Running vector search test with updated Docker configuration
 - `cd /Users/ryan/src/msec/code-story && docker logs codestory-neo4j-test` - Checking Neo4j logs to see what's happening
