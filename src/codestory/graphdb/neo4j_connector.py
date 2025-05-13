@@ -45,6 +45,50 @@ from .metrics import (
 )
 from .schema import initialize_schema, create_custom_vector_index
 
+
+def create_connector() -> 'Neo4jConnector':
+    """Create a Neo4jConnector instance using application settings.
+
+    Returns:
+        Neo4jConnector: Configured connector instance
+
+    Raises:
+        ConnectionError: If connection to Neo4j fails
+
+    Example:
+        ```python
+        from codestory.graphdb import create_connector
+
+        # Create connector from environment/settings
+        connector = create_connector()
+
+        # Use with context manager for automatic cleanup
+        with create_connector() as connector:
+            result = connector.execute_query("RETURN 1 as num")
+        ```
+    """
+    # Fail if get_settings is not available
+    if get_settings is None:
+        raise RuntimeError(
+            "get_settings function not available. Make sure the config module is properly installed."
+        )
+
+    # Get application settings
+    settings = get_settings()
+
+    # Create connector with settings
+    connector = Neo4jConnector(
+        uri=settings.neo4j.uri,
+        username=settings.neo4j.username,
+        password=settings.neo4j.password.get_secret_value(),
+        database=settings.neo4j.database,
+        max_connection_pool_size=settings.neo4j.max_connection_pool_size,
+        connection_timeout=settings.neo4j.connection_timeout,
+        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time
+    )
+
+    return connector
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -444,6 +488,10 @@ class Neo4jConnector:
                 f"Vector index creation failed: {str(e)}",
                 operation="create_vector_index",
                 cause=e,
+                label=label,
+                property=property_name,
+                dimensions=dimensions,
+                similarity=similarity,
             )
 
     def create_node(self, label: str, properties: Dict[str, Any]) -> Dict[str, Any]:
@@ -546,70 +594,21 @@ class Neo4jConnector:
         start_time = time.time()
 
         try:
-            # First check if GDS plugin is available
-            has_gds = True
-            try:
-                # Try a simple GDS function call to check if it's available
-                check_query = "RETURN gds.version() AS version"
-                self.execute_query(check_query)
-            except Exception as e:
-                # GDS plugin is not available, log a warning
-                logger.warning(f"Graph Data Science plugin not available: {str(e)}. Using fallback method.")
-                has_gds = False
+            # Always use GDS for vector similarity
+            cypher = f"""
+            MATCH (n:{node_label})
+            WHERE n.{property_name} IS NOT NULL
+            WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
+            """
 
-            if has_gds:
-                # Use GDS for vector similarity when available
-                cypher = f"""
-                MATCH (n:{node_label})
-                WHERE n.{property_name} IS NOT NULL
-                WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
-                """
+            if similarity_cutoff is not None:
+                cypher += f"\nWHERE score >= {similarity_cutoff}"
 
-                if similarity_cutoff is not None:
-                    cypher += f"\nWHERE score >= {similarity_cutoff}"
-
-                cypher += """
-                ORDER BY score DESC
-                LIMIT $limit
-                RETURN n, score
-                """
-            else:
-                # Fallback method using pure Cypher
-                # This is less efficient but works without GDS
-                # Implementing a basic vector similarity in pure Cypher
-                # This calculates cosine similarity manually
-                cypher = f"""
-                MATCH (n:{node_label})
-                WHERE n.{property_name} IS NOT NULL
-                WITH n, n.{property_name} AS vec1, $embedding AS vec2
-
-                // Calculate dot product
-                WITH n,
-                     REDUCE(dot = 0.0, i IN RANGE(0, SIZE(vec1)-1) |
-                         dot + vec1[i] * vec2[i]) AS dotProduct,
-
-                     // Calculate magnitudes
-                     SQRT(REDUCE(mag1 = 0.0, i IN RANGE(0, SIZE(vec1)-1) |
-                         mag1 + vec1[i] * vec1[i])) AS mag1,
-                     SQRT(REDUCE(mag2 = 0.0, i IN RANGE(0, SIZE(vec2)-1) |
-                         mag2 + vec2[i] * vec2[i])) AS mag2
-
-                // Calculate cosine similarity
-                WITH n,
-                     CASE
-                         WHEN mag1 * mag2 = 0 THEN 0
-                         ELSE dotProduct / (mag1 * mag2)
-                     END AS score
-                """
-
-                if similarity_cutoff is not None:
-                    cypher += f"\nWHERE score >= {similarity_cutoff}"
-
-                cypher += """
-                ORDER BY score DESC
-                LIMIT $limit
-                RETURN n, score
-                """
+            cypher += """
+            ORDER BY score DESC
+            LIMIT $limit
+            RETURN n, score
+            """
 
             result = self.execute_query(cypher, {"embedding": query_embedding, "limit": limit})
 
@@ -721,13 +720,9 @@ class Neo4jConnector:
             else:
                 return session.execute_read.return_value
 
-        # Prepare the queries list in the right format
-        query_list = []
-        params_list = []
-        for q in queries:
-            if isinstance(q, dict) and "query" in q:
-                query_list.append(q["query"])
-                params_list.append(q.get("params", {}))
+        # Prepare query and params lists
+        query_list = [q["query"] for q in queries]
+        params_list = [q.get("params", {}) for q in queries]
 
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
@@ -735,90 +730,55 @@ class Neo4jConnector:
             None, lambda: self.execute_many(query_list, params_list, write)
         )
 
-    async def check_connection_async(self) -> Dict[str, Any]:
-        """Check database connectivity asynchronously.
+    def with_transaction(self, func: Callable, write: bool = False, **kwargs: Any) -> Any:
+        """Execute a function within a Neo4j transaction.
+
+        Args:
+            func: Function to execute within the transaction
+            write: Whether this is a write transaction
+            **kwargs: Additional keyword arguments to pass to the function
 
         Returns:
-            Dictionary with database information
+            Result of the function execution
 
         Raises:
-            ConnectionError: If the connection check fails
+            TransactionError: If the transaction fails
         """
         try:
-            # Special handling for mock driver in tests
-            if isinstance(self.driver, MagicMock) or isinstance(self.driver, AsyncMock):
-                # Return directly from mock in tests
-                return {
-                    "connected": True,
-                    "database": self.database,
-                    "components": [{"name": "Neo4j", "versions": ["5.x"]}],
-                }
+            if isinstance(self.driver, MagicMock):
+                # In tests, just execute the function directly
+                return func(self, **kwargs)
 
-            # Execute the query asynchronously, ensuring database name is used
-            result = await self.execute_query_async(
-                "CALL dbms.components() YIELD name, versions RETURN name, versions"
-            )
+            # Create a session with the database name
+            session = self.driver.session(database=self.database)
+            try:
+                if write:
+                    result = session.execute_write(
+                        lambda tx: func(self, tx=tx, **kwargs)
+                    )
+                else:
+                    result = session.execute_read(
+                        lambda tx: func(self, tx=tx, **kwargs)
+                    )
 
-            # Get connection pool metrics
-            if hasattr(self.driver, "_pool") and hasattr(self.driver._pool, "in_use"):
-                pool_size = self.driver._pool.max_size
-                acquired = len(self.driver._pool.in_use)
-                update_pool_metrics(pool_size, acquired)
+                record_transaction(success=True)
+                return result
+            finally:
+                session.close()
 
-            return {
-                "connected": True,
-                "database": self.database,
-                "components": result,
-            }
-
-        except Exception as e:
-            record_connection_error()
-            logger.error(f"Connection check failed: {str(e)}")
-            raise ConnectionError(
-                f"Connection check failed: {str(e)}",
-                uri=self.uri,
+        except Neo4jDriverError as e:
+            record_transaction(success=False)
+            logger.error(f"Neo4j transaction error: {str(e)}")
+            raise TransactionError(
+                f"Transaction failed: {str(e)}",
+                operation="with_transaction",
                 cause=e,
             )
-
-    async def close_async(self) -> None:
-        """Close connections asynchronously."""
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self.close)
-
-    def __enter__(self) -> "Neo4jConnector":
-        """Support for context manager protocol."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Clean up resources when exiting context."""
-        self.close()
-
-
-def create_connector(async_mode: bool = False) -> Neo4jConnector:
-    """Create a Neo4j connector with settings from configuration.
-
-    Args:
-        async_mode: Whether to use async mode for the connector
-
-    Returns:
-        Neo4jConnector instance
-
-    Raises:
-        ConnectionError: If the connection to Neo4j fails
-    """
-    if get_settings is None:
-        raise ImportError("Settings module not available")
-
-    settings = get_settings()
-
-    connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        database=settings.neo4j.database,
-        async_mode=async_mode,
-        max_connection_pool_size=settings.neo4j.max_connection_pool_size,
-        connection_timeout=settings.neo4j.connection_timeout,
-    )
-
-    return connector
+        except Exception as e:
+            record_transaction(success=False)
+            logger.error(f"Unexpected error in transaction: {str(e)}")
+            raise TransactionError(
+                f"Unexpected error: {str(e)}",
+                operation="with_transaction",
+                cause=e,
+            )

@@ -230,6 +230,14 @@ def test_schema_verification(neo4j_connector: Neo4jConnector) -> None:
 
 def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
     """Test vector similarity search functionality using Neo4j GDS."""
+    # First verify GDS plugin is available - this test requires GDS
+    try:
+        check_query = "RETURN gds.version() AS version"
+        result = neo4j_connector.execute_query(check_query)
+        print(f"Using GDS version: {result[0]['version']}")
+    except Exception as e:
+        pytest.skip(f"Graph Data Science plugin not available: {str(e)}. This test requires GDS plugin.")
+
     # Create test nodes with embeddings
     embedding1 = [0.1, 0.2, 0.3, 0.4]
     embedding2 = [0.5, 0.6, 0.7, 0.8]
@@ -266,48 +274,31 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         write=True,
     )
 
-    # Check if GDS plugin is available
-    has_gds = True
+    # First drop any existing index with the same name to avoid conflicts
     try:
-        # Try a simple GDS function call to check if it's available
-        check_query = "RETURN gds.version() AS version"
-        neo4j_connector.execute_query(check_query)
+        neo4j_connector.execute_query(
+            "DROP INDEX node_embedding IF EXISTS",
+            write=True,
+        )
     except Exception as e:
-        # GDS plugin is not available, log a warning
-        print(f"Graph Data Science plugin not available: {str(e)}. Skipping vector index creation.")
-        has_gds = False
+        # Ignore errors when dropping index
+        print(f"Warning: Failed to drop existing index: {str(e)}")
 
-    # Only try to create vector index if GDS is available
-    if has_gds:
-        # First drop any existing index with the same name to avoid conflicts
-        try:
-            neo4j_connector.execute_query(
-                "DROP INDEX node_embedding IF EXISTS",
-                write=True,
-            )
-        except Exception as e:
-            # Ignore errors when dropping index
-            print(f"Warning: Failed to drop existing index: {str(e)}")
-
-        # Create the vector index
-        try:
-            neo4j_connector.execute_query(
-                """
-                CREATE VECTOR INDEX node_embedding
-                FOR (n:VectorNode)
-                ON (n.embedding)
-                OPTIONS {indexConfig: {
-                    `vector.dimensions`: 4,
-                    `vector.similarity_function`: 'cosine'
-                }}
-            """,
-                write=True,
-            )
-            # Wait for index to be fully available
-            time.sleep(2)
-        except Exception as e:
-            print(f"Warning: Failed to create vector index: {str(e)}")
-            print("Vector search will use fallback method")
+    # Create the vector index
+    neo4j_connector.execute_query(
+        """
+        CREATE VECTOR INDEX node_embedding
+        FOR (n:VectorNode)
+        ON (n.embedding)
+        OPTIONS {indexConfig: {
+            `vector.dimensions`: 4,
+            `vector.similarity_function`: 'cosine'
+        }}
+    """,
+        write=True,
+    )
+    # Wait for index to be fully available
+    time.sleep(2)
 
     # Test similarity search
     # Query with embedding similar to Node3
