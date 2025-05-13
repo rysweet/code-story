@@ -11,7 +11,15 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import openai
 from openai import AsyncAzureOpenAI, AzureOpenAI
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+# Try to import azure.identity, but don't fail if it's not available
+try:
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+    AZURE_IDENTITY_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("azure.identity not found. Azure AD authentication will not be available.")
+    AZURE_IDENTITY_AVAILABLE = False
 
 from ..config.settings import get_settings
 from .backoff import retry_on_openai_errors, retry_on_openai_errors_async
@@ -147,27 +155,39 @@ class OpenAIClient:
         except Exception as e:
             logger.warning(f"Error setting up Azure authentication: {e}")
 
-        # Create the credential - DefaultAzureCredential doesn't accept tenant_id directly
-        credential = DefaultAzureCredential()
-        token_provider = get_bearer_token_provider(
-            credential, "https://cognitiveservices.azure.com/.default"
-        )
+        # Create the client with or without Azure AD authentication
+        client_params = {
+            "azure_endpoint": self.endpoint,
+            "api_version": self.api_version,
+            "timeout": self.timeout,
+            "max_retries": 0,  # We handle retries ourselves
+        }
+        
+        # Add Azure AD authentication if available
+        if AZURE_IDENTITY_AVAILABLE:
+            try:
+                # Create the credential - DefaultAzureCredential doesn't accept tenant_id directly
+                credential = DefaultAzureCredential()
+                token_provider = get_bearer_token_provider(
+                    credential, "https://cognitiveservices.azure.com/.default"
+                )
+                client_params["azure_ad_token_provider"] = token_provider
+            except Exception as e:
+                logger.warning(f"Failed to initialize Azure AD authentication: {e}")
+                # Continue without Azure AD authentication
+        else:
+            # Look for API key in the settings
+            try:
+                settings = get_settings()
+                api_key = getattr(settings.openai, "api_key", None)
+                if api_key:
+                    client_params["api_key"] = api_key
+                    logger.info("Using API key authentication")
+            except Exception as e:
+                logger.warning(f"Failed to get API key from settings: {e}")
 
-        self._sync_client = AzureOpenAI(
-            azure_endpoint=self.endpoint,
-            api_version=self.api_version,
-            timeout=self.timeout,
-            max_retries=0,  # We handle retries ourselves
-            azure_ad_token_provider=token_provider,
-        )
-
-        self._async_client = AsyncAzureOpenAI(
-            azure_endpoint=self.endpoint,
-            api_version=self.api_version,
-            timeout=self.timeout,
-            max_retries=0,  # We handle retries ourselves
-            azure_ad_token_provider=token_provider,
-        )
+        self._sync_client = AzureOpenAI(**client_params)
+        self._async_client = AsyncAzureOpenAI(**client_params)
 
     def _prepare_request_data(self, request):
         """Extract model name and prepare request data, removing internal parameters.

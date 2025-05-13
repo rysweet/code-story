@@ -2,6 +2,7 @@
 
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict
 
@@ -12,6 +13,16 @@ from prometheus_client import make_asgi_app
 from .api import auth, config, graph, health, ingest, service, websocket
 from .infrastructure.neo4j_adapter import Neo4jConnector
 from .settings import get_service_settings
+
+# Import and apply real adapter overrides
+try:
+    from .use_real_adapters import apply_overrides
+    # Apply the overrides to force real adapters
+    apply_overrides()
+    logging.info("Using real adapters for all components - mock/demo adapters disabled")
+except Exception as e:
+    logging.warning(f"Failed to apply real adapter overrides: {str(e)}")
+    logging.warning("Service may fall back to dummy adapters if components are unavailable")
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -37,7 +48,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Use the environment variable for database name if available
     database = os.environ.get("CS_NEO4J_DATABASE", "neo4j")
     app.state.db = Neo4jConnector(database=database)
-    await app.state.db.check_connection_async()
+    
+    # Check connection synchronously for now (no async methods available)
+    # We'll need to add these methods to Neo4jConnector later
+    try:
+        app.state.db.check_connection()
+        logger.info("Neo4j connection established successfully")
+    except Exception as e:
+        logger.warning(f"Neo4j connection check failed: {e}. Service may have limited functionality.")
 
     yield
 
@@ -46,7 +64,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Close Neo4j connection
     if hasattr(app.state, "db"):
-        await app.state.db.close_async()
+        try:
+            app.state.db.close()
+            logger.info("Neo4j connection closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing Neo4j connection: {e}")
 
 
 def create_app() -> FastAPI:
@@ -92,6 +114,7 @@ def create_app() -> FastAPI:
     app.include_router(service.router)
     app.include_router(auth.router)
     app.include_router(health.router)
+    app.include_router(health.legacy_router)  # Add legacy health router
     app.include_router(websocket.router)
 
     # Root endpoint
@@ -108,18 +131,24 @@ def create_app() -> FastAPI:
             "description": settings.summary,
         }
 
-    # Backward compatibility health check
-    @app.get("/health")
-    async def legacy_health_check() -> Dict[str, str]:
-        """Legacy health check endpoint.
-
-        Returns:
-            Simple health status
-        """
-        return {"status": "healthy"}
-
     return app
 
 
 # Create the application instance
 app = create_app()
+
+# Add this block to run the server when this module is executed directly
+if __name__ == "__main__":
+    import uvicorn
+    from codestory.config.settings import get_settings
+    
+    core_settings = get_settings()
+    host = core_settings.service.host
+    port = core_settings.service.port
+    print(f"Starting service on {host}:{port}...")
+    uvicorn.run(
+        "src.codestory_service.main:app", 
+        host=host, 
+        port=port,
+        reload=False
+    )

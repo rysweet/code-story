@@ -86,6 +86,18 @@ def create_connector() -> 'Neo4jConnector':
         connection_timeout=settings.neo4j.connection_timeout,
         max_transaction_retry_time=settings.neo4j.max_transaction_retry_time
     )
+    
+    # Auto-initialize schema if configured
+    try:
+        auto_initialize = getattr(settings.neo4j, "auto_initialize_schema", False)
+        force_update = getattr(settings.neo4j, "force_schema_update", False)
+        
+        if auto_initialize:
+            from .schema import initialize_schema
+            initialize_schema(connector, force=force_update)
+            logger.info("Neo4j schema initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to auto-initialize Neo4j schema: {str(e)}")
 
     return connector
 
