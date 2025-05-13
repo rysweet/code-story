@@ -1,0 +1,2 @@
+the CI is still failing. Please analyze the failures. Then think step-by-step about how to setup the conditions to allow them to succeed. Do not use mocks or skip tests or alter the tests, instead think about what is      │
+│   different in the CI env and what is causing the tests to fail and resolve that.   
