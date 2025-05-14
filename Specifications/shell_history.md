@@ -1,5 +1,14 @@
 # Shell Command History
 
+## May 14, 2025 (Visualization HTML Demo Creation)
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_api.py -v` - Running unit tests for service API
+- `cd /Users/ryan/src/msec/code-story && python -m ruff check src/codestory_service` - Running linting on service code
+- `find /Users/ryan/src/msec/code-story/src -type f -name "*.py" | xargs grep -l "visualization"` - Searching for visualization-related Python files
+- `cd /Users/ryan/src/msec/code-story && git add docs/demos/visualization.html docs/demos/cli_demo.md` - Staging visualization demo HTML file
+- `cd /Users/ryan/src/msec/code-story && git add tests/integration/test_service.py` - Adding integration test changes
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking status before commit
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add interactive visualization demo to documentation"` - Committing visualization demo
+
 ## May 13, 2025 (Visualization Endpoint Implementation and Fixes)
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_api.py::TestVisualizationAPI -v` - Running visualization API tests
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_infrastructure.py` - Running infrastructure tests

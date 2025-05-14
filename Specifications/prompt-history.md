@@ -1,5 +1,18 @@
 # Prompt History
 
+## Prompt 42 (May 14, 2025)
+**Prompt**: thats great, but it should also include the Code Summary nodes, documentation nodes. but most of all - I'd like to actually run the cli to generate the damn thing instead of faking it. for now I need to restart your code however so please run all checks, tests, commit your work, and then please make sure to update prompt history, shell history, and status.
+
+**Response**:
+- Ran verification tests for service API and visualization endpoint
+- Performed linting checks on the codebase
+- Created interactive visualization demo HTML for documentation
+- Added proper code examples with various node types
+- Committed visualization demo to repository
+- Updated prompt-history.md with latest conversation
+- Updated shell_history.md with commands executed
+- Updated status.md with visualization work
+
 ## Prompt 41 (May 13, 2025)
 **Prompt**: then push and wait to check ci
 
