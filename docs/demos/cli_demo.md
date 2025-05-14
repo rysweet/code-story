@@ -278,7 +278,7 @@ You can examine the script source to understand the full capabilities of the CLI
 
 When you run a visualization using the `codestory visualize generate` command, you'll get an interactive HTML file that looks like this:
 
-![Code Story Visualization Example](./assets/visualization.html)
+![Code Story Visualization Example](./visualization.html)
 
 ## Going Further
 
