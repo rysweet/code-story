@@ -12,7 +12,7 @@ from prometheus_client import make_asgi_app
 
 from .api import auth, config, graph, health, ingest, service, websocket
 from .application.graph_service import GraphService, get_graph_service
-from .infrastructure.msal_validator import get_current_user
+from .infrastructure.msal_validator import get_current_user, get_optional_user
 from .infrastructure.neo4j_adapter import Neo4jConnector
 from .settings import get_service_settings
 
@@ -23,8 +23,9 @@ try:
     apply_overrides()
     logging.info("Using real adapters for all components - mock/demo adapters disabled")
 except Exception as e:
-    logging.warning(f"Failed to apply real adapter overrides: {e!s}")
-    logging.warning("Service may fall back to dummy adapters if components are unavailable")
+    logging.error(f"Failed to apply real adapter overrides: {e!s}")
+    logging.error("Service requires all components to be available - will fail if any are unhealthy")
+    raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -43,6 +44,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Yields:
         None
     """
+    # Validate settings and log warnings if needed
+    settings = get_service_settings()
+    if "*" in settings.cors_origins and not settings.dev_mode:
+        logger.warning(
+            "Using '*' for CORS origins in non-development environment. "
+            "This is a security risk!"
+        )
+    
+    # Log dev mode and auth status
+    logger.info(f"Service running in {'development' if settings.dev_mode else 'production'} mode")
+    logger.info(f"Authentication {'disabled' if not settings.auth_enabled else 'enabled'}")
+    
     # Initialize resources
     logger.info("Initializing application resources")
 
@@ -134,7 +147,7 @@ def create_app() -> FastAPI:
         theme: str = Query("auto"),
         request: Request = None,
         graph_service: GraphService = Depends(get_graph_service),
-        user: dict = Depends(get_current_user),
+        user: dict = Depends(get_optional_user),
     ):
         """Legacy endpoint for generating graph visualization."""
         try:

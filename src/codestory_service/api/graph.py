@@ -24,7 +24,7 @@ from ..domain.graph import (
     VisualizationTheme,
     VisualizationType,
 )
-from ..infrastructure.msal_validator import get_current_user
+from ..infrastructure.msal_validator import get_current_user, get_optional_user
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -232,7 +232,7 @@ async def generate_visualization(
         False, description="Whether to include nodes with no connections"
     ),
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_optional_user),
 ) -> HTMLResponse:
     """Generate an interactive HTML visualization of the code graph.
 
@@ -309,7 +309,7 @@ async def generate_visualization_legacy(
     type: str = Query("force", description="Type of visualization"),
     theme: str = Query("auto", description="Color theme"),
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_optional_user),
 ) -> HTMLResponse:
     """Legacy endpoint for generating an interactive HTML visualization of the code graph.
 

@@ -253,32 +253,61 @@ service stop  -> sx
 visualize  -> vz
 ```
 
-## End-to-End Demo Script
+## End-to-End Demo Scripts
 
-The repository includes a comprehensive end-to-end demo script at `scripts/run_cli_demo.sh` that demonstrates the complete CLI workflow:
+The repository includes comprehensive end-to-end demo scripts that demonstrate the complete CLI workflow:
+
+### Sample Project Demo
+
+For a quick demo with a small, easy-to-understand sample project (recommended for first-time users):
 
 ```bash
-# Run the CLI demo script
+# Run the sample project CLI demo script
 ./scripts/run_cli_demo.sh
 ```
 
-The demo script performs the following steps:
+This script performs the following steps:
 1. Verifies CLI installation and configuration
 2. Starts the service using Docker Compose
-3. Prepares a sample project for ingestion
+3. Prepares a small sample project for ingestion (a simple Python greeting application)
 4. Ingests the sample code with real-time progress tracking
 5. Demonstrates querying the graph with Cypher and natural language
 6. Generates an HTML visualization of the code
 7. Shows example commands for further exploration
 8. Cleans up resources
 
-You can examine the script source to understand the full capabilities of the CLI.
+This demo is ideal for understanding the core functionality of Code Story without waiting for a large codebase to be processed.
+
+### Code Story Codebase Demo
+
+For a more extensive demo that ingests the entire Code Story codebase (recommended for seeing how the tool works with larger projects):
+
+```bash
+# Run the Code Story codebase demo script
+./scripts/run_codestory_demo.sh
+```
+
+This script performs the following steps:
+1. Verifies CLI installation and configuration
+2. Starts the service using Docker Compose
+3. Ingests the entire Code Story codebase (this may take several minutes)
+4. Demonstrates querying the graph with meaningful examples specific to the Code Story project
+5. Generates an HTML visualization showing the Code Story architecture
+6. Provides example commands tailored for exploring a larger, real-world codebase
+
+This demo is particularly useful for seeing how Code Story handles a real-world Python project with multiple components and dependencies.
+
+> **Note**: The Code Story codebase demo will take longer to run due to the size of the codebase being ingested. For a quick introduction to the tool's capabilities, start with the sample project demo.
+
+You can examine the script sources to understand the full capabilities of the CLI.
 
 ## Visualization Example
 
 When you run a visualization using the `codestory visualize generate` command, you'll get an interactive HTML file that looks like this:
 
 ![Code Story Visualization Example](./visualization.html)
+
+> **Note**: The visualization endpoint does not require authentication, allowing CLI tools to access it easily without needing to manage authentication tokens.
 
 ## Going Further
 
