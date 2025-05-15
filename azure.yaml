@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: code-story
+metadata:
+  template: code-story@0.1.0
+services:
+  service:
+    project: ./src/codestory_service
+    language: python
+    host: containerapp
+    docker:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      target: production
+      build-args:
+        - ENVIRONMENT=production
+  worker:
+    project: ./src/codestory/ingestion_pipeline
+    language: python
+    host: containerapp
+    docker:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      target: worker
+      build-args:
+        - ENVIRONMENT=production
+  mcp:
+    project: ./src/codestory_mcp
+    language: python
+    host: containerapp
+    docker:
+      context: .
+      dockerfile: infra/docker/mcp.Dockerfile
+      target: production
+      build-args:
+        - ENVIRONMENT=production
+  gui:
+    project: ./gui
+    language: js
+    host: containerapp
+    docker:
+      context: .
+      dockerfile: infra/docker/gui.Dockerfile
+      target: production
+      build-args:
+        - ENVIRONMENT=production

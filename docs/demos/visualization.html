@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Story Graph Visualization Demo</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --node-color-file: #4285F4;
+            --node-color-directory: #0F9D58;
+            --node-color-function: #F4B400;
+            --node-color-class: #DB4437;
+            --node-color-module: #9C27B0;
+            --node-color-default: #757575;
+            --link-color: #666666;
+            --focus-color: #FF5722;
+            --border-color: #444444;
+        }
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 300px;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .visualization {
+            flex-grow: 1;
+            position: relative;
+        }
+        
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--bg-color);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+        }
+
+        .controls button {
+            background-color: #333;
+            color: var(--text-color);
+            border: 1px solid #555;
+            padding: 5px 10px;
+            margin: 0 3px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            background-color: #444;
+        }
+        
+        .legend {
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .node {
+            cursor: pointer;
+        }
+        
+        .link {
+            stroke: var(--link-color);
+            stroke-opacity: 0.6;
+        }
+        
+        .node-label {
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: #333;
+            color: var(--text-color);
+        }
+        
+        .node-details {
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .property {
+            margin-bottom: 8px;
+        }
+        
+        .property-name {
+            font-weight: bold;
+            color: #8fbcbb;
+        }
+        
+        .expandable {
+            cursor: pointer;
+            border: 2px dashed var(--focus-color);
+        }
+        
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        h1, h2, h3, h4 {
+            color: #88c0d0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Code Story</h1>
+            <p>Interactive visualization of your codebase structure</p>
+            
+            <div class="search-box">
+                <input type="text" id="search" placeholder="Search nodes..." />
+            </div>
+            
+            <div class="legend">
+                <h3>Node Types</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--node-color-file)"></div>
+                    <div>File</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--node-color-directory)"></div>
+                    <div>Directory</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--node-color-function)"></div>
+                    <div>Function</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--node-color-class)"></div>
+                    <div>Class</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: var(--node-color-module)"></div>
+                    <div>Module</div>
+                </div>
+            </div>
+            
+            <div class="node-details" id="node-details">
+                <h3>Node Details</h3>
+                <p>Click on a node to see details</p>
+            </div>
+        </div>
+        
+        <div class="visualization">
+            <svg id="graph"></svg>
+            
+            <div class="controls">
+                <button id="zoom-in">+</button>
+                <button id="zoom-out">-</button>
+                <button id="reset">Reset</button>
+            </div>
+            
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Mock graph data for demonstration
+        const graphData = {
+            nodes: [
+                // Directory nodes
+                {
+                    id: "1",
+                    label: "Directory",
+                    name: "src",
+                    type: "Directory",
+                    properties: {
+                        name: "src",
+                        path: "/src",
+                        summary: "Source code root directory"
+                    }
+                },
+                {
+                    id: "2",
+                    label: "Directory",
+                    name: "codestory",
+                    type: "Directory",
+                    properties: {
+                        name: "codestory",
+                        path: "/src/codestory",
+                        summary: "Main package directory"
+                    }
+                },
+                {
+                    id: "3",
+                    label: "Directory",
+                    name: "graphdb",
+                    type: "Directory",
+                    properties: {
+                        name: "graphdb",
+                        path: "/src/codestory/graphdb",
+                        summary: "Graph database module for Neo4j interactions"
+                    }
+                },
+                {
+                    id: "4",
+                    label: "Directory",
+                    name: "llm",
+                    type: "Directory",
+                    properties: {
+                        name: "llm",
+                        path: "/src/codestory/llm",
+                        summary: "Language model integration module"
+                    }
+                },
+                {
+                    id: "5",
+                    label: "Directory",
+                    name: "ingestion_pipeline",
+                    type: "Directory",
+                    properties: {
+                        name: "ingestion_pipeline",
+                        path: "/src/codestory/ingestion_pipeline",
+                        summary: "Pipeline for code and knowledge ingestion"
+                    }
+                },
+                
+                // File nodes
+                {
+                    id: "6",
+                    label: "File",
+                    name: "__init__.py",
+                    type: "File",
+                    properties: {
+                        name: "__init__.py",
+                        path: "/src/codestory/__init__.py",
+                        summary: "Package initialization file",
+                        content_type: "python"
+                    }
+                },
+                {
+                    id: "7",
+                    label: "File",
+                    name: "neo4j_connector.py",
+                    type: "File",
+                    properties: {
+                        name: "neo4j_connector.py",
+                        path: "/src/codestory/graphdb/neo4j_connector.py",
+                        summary: "Connector for Neo4j database operations",
+                        content_type: "python"
+                    }
+                },
+                {
+                    id: "8",
+                    label: "File",
+                    name: "models.py",
+                    type: "File",
+                    properties: {
+                        name: "models.py",
+                        path: "/src/codestory/graphdb/models.py",
+                        summary: "Data models for graph entities",
+                        content_type: "python"
+                    }
+                },
+                {
+                    id: "9",
+                    label: "File",
+                    name: "client.py",
+                    type: "File",
+                    properties: {
+                        name: "client.py",
+                        path: "/src/codestory/llm/client.py",
+                        summary: "Client for LLM API interactions",
+                        content_type: "python"
+                    }
+                },
+                {
+                    id: "10",
+                    label: "File",
+                    name: "manager.py",
+                    type: "File",
+                    properties: {
+                        name: "manager.py",
+                        path: "/src/codestory/ingestion_pipeline/manager.py",
+                        summary: "Pipeline execution manager",
+                        content_type: "python"
+                    }
+                },
+                
+                // Class nodes
+                {
+                    id: "11",
+                    label: "Class",
+                    name: "Neo4jConnector",
+                    type: "Class",
+                    properties: {
+                        name: "Neo4jConnector",
+                        path: "/src/codestory/graphdb/neo4j_connector.py",
+                        summary: "Connector class for Neo4j database interactions",
+                        methods: 8,
+                        attributes: 5
+                    }
+                },
+                {
+                    id: "12",
+                    label: "Class",
+                    name: "GraphModel",
+                    type: "Class",
+                    properties: {
+                        name: "GraphModel",
+                        path: "/src/codestory/graphdb/models.py",
+                        summary: "Base model for graph entities",
+                        methods: 3,
+                        attributes: 2
+                    }
+                },
+                {
+                    id: "13",
+                    label: "Class",
+                    name: "OpenAIClient",
+                    type: "Class",
+                    properties: {
+                        name: "OpenAIClient",
+                        path: "/src/codestory/llm/client.py",
+                        summary: "Client for OpenAI API interactions",
+                        methods: 6,
+                        attributes: 4
+                    }
+                },
+                {
+                    id: "14",
+                    label: "Class",
+                    name: "PipelineManager",
+                    type: "Class",
+                    properties: {
+                        name: "PipelineManager",
+                        path: "/src/codestory/ingestion_pipeline/manager.py",
+                        summary: "Manager for pipeline execution and monitoring",
+                        methods: 7,
+                        attributes: 5
+                    }
+                },
+                
+                // Function nodes
+                {
+                    id: "15",
+                    label: "Function",
+                    name: "execute_query",
+                    type: "Function",
+                    properties: {
+                        name: "execute_query",
+                        path: "/src/codestory/graphdb/neo4j_connector.py",
+                        summary: "Execute a Cypher query against Neo4j",
+                        line: 45,
+                        parameters: "query, params=None, timeout=30"
+                    }
+                },
+                {
+                    id: "16",
+                    label: "Function",
+                    name: "create_embeddings",
+                    type: "Function",
+                    properties: {
+                        name: "create_embeddings",
+                        path: "/src/codestory/llm/client.py",
+                        summary: "Generate text embeddings using OpenAI API",
+                        line: 78,
+                        parameters: "text_input, model=None"
+                    }
+                },
+                {
+                    id: "17",
+                    label: "Function",
+                    name: "run_pipeline",
+                    type: "Function",
+                    properties: {
+                        name: "run_pipeline",
+                        path: "/src/codestory/ingestion_pipeline/manager.py",
+                        summary: "Execute the full ingestion pipeline",
+                        line: 112,
+                        parameters: "source_path, config=None, callbacks=None"
+                    }
+                },
+                {
+                    id: "18",
+                    label: "Function",
+                    name: "get_node_by_id",
+                    type: "Function",
+                    properties: {
+                        name: "get_node_by_id",
+                        path: "/src/codestory/graphdb/neo4j_connector.py",
+                        summary: "Retrieve a node by its ID",
+                        line: 128,
+                        parameters: "node_id"
+                    }
+                },
+                
+                // Module nodes
+                {
+                    id: "19",
+                    label: "Module",
+                    name: "graphdb",
+                    type: "Module",
+                    properties: {
+                        name: "graphdb",
+                        path: "/src/codestory/graphdb",
+                        summary: "Graph database module for Neo4j interactions",
+                        exports: ["Neo4jConnector", "GraphModel", "schema"]
+                    }
+                },
+                {
+                    id: "20",
+                    label: "Module",
+                    name: "llm",
+                    type: "Module",
+                    properties: {
+                        name: "llm",
+                        path: "/src/codestory/llm",
+                        summary: "Language model integration module",
+                        exports: ["OpenAIClient", "create_embeddings", "generate_text"]
+                    }
+                }
+            ],
+            links: [
+                // Directory structure
+                { id: "l1", source: "1", target: "2", type: "CONTAINS", properties: {} },
+                { id: "l2", source: "2", target: "3", type: "CONTAINS", properties: {} },
+                { id: "l3", source: "2", target: "4", type: "CONTAINS", properties: {} },
+                { id: "l4", source: "2", target: "5", type: "CONTAINS", properties: {} },
+                { id: "l5", source: "2", target: "6", type: "CONTAINS", properties: {} },
+                
+                // File structure
+                { id: "l6", source: "3", target: "7", type: "CONTAINS", properties: {} },
+                { id: "l7", source: "3", target: "8", type: "CONTAINS", properties: {} },
+                { id: "l8", source: "4", target: "9", type: "CONTAINS", properties: {} },
+                { id: "l9", source: "5", target: "10", type: "CONTAINS", properties: {} },
+                
+                // Class containment
+                { id: "l10", source: "7", target: "11", type: "DEFINES", properties: {} },
+                { id: "l11", source: "8", target: "12", type: "DEFINES", properties: {} },
+                { id: "l12", source: "9", target: "13", type: "DEFINES", properties: {} },
+                { id: "l13", source: "10", target: "14", type: "DEFINES", properties: {} },
+                
+                // Function containment
+                { id: "l14", source: "7", target: "15", type: "DEFINES", properties: {} },
+                { id: "l15", source: "7", target: "18", type: "DEFINES", properties: {} },
+                { id: "l16", source: "9", target: "16", type: "DEFINES", properties: {} },
+                { id: "l17", source: "10", target: "17", type: "DEFINES", properties: {} },
+                
+                // Class-function relationships
+                { id: "l18", source: "11", target: "15", type: "CONTAINS", properties: {} },
+                { id: "l19", source: "11", target: "18", type: "CONTAINS", properties: {} },
+                { id: "l20", source: "13", target: "16", type: "CONTAINS", properties: {} },
+                { id: "l21", source: "14", target: "17", type: "CONTAINS", properties: {} },
+                
+                // Module relationships
+                { id: "l22", source: "19", target: "11", type: "EXPORTS", properties: {} },
+                { id: "l23", source: "19", target: "12", type: "EXPORTS", properties: {} },
+                { id: "l24", source: "20", target: "13", type: "EXPORTS", properties: {} },
+                { id: "l25", source: "20", target: "16", type: "EXPORTS", properties: {} },
+                
+                // Dependencies
+                { id: "l26", source: "14", target: "13", type: "DEPENDS_ON", properties: { reason: "Uses LLM for text processing" } },
+                { id: "l27", source: "14", target: "11", type: "DEPENDS_ON", properties: { reason: "Stores processed data in graph" } },
+                { id: "l28", source: "17", target: "16", type: "CALLS", properties: {} },
+                { id: "l29", source: "17", target: "15", type: "CALLS", properties: {} },
+                { id: "l30", source: "16", target: "18", type: "CALLS", properties: {} }
+            ]
+        };
+        
+        // Visualization configuration
+        const vizType = "force";
+        const theme = "dark";
+        const title = "Code Story Graph Visualization Demo";
+        const maxNodes = 100;
+        const focusNodeId = null;
+        
+        // Initialize visualization
+        document.addEventListener('DOMContentLoaded', () => {
+            // Visualization variables
+            let svg = d3.select('#graph');
+            let width = svg.node().parentElement.clientWidth;
+            let height = svg.node().parentElement.clientHeight;
+            let nodeRadius = 10;
+            let simulation;
+            let nodeElements;
+            let linkElements;
+            let textElements;
+            
+            // Color function for nodes based on type
+            function getNodeColor(node) {
+                if (node.id === focusNodeId || node.is_focus) {
+                    return 'var(--focus-color)';
+                }
+                
+                const type = node.type.toLowerCase();
+                if (type.includes('file')) return 'var(--node-color-file)';
+                if (type.includes('directory')) return 'var(--node-color-directory)';
+                if (type.includes('function')) return 'var(--node-color-function)';
+                if (type.includes('class')) return 'var(--node-color-class)';
+                if (type.includes('module')) return 'var(--node-color-module)';
+                return 'var(--node-color-default)';
+            }
+            
+            // Node size based on connections
+            function getNodeSize(node) {
+                let size = nodeRadius;
+                const links = graphData.links.filter(link => 
+                    link.source === node.id || link.source.id === node.id || 
+                    link.target === node.id || link.target.id === node.id
+                );
+                
+                if (links.length > 0) {
+                    size += Math.min(links.length, 10);  // Cap the size increase
+                }
+                
+                if (node.id === focusNodeId || node.is_focus) {
+                    size += 5;  // Make focus node larger
+                }
+                
+                return size;
+            }
+            
+            // Check if node is expandable
+            function isExpandable(node) {
+                // A node is expandable if it's not a focus node and has properties indicating more connections
+                return !node.is_focus && node.properties && 
+                        (node.properties.has_children === true || 
+                        node.properties.has_more_connections === true);
+            }
+            
+            // Initialize the visualization
+            function initializeVisualization() {
+                // Clear any existing visualization
+                svg.selectAll('*').remove();
+                
+                // Create zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 8])
+                    .on('zoom', (event) => {
+                        container.attr('transform', event.transform);
+                    });
+                
+                svg.call(zoom);
+                
+                // Create container for the graph
+                const container = svg.append('g');
+                
+                // Add a border to make the visualization area more visible
+                svg.append('rect')
+                    .attr('width', width)
+                    .attr('height', height)
+                    .attr('fill', 'none')
+                    .attr('stroke', 'var(--border-color)');
+                
+                // Create arrow markers for directed graphs
+                svg.append('defs').selectAll('marker')
+                    .data(['end'])
+                    .enter().append('marker')
+                    .attr('id', d => d)
+                    .attr('viewBox', '0 -5 10 10')
+                    .attr('refX', 20)
+                    .attr('refY', 0)
+                    .attr('markerWidth', 6)
+                    .attr('markerHeight', 6)
+                    .attr('orient', 'auto')
+                    .append('path')
+                    .attr('fill', 'var(--link-color)')
+                    .attr('d', 'M0,-5L10,0L0,5');
+                
+                // Create links, nodes, and labels
+                linkElements = container.append('g')
+                    .selectAll('line')
+                    .data(graphData.links)
+                    .enter().append('line')
+                    .attr('class', 'link')
+                    .attr('stroke-width', 1)
+                    .attr('marker-end', 'url(#end)');
+                
+                nodeElements = container.append('g')
+                    .selectAll('circle')
+                    .data(graphData.nodes)
+                    .enter().append('circle')
+                    .attr('class', 'node')
+                    .attr('r', getNodeSize)
+                    .attr('fill', getNodeColor)
+                    .classed('expandable', isExpandable)
+                    .call(d3.drag()
+                        .on('start', dragStarted)
+                        .on('drag', dragged)
+                        .on('end', dragEnded));
+                
+                textElements = container.append('g')
+                    .selectAll('text')
+                    .data(graphData.nodes)
+                    .enter().append('text')
+                    .attr('class', 'node-label')
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', 'var(--text-color)')
+                    .text(d => d.name);
+                
+                // Setup force simulation
+                simulation = d3.forceSimulation(graphData.nodes)
+                    .force('charge', d3.forceManyBody().strength(-200))
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('link', d3.forceLink(graphData.links)
+                        .id(d => d.id)
+                        .distance(100))
+                    .force('collision', d3.forceCollide().radius(30))
+                    .on('tick', ticked);
+                
+                // Setup node events
+                setupNodeEvents();
+                
+                // Setup controls
+                setupControls(zoom);
+                
+                // Setup search
+                setupSearch();
+            }
+            
+            // Update visualization on each tick
+            function ticked() {
+                linkElements
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                nodeElements
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+                
+                textElements
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y + getNodeSize(d) + 10);
+            }
+            
+            // Drag functions
+            function dragStarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragEnded(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+            
+            // Setup node events (hover, click)
+            function setupNodeEvents() {
+                const tooltip = d3.select('#tooltip');
+                
+                nodeElements
+                    .on('mouseover', (event, d) => {
+                        // Highlight node and connected links
+                        nodeElements.style('opacity', n => isConnected(d, n) ? 1 : 0.3);
+                        linkElements.style('opacity', l => isLinkConnected(l, d) ? 1 : 0.1);
+                        textElements.style('opacity', n => isConnected(d, n) ? 1 : 0.3);
+                        
+                        // Show tooltip
+                        tooltip
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px')
+                            .style('opacity', 0.9)
+                            .html(`
+                                <strong>${d.name}</strong><br>
+                                <span>Type: ${d.type}</span>
+                                ${d.properties.path ? `<br><span>Path: ${d.properties.path}</span>` : ''}
+                            `);
+                    })
+                    .on('mouseout', () => {
+                        // Reset highlights
+                        nodeElements.style('opacity', 1);
+                        linkElements.style('opacity', 0.6);
+                        textElements.style('opacity', 1);
+                        
+                        // Hide tooltip
+                        tooltip.style('opacity', 0);
+                    })
+                    .on('click', (event, d) => {
+                        // Show node details
+                        showNodeDetails(d);
+                        
+                        // Prevent event from propagating
+                        event.stopPropagation();
+                    });
+            }
+            
+            // Check if two nodes are connected
+            function isConnected(a, b) {
+                return a === b || graphData.links.some(l => isLinkBetween(l, a, b));
+            }
+            
+            // Check if a link connects a specific node
+            function isLinkConnected(link, node) {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                return sourceId === node.id || targetId === node.id;
+            }
+            
+            // Check if a link is between two nodes
+            function isLinkBetween(link, a, b) {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                return (sourceId === a.id && targetId === b.id) || (sourceId === b.id && targetId === a.id);
+            }
+            
+            // Show node details in sidebar
+            function showNodeDetails(node) {
+                const detailsDiv = document.getElementById('node-details');
+                
+                // Create details HTML
+                let detailsHTML = `
+                    <h3>${node.name}</h3>
+                    <div class="property">
+                        <span class="property-name">Type:</span> ${node.type}
+                    </div>
+                `;
+                
+                // Add other properties
+                for (const [key, value] of Object.entries(node.properties)) {
+                    if (key !== 'name' && key !== 'type') {
+                        detailsHTML += `
+                            <div class="property">
+                                <span class="property-name">${key}:</span> ${value}
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Add connected nodes
+                const connectedNodes = graphData.links
+                    .filter(l => {
+                        const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                        const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                        return sourceId === node.id || targetId === node.id;
+                    })
+                    .map(l => {
+                        const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                        const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                        const connectedId = sourceId === node.id ? targetId : sourceId;
+                        const connectedNode = graphData.nodes.find(n => n.id === connectedId);
+                        const relationship = sourceId === node.id ? 
+                            `→ ${l.type} →` : 
+                            `← ${l.type} ←`;
+                        return {
+                            node: connectedNode,
+                            relationship: relationship
+                        };
+                    });
+                
+                if (connectedNodes.length > 0) {
+                    detailsHTML += `<h4>Connections:</h4>`;
+                    connectedNodes.forEach(conn => {
+                        if (conn.node) {
+                            detailsHTML += `
+                                <div class="property">
+                                    <span class="property-name">${conn.relationship}</span> 
+                                    ${conn.node.name} (${conn.node.type})
+                                </div>
+                            `;
+                        }
+                    });
+                }
+                
+                // Update details div
+                detailsDiv.innerHTML = detailsHTML;
+            }
+            
+            // Setup zoom/reset controls
+            function setupControls(zoom) {
+                document.getElementById('zoom-in').addEventListener('click', () => {
+                    svg.transition().call(zoom.scaleBy, 1.5);
+                });
+                
+                document.getElementById('zoom-out').addEventListener('click', () => {
+                    svg.transition().call(zoom.scaleBy, 0.75);
+                });
+                
+                document.getElementById('reset').addEventListener('click', () => {
+                    svg.transition().call(zoom.transform, d3.zoomIdentity);
+                });
+            }
+            
+            // Setup search functionality
+            function setupSearch() {
+                const searchInput = document.getElementById('search');
+                
+                searchInput.addEventListener('input', () => {
+                    const query = searchInput.value.toLowerCase();
+                    
+                    // If query is empty, reset all nodes
+                    if (query === '') {
+                        nodeElements.style('opacity', 1);
+                        textElements.style('opacity', 1);
+                        linkElements.style('opacity', 0.6);
+                        return;
+                    }
+                    
+                    // Highlight matching nodes
+                    nodeElements.style('opacity', d => {
+                        const matchesSearch = 
+                            (d.name && d.name.toLowerCase().includes(query)) ||
+                            (d.type && d.type.toLowerCase().includes(query)) ||
+                            (d.properties.path && d.properties.path.toLowerCase().includes(query)) ||
+                            (d.properties.summary && d.properties.summary.toLowerCase().includes(query));
+                        
+                        return matchesSearch ? 1 : 0.2;
+                    });
+                    
+                    // Highlight matching text
+                    textElements.style('opacity', d => {
+                        const matchesSearch = 
+                            (d.name && d.name.toLowerCase().includes(query)) ||
+                            (d.type && d.type.toLowerCase().includes(query)) ||
+                            (d.properties.path && d.properties.path.toLowerCase().includes(query)) ||
+                            (d.properties.summary && d.properties.summary.toLowerCase().includes(query));
+                        
+                        return matchesSearch ? 1 : 0.2;
+                    });
+                    
+                    // Dim all links
+                    linkElements.style('opacity', 0.1);
+                });
+            }
+            
+            // Initialize the visualization when DOM is loaded
+            initializeVisualization();
+            
+            // Resize handler
+            window.addEventListener('resize', () => {
+                width = svg.node().parentElement.clientWidth;
+                height = svg.node().parentElement.clientHeight;
+                
+                if (simulation) {
+                    simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                    simulation.alpha(0.3).restart();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

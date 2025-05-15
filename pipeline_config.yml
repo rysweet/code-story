@@ -1,0 +1,35 @@
+# Pipeline configuration for Code Story ingestion
+# This defines the steps, their order, and parameters
+
+steps:
+  - name: filesystem
+    concurrency: 1
+    ignore_patterns:
+      - "node_modules/"
+      - ".git/"
+      - "__pycache__/"
+      - "*.pyc"
+      - "*.pyo"
+      - "*.pyd"
+      - "venv/"
+      - ".venv/"
+      - ".idea/"
+      - ".vscode/"
+  
+  - name: blarify
+    concurrency: 1
+    docker_image: "codestory/blarify:latest"
+    timeout: 300
+
+  - name: summarizer
+    concurrency: 5
+    max_tokens_per_file: 8000
+    max_concurrency: 5
+
+  - name: documentation_grapher
+    concurrency: 2
+    enabled: true
+
+retry:
+  max_retries: 3
+  back_off_seconds: 10

@@ -1,0 +1,144 @@
+services:
+  neo4j:
+    image: neo4j:5.18.0-enterprise
+    container_name: codestory-neo4j
+    ports:
+      - "7476:7474"  # HTTP - using different port to avoid conflicts
+      - "7689:7687"  # Bolt - using different port to avoid conflicts
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_memory_pagecache_size=512m
+      - NEO4J_initial_dbms_default__database=neo4j
+      - NEO4J_server_config_strict__validation_enabled=false
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes  # Required for enterprise edition
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  redis:
+    image: redis:7.2.4-alpine
+    container_name: codestory-redis
+    ports:
+      - "6389:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # Add a real Celery worker
+  worker:
+    image: python:3.12-slim
+    container_name: codestory-worker
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      bash -c "apt-get update && apt-get install -y curl build-essential && 
+      pip install -e . &&
+      cp /app/.codestory.container.toml /app/.codestory.toml &&
+      echo 'Starting Celery worker...' &&
+      cd /app && python -m celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=INFO --concurrency=4 -Q ingestion"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Container network connection settings
+      - NEO4J__URI=bolt://neo4j:7687
+      - NEO4J__USERNAME=neo4j
+      - NEO4J__PASSWORD=password
+      - NEO4J__DATABASE=neo4j
+      # Redis connection settings (Celery broker)
+      - REDIS__URI=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # OpenAI settings
+      - OPENAI__ENDPOINT=https://api.openai.com/v1
+      - OPENAI__EMBEDDING_MODEL=text-embedding-3-small
+      - OPENAI__CHAT_MODEL=gpt-4o
+      - OPENAI__REASONING_MODEL=gpt-4o
+      # Worker settings
+      - WORKER_CONCURRENCY=4
+      - WORKER_LOGLEVEL=info
+      - C_FORCE_ROOT=true  # Allow running as root in container (for demo only)
+      
+  service:
+    image: python:3.12-slim
+    container_name: codestory-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      bash -c "apt-get update && apt-get install -y curl build-essential && 
+      pip install -e . &&
+      cp /app/.codestory.container.toml /app/.codestory.toml &&
+      echo 'Patching adapters to ensure real implementations...' &&
+      python /app/patch_adapters.py &&
+      echo 'Starting service with real adapters only...' &&
+      python -m src.codestory_service.main"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    environment:
+      # Container network connection settings - use internal container names for networking
+      - NEO4J__URI=bolt://neo4j:7687
+      - NEO4J__USERNAME=neo4j
+      - NEO4J__PASSWORD=password
+      - NEO4J__DATABASE=neo4j
+      - CODESTORY_CONFIG_PATH=/app/.codestory.container.toml
+      # Redis connection settings
+      - REDIS__URI=redis://redis:6379
+      # Celery settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Service settings
+      - SERVICE__HOST=0.0.0.0
+      - SERVICE__PORT=8000
+      - SERVICE__DEV_MODE=false
+      # Force use of real adapters
+      - USE_REAL_ADAPTERS=true
+      - CODESTORY_SERVICE_AUTH_ENABLED=false
+      # OpenAI settings - real API access
+      - OPENAI__ENDPOINT=https://api.openai.com/v1
+      - OPENAI__EMBEDDING_MODEL=text-embedding-3-small
+      - OPENAI__CHAT_MODEL=gpt-4o
+      - OPENAI__REASONING_MODEL=gpt-4o
+      # Azure OpenAI settings - these will be used if API keys are available
+      - AZURE_OPENAI__ENDPOINT=https://adapt-appsci.openai.azure.com
+      - AZURE_OPENAI__DEPLOYMENT_ID=gpt-4o
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || curl -f http://localhost:8000/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  redis_data:

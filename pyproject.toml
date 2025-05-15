@@ -1,0 +1,141 @@
+[tool.poetry]
+name = "codestory"
+version = "0.1.0"
+description = "A system to convert codebases into richly-linked knowledge graphs with natural-language summaries"
+authors = ["Code Story Team"]
+readme = "README.md"
+packages = [{include = "codestory", from = "src"}, {include = "codestory_summarizer", from = "src"}, {include = "codestory_blarify", from = "src"}, {include = "codestory_filesystem", from = "src"}, {include = "codestory_docgrapher", from = "src"}, {include = "codestory_mcp", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+pydantic = "^2.7.0"
+pydantic-settings = "^2.2.1"
+rich = "^13.7.1"
+typer = {extras = ["all"], version = "^0.9.4"}
+fastapi = "~0.110.0"
+uvicorn = "^0.29.0"
+celery = "^5.4.0"
+redis = "^5.0.3"
+neo4j = "^5.22.0"
+openai = "^1.35.0"
+tenacity = "^8.2.3"
+prometheus-client = "^0.20.0"
+structlog = "^24.1.0"
+opentelemetry-sdk = "^1.26.0"
+python-dotenv = "^1.0.1"
+tomli = "^2.0.1"
+tomli-w = "^1.0.0"
+azure-identity = {version = "^1.15.0", optional = true}
+azure-keyvault-secrets = {version = "^4.8.0", optional = true}
+email-validator = "^2.1.0"
+pyyaml = "^6.0.2"
+rich-click = "^1.8.8"
+sphinx = {version = ">=7.0.0", optional = true}
+sphinx-rtd-theme = {version = ">=2.0.0", optional = true}
+myst-parser = {version = ">=3.0.0", optional = true}
+sphinxcontrib-mermaid = {version = ">=0.9.0", optional = true}
+sphinx-copybutton = {version = ">=0.5.0", optional = true}
+sphinx-design = {version = ">=0.5.0", optional = true}
+sphinx-tabs = {version = ">=3.4.0", optional = true}
+linkify-it-py = {version = ">=2.0.0", optional = true}
+
+[tool.poetry.extras]
+azure = ["azure-identity", "azure-keyvault-secrets"]
+docs = ["sphinx", "sphinx-rtd-theme", "myst-parser", "sphinxcontrib-mermaid", "sphinx-copybutton", "sphinx-design", "sphinx-tabs", "linkify-it-py"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+pytest-asyncio = "^0.23.5"
+pytest-cov = "^4.1.0"
+testcontainers = "^3.7.1"
+ruff = "^0"
+mypy = "^1.8.0"
+httpx = "^0.27.0"
+pytest-mock = "^3.14.0"
+pytest-timeout = "^2.4.0"
+poethepoet = "^0.24.4"
+psutil = "^5.9.8"
+
+[tool.poetry.scripts]
+codestory = "codestory.cli.main:main"
+cs = "codestory.cli.main:main"
+codestory-mcp = "codestory_mcp.main:main"
+
+[tool.poetry.plugins."codestory.pipeline.steps"]
+filesystem = "codestory_filesystem.step:FileSystemStep"
+blarify = "codestory_blarify.step:BlarifyStep"
+summarizer = "codestory_summarizer.step:SummarizerStep"
+documentation_grapher = "codestory_docgrapher.step:DocumentationGrapherStep"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "RUF", # ruff-specific rules
+    "D",   # pydocstyle
+]
+ignore = [
+    "D203",  # one-blank-line-before-class
+    "D212",  # multi-line-summary-first-line
+    "D200",  # One-line docstring should fit on one line
+    "UP035", # deprecated typing aliases
+    "UP006", # Use dict instead of Dict
+    "UP007", # Use X | Y for union types
+    "UP015", # Unnecessary mode argument
+    "E501",  # Line too long
+    "F401",  # Unused imports
+    "C420",  # Unnecessary dict comprehension
+]
+
+[tool.ruff.per-file-ignores]
+"tests/**/*.py" = ["D", "S101"]
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.isort]
+known-first-party = ["codestory"]
+known-third-party = ["fastapi", "pydantic", "celery", "neo4j", "openai"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false  # Temporarily disabled
+warn_unused_configs = true
+disallow_untyped_defs = false  # Temporarily disabled
+disallow_incomplete_defs = false  # Temporarily disabled
+check_untyped_defs = false  # Temporarily disabled
+disallow_untyped_decorators = false  # Temporarily disabled
+no_implicit_optional = false  # Temporarily disabled
+strict_optional = false  # Temporarily disabled
+ignore_missing_imports = true  # Added to handle missing imports
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--strict-markers"
+
+[tool.poe.tasks]
+lint = "ruff check ./src/codestory_summarizer/models.py ./src/codestory_summarizer/dependency_analyzer.py ./src/codestory_summarizer/parallel_executor.py ./src/codestory_summarizer/step.py ./src/codestory_summarizer/utils/content_extractor.py"
+format = "ruff format ."
+check = "bash -c 'ruff check . && mypy src/'"

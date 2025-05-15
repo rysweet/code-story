@@ -67,8 +67,22 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 
 ## 13.4 Testing
 
-- **Unit** - ensure cli commands parse and invoke the correct methods
-- **Integration** - run CLI commands against a real Code-story instance; validate output format and data integrity.
+- **Unit** - ensure CLI commands parse and invoke the correct methods
+  - Test command registration and argument parsing
+  - Test client API calls and error handling
+  - Test output formatting with Rich
+  - Test configuration validation and updates
+  - Mock all external dependencies (service API, Redis, browser)
+
+- **Integration** - run CLI commands against a real Code-story instance; validate output format and data integrity
+  - Test full command workflow with real or containerized services
+  - Verify correct handling of service state (start/stop)
+  - Test real ingestion process and progress reporting
+  - Test query execution and result rendering
+  - Test configuration updates persist correctly
+  - Test visualization generation and browser interaction
+
+See the [CLI Test Plan](./cli_test_plan.md) for a comprehensive testing strategy.
 
 ## 13.5 Acceptance Criteria
 

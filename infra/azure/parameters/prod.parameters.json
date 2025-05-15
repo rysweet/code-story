@@ -1,0 +1,55 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environmentName": {
+            "value": "prod"
+        },
+        "location": {
+            "value": "eastus"
+        },
+        "tags": {
+            "value": {
+                "Environment": "Production",
+                "Application": "CodeStory",
+                "ManagedBy": "Bicep"
+            }
+        },
+        "serviceReplicas": {
+            "value": 3
+        },
+        "workerReplicas": {
+            "value": 5
+        },
+        "mcpReplicas": {
+            "value": 3
+        },
+        "guiReplicas": {
+            "value": 3
+        },
+        "containerRegistrySku": {
+            "value": "Standard"
+        },
+        "redisSku": {
+            "value": "Standard"
+        },
+        "redisCapacity": {
+            "value": 1
+        },
+        "serviceImage": {
+            "value": "codestory/service:latest"
+        },
+        "workerImage": {
+            "value": "codestory/worker:latest"
+        },
+        "mcpImage": {
+            "value": "codestory/mcp:latest"
+        },
+        "guiImage": {
+            "value": "codestory/gui:latest"
+        },
+        "authEnabled": {
+            "value": true
+        }
+    }
+}

@@ -1,0 +1,29 @@
+# GitGuardian allowed patterns
+# These patterns are intentionally included in the codebase and are not actual secrets
+
+# Test database credentials
+neo4j://localhost:7687
+neo4j://localhost:7688
+bolt://localhost:7687
+bolt://localhost:7688
+neo4j/password
+
+# Test Redis credentials
+redis://localhost:6379
+redis://localhost:6380
+
+# Common test API keys (not real secrets)
+sk-test-123456789
+api-key-test-123456789
+
+# Example OAuth credentials in docs
+client_id: example_client_id
+client_secret: example_client_secret
+
+# Example OpenAI/Azure credentials in example configs
+OPENAI_API_KEY=sk-example
+AZURE_OPENAI_API_KEY=example-key-not-real
+
+# Test tenant and subscription IDs
+tenant_id: test-tenant-id
+subscription_id: test-subscription-id

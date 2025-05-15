@@ -1,0 +1,11 @@
+Ask Questions About Your Code
+
+Code Story allows you to ask natural language questions about your codebase.
+
+Examples of questions you can ask:
+- "What are the main components of the system?"
+- "How does the error handling work?"
+- "What is the purpose of the Neo4jConnector class?"
+- "Show me the dependency structure of the CLI module"
+
+The system analyzes your question, searches the knowledge graph, and generates a comprehensive answer with relevant code references.
