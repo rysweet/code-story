@@ -88,24 +88,36 @@ class CeleryAdapter:
             HTTPException: If starting the ingestion job fails
         """
         try:
-            # Convert domain model to task parameters
-            task_params = {
-                "source_type": request.source_type.value,
-                "source": request.source,
-                "options": request.options or {},
-                "steps": request.steps or [],
-                "metadata": {
-                    "created_by": request.created_by,
-                    "description": request.description,
-                    "tags": request.tags,
-                },
-            }
-
-            # Submit the Celery task
+            # The orchestrate_pipeline task expects repository_path, step_configs, and job_id
+            # We need to transform the IngestionRequest into these parameters
+            
+            # Use the source as the repository path
+            repository_path = request.source
+            
+            # Generate a job_id
+            import uuid
+            job_id = str(uuid.uuid4())
+            
+            # Create step configs
+            step_configs = []
+            if request.steps:
+                for step_name in request.steps:
+                    step_configs.append({"name": step_name})
+            else:
+                # Default steps if none provided
+                for step_name in ["filesystem", "blarify", "summarizer", "docgrapher"]:
+                    step_configs.append({"name": step_name})
+            
+            # Add options to each step if provided
+            if request.options:
+                for step_config in step_configs:
+                    step_config.update(request.options)
+            
+            # Submit the Celery task with positional parameters
             # For testing, use a local reference that can be mocked
             task_func = getattr(self, "_run_ingestion_pipeline", run_ingestion_pipeline)
             task = task_func.apply_async(
-                kwargs=task_params,
+                args=[repository_path, step_configs, job_id],
                 countdown=0,  # Start immediately
                 expires=3600 * 24,  # Expire after 24 hours if not started
             )
@@ -331,107 +343,8 @@ class CeleryAdapter:
             )
 
 
-class DummyCeleryAdapter(CeleryAdapter):
-    """Dummy Celery adapter for use when Celery is not available.
-    
-    This allows basic service functionality without Celery being available.
-    """
-    
-    def __init__(self):
-        """Initialize the dummy adapter."""
-        logger.warning("Using DummyCeleryAdapter - Celery functionality will be limited")
-        # Don't initialize the real Celery app
-
-    async def check_health(self) -> Dict[str, Any]:
-        """Return degraded health for demo purposes."""
-        return {
-            "status": "degraded",
-            "details": {
-                "message": "Celery worker unavailable - using dummy adapter for demo purposes",
-                "active_workers": 0,
-                "registered_tasks": 0,
-            },
-        }
-    
-    async def start_ingestion(self, request: IngestionRequest) -> IngestionStarted:
-        """Simulate starting an ingestion pipeline job.
-        
-        Args:
-            request: Details of the ingestion request
-            
-        Returns:
-            IngestionStarted with job ID and status
-        """
-        logger.info(f"DummyCeleryAdapter.start_ingestion called with source: {request.source}")
-        
-        # Generate a dummy job ID
-        job_id = f"dummy-{int(time.time())}"
-        
-        return IngestionStarted(
-            job_id=job_id,
-            status=JobStatus.PENDING,
-            source=request.source,
-            steps=request.steps or ["default_pipeline"],
-            message="Ingestion job submitted (dummy mode - no actual processing)",
-            eta=int(time.time()),
-        )
-    
-    async def get_job_status(self, job_id: str) -> IngestionJob:
-        """Get the status of a dummy ingestion job.
-        
-        Args:
-            job_id: ID of the ingestion job
-            
-        Returns:
-            IngestionJob with dummy status information
-        """
-        logger.info(f"DummyCeleryAdapter.get_job_status called for job: {job_id}")
-        
-        # Determine status based on job_id format
-        if job_id.startswith("dummy-"):
-            # For demo purposes, return a running status for recent jobs
-            timestamp = int(job_id.split("-")[1]) if len(job_id.split("-")) > 1 else 0
-            current_time = int(time.time())
-            
-            if current_time - timestamp < 30:
-                # Job is "running" for the first 30 seconds
-                return IngestionJob(
-                    job_id=job_id,
-                    status=JobStatus.RUNNING,
-                    created_at=timestamp,
-                    updated_at=current_time,
-                    progress=min(100, (current_time - timestamp) * 3.3),  # Simulate progress
-                    current_step="Processing (demo mode)",
-                    message="Simulated job in progress",
-                    result=None,
-                    error=None,
-                )
-            else:
-                # After 30 seconds, job is "completed"
-                return IngestionJob(
-                    job_id=job_id,
-                    status=JobStatus.COMPLETED,
-                    created_at=timestamp,
-                    updated_at=current_time,
-                    progress=100.0,
-                    current_step="Completed",
-                    message="Simulated job completed successfully",
-                    result={"nodes_created": 42, "relationships_created": 120},
-                    error=None,
-                )
-        
-        # For unknown job IDs
-        return IngestionJob(
-            job_id=job_id,
-            status=JobStatus.UNKNOWN,
-            created_at=int(time.time() - 60),
-            updated_at=int(time.time()),
-            progress=0.0,
-            current_step="Unknown",
-            message="Unknown job ID (dummy mode)",
-            result=None,
-            error=None,
-        )
+# DummyCeleryAdapter has been removed as Celery is now a required component
+# The service will fail if Celery is not available
 
 
 async def get_celery_adapter() -> CeleryAdapter:
@@ -440,7 +353,10 @@ async def get_celery_adapter() -> CeleryAdapter:
     This is used as a FastAPI dependency.
 
     Returns:
-        CeleryAdapter instance (real or dummy)
+        CeleryAdapter instance
+        
+    Raises:
+        RuntimeError: If Celery is not available or not healthy
     """
     try:
         # Try to create a real adapter
@@ -449,13 +365,11 @@ async def get_celery_adapter() -> CeleryAdapter:
         celery_health = await adapter.check_health()
         if celery_health["status"] == "healthy":
             return adapter
-        # If not healthy, fall back to dummy
-        logger.warning("Real Celery adapter not healthy")
-        return DummyCeleryAdapter()
+        # If not healthy, raise an exception
+        error_msg = celery_health["details"].get("error", "No active Celery workers found")
+        logger.error(f"Celery adapter not healthy: {error_msg}")
+        raise RuntimeError(f"Celery component unhealthy: {error_msg}")
     except Exception as e:
-        # Log the error but don't fail
-        logger.warning(f"Failed to create real Celery adapter: {str(e)}")
-        logger.warning("Falling back to dummy Celery adapter for demo purposes")
-        
-        # Return a dummy adapter instead
-        return DummyCeleryAdapter()
+        # Log the error and fail
+        logger.error(f"Failed to create Celery adapter: {str(e)}")
+        raise RuntimeError(f"Celery component required but unavailable: {str(e)}")
