@@ -4,6 +4,7 @@ import sys
 from typing import Optional, Union
 
 import click
+from click_didyoumean import DYMGroup
 
 # Import rich_click if available, otherwise create a stub with click
 rich_click_module = None
@@ -42,7 +43,11 @@ console = Console()
 
 
 @click.group(
-    help="[bold]Code Story[/bold] - A tool for exploring and documenting codebases."
+    cls=DYMGroup,
+    help="[bold]Code Story[/bold] - A tool for exploring and documenting codebases.",
+    invoke_without_command=True,
+    max_suggestions=3,
+    cutoff=0.6
 )
 @click.version_option()
 @click.option(
@@ -84,6 +89,11 @@ def app(
     ctx.obj["client"] = client
     ctx.obj["console"] = console
     ctx.obj["settings"] = settings
+    
+    # If no command is invoked, show help
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(0)
 
 
 # Register commands later to avoid circular imports
@@ -123,7 +133,9 @@ register_commands()
 def main() -> None:
     """Entry point for the CLI application."""
     try:
-        app()
+        # Add custom error handler for Click errors
+        with custom_error_handler():
+            app()
     except ServiceError as e:
         console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
@@ -131,6 +143,44 @@ def main() -> None:
         console.print(f"[bold red]Unexpected error:[/] {e!s}")
         console.print_exception(show_locals=False)
         sys.exit(1)
+
+
+class custom_error_handler:
+    """Custom context manager to handle Click errors more gracefully.
+    
+    This handler ensures that when a command is not found or used incorrectly,
+    more helpful error messages are displayed along with suggestions.
+    
+    Note: Since Click's error handling changed over versions, this uses a more
+    compatible approach by modifying how Click.Context.fail behaves rather than
+    patching internal functions.
+    """
+    def __enter__(self):
+        # Save the original Click Context.fail method
+        self._original_fail = click.Context.fail
+        
+        # Create a new fail method that adds help suggestion
+        def custom_fail(self_ctx, message):
+            # Check if this is a command not found error (already handled by DYMGroup)
+            if "No such command" in message or "Did you mean" in message:
+                return self._original_fail(self_ctx, message)
+            
+            # For other errors, show the message and suggest help
+            if not message.endswith("--help"):
+                if not message.endswith("."):
+                    message += "."
+                message += " Try '--help' for more information."
+            
+            return self._original_fail(self_ctx, message)
+        
+        # Replace the method
+        click.Context.fail = custom_fail
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Restore the original method
+        click.Context.fail = self._original_fail
+        return False  # Allow exceptions to propagate
 
 
 if __name__ == "__main__":

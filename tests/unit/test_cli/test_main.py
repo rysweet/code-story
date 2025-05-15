@@ -2,10 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
+import click
 import pytest
 from click.testing import CliRunner
 
-from codestory.cli.main import app, main
+from codestory.cli.main import app, main, custom_error_handler
 from codestory.cli.client import ServiceError
 
 
@@ -114,3 +115,56 @@ class TestCliMain:
                 mock_client_class.assert_called_once()
                 client_args = mock_client_class.call_args[1]
                 assert client_args["api_key"] == "test-key"
+    
+    def test_no_command_shows_help(self, cli_runner: CliRunner) -> None:
+        """Test that running the CLI without a command shows help."""
+        with patch("codestory.cli.main.get_settings") as mock_get_settings:
+            # Create mock settings
+            mock_settings = MagicMock()
+            mock_settings.service.port = 8000
+            mock_get_settings.return_value = mock_settings
+            
+            # Run CLI without any command
+            result = cli_runner.invoke(app, [])
+            
+            # Check that help is shown
+            assert result.exit_code == 0
+            assert "Code Story" in result.output
+            assert "Usage:" in result.output
+            assert "Commands:" in result.output
+    
+    def test_invalid_command_suggestion(self, cli_runner: CliRunner) -> None:
+        """Test that running the CLI with an invalid command gives a suggestion."""
+        with patch("codestory.cli.main.get_settings") as mock_get_settings:
+            # Create mock settings
+            mock_settings = MagicMock()
+            mock_settings.service.port = 8000
+            mock_get_settings.return_value = mock_settings
+            
+            # Run CLI with a command that doesn't exist but is close to "service"
+            # Using the native Click CLI runner to avoid pytest's capture of stderr
+            result = cli_runner.invoke(app, ["servic"])
+            
+            # Check that help is shown
+            assert result.exit_code != 0
+            assert "No such command" in result.output
+            assert "Did you mean" in result.output
+            assert "service" in result.output
+    
+    def test_custom_error_handler(self) -> None:
+        """Test the custom error handler."""
+        with patch("click.Context.fail") as mock_fail:
+            # Create a new instance of the error handler
+            with custom_error_handler():
+                # Make sure the original handler is saved
+                assert hasattr(custom_error_handler.__enter__(custom_error_handler()), "_original_fail")
+                
+                # Create a mock context
+                mock_ctx = MagicMock()
+                
+                # Call the fail method with a test message
+                click.Context.fail(mock_ctx, "Some random error")
+                
+                # Verify that the custom handler was called and included the help suggestion
+                mock_fail.assert_called_once()
+                assert "Try '--help'" in mock_fail.call_args[0][1]
