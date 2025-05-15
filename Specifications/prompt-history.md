@@ -1,5 +1,19 @@
 # Prompt History
 
+## Prompt 47 (May 15, 2025)
+**Prompt**: There still appear to be lots of uncommitted changes
+
+**Response**:
+- Examined all uncommitted changes in the repository
+- Found several important improvements that needed to be committed
+- Added and committed repository mounting documentation and script
+- Added and committed CLI run.py entry point for better code organization
+- Committed CeleryAdapter improvements for better parameter mapping
+- Improved ingest command error handling and deployment documentation
+- Fixed service client, visualization endpoints, and service components
+- Enhanced demo scripts and service health checks
+- Updated all history files to track these changes
+
 ## Prompt 46 (May 15, 2025)
 **Prompt**: This session is being continued from a previous conversation that ran out of context. The conversation is summarized below:
 <analysis>

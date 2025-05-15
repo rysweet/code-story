@@ -4,6 +4,18 @@
 Completed all implementation tasks - All sections completed and tests passing
 
 ## Last Completed Task (May 15, 2025)
+- Committed multiple improvements to the CLI and service components
+  - Added repository mounting documentation and script for proper volume mounts
+  - Added dedicated CLI entry point to avoid circular imports
+  - Fixed CeleryAdapter parameter mapping for correct task execution
+  - Improved error handling in ingest command for better user experience
+  - Enhanced demo scripts with better error handling and sample data import
+  - Consolidated health check endpoints for easier maintenance
+  - Fixed service client to robustly handle different endpoints
+  - Improved documentation and standardized deployment patterns
+  - Removed dummy adapter implementations for more reliable behavior
+
+## Previous Completed Task (May 15, 2025)
 - Added comprehensive service recovery documentation
   - Created detailed service recovery guide in `/docs/user_guides/service_recovery.md`
   - Guide explains how to use the `service recover` command to fix unhealthy containers
@@ -44,14 +56,3 @@ Completed all implementation tasks - All sections completed and tests passing
   - Implemented node details panel showing properties and connections
   - Added sample data with dependency relationships between components
   - Updated CLI demo to reference the visualization correctly
-
-## Previous Completed Task (May 13, 2025)
-- Implemented visualization endpoint in the API service
-  - Added domain models for visualization types, themes, filters, and requests
-  - Implemented API endpoints for generating visualizations with different layouts
-  - Added legacy endpoint for backward compatibility with CLI and GUI
-  - Fixed tests for Neo4jAdapter and OpenAIAdapter in infrastructure layer
-  - Improved code formatting and error handling in API layer
-  - Implemented proper error chaining for better diagnostics
-  - Fixed all tests to ensure they pass with the new implementation
-  - Verified CLI visualization commands work correctly with the new endpoints
