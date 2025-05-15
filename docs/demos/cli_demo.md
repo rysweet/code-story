@@ -39,14 +39,6 @@ username = "neo4j"
 database = "neo4j"
 ```
 
-You can check your current configuration settings:
-
-```bash
-codestory config show
-```
-
-Note: This requires the service to be running.
-
 ## Service Management
 
 Before using the CLI for ingestion or queries, you need to start the Code Story services:
@@ -82,6 +74,14 @@ Example output:
 └─────────────────┴──────────┴─────────────────────────────────────────────────┘
 Service is running. Version: 0.1.0, Uptime: 324 seconds
 ```
+
+You can check your current configuration settings:
+
+```bash
+codestory config show
+```
+
+Note: This requires the service to be running.
 
 ## Available Commands
 
@@ -290,10 +290,20 @@ For a more extensive demo that ingests the entire Code Story codebase (recommend
 This script performs the following steps:
 1. Verifies CLI installation and configuration
 2. Starts the service using Docker Compose
-3. Ingests the entire Code Story codebase (this may take several minutes)
+3. Loads sample data representing the Code Story codebase structure
 4. Demonstrates querying the graph with meaningful examples specific to the Code Story project
-5. Generates an HTML visualization showing the Code Story architecture
+5. Generates an HTML visualization showing the Code Story architecture using the direct API endpoint
 6. Provides example commands tailored for exploring a larger, real-world codebase
+
+The demo includes an example of using the visualization endpoint directly:
+
+```bash
+# The demo script fetches the visualization via the API endpoint
+SERVICE_URL="http://localhost:8000"
+curl -s "${SERVICE_URL}/v1/visualize" --output code_story_visualization.html
+```
+
+This direct API access demonstrates how the visualization endpoint can be integrated into scripts and other tools without authentication requirements, while still maintaining security for sensitive operations through the authenticated endpoints.
 
 This demo is particularly useful for seeing how Code Story handles a real-world Python project with multiple components and dependencies.
 
@@ -305,9 +315,17 @@ You can examine the script sources to understand the full capabilities of the CL
 
 When you run a visualization using the `codestory visualize generate` command, you'll get an interactive HTML file that looks like this:
 
-![Code Story Visualization Example](./visualization.html)
+![Code Story Visualization Example](./assets/visualization.html)
 
-> **Note**: The visualization endpoint does not require authentication, allowing CLI tools to access it easily without needing to manage authentication tokens.
+The visualization can be accessed directly from the service API as well:
+
+```bash
+# Generate and view visualization directly from API endpoint
+curl http://localhost:8000/v1/visualize > visualization.html
+open visualization.html
+```
+
+> **Note**: The visualization endpoint does not require authentication, allowing CLI tools to access it easily without needing to manage authentication tokens. This makes it especially useful for integrating with third-party tools or scripts.
 
 ## Going Further
 
@@ -365,3 +383,17 @@ If you encounter issues with the CLI:
 5. **Authentication Problems**: For using Azure OpenAI or other authenticated services, ensure your environment variables are properly set in your `.env` file.
 
 6. **Port Conflicts**: If you see errors about ports already being allocated, you may have other services using those ports. Either stop those services or modify the port mappings in `docker-compose.yml`.
+
+7. **Visualization API Access**: If you're having issues accessing the visualization endpoint directly:
+   ```bash
+   # Verify the service is running and the endpoint is accessible
+   curl -v http://localhost:8000/v1/visualize
+   
+   # If you're getting CORS errors in a browser, you may need to use the CLI tool instead
+   codestory visualize generate --output my_visualization.html
+   
+   # Or for headless environments, use the direct service URL with proper headers
+   curl -H "Accept: text/html" http://localhost:8000/v1/visualize > visualization.html
+   ```
+   
+   Note that the visualization endpoint is deliberately unauthenticated to facilitate CLI and script integration, but it may be limited to specific origins for browser access depending on your CORS configuration.
