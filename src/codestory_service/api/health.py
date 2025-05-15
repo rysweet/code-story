@@ -20,9 +20,8 @@ from ..settings import get_service_settings
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Create routers
-router = APIRouter(prefix="/v1/health", tags=["health"])
-legacy_router = APIRouter(tags=["health"])
+# Create router
+router = APIRouter(tags=["health"])
 
 
 class ComponentHealth(BaseModel):
@@ -60,28 +59,20 @@ SERVICE_VERSION = (
 
 
 @router.get(
-    "",
+    "/health",
+    response_model=HealthReport,
+    summary="Health check",
+    description="Check the health of the service and its dependencies.",
+    status_code=status.HTTP_200_OK,  # Always return 200 for health endpoint
+)
+@router.get(
+    "/v1/health",
     response_model=HealthReport,
     summary="Health check",
     description="Check the health of the service and its dependencies.",
     status_code=status.HTTP_200_OK,  # Always return 200 for health endpoint
 )
 async def health_check(
-    neo4j: Neo4jAdapter = Depends(get_neo4j_adapter),
-    celery: CeleryAdapter = Depends(get_celery_adapter),
-    openai: OpenAIAdapter = Depends(get_openai_adapter),
-) -> HealthReport:
-
-    return await _health_check_impl(neo4j, celery, openai)
-
-@legacy_router.get(
-    "/health",
-    response_model=HealthReport,
-    summary="Health check (legacy endpoint)",
-    description="Check the health of the service and its dependencies. Legacy endpoint for backward compatibility.",
-    status_code=status.HTTP_200_OK,  # Always return 200 for health endpoint
-)
-async def legacy_health_check(
     neo4j: Neo4jAdapter = Depends(get_neo4j_adapter),
     celery: CeleryAdapter = Depends(get_celery_adapter),
     openai: OpenAIAdapter = Depends(get_openai_adapter),
@@ -149,9 +140,12 @@ async def _health_check_impl(
     # Check Redis health
     try:
         settings = get_service_settings()
-        redis_host = getattr(settings, "redis_host", "localhost")
+        redis_host = getattr(settings, "redis_host", "redis")
         redis_port = getattr(settings, "redis_port", 6379)
         redis_db = getattr(settings, "redis_db", 0)
+        
+        # Log Redis connection details for debugging
+        logger.info(f"Attempting to connect to Redis at {redis_host}:{redis_port}/{redis_db}")
         
         redis_client = redis.Redis(
             host=redis_host,
@@ -200,12 +194,14 @@ async def _health_check_impl(
     degraded_count = sum(1 for c in components.values() if c.status == "degraded")
     
     # Determine overall status
-    # For demo purposes, consider service degraded even if some components are unhealthy
-    if unhealthy_count == len(components):
-        # All components are unhealthy
+    # Celery is a required component - if it's unhealthy, the service is unhealthy
+    if components["celery"].status == "unhealthy":
         overall_status = "unhealthy"
-    elif unhealthy_count > 0 or degraded_count > 0:
-        # Some components are unhealthy or degraded
+    elif unhealthy_count > 0:
+        # Any unhealthy component makes the service unhealthy
+        overall_status = "unhealthy"
+    elif degraded_count > 0:
+        # Some components are degraded
         overall_status = "degraded"
     else:
         # All components are healthy

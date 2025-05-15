@@ -121,12 +121,8 @@ class ServiceSettings(BaseSettings):
         Returns:
             The validated CORS origins
         """
-        core_settings = get_core_settings()
-        if "*" in v and core_settings.environment != "development":
-            logger.warning(
-                "Using '*' for CORS origins in non-development environment. "
-                "This is a security risk!"
-            )
+        # No validation during initialization to avoid recursion
+        # We'll log a warning in the FastAPI startup event if needed
         return v
 
 
