@@ -130,7 +130,6 @@ def create_app() -> FastAPI:
     app.include_router(service.router)
     app.include_router(auth.router)
     app.include_router(health.router)
-    app.include_router(health.legacy_router)  # Add legacy health router
     app.include_router(websocket.router)
     
     # Add legacy visualization endpoint at the root level (no /v1 prefix)

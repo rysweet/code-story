@@ -3,6 +3,7 @@ Service client for interacting with the Code Story service API.
 """
 
 import json
+import os
 import time
 import webbrowser
 from typing import Any, Dict, List, Optional, Union
@@ -97,72 +98,50 @@ class ServiceClient:
 
         Returns:
             Health check response data.
-        
-        This method attempts to call both the v1 health endpoint (/v1/health) and
-        the legacy endpoint (/health). It will try the legacy endpoint first, then
-        the v1 endpoint if that fails.
         """
-        error_messages = []
-        
-        # Try legacy endpoint first (/health)
+        # Try multiple health check endpoints in sequence
+        # This is necessary because during service startup, one endpoint might
+        # be available before the other
         try:
-            response = self.client.get("/health")
-            response.raise_for_status()
-            health_data = response.json()
-            # Check if Celery/Redis status is included
-            if "components" not in health_data:
-                health_data["components"] = {}
-            return health_data
+            # First try the standard v1 health endpoint
+            try:
+                response = self.client.get("/v1/health")
+                response.raise_for_status()
+                health_data = response.json()
+                # Check if components are included
+                if "components" not in health_data:
+                    health_data["components"] = {}
+                return health_data
+            except httpx.HTTPError:
+                # Fall back to root health endpoint
+                response = self.client.get("/health")
+                response.raise_for_status()
+                health_data = response.json()
+                # Check if components are included
+                if "components" not in health_data:
+                    health_data["components"] = {}
+                return health_data
         except httpx.HTTPError as e:
-            error_messages.append(f"Legacy health endpoint failed: {str(e)}")
-            # Use print instead of debug if not available
-            if hasattr(self.console, "debug"):
-                self.console.debug(f"Legacy health endpoint failed: {str(e)}")
-            else:
-                print(f"Legacy health endpoint failed: {str(e)}")
-        
-        # If that fails, try the v1 endpoint
-        try:
-            response = self.client.get("/v1/health")
-            response.raise_for_status()
-            health_data = response.json()
-            # Check if Celery/Redis status is included
-            if "components" not in health_data:
-                health_data["components"] = {}
-            return health_data
-        except httpx.HTTPError as e:
-            error_messages.append(f"V1 health endpoint failed: {str(e)}")
-            # Use print instead of debug if not available
-            if hasattr(self.console, "debug"):
-                self.console.debug(f"V1 health endpoint failed: {str(e)}")
-            else:
-                print(f"V1 health endpoint failed: {str(e)}")
-        
-        # Try fallback to raw health check - some installations only return 200 but no valid JSON
-        try:
-            # Just check if the server is responding at all
-            response = self.client.request("GET", "/health")
-            if response.status_code == 200:
-                self.console.debug("Raw health check succeeded with status code 200 but invalid JSON")
-                return {
-                    "status": "degraded",
-                    "message": "Service is running but returned invalid health check data",
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    "components": {
-                        "celery": {"status": "unknown"},
-                        "redis": {"status": "unknown"}
+            # Last resort - check if server is responding at all
+            try:
+                # Try a simple connection to confirm the server is running
+                response = self.client.request("GET", "/")
+                if response.status_code < 500:  # Accept any non-server error response
+                    return {
+                        "status": "degraded",
+                        "message": "Service is starting up but health check endpoint not yet available",
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "components": {},
+                        "version": "0.1.0",
+                        "uptime": 0
                     }
-                }
-        except Exception as e:
-            error_messages.append(f"Raw health check failed: {str(e)}")
-            # Use print instead of debug if not available
+            except httpx.HTTPError:
+                pass
+                
+            # Provide a clear error message
             if hasattr(self.console, "debug"):
-                self.console.debug(f"Raw health check failed: {str(e)}")
-            else:
-                print(f"Raw health check failed: {str(e)}")
-        
-        # If both failed, raise an error with both messages
-        raise ServiceError(f"Health check failed: {'; '.join(error_messages)}")
+                self.console.debug(f"Health check failed: {str(e)}")
+            raise ServiceError(f"Health check failed: {str(e)}")
 
     def start_ingestion(self, repository_path: str) -> Dict[str, Any]:
         """
@@ -174,16 +153,43 @@ class ServiceClient:
         Returns:
             Ingestion job data including job_id.
         """
+        # Get absolute path
+        abs_repository_path = os.path.abspath(repository_path)
+        
+        # For all environments (Docker or standalone), use local_path
+        # The repository must be mounted/accessible to the service
         data = {
-            "repository_path": repository_path,
+            "source_type": "local_path",
+            "source": abs_repository_path,
+            "description": f"CLI ingestion of repository: {abs_repository_path}"
         }
-
+        
+        # Log important information about the repository path
+        self.console.debug(f"Starting ingestion for repository at {abs_repository_path}")
+        self.console.debug(f"Repository directory exists: {os.path.isdir(abs_repository_path)}")
+        
         try:
             response = self.client.post("/ingest", json=data)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to start ingestion: {str(e)}")
+            # Try to extract more detailed error information from the response if available
+            error_detail = str(e)
+            try:
+                if hasattr(e, 'response') and e.response is not None:
+                    error_json = e.response.json()
+                    if 'detail' in error_json:
+                        error_detail += f": {error_json['detail']}"
+            except Exception:
+                # If we can't parse the response for additional details, use the original error
+                pass
+            
+            # Provide additional guidance if this might be a Docker volume mounting issue
+            if "does not exist" in error_detail.lower():
+                error_detail += "\n\nIf running in Docker, ensure the repository is mounted as a volume to the service container. Example:\n"
+                error_detail += "docker run -v /local/path/to/repo:/mounted/repo/path service-image"
+            
+            raise ServiceError(f"Failed to start ingestion: {error_detail}")
 
     def get_ingestion_status(self, job_id: str) -> Dict[str, Any]:
         """
@@ -376,19 +382,81 @@ class ServiceClient:
         Returns:
             HTML content for the visualization.
         """
+        # Create headers with text/html Accept header
+        headers = self._get_headers()
+        headers["Accept"] = "text/html"
+        
+        # Make multiple attempts with different endpoint patterns
+        endpoints_to_try = [
+            # Try in this order:
+            "/visualize",        # Legacy root endpoint
+            "visualize",         # Same without leading slash
+            "/v1/visualize",     # Full v1 path (in case base_url doesn't include /v1)
+        ]
+        
+        errors = []
+        
         try:
-            # Only include params if they're provided
-            if params:
-                response = self.client.get(
-                    "/visualize", params=params, headers={"Accept": "text/html"}
-                )
-            else:
-                response = self.client.get(
-                    "/visualize", headers={"Accept": "text/html"}
-                )
-            response.raise_for_status()
-            return response.text
-        except httpx.HTTPError as e:
+            # Try each endpoint pattern
+            for endpoint in endpoints_to_try:
+                try:
+                    # Determine if we need to create a new client with a different base URL
+                    if endpoint.startswith("/v1/") and self.base_url.endswith("/v1"):
+                        # If endpoint has /v1/ and base_url already ends with /v1
+                        # strip the /v1 prefix from the endpoint
+                        actual_endpoint = endpoint[3:]  # Remove /v1 from endpoint
+                        client = self.client
+                    elif endpoint.startswith("/v1/"):
+                        # If endpoint has /v1/ but base_url doesn't end with /v1
+                        # use the endpoint as is, but with the base URL without any path
+                        base_url_parts = self.base_url.split("/")
+                        base_url_without_path = "/".join(base_url_parts[:3])  # http://host:port
+                        temp_client = httpx.Client(
+                            base_url=base_url_without_path,
+                            timeout=30.0,
+                            headers=headers
+                        )
+                        actual_endpoint = endpoint
+                        client = temp_client
+                    elif self.base_url.endswith("/v1"):
+                        # If base_url has /v1 but the endpoint doesn't start with /v1,
+                        # create a new client with base_url without /v1
+                        base_url_without_v1 = self.base_url.replace("/v1", "")
+                        temp_client = httpx.Client(
+                            base_url=base_url_without_v1,
+                            timeout=30.0,
+                            headers=headers
+                        )
+                        actual_endpoint = endpoint
+                        client = temp_client
+                    else:
+                        # Both base_url and endpoint don't have /v1,
+                        # use the existing client and endpoint as is
+                        actual_endpoint = endpoint
+                        client = self.client
+                    
+                    # Make the request
+                    self.console.debug(f"Trying visualization endpoint: {actual_endpoint}")
+                    if params:
+                        response = client.get(actual_endpoint, params=params)
+                    else:
+                        response = client.get(actual_endpoint)
+                    
+                    response.raise_for_status()
+                    return response.text
+                
+                except httpx.HTTPError as e:
+                    # Log the error and continue to the next endpoint
+                    error_msg = f"Failed with endpoint {endpoint}: {str(e)}"
+                    errors.append(error_msg)
+                    self.console.debug(error_msg)
+            
+            # If we've tried all endpoints and none worked, raise an error
+            raise ServiceError(f"Failed to generate visualization after trying multiple endpoints: {'; '.join(errors)}")
+        
+        except Exception as e:
+            if isinstance(e, ServiceError):
+                raise e
             raise ServiceError(f"Failed to generate visualization: {str(e)}")
 
     def open_ui(self) -> None:

@@ -244,6 +244,7 @@ class Settings(BaseSettings):
 
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
+        env_prefix="CODESTORY_",
         env_file=".env",
         env_nested_delimiter="__",
         case_sensitive=False,

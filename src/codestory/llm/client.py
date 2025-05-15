@@ -181,11 +181,16 @@ class OpenAIClient:
                 settings = get_settings()
                 api_key = getattr(settings.openai, "api_key", None)
                 if api_key:
-                    client_params["api_key"] = api_key
+                    # Convert SecretStr to string if needed
+                    if hasattr(api_key, "get_secret_value") and callable(getattr(api_key, "get_secret_value")):
+                        client_params["api_key"] = api_key.get_secret_value()
+                    else:
+                        client_params["api_key"] = api_key
                     logger.info("Using API key authentication")
             except Exception as e:
                 logger.warning(f"Failed to get API key from settings: {e}")
 
+        # Create the clients
         self._sync_client = AzureOpenAI(**client_params)
         self._async_client = AsyncAzureOpenAI(**client_params)
 

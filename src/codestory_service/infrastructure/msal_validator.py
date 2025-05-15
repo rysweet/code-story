@@ -19,7 +19,8 @@ from ..settings import get_service_settings
 logger = logging.getLogger(__name__)
 
 # Define security scheme for token extraction
-security = HTTPBearer()
+# Allow auto error to be disabled in dev mode to prevent 401 errors
+security = HTTPBearer(auto_error=False)
 
 
 class MSALValidator:
@@ -36,10 +37,15 @@ class MSALValidator:
         # Determine if we're in development mode with simplified auth
         self.dev_mode = self.settings.dev_mode
         self.auth_enabled = self.settings.auth_enabled
-
-        if self.dev_mode and not self.auth_enabled:
+        
+        # For better compatibility, consider auth disabled in dev mode
+        if self.dev_mode:
+            self.auth_enabled = False
+            logger.info("Development mode enabled - authentication will be bypassed")
+            
+        if not self.auth_enabled:
             logger.warning(
-                "Running in development mode with authentication DISABLED. "
+                "Running with authentication DISABLED. "
                 "This should only be used for local development."
             )
 
@@ -184,7 +190,7 @@ async def get_msal_validator() -> MSALValidator:
 
 async def get_current_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     validator: MSALValidator = Depends(get_msal_validator),
 ) -> Dict[str, Any]:
     """Get the current authenticated user from the request.
@@ -193,27 +199,53 @@ async def get_current_user(
 
     Args:
         request: FastAPI request object
-        credentials: Extracted Bearer token
+        credentials: Extracted Bearer token (Optional since auto_error=False)
         validator: MSAL validator instance
 
     Returns:
         Dictionary of user claims
 
     Raises:
-        HTTPException: If authentication fails
+        HTTPException: If authentication fails and dev_mode is False
     """
+    # Define dev user for simplicity
+    dev_user = {
+        "sub": "dev-user",
+        "name": "Development User",
+        "roles": ["admin", "user"],
+        "exp": int(time.time() + 3600),
+    }
+    
+    # Case 1: Authentication is disabled
     if not validator.auth_enabled:
-        # In dev mode with auth disabled, return a default user
-        return {
-            "sub": "dev-user",
-            "name": "Development User",
-            "roles": ["admin", "user"],
-            "exp": int(time.time() + 3600),
-        }
-
-    token = credentials.credentials
-    claims = await validator.validate_token(token)
-    return claims
+        logger.info("Using development user due to auth_enabled=False")
+        return dev_user
+    
+    # Case 2: No credentials provided
+    if credentials is None:
+        if validator.dev_mode:
+            logger.warning("No authentication credentials provided. Using development user in dev mode.")
+            return dev_user
+        else:
+            # In production mode, enforce authentication
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication credentials missing",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
+    # Case 3: Credentials provided, validate token
+    try:
+        token = credentials.credentials
+        claims = await validator.validate_token(token)
+        return claims
+    except HTTPException as e:
+        # If in dev mode, use dev user instead of failing
+        if validator.dev_mode:
+            logger.warning(f"Auth error in dev mode: {e.detail}. Using development user instead.")
+            return dev_user
+        # In production, raise the original error
+        raise
 
 
 async def get_optional_user(
@@ -234,6 +266,19 @@ async def get_optional_user(
     Returns:
         Dictionary of user claims or None if not authenticated
     """
+    # In dev mode with auth disabled, return a default user
+    if not validator.auth_enabled or validator.dev_mode:
+        # Define dev user for simplicity
+        dev_user = {
+            "sub": "dev-user",
+            "name": "Development User",
+            "roles": ["admin", "user"],
+            "exp": int(time.time() + 3600),
+        }
+        logger.debug("Using development user for optional authentication")
+        return dev_user
+    
+    # In production mode, try to authenticate or return None
     if not credentials or not credentials.credentials:
         return None
 

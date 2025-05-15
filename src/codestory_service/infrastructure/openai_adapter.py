@@ -75,9 +75,15 @@ class OpenAIAdapter:
             available_models = []
             try:
                 # Get the list of available models
-                response_obj = await self.client._async_client.models.list()
+                # Check if we need to modify client before calling models.list()
+                # This fixes issues with SecretStr objects being passed as header values
+                client = self.client._async_client
+                
+                # Try to safely fetch models list
+                response_obj = await client.models.list()
                 available_models = [m.id for m in response_obj.data]
             except Exception as model_err:
+                # Log the error but continue - this isn't critical
                 logger.warning(f"Couldn't retrieve model list: {model_err}")
             
             # Get our configured models
@@ -405,15 +411,22 @@ async def get_openai_adapter() -> OpenAIAdapter:
     This is used as a FastAPI dependency.
 
     Returns:
-        OpenAIAdapter instance (real or dummy)
+        OpenAIAdapter instance
+
+    Raises:
+        RuntimeError: If the OpenAI adapter cannot be created
     """
     try:
-        # Try to create a real adapter
-        return OpenAIAdapter()
-    except Exception as e:
-        # Log the error but don't fail
-        logger.warning(f"Failed to create real OpenAI adapter: {str(e)}")
-        logger.warning("Falling back to dummy OpenAI adapter for demo purposes")
+        # Create a real adapter
+        adapter = OpenAIAdapter()
         
-        # Return a dummy adapter instead
-        return DummyOpenAIAdapter()
+        # Verify it's functional with a health check
+        health = await adapter.check_health()
+        if health["status"] == "unhealthy":
+            raise RuntimeError(f"OpenAI adapter is unhealthy: {health.get('details', {}).get('error', 'Unknown error')}")
+        
+        return adapter
+    except Exception as e:
+        # Log the error and fail
+        logger.error(f"Failed to create OpenAI adapter: {str(e)}")
+        raise RuntimeError(f"OpenAI adapter is required but unavailable: {str(e)}")
