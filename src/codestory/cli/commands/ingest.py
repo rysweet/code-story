@@ -48,11 +48,15 @@ def start_ingestion(
 
     console.print(f"Starting ingestion of [cyan]{repository_path}[/]...")
 
-    response = client.start_ingestion(repository_path)
-    job_id = response.get("job_id")
+    try:
+        response = client.start_ingestion(repository_path)
+        job_id = response.get("job_id")
 
-    if not job_id:
-        console.print("[bold red]Error:[/] Failed to start ingestion job.")
+        if not job_id:
+            console.print("[bold red]Error:[/] Failed to start ingestion job - no job ID returned.")
+            return
+    except Exception as e:
+        console.print(f"[bold red]Error:[/] {str(e)}")
         return
 
     console.print(f"Ingestion job started with ID: [green]{job_id}[/]")

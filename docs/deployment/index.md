@@ -8,6 +8,7 @@ Code Story can be deployed in several ways:
 
 1. [Local Development](local.md) - Using Docker Compose for local development
 2. [Azure Deployment](azure.md) - Deploying to Azure Container Apps
+3. [Repository Mounting](repository_mounting.md) - Guide for correctly mounting repositories for ingestion
 
 ## System Requirements
 
@@ -80,6 +81,36 @@ graph TD
     Worker --> Neo4j
     Worker --> Redis
 ```
+
+## Docker Volume Mounts
+
+For the ingestion pipeline to work correctly, the repository being ingested must be accessible to the service containers. When running in Docker, you must mount the repository as a volume:
+
+```bash
+# Mount a local repository for ingestion
+docker run -v /local/path/to/repo:/mounted/repo/path codestory-service
+```
+
+For Docker Compose deployments, add volume mounts in your `docker-compose.yml`:
+
+```yaml
+services:
+  service:
+    image: codestory-service
+    volumes:
+      - /local/path/to/repo:/mounted/repo/path
+      
+  worker:
+    image: codestory-worker
+    volumes:
+      - /local/path/to/repo:/mounted/repo/path
+```
+
+Important notes:
+- The CLI uses absolute paths when communicating with the service
+- Both the service and worker containers need access to the repository
+- Use consistent mount paths across containers to ensure path references remain valid
+- For production environments, consider using shared storage solutions like Azure Files or NFS
 
 ## Security Considerations
 
