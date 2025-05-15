@@ -60,6 +60,12 @@ else
   echo -e "⚠️ Template file not found. Using existing configuration."
 fi
 
+# Show how to access configuration settings
+echo -e "\nTo view or modify configuration, you can use:"
+echo "  codestory config show          # View all settings"
+echo "  codestory config set key=value # Update a setting"
+echo "  vim .env                       # Edit bootstrap settings directly"
+
 # Check the configuration
 echo -e "\nChecking current configuration:"
 if codestory config show 2>/dev/null; then
@@ -67,12 +73,6 @@ if codestory config show 2>/dev/null; then
 else
   echo "⚠️ Service not running or configuration not yet available - this is expected"
 fi
-
-# Show how to access configuration settings
-echo -e "\nTo view or modify configuration, you can use:"
-echo "  codestory config show          # View all settings"
-echo "  codestory config set key=value # Update a setting"
-echo "  vim .env                       # Edit bootstrap settings directly"
 
 # Step 3: Start the service and ensure it's running properly
 echo -e "\nStep 3: Starting the service"
@@ -97,8 +97,9 @@ for i in $(seq 1 $max_attempts); do
     echo "Service not ready yet. Waiting..."
     sleep 5
     if [ $i -eq $max_attempts ]; then
-      echo "WARNING: Service did not start properly after $max_attempts attempts."
-      echo "Continuing with the demo, but some steps may fail."
+      echo "ERROR: Service did not start properly after $max_attempts attempts."
+      echo "Please check the service logs with 'docker compose logs' and ensure all components are running."
+      exit 1
     fi
   fi
 done
@@ -153,13 +154,20 @@ EOF
 
 echo "Created sample project at $DEMO_DIR"
 
+# Make sure celery is healthy before proceeding
+echo "Checking if Celery worker is healthy..."
+if ! codestory service status | grep -q "Celery.*Healthy"; then
+  echo "Error: Celery worker is not healthy. Please check with 'docker compose logs worker'"
+  exit 1
+fi
+
 # Step 8: Ingest code repository
 echo -e "\nStep 8: Ingesting sample project"
 
 # Try multiple times if needed - sometimes first attempt fails
 for i in {1..3}; do
   echo "Ingestion attempt $i..."
-  if codestory ingest "$DEMO_DIR" --name "CLI Demo Project" --wait; then
+  if codestory ingest start "$DEMO_DIR" --wait; then
     echo "Ingestion started and completed successfully!"
     sleep 2
     break
@@ -168,6 +176,7 @@ for i in {1..3}; do
     # If we've tried 3 times, exit with error
     if [ $i -eq 3 ]; then
       echo "Error: Could not start ingestion after 3 attempts."
+      echo "Please check if the Celery worker is running with 'docker compose logs worker'"
       exit 1
     fi
     sleep 5
