@@ -6,6 +6,10 @@ This module contains tests to verify that:
 """
 
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import pytest
 from codestory.config import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -40,7 +44,7 @@ def test_neo4j_connection_env_vars(use_env_check):
         # Only test the actual connection locally
         try:
             # Get environment variables directly
-            uri = os.environ.get("NEO4J__URI", "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")")
+            uri = os.environ.get("NEO4J__URI", f"bolt://localhost:{neo4j_port}")
             username = os.environ.get("NEO4J__USERNAME", "neo4j")
             password = os.environ.get("NEO4J__PASSWORD", "password")
             database = os.environ.get("NEO4J__DATABASE", "testdb")

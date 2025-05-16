@@ -5,6 +5,10 @@ repository through all workflow steps correctly using real services.
 """
 
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import shutil
 import socket
 import subprocess
@@ -33,7 +37,7 @@ def ensure_services_running():
     try:
         # Try to connect to Neo4j
         connector = Neo4jConnector(
-            uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",
+            uri=f"bolt://localhost:{neo4j_port}",
             username="neo4j",
             password="password",
             database="testdb",
@@ -53,7 +57,7 @@ def ensure_services_running():
         for i in range(max_attempts):
             try:
                 connector = Neo4jConnector(
-                    uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",
+                    uri=f"bolt://localhost:{neo4j_port}",
                     username="neo4j",
                     password="password",
                     database="testdb",
@@ -106,8 +110,8 @@ class TestFullPipelineIntegration(unittest.TestCase):
         ensure_services_running()
 
         # Configure settings for the test
-        os.environ["NEO4J_URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
-        os.environ["NEO4J__URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
+        os.environ["NEO4J_URI"] = f"bolt://localhost:{neo4j_port}"
+        os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
         os.environ["NEO4J_USERNAME"] = "neo4j"
         os.environ["NEO4J_PASSWORD"] = "password"
         os.environ["NEO4J__USERNAME"] = "neo4j"
@@ -123,7 +127,7 @@ class TestFullPipelineIntegration(unittest.TestCase):
 
         # Create Neo4j connector for the test
         cls.neo4j_connector = Neo4jConnector(
-            uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",
+            uri=f"bolt://localhost:{neo4j_port}",
             username="neo4j",
             password="password",
             database="testdb"

@@ -7,6 +7,10 @@ and generate summaries for code elements in the Neo4j database.
 import tempfile
 import time
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 import uuid
@@ -347,7 +351,7 @@ def neo4j_connector():
     """Create a Neo4j connector for testing."""
     # Use direct connection parameters for test environment
     connector = Neo4jConnector(
-        uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",  # Test port from docker-compose.test.yml
+        uri=f"bolt://localhost:{neo4j_port}",  # Test port from docker-compose.test.yml
         username="neo4j",
         password="password",
         database="testdb",

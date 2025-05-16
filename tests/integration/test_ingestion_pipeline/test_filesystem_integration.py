@@ -5,6 +5,10 @@ and store its structure in the Neo4j database.
 """
 
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 import time
 from pathlib import Path
@@ -251,7 +255,7 @@ def neo4j_connector():
     """Create a Neo4j connector for testing."""
     # Use direct connection parameters to connect to the test Neo4j instance
     connector = Neo4jConnector(
-        uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",  # Port defined in docker-compose.test.yml
+        uri=f"bolt://localhost:{neo4j_port}",  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
         database="testdb",  # Database defined in docker-compose.test.yml
