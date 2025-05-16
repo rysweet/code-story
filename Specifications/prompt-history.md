@@ -1,5 +1,60 @@
 # Prompt History
 
+## Prompt 54 (May 15, 2025)
+**Prompt**: it is still not automatically mounting the path that was requested on the cli: ```codestory-py3.12ryan@Ryans-MacBook-Pro-3 code-story % codestory ingest start .
+Starting ingestion of /Users/ryan/src/msec/code-story...
+Docker deployment detected. Mapping local path to container path:
+  Local path:     /Users/ryan/src/msec/code-story
+  Container path: /repositories/code-story
+Starting ingestion for repository at /repositories/code-story
+Repository directory exists: False
+Using container path directly
+Error: Failed to start ingestion: Client error '422 Unprocessable Entity' for url 'http://localhost:8000/v1/ingest'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422: [{'type': 'value_error', 
+'loc': ['body', 'source'], 'msg': "Value error, Local path '/repositories/code-story' does not exist", 'input': 
+'/repositories/code-story', 'ctx': {'error': {}}}]
+
+If running in Docker, ensure the repository is mounted as a volume to the service container.
+
+Try these solutions:
+1. Mount the repository using our script:
+   ./scripts/mount_repository.sh "/repositories/code-story" --restart
+
+2. Or use the container path format with the CLI:
+   codestory ingest start "/repositories/code-story" --container
+
+3. For manual mounting, modify your docker-compose.yml to include:
+   volumes:
+     - /repositories/code-story:/repositories/code-story
+
+Troubleshooting Suggestions:
+1. Ensure your repository is mounted in the Docker container:
+   - Run: export REPOSITORY_PATH="/Users/ryan/src/msec/code-story" before starting containers
+   - Or use: ./scripts/mount_repository.sh "/Users/ryan/src/msec/code-story"
+2. Restart the containers with mounted repository:
+   - Run: docker-compose down && docker-compose up -d
+3. For manual container mapping, try specifying a different path prefix:
+   - Run: codestory ingest start "/Users/ryan/src/msec/code-story" --path-prefix /your/container/path
+```
+
+**Response**:
+- Created fully automated repository mounting system
+- Implemented auto_mount.py script for complete mounting automation
+- Enhanced ingest command to:
+  - Detect when repositories aren't properly mounted
+  - Automatically mount repositories without user intervention
+  - Restart containers when needed with proper volume mounts
+  - Check if paths exist inside the container before ingestion
+- Added multiple CLI options for mounting control:
+  - Default automatic mounting
+  - --auto-mount flag to explicitly enable mounting
+  - --no-auto-mount flag to disable automatic mounting
+  - Maintained backward compatibility with existing options
+- Expanded documentation with new auto-mount features
+- Added comprehensive error handling and user guidance
+- Made scripts executable for easier use
+- Now users can simply run "codestory ingest start /path" without worrying about mounting
+
 ## Prompt 53 (May 15, 2025)
 **Prompt**: ingestion is still not working for directories because the directories are not being mounted into the container: ```codestory-py3.12ryan@Ryans-MacBook-Pro-3 code-story % codestory ingest start .
 Starting ingestion of /Users/ryan/src/msec/code-story...

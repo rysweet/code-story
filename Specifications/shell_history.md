@@ -1,5 +1,16 @@
 # Shell Command History
 
+## May 15, 2025 (Full Repository Mounting Automation)
+- `cd /Users/ryan/src/msec/code-story && codestory ingest start .` - Testing ingest command with initial mount issue
+- `cd /Users/ryan/src/msec/code-story && docker ps` - Checking running containers
+- `cd /Users/ryan/src/msec/code-story && docker inspect codestory-service --format '{{json .Mounts}}'` - Checking service container mounts
+- `cd /Users/ryan/src/msec/code-story && python scripts/auto_mount.py .` - Testing new auto-mount script
+- `cd /Users/ryan/src/msec/code-story && chmod +x scripts/auto_mount.py` - Making auto-mount script executable
+- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package with new auto-mount feature
+- `cd /Users/ryan/src/msec/code-story && docker-compose down` - Stopping containers for testing
+- `cd /Users/ryan/src/msec/code-story && codestory ingest start . --auto-mount` - Testing explicit auto-mount flag
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-service ls -la /repositories` - Checking mounted repositories in container
+
 ## May 15, 2025 (Repository Mounting Fix)
 - `cd /Users/ryan/src/msec/code-story && codestory ingest start .` - Testing ingest command to reproduce repository mounting issue
 - `cd /Users/ryan/src/msec/code-story && cat docker-compose.yml | grep -A2 volume` - Checking Docker volume mounts
