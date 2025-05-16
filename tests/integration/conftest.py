@@ -89,6 +89,29 @@ def mock_settings():
         yield
 
 
+@pytest.fixture(scope="session")
+def neo4j_env():
+    """Setup Neo4j environment variables for tests."""
+    # Determine the correct Neo4j port to use
+    # In CI environment, Neo4j is often on the standard port
+    # In local docker-compose.test.yml, it's on port 7688
+    ci_env = os.environ.get("CI") == "true"
+    neo4j_port = "7687" if ci_env else "7688"
+    
+    # Set the environment variables
+    neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    os.environ["NEO4J_URI"] = neo4j_uri
+    os.environ["NEO4J__URI"] = neo4j_uri
+    
+    os.environ["NEO4J_USERNAME"] = "neo4j"
+    os.environ["NEO4J_PASSWORD"] = "password"
+    os.environ["NEO4J_DATABASE"] = "testdb"
+    
+    os.environ["NEO4J__USERNAME"] = "neo4j"
+    os.environ["NEO4J__PASSWORD"] = "password"
+    os.environ["NEO4J__DATABASE"] = "testdb"
+
+
 @pytest.fixture(scope="session", autouse=True)
 def load_env_vars():
     """Load environment variables for integration tests.
@@ -107,118 +130,37 @@ def load_env_vars():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    # Set default Neo4j test variables
-    os.environ["NEO4J_URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
-    os.environ["NEO4J_USERNAME"] = "neo4j"
-    os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    # Use the neo4j_env fixture directly to set up Neo4j environment variables
+    neo4j_env()
 
-    # Set Neo4j settings for the code-story app via double-underscore format
-    os.environ["NEO4J__URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
-    os.environ["NEO4J__USERNAME"] = "neo4j"
-    os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
+    # Set Redis environment variables
+    os.environ["REDIS_URI"] = "redis://localhost:6379/0"
+    os.environ["REDIS__URI"] = "redis://localhost:6379/0"
+    os.environ["REDIS_HOST"] = "localhost"
+    os.environ["REDIS_PORT"] = "6379"
 
-    # Set Redis settings
-    # Test Redis runs on port 6380 instead of 6379 to avoid conflicts
-    os.environ["REDIS_URI"] = "redis://localhost:6380/0"
-    os.environ["REDIS__URI"] = "redis://localhost:6380/0"
+    # Set OpenAI environment variables for testing
+    os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
+    os.environ["OPENAI__API_KEY"] = "sk-test-key-openai"
 
 
-@pytest.fixture(scope="session")
-def celery_config(request):
-    """Configure Celery for testing.
-
-    This provides a different configuration based on whether we're running
-    with --run-celery (using real Celery) or not (using in-memory tasks).
-    """
-    # Check if we're running with the real Celery flag
-    using_real_celery = request.config.getoption("--run-celery")
-
-    if using_real_celery:
-        # For integration tests with real Celery
-        return {
-            # Use the Redis broker from test settings
-            "broker_url": "redis://localhost:6380/0",
-            "result_backend": "redis://localhost:6380/0",
-            "task_always_eager": False,  # Tasks run asynchronously in real Celery
-            "task_eager_propagates": False,
-            "task_ignore_result": False,  # Results are tracked
-            "worker_concurrency": 1,  # Single worker for tests
-            "worker_prefetch_multiplier": 1,
-            "task_acks_late": False,
-            "task_track_started": True,
-        }
-    else:
-        # For unit tests without real Celery
-        return {
-            "broker_url": "memory://",
-            "result_backend": "rpc://",
-            "task_always_eager": True,  # Tasks run synchronously in tests
-            "task_eager_propagates": True,  # Exceptions are propagated
-            "task_ignore_result": False,  # Results are tracked
-            "worker_concurrency": 1,  # Single worker for tests
-            "worker_prefetch_multiplier": 1,
-            "task_acks_late": False,
-            "task_track_started": True,
-        }
-
-
-@pytest.fixture(scope="session")
-def celery_app(request):
-    """Provide the Celery app for testing.
-
-    This provides a different configuration based on whether we're running
-    with --run-celery (using real Celery) or not (using in-memory tasks).
-    """
-    from codestory.ingestion_pipeline.celery_app import app
-
-    # Check if we're running with the real Celery flag
-    using_real_celery = request.config.getoption("--run-celery")
-
-    if using_real_celery:
-        # For integration tests with real Celery, don't modify the app
-        # The app will use the Redis settings from the test environment
-        return app
-    else:
-        # For unit tests without real Celery
-        app.conf.update(
-            broker_url="memory://",
-            result_backend="rpc://",
-            task_always_eager=True,  # Tasks run synchronously in tests
-            task_eager_propagates=True,  # Exceptions are propagated
-            task_ignore_result=False,  # Results are tracked
-            worker_concurrency=1,  # Single worker for tests
-            worker_prefetch_multiplier=1,
-            task_acks_late=False,
-            task_track_started=True,
-        )
-        return app
-
-
-@pytest.fixture(scope="function")
+@pytest.fixture
 def neo4j_connector():
-    """Create a Neo4j connector for testing."""
+    """Return a Neo4j connector for tests."""
     from codestory.graphdb.neo4j_connector import Neo4jConnector
-    
-    # Skip all Neo4j tests in CI environment
-    if os.environ.get("CI") == "true":
-        pytest.skip("Skipping Neo4j integration tests in CI environment")
-    
-    # Use environment variables to get connection parameters, with fallback to defaults
+
+    # Get Neo4j connection details from environment variables
+    # with fallback to default test values
+    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
     
     # Use correct Neo4j port based on environment
     ci_env = os.environ.get("CI") == "true"
     default_uri = f"bolt://localhost:{7687 if ci_env else 7688}"
     uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
-    
-    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
     database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
-    
-    print(f"Using Neo4j connection: {uri}, database: {database}")
-    
-    # Create connector with parameters
+
+    # Create a Neo4j connector
     connector = Neo4jConnector(
         uri=uri,
         username=username,
@@ -226,14 +168,7 @@ def neo4j_connector():
         database=database,
     )
 
-    # Clear the database before each test - this is a WRITE operation
-    try:
-        connector.execute_query("MATCH (n) DETACH DELETE n", write=True, params={})
-        print("Successfully connected to Neo4j and cleared the database")
-    except Exception as e:
-        pytest.fail(f"Failed to connect to Neo4j: {str(e)}")
-
     yield connector
 
-    # Close the connection
+    # Clean up the connector
     connector.close()
