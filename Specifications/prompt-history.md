@@ -1,5 +1,30 @@
 # Prompt History
 
+## Prompt 51 (May 15, 2025)
+**Prompt**: please ensure you update prompt history, status etc
+
+**Response**:
+- Updated prompt-history.md with the latest conversation details
+- Added new CLI interaction examples to shell_history.md
+- Updated status.md with latest completed task (CLI improvement implementation)
+- Ensured all history files are complete and accurate
+- Made sure all changes are documented properly per project requirements
+- Adhered to CLAUDE.md instructions for maintaining project documentation
+
+## Prompt 50 (May 15, 2025)
+**Prompt**: I said that I wanted to error message first, then the suggestions, then the help message
+
+**Response**:
+- Understood the user's requirement for a specific display order
+- Modified CLI error handling to show error message first
+- Added suggestions as second element in the display
+- Placed help text last as requested
+- Updated implementation in main.py to reflect this precise ordering
+- Created a custom error callback function with the requested order
+- Tested the implementation with various command errors
+- Verified that subcommand errors also follow the same pattern
+- Committed the changes with the improved error display order
+
 ## Prompt 49 (May 15, 2025)
 **Prompt**: please use your script to check ci
 

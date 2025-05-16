@@ -1,5 +1,20 @@
 # Shell Command History
 
+## May 15, 2025 (CLI Improvements)
+- `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run invalidcommand` - Testing invalid command behavior
+- `cd /Users/ryan/src/msec/code-story && python test_cli.py invalidcommand` - Testing invalid command behavior with direct script
+- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package in development mode
+- `cd /Users/ryan/src/msec/code-story && python test_cli.py invalidcommand` - Testing invalid command behavior with updated class
+- `cd /Users/ryan/src/msec/code-story && codestory invalidcommand` - Testing installed CLI with invalid command
+- `cd /Users/ryan/src/msec/code-story && codestory service badcommand` - Testing subcommand error handling
+- `cd /Users/ryan/src/msec/code-story && codestory service stat` - Testing subcommand similar name
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking git status
+- `cd /Users/ryan/src/msec/code-story && git diff` - View the changes to be committed
+- `cd /Users/ryan/src/msec/code-story && ls -l test_cli.py` - Check the untracked test_cli.py file
+- `cd /Users/ryan/src/msec/code-story && git add src/codestory/cli/main.py src/codestory/cli/run.py` - Stage the main CLI files
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Improve CLI error handling and command discovery"` - Creating commit with detailed message
+- `cd /Users/ryan/src/msec/code-story && git log -1 --stat` - View the commit details
+
 ## May 15, 2025 (CI Test Fixes - Second Attempt)
 - `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_main.py::TestCliMain::test_no_command_shows_help` - Testing modified conftest.py
 - `cd /Users/ryan/src/msec/code-story && git add tests/integration/conftest.py` - Staging fixed conftest.py
