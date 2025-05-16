@@ -53,13 +53,20 @@ services:
       - ${REPOSITORY_PATH:-~/repositories}:/repositories
       # Specific repository mount for ingestion when set
       - ${REPOSITORY_SOURCE:-$HOME/repositories}:${REPOSITORY_DEST:-/repositories}
+      # Mount Azure credentials for worker to access Azure OpenAI
+      - ~/.azure:/root/.azure
     working_dir: /app
     command: >
       bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && 
+      # Install Azure CLI for authentication renewal
+      curl -sL https://aka.ms/InstallAzureCLIDeb | bash &&
       # Create a non-root user
       adduser --disabled-password --gecos '' appuser &&
       chown -R appuser:appuser /app &&
       mkdir -p /home/appuser/.local/bin &&
+      mkdir -p /home/appuser/.azure &&
+      # Copy Azure credentials to appuser home
+      cp -r /root/.azure/* /home/appuser/.azure/ || true &&
       chown -R appuser:appuser /home/appuser &&
       # Ensure container config exists
       cd /app && bash /app/scripts/setup_container_config.sh &&

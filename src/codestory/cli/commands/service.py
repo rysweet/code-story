@@ -283,10 +283,14 @@ def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False
 
 
 @service.command(name="status", help="Show the status of the Code Story service.")
+@click.option("--renew-auth", "--renew-credentials", "--renew", is_flag=True, help="Automatically renew Azure credentials if needed.")
 @click.pass_context
-def status(ctx: click.Context) -> None:
+def status(ctx: click.Context, renew_auth: bool = False) -> None:
     """
     Show the status of the Code Story service.
+    
+    Args:
+        renew_auth: If True, automatically renew Azure credentials if needed.
     """
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
@@ -296,7 +300,7 @@ def status(ctx: click.Context) -> None:
     # Check service API health first
     service_api_healthy = False
     try:
-        health = client.check_service_health()
+        health = client.check_service_health(auto_fix=renew_auth)
         service_api_healthy = True
 
         # Create status table
@@ -566,6 +570,162 @@ def get_docker_compose_command() -> List[str]:
     
     # Default to 'docker compose' and hope it works
     return ["docker", "compose"]
+
+
+@service.command(name="auth-renew", help="Renew Azure authentication tokens across all containers.")
+@click.option("--tenant", help="Specify Azure tenant ID.")
+@click.option("--check", is_flag=True, help="Only check authentication status without renewing.")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed output from the renewal process.")
+@click.pass_context
+def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bool = False, verbose: bool = False) -> None:
+    """
+    Renew Azure authentication tokens across all containers.
+    
+    This command will:
+    1. Check if there are Azure authentication issues
+    2. Run az login if needed
+    3. Inject the authentication tokens into all Code Story containers
+    
+    Args:
+        tenant: Optional tenant ID to use for login
+        check: Only check auth status without renewing
+        verbose: Show detailed output
+    """
+    client: ServiceClient = ctx.obj["client"]
+    console: Console = ctx.obj["console"]
+    
+    console.print("[bold]Azure Authentication Renewal[/]")
+    
+    # Build the command
+    cmd = ["python", "/app/scripts/azure_auth_renew.py"]
+    if tenant:
+        cmd.extend(["--tenant", tenant])
+    if check:
+        cmd.append("--check")
+    
+    # Check if working inside a container
+    inside_container = os.path.exists("/.dockerenv")
+    
+    if inside_container:
+        # We're inside a container, run the script directly
+        console.print("Running auth renewal script inside container...")
+        try:
+            if verbose:
+                # Run with output shown
+                process = subprocess.run(cmd, check=False)
+                success = process.returncode == 0
+            else:
+                # Capture output
+                process = subprocess.run(
+                    cmd, 
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                success = process.returncode == 0
+                
+                # Show a summary if not successful
+                if not success:
+                    console.print("[red]Auth renewal failed.[/]")
+                    console.print("Run with --verbose for full output.")
+                    # Show the last few lines of the error
+                    if process.stderr:
+                        error_lines = process.stderr.strip().split('\n')[-5:]
+                        console.print("\n[bold red]Error output:[/]")
+                        for line in error_lines:
+                            console.print(f"  {line}")
+            
+            if success:
+                console.print("[green]Azure authentication renewed successfully.[/]")
+            else:
+                sys.exit(1)
+                
+        except Exception as e:
+            console.print(f"[bold red]Error running auth renewal script: {str(e)}[/]")
+            sys.exit(1)
+    else:
+        # We're on the host, access the container
+        console.print("Running auth renewal in Code Story container...")
+        
+        # Find all Code Story containers
+        try:
+            containers = get_running_containers()
+            
+            if not containers:
+                console.print("[yellow]No Code Story containers found running.[/]")
+                console.print("Try starting the service with 'codestory service start'")
+                sys.exit(1)
+                
+            # Target the main service container first
+            target_container = next((c for c in containers if "service" in c.lower()), containers[0])
+            
+            # Run the auth renewal script in the container
+            docker_cmd = ["docker", "exec"]
+            if verbose:
+                docker_cmd.extend(["-it", target_container])
+                docker_cmd.extend(cmd)
+                
+                try:
+                    subprocess.run(docker_cmd, check=False)
+                    console.print("[green]Azure authentication renewal completed.[/]")
+                except Exception as e:
+                    console.print(f"[bold red]Error: {str(e)}[/]")
+                    sys.exit(1)
+            else:
+                docker_cmd.extend([target_container])
+                docker_cmd.extend(cmd)
+                
+                try:
+                    process = subprocess.run(
+                        docker_cmd,
+                        check=False,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    
+                    if process.returncode == 0:
+                        console.print("[green]Azure authentication renewed successfully.[/]")
+                        if process.stdout and "Authentication is working" in process.stdout:
+                            console.print("[green]Authentication is working correctly in all containers.[/]")
+                    else:
+                        console.print("[red]Auth renewal failed.[/]")
+                        console.print("Run with --verbose for full output.")
+                        # Show the last few lines of the error
+                        if process.stderr:
+                            error_lines = process.stderr.strip().split('\n')[-5:]
+                            console.print("\n[bold red]Error output:[/]")
+                            for line in error_lines:
+                                console.print(f"  {line}")
+                        sys.exit(1)
+                        
+                except Exception as e:
+                    console.print(f"[bold red]Error running auth renewal in container: {str(e)}[/]")
+                    sys.exit(1)
+                    
+            # Check service health after auth renewal
+            try:
+                console.print("Checking service health after auth renewal...")
+                health = client.check_service_health()
+                
+                # Check OpenAI component
+                if "components" in health and "openai" in health["components"]:
+                    openai_status = health["components"]["openai"].get("status", "unknown")
+                    if openai_status == "healthy":
+                        console.print("[green]OpenAI component is now healthy![/]")
+                    else:
+                        console.print(f"[yellow]OpenAI component status: {openai_status}[/]")
+                        console.print("Auth renewal might not have fixed all issues.")
+                else:
+                    console.print("[yellow]Could not verify OpenAI component health.[/]")
+                    
+            except ServiceError as e:
+                console.print(f"[yellow]Could not check service health: {str(e)}[/]")
+                
+        except Exception as e:
+            console.print(f"[bold red]Error: {str(e)}[/]")
+            sys.exit(1)
 
 
 @service.command(name="recover", help="Recover from unhealthy container state.")

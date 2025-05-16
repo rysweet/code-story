@@ -6,6 +6,7 @@ by the service layer.
 """
 
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional, Union
 
@@ -83,8 +84,35 @@ class OpenAIAdapter:
                 response_obj = await client.models.list()
                 available_models = [m.id for m in response_obj.data]
             except Exception as model_err:
-                # Log the error but continue - this isn't critical
-                logger.warning(f"Couldn't retrieve model list: {model_err}")
+                # Check specifically for Azure authentication errors
+                error_message = str(model_err)
+                if "DefaultAzureCredential failed to retrieve a token" in error_message or "AADSTS700003" in error_message:
+                    # Extract tenant ID if present
+                    tenant_id = None
+                    tenant_match = re.search(r"tenant '([0-9a-f-]+)'", error_message)
+                    if tenant_match:
+                        tenant_id = tenant_match.group(1)
+                    
+                    # Provide a helpful error message with renewal instructions
+                    renewal_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
+                    if tenant_id:
+                        renewal_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
+                    
+                    logger.error(f"Azure authentication failure detected. To renew credentials, run: {renewal_cmd}")
+                    
+                    return {
+                        "status": "unhealthy",
+                        "details": {
+                            "error": "Azure authentication credentials expired",
+                            "type": "AuthenticationError",
+                            "tenant_id": tenant_id,
+                            "solution": f"Run: {renewal_cmd}",
+                            "hint": "You can use our automatic renewal with: codestory service auth-renew"
+                        },
+                    }
+                else:
+                    # Some other error occurred
+                    logger.warning(f"Couldn't retrieve model list: {model_err}")
             
             # Get our configured models
             embedding_model = self.client.embedding_model
@@ -122,11 +150,44 @@ class OpenAIAdapter:
             }
             
         except Exception as e:
-            logger.error(f"OpenAI health check failed: {str(e)}")
+            error_message = str(e)
+            logger.error(f"OpenAI health check failed: {error_message}")
+            
+            # Check for Azure authentication errors
+            if "DefaultAzureCredential failed to retrieve a token" in error_message or "AADSTS700003" in error_message:
+                # Extract tenant ID if present
+                tenant_id = None
+                tenant_match = re.search(r"tenant '([0-9a-f-]+)'", error_message)
+                if tenant_match:
+                    tenant_id = tenant_match.group(1)
+                
+                # Also check other known patterns
+                if not tenant_id and "AzureIdentityCredentialAdapter" in error_message:
+                    tenant_match = re.search(r"tenant ID: ([0-9a-f-]+)", error_message)
+                    if tenant_match:
+                        tenant_id = tenant_match.group(1)
+                
+                # Provide a helpful error message with renewal instructions
+                renewal_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
+                if tenant_id:
+                    renewal_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
+                
+                return {
+                    "status": "unhealthy",
+                    "details": {
+                        "error": "Azure authentication credentials expired",
+                        "error_message": error_message,
+                        "type": "AuthenticationError",
+                        "tenant_id": tenant_id,
+                        "solution": f"Run: {renewal_cmd}",
+                        "hint": "You can use our automatic renewal with: codestory service auth-renew"
+                    },
+                }
+            
             return {
                 "status": "unhealthy",
                 "details": {
-                    "error": str(e),
+                    "error": error_message,
                     "type": type(e).__name__,
                 },
             }

@@ -9,6 +9,7 @@ Code Story can be deployed in several ways:
 1. [Local Development](local.md) - Using Docker Compose for local development
 2. [Azure Deployment](azure.md) - Deploying to Azure Container Apps
 3. [Repository Mounting](repository_mounting.md) - Guide for correctly mounting repositories for ingestion
+4. [Azure Authentication](azure_authentication.md) - Managing Azure authentication for OpenAI access
 
 ## System Requirements
 

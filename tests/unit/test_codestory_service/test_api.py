@@ -476,9 +476,23 @@ class TestHealthAPI:
         return neo4j, celery, openai
 
     @pytest.mark.asyncio
-    async def test_health_check_all_healthy(self, mock_adapters):
+    async def test_health_check_all_healthy(self, mock_adapters, monkeypatch):
         """Test health check when all components are healthy."""
         neo4j, celery, openai = mock_adapters
+        
+        # Create a custom class to mock Redis more accurately
+        class MockRedisClient:
+            async def ping(self):
+                return True
+                
+            async def info(self):
+                return {"redis_version": "6.0.0", "used_memory_human": "1M"}
+                
+            async def close(self):
+                pass
+        
+        # Replace the Redis class with our mock
+        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
 
         # Call the endpoint
         result = await health.health_check(neo4j, celery, openai)
@@ -488,16 +502,32 @@ class TestHealthAPI:
         celery.check_health.assert_called_once()
         openai.check_health.assert_called_once()
 
-        # Check the result - using a more flexible assertion since Redis issues can cause degraded status
-        assert result.status in ["healthy", "degraded"]
+        # Check the result
+        assert result.status == "healthy"
         assert "neo4j" in result.components
         assert "celery" in result.components
         assert "openai" in result.components
+        assert "redis" in result.components
+        assert result.components["redis"].status == "healthy"
 
     @pytest.mark.asyncio
-    async def test_health_check_one_unhealthy(self, mock_adapters):
+    async def test_health_check_one_unhealthy(self, mock_adapters, monkeypatch):
         """Test health check when one component is unhealthy."""
         neo4j, celery, openai = mock_adapters
+        
+        # Create a custom class to mock Redis more accurately
+        class MockRedisClient:
+            async def ping(self):
+                return True
+                
+            async def info(self):
+                return {"redis_version": "6.0.0", "used_memory_human": "1M"}
+                
+            async def close(self):
+                pass
+        
+        # Replace the Redis class with our mock
+        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
 
         # Make one component unhealthy
         neo4j.check_health.return_value = {
@@ -508,16 +538,31 @@ class TestHealthAPI:
         # Call the endpoint
         result = await health.health_check(neo4j, celery, openai)
 
-        # Check the result - using a more flexible assertion since Redis issues can cause degraded status
-        assert result.status in ["unhealthy", "degraded"]
+        # Check the result
+        assert result.status == "unhealthy"
         assert result.components["neo4j"].status == "unhealthy"
         assert result.components["celery"].status == "healthy"
         assert result.components["openai"].status == "healthy"
+        assert result.components["redis"].status == "healthy"
 
     @pytest.mark.asyncio
-    async def test_health_check_one_degraded(self, mock_adapters):
+    async def test_health_check_one_degraded(self, mock_adapters, monkeypatch):
         """Test health check when one component is degraded."""
         neo4j, celery, openai = mock_adapters
+        
+        # Create a custom class to mock Redis more accurately
+        class MockRedisClient:
+            async def ping(self):
+                return True
+                
+            async def info(self):
+                return {"redis_version": "6.0.0", "used_memory_human": "1M"}
+                
+            async def close(self):
+                pass
+        
+        # Replace the Redis class with our mock
+        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
 
         # Make one component degraded
         celery.check_health.return_value = {
@@ -533,3 +578,189 @@ class TestHealthAPI:
         assert result.components["neo4j"].status == "healthy"
         assert result.components["celery"].status == "degraded"
         assert result.components["openai"].status == "healthy"
+        assert result.components["redis"].status == "healthy"
+
+    @pytest.mark.asyncio
+    async def test_health_check_with_auto_fix(self, mock_adapters, monkeypatch):
+        """Test health check with auto_fix parameter when there's an Azure auth issue."""
+        neo4j, celery, openai = mock_adapters
+        
+        # Create a custom class to mock Redis more accurately
+        class MockRedisClient:
+            async def ping(self):
+                return True
+                
+            async def info(self):
+                return {"redis_version": "6.0.0", "used_memory_human": "1M"}
+                
+            async def close(self):
+                pass
+        
+        # Replace the Redis class with our mock
+        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
+        
+        # Make OpenAI component have an auth issue
+        openai.check_health.return_value = {
+            "status": "unhealthy",
+            "details": {
+                "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
+                "type": "AuthenticationError",
+                "solution": "az login --tenant abcd1234 --scope https://cognitiveservices.azure.com/.default"
+            },
+        }
+        
+        # Mock subprocess.Popen to avoid actually running az login
+        mock_popen = mock.Mock()
+        monkeypatch.setattr(health.subprocess, "Popen", mock_popen)
+
+        # Mock subprocess.run to avoid actually running the renewal script
+        mock_run = mock.Mock()
+        mock_run.return_value = mock.Mock(
+            returncode=0,
+            stdout="Authentication renewal succeeded",
+            stderr=""
+        )
+        monkeypatch.setattr(health.subprocess, "run", mock_run)
+
+        # Call the endpoint with auto_fix=True
+        result = await health.health_check(neo4j, celery, openai, auto_fix=True)
+
+        # Check the result
+        assert result.status == "unhealthy"
+        assert result.components["openai"].status == "unhealthy"
+        
+        # Verify that renewal was attempted
+        assert result.components["openai"].details.get("renewal_attempted") is True
+        assert result.components["openai"].details.get("renewal_success") is True
+        
+        # Verify subprocess.run was called to run the renewal script
+        mock_run.assert_called_once()
+        args, kwargs = mock_run.call_args
+        renewal_cmd = args[0]
+        assert "azure_auth_renew.py" in str(renewal_cmd)
+        
+        # Verify subprocess.Popen was called to run the background container injection
+        mock_popen.assert_called_once()
+        args, _ = mock_popen.call_args
+        background_cmd = args[0]
+        assert "azure_auth_renew.py" in str(background_cmd)
+        assert "--container" in str(background_cmd)
+        assert "all" in str(background_cmd)
+        
+    @pytest.mark.asyncio
+    async def test_health_check_with_auto_fix_failure(self, mock_adapters, monkeypatch):
+        """Test health check when auto_fix attempt fails."""
+        neo4j, celery, openai = mock_adapters
+        
+        # Create a custom class to mock Redis more accurately
+        class MockRedisClient:
+            async def ping(self):
+                return True
+                
+            async def info(self):
+                return {"redis_version": "6.0.0", "used_memory_human": "1M"}
+                
+            async def close(self):
+                pass
+        
+        # Replace the Redis class with our mock
+        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
+        
+        # Make OpenAI component have an auth issue
+        openai.check_health.return_value = {
+            "status": "unhealthy",
+            "details": {
+                "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
+                "type": "AuthenticationError",
+                "tenant_id": "12345678-1234-1234-1234-123456789012",
+                "solution": "az login --tenant 12345678-1234-1234-1234-123456789012 --scope https://cognitiveservices.azure.com/.default"
+            },
+        }
+        
+        # Mock subprocess.Popen to avoid actually running background tasks
+        mock_popen = mock.Mock()
+        monkeypatch.setattr(health.subprocess, "Popen", mock_popen)
+
+        # Mock subprocess.run to simulate a failure in the renewal script
+        mock_run = mock.Mock()
+        mock_run.return_value = mock.Mock(
+            returncode=1,
+            stdout="",
+            stderr="Error: Could not authenticate with Azure CLI"
+        )
+        monkeypatch.setattr(health.subprocess, "run", mock_run)
+
+        # Call the endpoint with auto_fix=True
+        result = await health.health_check(neo4j, celery, openai, auto_fix=True)
+
+        # Check the result
+        assert result.status == "unhealthy"
+        assert result.components["openai"].status == "unhealthy"
+        
+        # Verify that renewal was attempted but failed
+        assert result.components["openai"].details.get("renewal_attempted") is True
+        assert result.components["openai"].details.get("renewal_success") is False
+        
+        # Verify subprocess.run was called with correct tenant ID
+        mock_run.assert_called_once()
+        args, kwargs = mock_run.call_args
+        renewal_cmd = args[0]
+        assert "azure_auth_renew.py" in str(renewal_cmd)
+        assert "--tenant" in str(renewal_cmd)
+        assert "12345678-1234-1234-1234-123456789012" in str(renewal_cmd)
+        
+        # Verify we have error information in the result
+        assert "renewal_stderr" in result.components["openai"].details
+        assert "Error: Could not authenticate with Azure CLI" in result.components["openai"].details["renewal_stderr"]
+        
+    @pytest.mark.asyncio
+    async def test_health_check_with_auto_fix_timeout(self, mock_adapters, monkeypatch):
+        """Test health check when auto_fix times out."""
+        neo4j, celery, openai = mock_adapters
+        
+        # Create a custom class to mock Redis more accurately
+        class MockRedisClient:
+            async def ping(self):
+                return True
+                
+            async def info(self):
+                return {"redis_version": "6.0.0", "used_memory_human": "1M"}
+                
+            async def close(self):
+                pass
+        
+        # Replace the Redis class with our mock
+        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
+        
+        # Make OpenAI component have an auth issue
+        openai.check_health.return_value = {
+            "status": "unhealthy",
+            "details": {
+                "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
+                "type": "AuthenticationError",
+                "solution": "az login --scope https://cognitiveservices.azure.com/.default"
+            },
+        }
+        
+        # Mock subprocess.Popen to avoid actually running background tasks
+        mock_popen = mock.Mock()
+        monkeypatch.setattr(health.subprocess, "Popen", mock_popen)
+
+        # Mock subprocess.run to simulate a timeout
+        def mock_run_timeout(*args, **kwargs):
+            raise health.subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs.get('timeout', 120))
+            
+        monkeypatch.setattr(health.subprocess, "run", mock_run_timeout)
+
+        # Call the endpoint with auto_fix=True
+        result = await health.health_check(neo4j, celery, openai, auto_fix=True)
+
+        # Check the result
+        assert result.status == "unhealthy"
+        assert result.components["openai"].status == "unhealthy"
+        
+        # Verify that renewal was attempted but timed out
+        assert result.components["openai"].details.get("renewal_attempted") is True
+        assert result.components["openai"].details.get("renewal_success") is False
+        assert "renewal_error" in result.components["openai"].details
+        assert "timed out" in result.components["openai"].details["renewal_error"]

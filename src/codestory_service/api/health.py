@@ -5,10 +5,12 @@ and its dependencies.
 """
 
 import logging
+import re
+import subprocess
 import time
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 import redis.asyncio as redis
 
@@ -76,6 +78,7 @@ async def health_check(
     neo4j: Neo4jAdapter = Depends(get_neo4j_adapter),
     celery: CeleryAdapter = Depends(get_celery_adapter),
     openai: OpenAIAdapter = Depends(get_openai_adapter),
+    auto_fix: bool = Query(False, description="Automatically attempt to fix Azure authentication issues"),
 ) -> HealthReport:
     """Check the health of the service and its dependencies.
 
@@ -83,11 +86,108 @@ async def health_check(
         neo4j: Neo4j adapter instance
         celery: Celery adapter instance
         openai: OpenAI adapter instance
+        auto_fix: If True, attempt to automatically fix Azure auth issues
 
     Returns:
         HealthReport with health status of the service and its components
     """
-    return await _health_check_impl(neo4j, celery, openai)
+    health_report = await _health_check_impl(neo4j, celery, openai)
+    
+    # Check if there's an Azure authentication issue
+    if auto_fix and health_report.components.get("openai") and health_report.components["openai"].status == "unhealthy":
+        openai_details = health_report.components["openai"].details or {}
+        error_str = str(openai_details.get("error", ""))
+        error_type = str(openai_details.get("type", ""))
+        
+        # Check if this is an Azure auth issue
+        if (
+            "DefaultAzureCredential" in error_str or 
+            "AADSTS700003" in error_str or 
+            error_type == "AuthenticationError"
+        ):
+            logger.info("Azure authentication issue detected, attempting auto-renewal")
+            
+            # Try to auto-renew Azure authentication
+            try:
+                # Extract tenant ID if present
+                tenant_id = None
+                tenant_match = re.search(r"tenant '([0-9a-f-]+)'", error_str)
+                if tenant_match:
+                    tenant_id = tenant_match.group(1)
+                
+                # Look for tenant in solution field
+                solution = openai_details.get("solution", "")
+                tenant_match = re.search(r"--tenant ([0-9a-f-]+)", solution)
+                if tenant_match and not tenant_id:
+                    tenant_id = tenant_match.group(1)
+                
+                # Build renewal command using our comprehensive renewal script
+                renewal_cmd = ["python", "/app/scripts/azure_auth_renew.py"]
+                if tenant_id:
+                    renewal_cmd.extend(["--tenant", tenant_id])
+                
+                # Run the renewal script with proper logging
+                logger.info(f"Initiating auto-renewal with command: {' '.join(renewal_cmd)}")
+                try:
+                    # Execute renewal script and capture output
+                    result = subprocess.run(
+                        renewal_cmd, 
+                        capture_output=True,
+                        text=True,
+                        timeout=120  # 2 minute timeout
+                    )
+                    
+                    # Check if renewal was successful
+                    if result.returncode == 0:
+                        logger.info("Azure authentication renewal was successful")
+                        renewal_success = True
+                    else:
+                        logger.error(f"Azure authentication renewal failed with code {result.returncode}")
+                        logger.error(f"Stderr: {result.stderr}")
+                        renewal_success = False
+                    
+                    # Add detailed information to health report
+                    if "details" not in health_report.components["openai"]:
+                        health_report.components["openai"].details = {}
+                    
+                    health_report.components["openai"].details["renewal_attempted"] = True
+                    health_report.components["openai"].details["renewal_success"] = renewal_success
+                    health_report.components["openai"].details["renewal_command"] = " ".join(renewal_cmd)
+                    
+                    # Add output logs only if there was an error
+                    if not renewal_success:
+                        health_report.components["openai"].details["renewal_stdout"] = result.stdout[:500] if result.stdout else ""
+                        health_report.components["openai"].details["renewal_stderr"] = result.stderr[:500] if result.stderr else ""
+                
+                except subprocess.TimeoutExpired:
+                    logger.error("Azure authentication renewal timed out")
+                    if "details" not in health_report.components["openai"]:
+                        health_report.components["openai"].details = {}
+                    health_report.components["openai"].details["renewal_attempted"] = True
+                    health_report.components["openai"].details["renewal_success"] = False
+                    health_report.components["openai"].details["renewal_error"] = "Renewal process timed out after 120 seconds"
+                    
+                # Use background process for long-running container token injection
+                # This will continue even after the response is sent to the client
+                try:
+                    background_cmd = ["python", "/app/scripts/azure_auth_renew.py", "--container", "all"]
+                    subprocess.Popen(
+                        background_cmd, 
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                    logger.info("Started background process for container token injection")
+                except Exception as e:
+                    logger.error(f"Failed to start background token injection: {e}")
+                
+                logger.info(f"Auto-renewal completed with command: {' '.join(renewal_cmd)}")
+            except Exception as e:
+                logger.error(f"Error attempting auto-renewal: {e}")
+                if "details" not in health_report.components["openai"]:
+                    health_report.components["openai"].details = {}
+                health_report.components["openai"].details["renewal_error"] = str(e)
+    
+    return health_report
 
 
 async def _health_check_impl(

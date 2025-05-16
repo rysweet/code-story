@@ -6,7 +6,7 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from codestory.cli.main import app, main, custom_error_handler
+from codestory.cli.main import app, main
 from codestory.cli.client import ServiceError
 
 

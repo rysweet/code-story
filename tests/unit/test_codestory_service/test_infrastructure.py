@@ -172,6 +172,70 @@ class TestOpenAIAdapter:
         result = await adapter.check_health()
         # The OpenAI adapter returns "degraded" when models aren't available
         assert result["status"] == "degraded"
+        
+    @pytest.mark.asyncio
+    async def test_health_check_azure_auth_error(self, mock_client):
+        """Test health check detects Azure authentication errors."""
+        # Make models.list raise an authentication error with Azure pattern
+        azure_error = Exception(
+            "DefaultAzureCredential failed to retrieve a token from the included credentials. "
+            "DefaultAzureCredential failed to retrieve a token from the included credentials. "
+            "AzureCliCredential authentication failed: Azure CLI not found on the system PATH."
+        )
+        
+        # Create an async mock for models.list that raises the error
+        async def mock_list_error():
+            raise azure_error
+            
+        mock_client._async_client.models.list = mock_list_error
+        
+        # Create adapter with the mock
+        adapter = OpenAIAdapter(client=mock_client)
+        
+        # Call health check
+        result = await adapter.check_health()
+        
+        # Verify detection of Azure auth issue
+        assert result["status"] == "unhealthy"
+        assert "error" in result["details"]
+        assert result["details"]["error"] == "Azure authentication credentials expired"
+        assert result["details"].get("type") == "AuthenticationError"
+        assert "solution" in result["details"]
+        assert "az login" in result["details"]["solution"]
+        assert "hint" in result["details"]
+        assert "codestory service auth-renew" in result["details"]["hint"]
+        assert "tenant_id" in result["details"]
+        assert result["details"]["tenant_id"] is None
+        assert "codestory service auth-renew" in result["details"]["hint"]
+        
+    @pytest.mark.asyncio
+    async def test_health_check_azure_auth_error_with_tenant(self, mock_client):
+        """Test health check extracts tenant ID from Azure authentication errors."""
+        # Make models.list raise an authentication error with tenant ID pattern
+        azure_error = Exception(
+            "DefaultAzureCredential failed to retrieve a token from the included credentials. "
+            "DefaultAzureCredential authentication failed for tenant '12345678-1234-1234-1234-123456789012'. "
+            "AzureCliCredential authentication failed: AADSTS700003."
+        )
+        
+        # Create an async mock for models.list that raises the error
+        async def mock_list_error():
+            raise azure_error
+            
+        mock_client._async_client.models.list = mock_list_error
+        
+        # Create adapter with the mock
+        adapter = OpenAIAdapter(client=mock_client)
+        
+        # Call health check
+        result = await adapter.check_health()
+        
+        # Verify detection of Azure auth issue and tenant extraction
+        assert result["status"] == "unhealthy"
+        assert "tenant_id" in result["details"]
+        assert result["details"]["tenant_id"] == "12345678-1234-1234-1234-123456789012"
+        assert "solution" in result["details"]
+        assert "--tenant 12345678-1234-1234-1234-123456789012" in result["details"]["solution"]
 
     @pytest.mark.asyncio
     async def test_create_embeddings_success(self, adapter, mock_client):
