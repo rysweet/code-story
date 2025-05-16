@@ -1,29 +1,60 @@
 # Repository Mounting Guide
 
-For Code Story to analyze a codebase, the repository must be accessible to both the service and worker containers.
+For Code Story to analyze a codebase, the repository must be accessible to both the service and worker containers. This guide explains how to mount your repositories correctly.
 
-## Using Volume Mounts
+## Automatic Repository Mounting (Recommended)
 
-In Docker environments, this is achieved using volume mounts. The exact approach depends on how you're deploying Code Story.
-
-## The `mount_repository.sh` Script
-
-For convenience, Code Story provides a script to help with repository mounting:
+The easiest way to mount a repository is to use the provided script:
 
 ```bash
 # Make the script executable if needed
 chmod +x scripts/mount_repository.sh
 
-# Run the script with the path to your repository
+# Mount repository and setup environment variables
 ./scripts/mount_repository.sh /path/to/your/repository
+
+# Or mount and restart containers in one step
+./scripts/mount_repository.sh /path/to/your/repository --restart
 ```
 
-This script:
+This script performs several important tasks:
 1. Sets up the `REPOSITORY_PATH` environment variable for docker-compose
-2. Verifies the repository path exists
-3. Provides the path to use when invoking the CLI for ingestion
+2. Creates a repository configuration file for the CLI
+3. Verifies the repository path exists
+4. Optionally restarts containers with the new mount
+5. Provides the exact CLI command to use for ingestion
 
-## Manual Setup
+## Using the CLI with Docker Deployments
+
+When your service is running in Docker, use one of these approaches for ingestion:
+
+### Approach 1: Automatic Container Path Detection (Recommended)
+
+```bash
+# The CLI automatically detects Docker deployment and maps paths
+codestory ingest start /path/to/your/repository
+```
+
+The CLI will:
+1. Detect that you're connecting to a containerized service
+2. Convert your local path to the correct container path
+3. Show you both paths for verification
+
+### Approach 2: Explicit Container Flag
+
+```bash
+# Explicitly tell the CLI to use container path mapping
+codestory ingest start /path/to/your/repository --container
+```
+
+### Approach 3: Direct Container Path
+
+```bash
+# Use the container path directly
+codestory ingest start /repositories/your-repo-name
+```
+
+## Manual Setup Options
 
 If you prefer manual setup, follow these steps:
 
@@ -48,20 +79,20 @@ If you prefer manual setup, follow these steps:
 
 ```bash
 # For the service container
-docker run -v /absolute/path/to/repository:/repositories my-service-image
+docker run -v /absolute/path/to/repository:/repositories/repo-name my-service-image
 
-# For the worker container
-docker run -v /absolute/path/to/repository:/repositories my-worker-image
+# For the worker container - must use the same mount path
+docker run -v /absolute/path/to/repository:/repositories/repo-name my-worker-image
 ```
 
-## Path Reference
+## How Repository Mounting Works
 
-When using the CLI to ingest a repository, refer to its mounted path:
-
-```bash
-# If repository was mounted at /repositories
-codestory ingest start /repositories/your-repo-name
-```
+1. **Volume Mounts**: Docker maps directories from your host system into containers
+2. **Standard Path Mapping**: 
+   - Host path: `/path/to/your/repository`
+   - Container path: `/repositories/repo-name`
+3. **Path Translation**: The CLI handles mapping between these different paths
+4. **Environment Variables**: `REPOSITORY_PATH` tells docker-compose what to mount
 
 ## Production Environments
 
@@ -72,17 +103,59 @@ For production environments, consider:
 3. **Permissions**: Ensure the containers have read/write access to the mounted repositories
 4. **Volume Management**: Consider using named volumes for better lifecycle management
 
-## Common Issues
+## Troubleshooting
 
-1. **Path Mismatch**: If the CLI reports a path doesn't exist, ensure:
-   - The repository is mounted in both service and worker containers
-   - You're using the correct path inside the container (e.g., `/repositories/...`)
-   - Mount points are consistent between containers
+### "Repository does not exist" Errors
 
-2. **Permission Issues**: If you encounter permission errors:
-   - Check that container processes have read/write access to the mounted directory
-   - Verify ownership and permissions on the host directory
+If you see errors about the repository path not existing:
 
-3. **Container Networking**: If containers can't communicate:
-   - Ensure they're on the same Docker network
-   - Check that container names match hostname references in your configuration
+1. **Verify Docker mounting**
+   ```bash
+   # Check if your repository is properly mounted
+   docker exec codestory-service ls -la /repositories
+   ```
+
+2. **Check container logs**
+   ```bash
+   docker logs codestory-service
+   docker logs codestory-worker
+   ```
+
+3. **Restart with proper mounting**
+   ```bash
+   # Use the helper script
+   ./scripts/mount_repository.sh /path/to/your/repository --restart
+   ```
+
+4. **Try explicit container mode**
+   ```bash
+   codestory ingest start /path/to/your/repository --container
+   ```
+
+### Permission Issues
+
+If you encounter permission errors:
+
+1. **Check file permissions on the host**
+   ```bash
+   ls -la /path/to/your/repository
+   ```
+
+2. **Check permissions inside container**
+   ```bash
+   docker exec codestory-service ls -la /repositories
+   ```
+
+3. **Fix permissions if needed**
+   ```bash
+   # On host
+   sudo chmod -R a+r /path/to/your/repository
+   ```
+
+## Best Practices
+
+1. **Use absolute paths** when mounting repositories
+2. **Keep repository name in path structure** for easier identification
+3. **Use the mounting script** to ensure proper configuration
+4. **Use the `--container` flag** with the CLI for Docker deployments
+5. **Create one mount per repository** rather than mounting parent directories

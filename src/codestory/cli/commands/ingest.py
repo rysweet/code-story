@@ -31,25 +31,56 @@ def ingest():
 @ingest.command(name="start", help="Start ingestion of a repository.")
 @click.argument("repository_path", type=click.Path(exists=True))
 @click.option("--no-progress", is_flag=True, help="Don't show progress updates.")
+@click.option("--container", is_flag=True, help="Force container path mapping.")
+@click.option("--path-prefix", default="/repositories", help="Container path prefix where repositories are mounted.")
 @click.pass_context
 def start_ingestion(
-    ctx: click.Context, repository_path: str, no_progress: bool = False
+    ctx: click.Context, 
+    repository_path: str, 
+    no_progress: bool = False,
+    container: bool = False,
+    path_prefix: str = "/repositories"
 ) -> None:
     """
     Start ingestion of a repository.
 
     REPOSITORY_PATH is the path to the repository to ingest.
+    
+    When using Docker deployment, this command will automatically
+    attempt to map local paths to container paths using the path prefix.
+    
+    Examples:
+      Local path:     /Users/name/projects/my-repo
+      Container path: /repositories/my-repo
     """
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
-    # Get absolute path
-    repository_path = os.path.abspath(repository_path)
-
-    console.print(f"Starting ingestion of [cyan]{repository_path}[/]...")
+    # Get absolute local path
+    local_path = os.path.abspath(repository_path)
+    console.print(f"Starting ingestion of [cyan]{local_path}[/]...")
+    
+    # Detect if we're likely running against a container
+    if container or "localhost" in client.base_url or "127.0.0.1" in client.base_url:
+        # Get the repository name from the path (last part)
+        repo_name = os.path.basename(local_path)
+        
+        # Create container path
+        container_path = os.path.join(path_prefix, repo_name)
+        
+        console.print(f"Docker deployment detected. Mapping local path to container path:")
+        console.print(f"  Local path:     [cyan]{local_path}[/]")
+        console.print(f"  Container path: [cyan]{container_path}[/]")
+        
+        # Use container path for ingestion
+        ingestion_path = container_path
+    else:
+        # Use local path directly
+        console.print("Using direct path (non-container deployment)")
+        ingestion_path = local_path
 
     try:
-        response = client.start_ingestion(repository_path)
+        response = client.start_ingestion(ingestion_path)
         job_id = response.get("job_id")
 
         if not job_id:
@@ -57,6 +88,16 @@ def start_ingestion(
             return
     except Exception as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
+        # Provide additional help for path-related errors
+        if "does not exist" in str(e):
+            console.print("\n[yellow]Troubleshooting Suggestions:[/]")
+            console.print("1. Ensure your repository is mounted in the Docker container:")
+            console.print("   - Run: [bold]export REPOSITORY_PATH=\"" + local_path + "\"[/] before starting containers")
+            console.print("   - Or use: [bold]./scripts/mount_repository.sh \"" + local_path + "\"[/]")
+            console.print("2. Restart the containers with mounted repository:")
+            console.print("   - Run: [bold]docker-compose down && docker-compose up -d[/]")
+            console.print("3. For manual container mapping, try specifying a different path prefix:")
+            console.print("   - Run: [bold]codestory ingest start \"" + local_path + "\" --path-prefix /your/container/path[/]")
         return
 
     console.print(f"Ingestion job started with ID: [green]{job_id}[/]")

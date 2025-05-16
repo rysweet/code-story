@@ -148,6 +148,8 @@ class ServiceClient:
 
         Args:
             repository_path: Path to the repository to ingest.
+                This can be either a local path or a container path.
+                For container paths, use /repositories/repo-name format.
 
         Returns:
             Ingestion job data including job_id.
@@ -155,8 +157,20 @@ class ServiceClient:
         # Get absolute path
         abs_repository_path = os.path.abspath(repository_path)
         
-        # For all environments (Docker or standalone), use local_path
-        # The repository must be mounted/accessible to the service
+        # Check if this path is already a container path (starts with /repositories)
+        is_container_path = abs_repository_path.startswith("/repositories")
+        
+        # Check for repository config file that might indicate container mounting
+        repo_config_path = None
+        if not is_container_path:
+            # Check if repository has config indicating it's been mounted
+            repo_config_path = os.path.join(abs_repository_path, ".codestory", "repository.toml")
+            # Repository config exists but wasn't used - log it but don't use it
+            # (This might be relevant for debugging)
+            if os.path.exists(repo_config_path):
+                self.console.print(f"[dim]Repository config file found at [cyan]{repo_config_path}[/][/]", style="dim")
+        
+        # Create ingestion data
         data = {
             "source_type": "local_path",
             "source": abs_repository_path,
@@ -166,6 +180,8 @@ class ServiceClient:
         # Log important information about the repository path
         self.console.print(f"Starting ingestion for repository at [cyan]{abs_repository_path}[/]", style="dim")
         self.console.print(f"Repository directory exists: [cyan]{os.path.isdir(abs_repository_path)}[/]", style="dim")
+        if is_container_path:
+            self.console.print(f"[dim]Using container path directly[/]", style="dim")
         
         try:
             response = self.client.post("/ingest", json=data)
@@ -185,8 +201,18 @@ class ServiceClient:
             
             # Provide additional guidance if this might be a Docker volume mounting issue
             if "does not exist" in error_detail.lower():
-                error_detail += "\n\nIf running in Docker, ensure the repository is mounted as a volume to the service container. Example:\n"
-                error_detail += "docker run -v /local/path/to/repo:/mounted/repo/path service-image"
+                error_detail += "\n\nIf running in Docker, ensure the repository is mounted as a volume to the service container."
+                
+                # Provide specific guidance
+                repo_name = os.path.basename(abs_repository_path)
+                error_detail += f"\n\nTry these solutions:"
+                error_detail += f"\n1. Mount the repository using our script:"
+                error_detail += f"\n   ./scripts/mount_repository.sh \"{abs_repository_path}\" --restart"
+                error_detail += f"\n\n2. Or use the container path format with the CLI:"
+                error_detail += f"\n   codestory ingest start \"{abs_repository_path}\" --container"
+                error_detail += f"\n\n3. For manual mounting, modify your docker-compose.yml to include:"
+                error_detail += f"\n   volumes:"
+                error_detail += f"\n     - {abs_repository_path}:/repositories/{repo_name}"
             
             raise ServiceError(f"Failed to start ingestion: {error_detail}")
 
