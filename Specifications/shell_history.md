@@ -1,5 +1,12 @@
 # Shell Command History
 
+## May 15, 2025 (Testing Auto-Mount Functionality)
+- `cd /Users/ryan/src/msec/code-story && mkdir -p tests/unit/test_cli/test_scripts` - Creating test directory structure
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_commands/test_auto_mount.py` - Running unit tests for auto-mount
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_scripts/test_auto_mount_script.py` - Running unit tests for auto_mount.py script
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/integration/test_cli/test_repository_mounting.py -k "test_auto_mount_script"` - Running integration test for auto-mount script
+- `cd /Users/ryan/src/msec/code-story && docker-compose down` - Cleaning up Docker containers after tests
+
 ## May 15, 2025 (Full Repository Mounting Automation)
 - `cd /Users/ryan/src/msec/code-story && codestory ingest start .` - Testing ingest command with initial mount issue
 - `cd /Users/ryan/src/msec/code-story && docker ps` - Checking running containers

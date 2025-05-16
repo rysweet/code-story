@@ -1,5 +1,21 @@
 # Prompt History
 
+## Prompt 55 (May 15, 2025)
+**Prompt**: did you add tests?
+
+**Response**:
+- Added comprehensive test suite for repository mounting functionality:
+  - Created unit tests for auto-mount functionality in the CLI commands
+  - Wrote unit tests for the auto_mount.py script
+  - Added integration tests for repository mounting with real Docker containers
+  - Implemented test fixtures for temporary repositories and Docker management
+  - Created tests for all CLI flags (--auto-mount, --no-auto-mount)
+  - Added tests to verify container deployment detection
+  - Implemented tests for repository configuration creation
+  - Added tests to ensure repository exists in container after mounting
+  - Created test structure with proper Python packages
+  - Added skippable integration tests that can run in CI environments
+
 ## Prompt 54 (May 15, 2025)
 **Prompt**: it is still not automatically mounting the path that was requested on the cli: ```codestory-py3.12ryan@Ryans-MacBook-Pro-3 code-story % codestory ingest start .
 Starting ingestion of /Users/ryan/src/msec/code-story...
