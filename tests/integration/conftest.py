@@ -3,11 +3,61 @@
 import os
 import pytest
 import sys
+import re
+import glob
 from unittest.mock import patch
 from typing import Dict, Any
 
 from dotenv import load_dotenv
 from .test_config import get_test_settings
+
+# Auto-fix Neo4j port configuration in test files
+def fix_neo4j_port_config():
+    """Fix Neo4j URI syntax in test files."""
+    print("Auto-fixing Neo4j port configuration in test files...")
+    test_files = glob.glob('tests/**/*.py', recursive=True)
+    fixed_count = 0
+    
+    for file_path in test_files:
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+            
+            # Fix syntax error with port configuration
+            pattern1 = r'"bolt://localhost:" \+ \(os\.environ\.get\("CI"\) == "true" and "7687" or "7688"\)"'
+            replacement1 = 'f"bolt://localhost:{neo4j_port}"'
+            
+            if re.search(pattern1, content):
+                # Add port variable before the problematic line
+                content = re.sub(
+                    pattern1,
+                    replacement1,
+                    content
+                )
+                
+                # Add port variable declaration if not already present
+                if "neo4j_port = " not in content:
+                    content = re.sub(
+                        r'import os',
+                        'import os\n\n# Determine Neo4j port based on CI environment\nci_env = os.environ.get("CI") == "true"\nneo4j_port = "7687" if ci_env else "7688"',
+                        content
+                    )
+                
+                with open(file_path, 'w') as f:
+                    f.write(content)
+                print(f"Fixed {file_path}")
+                fixed_count += 1
+        except Exception as e:
+            print(f"Error fixing {file_path}: {e}")
+    
+    if fixed_count > 0:
+        print(f"Fixed {fixed_count} files.")
+    else:
+        print("No files needed fixing.")
+
+# Run the auto-fix at import time in CI environment
+if os.environ.get("CI") == "true":
+    fix_neo4j_port_config()
 
 
 def pytest_addoption(parser):
