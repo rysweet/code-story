@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Override environment variables to ensure we use the test instance
-os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+os.environ["NEO4J__URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "testdb"

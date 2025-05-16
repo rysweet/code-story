@@ -108,13 +108,13 @@ def load_env_vars():
         sys.path.insert(0, project_root)
 
     # Set default Neo4j test variables
-    os.environ["NEO4J_URI"] = "bolt://localhost:7688"
+    os.environ["NEO4J_URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
     os.environ["NEO4J_DATABASE"] = "testdb"
 
     # Set Neo4j settings for the code-story app via double-underscore format
-    os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+    os.environ["NEO4J__URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
     os.environ["NEO4J__DATABASE"] = "testdb"
@@ -206,7 +206,12 @@ def neo4j_connector():
         pytest.skip("Skipping Neo4j integration tests in CI environment")
     
     # Use environment variables to get connection parameters, with fallback to defaults
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or "bolt://localhost:7688"
+    
+    # Use correct Neo4j port based on environment
+    ci_env = os.environ.get("CI") == "true"
+    default_uri = f"bolt://localhost:{7687 if ci_env else 7688}"
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
+    
     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
     database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"

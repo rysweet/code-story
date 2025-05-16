@@ -18,7 +18,7 @@ def neo4j_connector():
     """Create a Neo4j connector for integration tests."""
     # Create a connector that uses the Neo4j test container
     connector = Neo4jConnector(
-        uri="bolt://localhost:7688",  # Port defined in docker-compose.test.yml
+        uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
         database="testdb",  # Database defined in docker-compose.test.yml
@@ -51,8 +51,8 @@ def test_client(neo4j_connector):
     # Set up test environment variables for Neo4j
     os.environ["NEO4J_DATABASE"] = "testdb"
     os.environ["CS_NEO4J_DATABASE"] = "testdb"
-    os.environ["NEO4J_URI"] = "bolt://localhost:7688"
-    os.environ["CS_NEO4J_URI"] = "bolt://localhost:7688"
+    os.environ["NEO4J_URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
+    os.environ["CS_NEO4J_URI"] = "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["CS_NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"

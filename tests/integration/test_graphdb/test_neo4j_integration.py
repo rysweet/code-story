@@ -33,7 +33,7 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     
     # Use either NEO4J_URI or NEO4J__URI from environment (double underscore is for Settings)
     # CI environment uses 7687, local docker-compose.test.yml uses 7688
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or "bolt://localhost:7688"
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
     database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"

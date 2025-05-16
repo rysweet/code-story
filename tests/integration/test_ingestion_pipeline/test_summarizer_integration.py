@@ -347,7 +347,7 @@ def neo4j_connector():
     """Create a Neo4j connector for testing."""
     # Use direct connection parameters for test environment
     connector = Neo4jConnector(
-        uri="bolt://localhost:7688",  # Test port from docker-compose.test.yml
+        uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",  # Test port from docker-compose.test.yml
         username="neo4j",
         password="password",
         database="testdb",
