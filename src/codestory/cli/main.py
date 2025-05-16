@@ -124,6 +124,10 @@ def register_commands() -> None:
     app.add_command(ingest.stop_job, name="is")  # Ingest stop
     app.add_command(ingest.list_jobs, name="ij")  # Ingest jobs
     app.add_command(config.show_config, name="cfs")  # Config show
+    
+    # Enhanced aliases for better suggestions
+    # Add alias for "status" to point to service status
+    app.add_command(service.status, name="status")  # Direct alias for "service status"
 
 
 # Register commands after app is defined
@@ -151,6 +155,9 @@ class custom_error_handler:
     This handler ensures that when a command is not found or used incorrectly,
     more helpful error messages are displayed along with suggestions.
     
+    This enhanced version shows full help output for invalid commands, and
+    provides improved suggestions for command not found errors.
+    
     Note: Since Click's error handling changed over versions, this uses a more
     compatible approach by modifying how Click.Context.fail behaves rather than
     patching internal functions.
@@ -159,17 +166,41 @@ class custom_error_handler:
         # Save the original Click Context.fail method
         self._original_fail = click.Context.fail
         
-        # Create a new fail method that adds help suggestion
+        # Create a new fail method that shows help and provides suggestions
         def custom_fail(self_ctx, message):
-            # Check if this is a command not found error (already handled by DYMGroup)
-            if "No such command" in message or "Did you mean" in message:
-                return self._original_fail(self_ctx, message)
+            # For command not found errors
+            if "No such command" in message:
+                # Show help first before showing the error
+                click.echo(self_ctx.get_help())
+                click.echo("\n")  # Add some spacing
+                
+                # If we already have suggestions (from DYMGroup), keep them
+                if "Did you mean" in message:
+                    return self._original_fail(self_ctx, message)
+                else:
+                    # Potentially add suggestions manually if DYMGroup missed any
+                    command_name = message.split("'")[1] if "'" in message else ""
+                    if command_name:
+                        # Check for common commands that might match
+                        commands = list(self_ctx.command.commands.keys())
+                        similar = [cmd for cmd in commands if 
+                                  cmd.startswith(command_name[:1]) or 
+                                  any(a == command_name for a in ["status", "start", "stop", "config"])]
+                        
+                        if similar:
+                            suggestion = f"\nDid you mean one of these?\n    {', '.join(similar)}"
+                            message += suggestion
             
-            # For other errors, show the message and suggest help
-            if not message.endswith("--help"):
+            # For other errors, show the message, help, and suggest --help for more options
+            elif not message.endswith("--help"):
+                # Show help output before the error message
+                click.echo(self_ctx.get_help())
+                click.echo("\n")  # Add some spacing
+                
+                # Format the error message
                 if not message.endswith("."):
                     message += "."
-                message += " Try '--help' for more information."
+                message += " Try '--help' for more detailed information."
             
             return self._original_fail(self_ctx, message)
         

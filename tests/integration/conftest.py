@@ -130,8 +130,22 @@ def load_env_vars():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    # Use the neo4j_env fixture directly to set up Neo4j environment variables
-    neo4j_env()
+    # Set up Neo4j environment variables (replicate neo4j_env fixture logic to avoid calling it directly)
+    ci_env = os.environ.get("CI") == "true"
+    neo4j_port = "7687" if ci_env else "7688"
+    
+    # Set the environment variables
+    neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    os.environ["NEO4J_URI"] = neo4j_uri
+    os.environ["NEO4J__URI"] = neo4j_uri
+    
+    os.environ["NEO4J_USERNAME"] = "neo4j"
+    os.environ["NEO4J_PASSWORD"] = "password"
+    os.environ["NEO4J_DATABASE"] = "testdb"
+    
+    os.environ["NEO4J__USERNAME"] = "neo4j"
+    os.environ["NEO4J__PASSWORD"] = "password"
+    os.environ["NEO4J__DATABASE"] = "testdb"
 
     # Set Redis environment variables
     os.environ["REDIS_URI"] = "redis://localhost:6379/0"
