@@ -49,7 +49,10 @@ services:
     volumes:
       - .:/app
       # Mount for repositories to be ingested - modify this path for your environment
+      # Default mount for all repositories
       - ${REPOSITORY_PATH:-~/repositories}:/repositories
+      # Specific repository mount for ingestion when set
+      - ${REPOSITORY_SOURCE:-$HOME/repositories}:${REPOSITORY_DEST:-/repositories}
     working_dir: /app
     command: >
       bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && 
@@ -110,7 +113,10 @@ services:
     volumes:
       - .:/app
       # Mount for repositories to be ingested - modify this path for your environment
+      # Default mount for all repositories
       - ${REPOSITORY_PATH:-~/repositories}:/repositories
+      # Specific repository mount for ingestion when set
+      - ${REPOSITORY_SOURCE:-$HOME/repositories}:${REPOSITORY_DEST:-/repositories}
       # Mount Azure credentials
       - ~/.azure:/root/.azure
     working_dir: /app

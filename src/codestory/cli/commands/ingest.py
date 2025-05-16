@@ -106,14 +106,56 @@ def start_ingestion(
                     if "exists" not in docker_check.stdout:
                         console.print(f"[yellow]Repository not mounted in container. Running auto-mount...[/]")
                         
-                        # Run auto_mount.py script with the repository path
-                        auto_mount_args = [sys.executable, auto_mount_script, local_path, "--no-ingest"]
+                        # Show what's currently in /repositories to help debug
+                        try:
+                            ls_result = subprocess.run(
+                                ["docker", "exec", "codestory-service", "ls", "-la", "/repositories"],
+                                capture_output=True, text=True, check=False
+                            )
+                            console.print(f"[dim]Current /repositories contents:\n{ls_result.stdout}[/]", style="dim")
+                        except Exception as e:
+                            console.print(f"[dim]Could not check /repositories: {e}[/]", style="dim")
+                        
+                        # Run auto_mount.py script with the repository path and force remount
+                        auto_mount_args = [
+                            sys.executable, 
+                            auto_mount_script, 
+                            local_path, 
+                            "--no-ingest",
+                            "--force-remount",  # Force remount to ensure proper mounting
+                            "--debug"  # Show detailed debug info
+                        ]
                         if no_progress:
                             auto_mount_args.append("--no-progress")
                         
                         console.print(f"Running: {' '.join(auto_mount_args)}")
-                        subprocess.run(auto_mount_args, check=True)
-                        console.print("[green]Repository successfully mounted![/]")
+                        
+                        try:
+                            # Run auto-mount with force remount
+                            subprocess.run(auto_mount_args, check=True)
+                            
+                            # Verify mount was successful
+                            verify_check = subprocess.run(
+                                ["docker", "exec", "codestory-service", "test", "-d", container_path, "&&", "echo", "exists"],
+                                shell=True, capture_output=True, text=True, check=False
+                            )
+                            
+                            if "exists" in verify_check.stdout:
+                                console.print(f"[green]Repository successfully mounted at {container_path}![/]")
+                            else:
+                                console.print(f"[yellow]Warning: Repository mount could not be verified. Continuing anyway...[/]")
+                                # Show what's in /repositories after mount attempt
+                                try:
+                                    ls_result = subprocess.run(
+                                        ["docker", "exec", "codestory-service", "ls", "-la", "/repositories"],
+                                        capture_output=True, text=True, check=False
+                                    )
+                                    console.print(f"[dim]/repositories contents after mount attempt:\n{ls_result.stdout}[/]", style="dim")
+                                except Exception:
+                                    pass
+                        except subprocess.CalledProcessError as e:
+                            console.print(f"[red]Error running auto-mount: {e}[/]")
+                            console.print("[yellow]Continuing with ingestion, but it may fail if repository is not properly mounted[/]")
                     else:
                         console.print(f"[green]Repository is already properly mounted at {container_path}[/]")
                 else:

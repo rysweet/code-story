@@ -56,9 +56,45 @@ def get_current_mounts():
         return ""
 
 def is_repo_mounted(repo_path):
-    """Check if repository is already mounted."""
+    """Check if repository is already mounted correctly for ingestion.
+    
+    This checks both the actual mount and whether the path is accessible
+    inside the container at the expected location.
+    """
+    # First, check if path appears in mounts
     mounts = get_current_mounts()
-    return f"{repo_path}" in mounts
+    mount_found = f"{repo_path}" in mounts
+    
+    # Even if mount is found, check if the path actually exists in the container
+    # This is needed because we might have a parent directory mounted but not the specific repo
+    repo_name = os.path.basename(repo_path)
+    container_path = f"/repositories/{repo_name}"
+    
+    try:
+        # Check if path exists in container
+        result = subprocess.run(
+            ["docker", "exec", "codestory-service", "test", "-d", container_path, "&&", "echo", "exists"],
+            shell=True,
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        path_exists = "exists" in result.stdout
+        
+        if not path_exists:
+            # Try to inspect what's actually in /repositories
+            inspect_result = subprocess.run(
+                ["docker", "exec", "codestory-service", "ls", "-la", "/repositories"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            print(f"Container /repositories directory contents:\n{inspect_result.stdout}")
+        
+        return path_exists
+    except Exception as e:
+        print(f"Error checking if repository is mounted in container: {e}")
+        return False
 
 def setup_repository_mount(repo_path):
     """Set up repository mount and restart containers if necessary."""
@@ -82,7 +118,7 @@ def setup_repository_mount(repo_path):
     
     # Check if repository is already mounted
     if is_repo_mounted(repo_path):
-        print(f"Repository {repo_path} is already mounted")
+        print(f"Repository {repo_path} is already mounted correctly")
         return True
     
     # Repository needs to be mounted and containers restarted
@@ -91,17 +127,68 @@ def setup_repository_mount(repo_path):
     # Stop containers
     run_command("docker-compose down", capture_output=False)
     
-    # Set environment variable
-    os.environ["REPOSITORY_PATH"] = repo_path
+    # Get repo name for specific mounting
+    repo_name = os.path.basename(repo_path)
+    
+    # Create a custom .env file for Docker Compose with specific repository mounting
+    env_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    with open(env_file_path, "w") as f:
+        # This defines a specific mount for just this repository
+        f.write(f"REPOSITORY_SOURCE={repo_path}\n")
+        f.write(f"REPOSITORY_DEST=/repositories/{repo_name}\n")
+    
+    print(f"Created .env file with specific mount:\n  {repo_path} -> /repositories/{repo_name}")
+    
+    # Also set environment variable as backup
+    os.environ["REPOSITORY_SOURCE"] = repo_path
+    os.environ["REPOSITORY_DEST"] = f"/repositories/{repo_name}"
     
     # Create repository config
     create_repo_config(repo_path)
+    
+    # Update docker-compose.yml temporarily
+    try:
+        # Create a docker-compose.override.yml file for custom mounts
+        override_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "docker-compose.override.yml")
+        with open(override_file_path, "w") as f:
+            f.write(f"""services:
+  service:
+    volumes:
+      - {repo_path}:/repositories/{repo_name}
+  worker:
+    volumes:
+      - {repo_path}:/repositories/{repo_name}
+""")
+        print(f"Created docker-compose.override.yml with specific mount configuration")
+    except Exception as e:
+        print(f"Error creating override file: {e}")
     
     # Start containers
     run_command("docker-compose up -d", capture_output=False)
     
     # Wait for service to be ready
-    return wait_for_service()
+    wait_success = wait_for_service()
+    
+    # Verify repository is actually mounted correctly after restart
+    if wait_success:
+        verification = is_repo_mounted(repo_path)
+        if verification:
+            print(f"Successfully verified repository is mounted correctly at /repositories/{repo_name}")
+        else:
+            print(f"Warning: Repository may not be mounted correctly. Continuing anyway.")
+        
+        # Get container mount info for debugging
+        inspect_result = subprocess.run(
+            ["docker", "inspect", "codestory-service", "--format", "{{json .Mounts}}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        print(f"Container mounts:\n{inspect_result.stdout}")
+        
+        return True
+    
+    return False
 
 def wait_for_service():
     """Wait for the service to be ready."""
@@ -182,19 +269,71 @@ def main():
     parser.add_argument("repository_path", help="Path to the repository to ingest")
     parser.add_argument("--no-progress", action="store_true", help="Don't show progress updates")
     parser.add_argument("--no-ingest", action="store_true", help="Only mount repository, don't run ingestion")
+    parser.add_argument("--force-remount", action="store_true", help="Force remount even if repository seems to be mounted")
+    parser.add_argument("--debug", action="store_true", help="Show additional debug information")
     
     args = parser.parse_args()
     
+    # Get absolute repository path
+    repo_path = os.path.abspath(args.repository_path)
+    repo_name = os.path.basename(repo_path)
+    
+    # Debug info if requested
+    if args.debug:
+        print("Debug information:")
+        print(f"  Repository path: {repo_path}")
+        print(f"  Repository name: {repo_name}")
+        
+        # Check if containers are running
+        docker_ps = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        print(f"  Docker containers: {docker_ps.stdout}")
+        
+        # Check if directory exists
+        print(f"  Repository exists: {os.path.isdir(repo_path)}")
+        
+        # Check current mounts
+        mounts = get_current_mounts()
+        print(f"  Current mounts: {mounts}")
+        
+        # Check contents of /repositories in container
+        try:
+            repo_ls = subprocess.run(
+                ["docker", "exec", "codestory-service", "ls", "-la", "/repositories"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            print(f"  Container /repositories contents: {repo_ls.stdout}")
+        except Exception as e:
+            print(f"  Error checking /repositories: {e}")
+    
     # Mount repository
-    print(f"Setting up repository mount for {args.repository_path}...")
-    if not setup_repository_mount(args.repository_path):
-        print("Failed to set up repository mount")
-        sys.exit(1)
+    print(f"Setting up repository mount for {repo_path}...")
+    
+    # Force remount if requested
+    if args.force_remount:
+        print("Forcing remount of repository...")
+        # Stop containers
+        run_command("docker-compose down", capture_output=False)
+        # Reset mount flag for setup_repository_mount
+        if not setup_repository_mount(repo_path):
+            print("Failed to set up repository mount")
+            sys.exit(1)
+    else:
+        # Regular mount logic
+        if not setup_repository_mount(repo_path):
+            print("Failed to set up repository mount")
+            sys.exit(1)
     
     # Run ingestion if not disabled
     if not args.no_ingest:
-        print(f"Running ingestion for {args.repository_path}...")
-        ingest_repository(args.repository_path, args.no_progress)
+        print(f"Running ingestion for {repo_path}...")
+        ingest_repository(repo_path, args.no_progress)
     
     print("Done!")
 
