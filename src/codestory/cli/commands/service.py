@@ -30,9 +30,9 @@ def service() -> None:
 
 
 @service.command(name="start", help="Start the Code Story service.")
-@click.option("--detach", is_flag=True, help="Run the service in the background.")
+@click.option("--detach", "--detached", is_flag=True, help="Run the service in the background.")
 @click.option("--wait", is_flag=True, help="Wait for the service to start.")
-@click.option("--skip-healthchecks", is_flag=True, help="Skip container healthcheck verification.")
+@click.option("--skip-healthchecks", "--skip-health-checks", is_flag=True, help="Skip container healthcheck verification.")
 @click.pass_context
 def start_service(ctx: click.Context, detach: bool = False, wait: bool = False, skip_healthchecks: bool = False) -> None:
     """
@@ -176,9 +176,9 @@ def stop_service(ctx: click.Context) -> None:
 
 
 @service.command(name="restart", help="Restart the Code Story service.")
-@click.option("--detach", is_flag=True, help="Run the service in the background after restart.")
+@click.option("--detach", "--detached", is_flag=True, help="Run the service in the background after restart.")
 @click.option("--wait", is_flag=True, help="Wait for the service to restart completely.")
-@click.option("--skip-healthchecks", is_flag=True, help="Skip container healthcheck verification.")
+@click.option("--skip-healthchecks", "--skip-health-checks", is_flag=True, help="Skip container healthcheck verification.")
 @click.pass_context
 def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False, skip_healthchecks: bool = False) -> None:
     """
@@ -569,8 +569,8 @@ def get_docker_compose_command() -> List[str]:
 
 
 @service.command(name="recover", help="Recover from unhealthy container state.")
-@click.option("--force", is_flag=True, help="Force recovery by removing all containers.")
-@click.option("--restart-worker", is_flag=True, help="Only restart the worker container.")
+@click.option("--force", "-f", is_flag=True, help="Force recovery by removing all containers.")
+@click.option("--restart-worker", "--restart-workers", is_flag=True, help="Only restart the worker container.")
 @click.pass_context
 def recover_service(ctx: click.Context, force: bool = False, restart_worker: bool = False) -> None:
     """

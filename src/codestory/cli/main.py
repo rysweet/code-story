@@ -155,8 +155,8 @@ class custom_error_handler:
     This handler ensures that when a command is not found or used incorrectly,
     more helpful error messages are displayed along with suggestions.
     
-    This enhanced version shows full help output for invalid commands, and
-    provides improved suggestions for command not found errors.
+    This enhanced version shows full help output for invalid commands and options,
+    and provides improved suggestions for errors.
     
     Note: Since Click's error handling changed over versions, this uses a more
     compatible approach by modifying how Click.Context.fail behaves rather than
@@ -165,6 +165,18 @@ class custom_error_handler:
     def __enter__(self):
         # Save the original Click Context.fail method
         self._original_fail = click.Context.fail
+        
+        # Save the original Click Command format_help method
+        self._original_format_help = click.core.Command.format_help
+
+        # Define wrapper for format_help to enhance the help formatting
+        def custom_format_help(cmd_self, ctx, formatter):
+            # Call original method to do the standard formatting
+            self._original_format_help(cmd_self, ctx, formatter)
+            # Potential place to add additional help content if needed
+
+        # Override Click Command format_help
+        click.core.Command.format_help = custom_format_help
         
         # Create a new fail method that shows help and provides suggestions
         def custom_fail(self_ctx, message):
@@ -191,6 +203,26 @@ class custom_error_handler:
                             suggestion = f"\nDid you mean one of these?\n    {', '.join(similar)}"
                             message += suggestion
             
+            # For invalid option errors (like --detached instead of --detach)
+            elif "No such option:" in message or "Did you mean" in message:
+                command = self_ctx.command
+                
+                # If we have a specific command with --help, display its help
+                if hasattr(self_ctx, 'info_name') and self_ctx.info_name and len(self_ctx.info_name.split()) > 1:
+                    # Show the specific command's help
+                    complete_help = self_ctx.get_help()
+                    click.echo(complete_help)
+                    click.echo("\n")  # Add some spacing
+                else:
+                    # Fallback to general app help if we can't get specific command help
+                    click.echo(self_ctx.get_help())
+                    click.echo("\n")  # Add some spacing
+            
+            # For missing parameter errors, show the help
+            elif "Missing parameter" in message:
+                click.echo(self_ctx.get_help())
+                click.echo("\n")  # Add some spacing
+                
             # For other errors, show the message, help, and suggest --help for more options
             elif not message.endswith("--help"):
                 # Show help output before the error message
@@ -209,8 +241,9 @@ class custom_error_handler:
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # Restore the original method
+        # Restore the original methods
         click.Context.fail = self._original_fail
+        click.core.Command.format_help = self._original_format_help
         return False  # Allow exceptions to propagate
 
 
