@@ -1,5 +1,61 @@
 # Prompt History
 
+## Prompt 56 (May 15, 2025)
+**Prompt**: ok its still not working - I don't understand how your tests are working: ```codestory-py3.12ryan@Ryans-MacBook-Pro-3 code-story % codestory ingest start .
+Starting ingestion of /Users/ryan/src/msec/code-story...
+Checking if repository is properly mounted...
+Repository not mounted in container. Running auto-mount...
+Running: /Users/ryan/Library/Caches/pypoetry/virtualenvs/codestory-qaEFBNp2-py3.12/bin/python 
+/Users/ryan/src/msec/code-story/scripts/auto_mount.py /Users/ryan/src/msec/code-story --no-ingest
+Setting up repository mount for /Users/ryan/src/msec/code-story...
+Repository /Users/ryan/src/msec/code-story is already mounted
+Done!
+Repository successfully mounted!
+Docker deployment detected. Mapping local path to container path:
+  Local path:     /Users/ryan/src/msec/code-story
+  Container path: /repositories/code-story
+Starting ingestion for repository at /repositories/code-story
+Repository directory exists: False
+Using container path directly
+Error: Failed to start ingestion: Client error '422 Unprocessable Entity' for url 'http://localhost:8000/v1/ingest'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422: [{'type': 'value_error', 
+'loc': ['body', 'source'], 'msg': "Value error, Local path '/repositories/code-story' does not exist", 'input': 
+'/repositories/code-story', 'ctx': {'error': {}}}]
+
+If running in Docker, ensure the repository is mounted as a volume to the service container.
+
+Try these solutions:
+1. Mount the repository using our script:
+   ./scripts/mount_repository.sh "/repositories/code-story" --restart
+
+2. Or use the container path format with the CLI:
+   codestory ingest start "/repositories/code-story" --container
+
+3. For manual mounting, modify your docker-compose.yml to include:
+   volumes:
+     - /repositories/code-story:/repositories/code-story
+
+Troubleshooting Suggestions:
+1. Try our automatic mounting tool:
+   - Run: python scripts/auto_mount.py "/Users/ryan/src/msec/code-story"
+2. Or manually mount your repository:
+   - Run: export REPOSITORY_PATH="/Users/ryan/src/msec/code-story"
+   - Run: docker-compose down && docker-compose up -d
+3. For detailed instructions, see: docs/deployment/repository_mounting.md```
+
+**Response**:
+- Fixed repository mounting issues with comprehensive improvements:
+  - Added proper mount detection using explicit Docker container verification
+  - Replaced simplified path checking with actual container existence verification
+  - Created docker-compose.override.yml for specific repository mounts
+  - Enhanced auto_mount script with force remount option for difficult cases
+  - Added robust repository verification before and after mounting
+  - Implemented detailed debug output to diagnose mounting problems
+  - Added specific mount paths in docker-compose.yml using environment variables
+  - Added better error handling and user feedback in the CLI
+  - Enhanced the CLI with detailed mount verification and diagnostics
+  - Fixed discrepancy between reported mounting success and actual container state
+
 ## Prompt 55 (May 15, 2025)
 **Prompt**: did you add tests?
 

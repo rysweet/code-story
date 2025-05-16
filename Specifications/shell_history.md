@@ -1,5 +1,14 @@
 # Shell Command History
 
+## May 15, 2025 (Fixing Mount Verification Issues)
+- `cd /Users/ryan/src/msec/code-story && docker inspect codestory-service --format '{{json .Mounts}}'` - Inspecting actual container mounts
+- `cd /Users/ryan/src/msec/code-story && docker exec codestory-service ls -la /repositories` - Checking accessible repositories in container
+- `cd /Users/ryan/src/msec/code-story && docker-compose down` - Stopping containers for remounting
+- `cd /Users/ryan/src/msec/code-story && codestory ingest start . --auto-mount` - Testing updated CLI with auto-mount
+- `cd /Users/ryan/src/msec/code-story && python scripts/auto_mount.py . --debug --force-remount` - Testing improved auto-mount script with debugging
+- `cd /Users/ryan/src/msec/code-story && cat docker-compose.override.yml` - Checking generated override file with specific mounts
+- `cd /Users/ryan/src/msec/code-story && grep -n "REPOSITORY_PATH" docker-compose.yml` - Finding repository path references
+
 ## May 15, 2025 (Testing Auto-Mount Functionality)
 - `cd /Users/ryan/src/msec/code-story && mkdir -p tests/unit/test_cli/test_scripts` - Creating test directory structure
 - `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_commands/test_auto_mount.py` - Running unit tests for auto-mount
