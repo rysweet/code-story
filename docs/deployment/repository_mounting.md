@@ -2,9 +2,50 @@
 
 For Code Story to analyze a codebase, the repository must be accessible to both the service and worker containers. This guide explains how to mount your repositories correctly.
 
-## Automatic Repository Mounting (Recommended)
+## Fully Automated Repository Mounting (Recommended)
 
-The easiest way to mount a repository is to use the provided script:
+The CLI now supports fully automatic repository mounting!
+
+```bash
+# Simply run the ingestion command - everything else is automatic
+codestory ingest start /path/to/your/repository
+```
+
+The CLI will:
+1. Detect if you're connected to a containerized service
+2. Check if the repository is already properly mounted
+3. Automatically mount the repository if needed
+4. Restart containers with proper volume mounts if required
+5. Map local paths to container paths for proper access
+6. Start the ingestion process
+
+This is the simplest approach and works in most scenarios.
+
+## Auto-Mount Python Script
+
+For more control, use the auto_mount.py script:
+
+```bash
+# Mount repository and run ingestion in one step
+python scripts/auto_mount.py /path/to/your/repository
+
+# Only mount repository, don't run ingestion
+python scripts/auto_mount.py /path/to/your/repository --no-ingest
+
+# Mount repository and run ingestion without progress display
+python scripts/auto_mount.py /path/to/your/repository --no-progress
+```
+
+The auto_mount.py script:
+1. Sets up proper repository mounts in Docker
+2. Creates repository configuration for the CLI
+3. Handles container restarts when needed
+4. Optionally runs the ingestion process
+5. Waits for services to become healthy
+
+## Original Mount Script (Legacy)
+
+The original shell script is still available:
 
 ```bash
 # Make the script executable if needed
@@ -17,41 +58,28 @@ chmod +x scripts/mount_repository.sh
 ./scripts/mount_repository.sh /path/to/your/repository --restart
 ```
 
-This script performs several important tasks:
-1. Sets up the `REPOSITORY_PATH` environment variable for docker-compose
-2. Creates a repository configuration file for the CLI
-3. Verifies the repository path exists
-4. Optionally restarts containers with the new mount
-5. Provides the exact CLI command to use for ingestion
+## CLI Options for Docker Deployments
 
-## Using the CLI with Docker Deployments
+The CLI offers several options for working with Docker:
 
-When your service is running in Docker, use one of these approaches for ingestion:
-
-### Approach 1: Automatic Container Path Detection (Recommended)
+### Auto-Mount (Default)
 
 ```bash
-# The CLI automatically detects Docker deployment and maps paths
+# Automatic repository mounting (default behavior)
 codestory ingest start /path/to/your/repository
+
+# Explicitly enable auto-mounting
+codestory ingest start /path/to/your/repository --auto-mount
 ```
 
-The CLI will:
-1. Detect that you're connecting to a containerized service
-2. Convert your local path to the correct container path
-3. Show you both paths for verification
-
-### Approach 2: Explicit Container Flag
+### Manual Path Mapping
 
 ```bash
-# Explicitly tell the CLI to use container path mapping
-codestory ingest start /path/to/your/repository --container
-```
+# Disable auto-mounting but still use container path mapping
+codestory ingest start /path/to/your/repository --no-auto-mount --container
 
-### Approach 3: Direct Container Path
-
-```bash
-# Use the container path directly
-codestory ingest start /repositories/your-repo-name
+# Use a different container path prefix
+codestory ingest start /path/to/your/repository --path-prefix /custom/mount/path
 ```
 
 ## Manual Setup Options
