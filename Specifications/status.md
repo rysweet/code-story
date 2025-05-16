@@ -4,6 +4,18 @@
 Completed all implementation tasks - All sections completed and tests passing
 
 ## Last Completed Task (May 15, 2025)
+- Fixed Console API usage in CLI service client
+  - Fixed bug where ServiceClient was calling non-existent console.debug() method
+  - Replaced all console.debug() calls with proper Console.print() using style="dim"
+  - Created comprehensive tests with real Console objects to catch invalid method usage
+  - Identified testing gap where mocks allowed calling non-existent methods
+  - Added test cases for all ServiceClient methods that use console logging
+  - Used real Console instances in tests instead of mocks
+  - Successfully verified fix resolves the runtime error during CLI ingestion
+  - Committed changes in logical parts: bug fix and test improvements
+  - Updated documentation to reflect the improvements
+
+## Previous Completed Task (May 15, 2025)
 - Enhanced CLI error handling and command discovery
   - Implemented custom error handling with specific display order (error first, suggestions second, help last)
   - Added direct command aliases for common operations (status, start, stop)

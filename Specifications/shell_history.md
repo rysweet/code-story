@@ -1,5 +1,17 @@
 # Shell Command History
 
+## May 15, 2025 (Console Debug Bug Fix)
+- `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run ingest /some/path` - Testing ingest command to reproduce the bug
+- `cd /Users/ryan/src/msec/code-story && grep -r "console.debug" src/` - Finding all instances of console.debug() in the codebase
+- `cd /Users/ryan/src/msec/code-story && grep -r "Console" tests/unit` - Checking how Console is mocked in tests
+- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package in development mode to test fix
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/client/test_service_client.py` - Running new unit tests
+- `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run ingest /some/path` - Testing command after fix
+- `cd /Users/ryan/src/msec/code-story && git add src/codestory/cli/client/service_client.py` - Staging the bug fix
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Fix console.debug() calls in ServiceClient"` - Committing the bug fix
+- `cd /Users/ryan/src/msec/code-story && git add tests/unit/test_cli/client/__init__.py tests/unit/test_cli/client/test_service_client.py` - Staging the new tests
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add tests to catch invalid Console API usage"` - Committing new tests
+
 ## May 15, 2025 (CLI Improvements)
 - `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run invalidcommand` - Testing invalid command behavior
 - `cd /Users/ryan/src/msec/code-story && python test_cli.py invalidcommand` - Testing invalid command behavior with direct script
