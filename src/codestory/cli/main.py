@@ -42,12 +42,54 @@ rich_click_module.ERRORS_SUGGESTION = (
 console = Console()
 
 
+class CodeStoryCommandGroup(DYMGroup):
+    """Custom command group that shows help when a command fails."""
+    
+    def __call__(self, *args, **kwargs):
+        """Override to catch and customize error handling."""
+        try:
+            return super().__call__(*args, **kwargs)
+        except click.exceptions.UsageError as e:
+            # Get the context
+            ctx = getattr(e, 'ctx', None)
+            if ctx is None:
+                ctx = click.Context(self)
+            
+            # Show full help first
+            formatter = ctx.make_formatter()
+            self.format_help(ctx, formatter)
+            ctx.terminal_width = formatter.width
+            click.echo(formatter.getvalue().rstrip('\n'))
+            click.echo('')  # Add a blank line
+            
+            # Then show the error with custom formatting
+            error_msg = str(e)
+            # Add suggestions for command-not-found errors if not already present
+            if "No such command" in error_msg and "Did you mean" not in error_msg:
+                cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
+                if cmd_name:
+                    # Find similar commands
+                    commands = list(self.commands.keys())
+                    similar = [cmd for cmd in commands if (
+                        cmd.startswith(cmd_name[:1]) or
+                        cmd_name.lower() in cmd.lower()
+                    )]
+                    
+                    if similar:
+                        error_msg += f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
+            
+            # Show the error with custom formatting
+            click.echo(f"Error: {error_msg}", err=True)
+            
+            # Exit with the same code
+            ctx.exit(e.exit_code)
+
 @click.group(
-    cls=DYMGroup,
+    cls=CodeStoryCommandGroup,
     help="[bold]Code Story[/bold] - A tool for exploring and documenting codebases.",
     invoke_without_command=True,
-    max_suggestions=3,
-    cutoff=0.6
+    max_suggestions=5,
+    cutoff=0.5
 )
 @click.version_option()
 @click.option(
@@ -125,21 +167,144 @@ def register_commands() -> None:
     app.add_command(ingest.list_jobs, name="ij")  # Ingest jobs
     app.add_command(config.show_config, name="cfs")  # Config show
     
-    # Enhanced aliases for better suggestions
-    # Add alias for "status" to point to service status
+    # Enhanced aliases for better suggestions and direct command access
+    # Add common top-level commands as direct aliases
     app.add_command(service.status, name="status")  # Direct alias for "service status"
+    app.add_command(service.start_service, name="start")  # Direct alias for "service start"
+    app.add_command(service.stop_service, name="stop")  # Direct alias for "service stop"
+    app.add_command(config.show_config, name="show")  # Direct alias for "config show"
 
 
 # Register commands after app is defined
 register_commands()
 
 
+# Create a wrapper function that will intercept UsageError exceptions
+def _wrap_click_command(cmd):
+    """Create a wrapper around a Click command to intercept UsageError exceptions."""
+    original_main = cmd.main
+    
+    def wrapped_main(*args, **kwargs):
+        try:
+            return original_main(*args, **kwargs)
+        except click.exceptions.UsageError as e:
+            # Extract relevant context information
+            ctx = getattr(e, 'ctx', None)
+            
+            # Get appropriate help text
+            if ctx and ctx.command:
+                # Get help text for the specific command context
+                help_text = ctx.get_help()
+            else:
+                # Fallback to general app help when we don't have a specific command context
+                ctx = click.Context(app)
+                help_text = app.get_help(ctx)
+            
+            # Format the error message
+            error_msg = str(e)
+            
+            # Check if we're dealing with an invalid command
+            if "No such command" in error_msg:
+                # Extract the command name that wasn't found
+                cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
+                if cmd_name:
+                    # Find similar commands (already registered and common aliases)
+                    commands = list(app.commands.keys())
+                    similar = [cmd for cmd in commands if (
+                        cmd.startswith(cmd_name[:1]) or  # Starts with same letter
+                        any(cmd_name == alias for alias in ["status", "start", "stop", "config"]) or  # Common aliases
+                        cmd_name.lower() in cmd.lower()  # Contains the text
+                    )]
+                    
+                    # Add suggestions if not already provided by DYMGroup
+                    if similar and "Did you mean" not in error_msg:
+                        error_msg += f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
+                        
+            # For invalid option errors, provide more context
+            elif "no such option" in error_msg.lower() or "invalid value" in error_msg.lower():
+                if ctx and ctx.command:
+                    # We already have the help text above, but we could add more specific hints here
+                    pass
+            
+            # Display everything in the right order
+            console.print(help_text)
+            console.print("\n")  # Spacing
+            console.print(f"[bold red]Error:[/] {error_msg}")
+            sys.exit(e.exit_code)
+    
+    return wrapped_main
+
+# Apply the wrapper to the Click app
+app.main = _wrap_click_command(app)
+
 def main() -> None:
     """Entry point for the CLI application."""
+    # Save the original error callback for restoration later
+    original_error_callback = click.exceptions.UsageError.show
+    
+    # Define our custom error handler
+    def custom_error_callback(self, file=None):
+        """Custom error formatter that shows error first, then suggestions, then help."""
+        # Get the context
+        ctx = getattr(self, 'ctx', None)
+        
+        # Get appropriate help text
+        if ctx and ctx.command:
+            # Get help text for the specific command context
+            help_text = ctx.get_help()
+        else:
+            # Fallback to general app help when we don't have a specific command context
+            ctx = click.Context(app)
+            help_text = app.get_help(ctx)
+        
+        # Format the error message first
+        error_msg = str(self)
+        
+        # Check if we're dealing with an invalid command
+        suggestions = ""
+        if "No such command" in error_msg:
+            # Extract the command name that wasn't found
+            cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
+            if cmd_name:
+                # Find commands to search in
+                commands = []
+                
+                # Get the current command context to find available subcommands
+                if ctx and hasattr(ctx, 'command') and hasattr(ctx.command, 'commands'):
+                    # For subcommand errors, use the parent command's subcommands
+                    commands = list(ctx.command.commands.keys())
+                else:
+                    # For top-level errors, use app's commands
+                    commands = list(app.commands.keys())
+                
+                # Find similar commands
+                similar = [cmd for cmd in commands if (
+                    cmd.startswith(cmd_name[:1]) or  # Starts with same letter
+                    cmd_name.lower() in cmd.lower() or  # Contains the text
+                    any(cmd_name == alias for alias in ["status", "start", "stop", "config"])  # Common aliases
+                )]
+                
+                # Add suggestions separately
+                if similar and "Did you mean" not in error_msg:
+                    suggestions = f"\nDid you mean one of these?\n    {', '.join(similar)}"
+        
+        # Display in the requested order: 1) error, 2) suggestions, 3) help
+        console.print(f"[bold red]Error:[/] {error_msg}")
+        
+        # Show suggestions if any
+        if suggestions:
+            console.print(suggestions)
+            console.print("")  # Add spacing
+            
+        # Finally display the help text
+        console.print(help_text)
+    
     try:
-        # Add custom error handler for Click errors
-        with custom_error_handler():
-            app()
+        # Replace the error handler
+        click.exceptions.UsageError.show = custom_error_callback
+        
+        # Run the app with our enhanced error handling
+        app()
     except ServiceError as e:
         console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
@@ -147,104 +312,11 @@ def main() -> None:
         console.print(f"[bold red]Unexpected error:[/] {e!s}")
         console.print_exception(show_locals=False)
         sys.exit(1)
+    finally:
+        # Restore the original error handler
+        click.exceptions.UsageError.show = original_error_callback
 
 
-class custom_error_handler:
-    """Custom context manager to handle Click errors more gracefully.
-    
-    This handler ensures that when a command is not found or used incorrectly,
-    more helpful error messages are displayed along with suggestions.
-    
-    This enhanced version shows full help output for invalid commands and options,
-    and provides improved suggestions for errors.
-    
-    Note: Since Click's error handling changed over versions, this uses a more
-    compatible approach by modifying how Click.Context.fail behaves rather than
-    patching internal functions.
-    """
-    def __enter__(self):
-        # Save the original Click Context.fail method
-        self._original_fail = click.Context.fail
-        
-        # Save the original Click Command format_help method
-        self._original_format_help = click.core.Command.format_help
-
-        # Define wrapper for format_help to enhance the help formatting
-        def custom_format_help(cmd_self, ctx, formatter):
-            # Call original method to do the standard formatting
-            self._original_format_help(cmd_self, ctx, formatter)
-            # Potential place to add additional help content if needed
-
-        # Override Click Command format_help
-        click.core.Command.format_help = custom_format_help
-        
-        # Create a new fail method that shows help and provides suggestions
-        def custom_fail(self_ctx, message):
-            # For command not found errors
-            if "No such command" in message:
-                # Show help first before showing the error
-                click.echo(self_ctx.get_help())
-                click.echo("\n")  # Add some spacing
-                
-                # If we already have suggestions (from DYMGroup), keep them
-                if "Did you mean" in message:
-                    return self._original_fail(self_ctx, message)
-                else:
-                    # Potentially add suggestions manually if DYMGroup missed any
-                    command_name = message.split("'")[1] if "'" in message else ""
-                    if command_name:
-                        # Check for common commands that might match
-                        commands = list(self_ctx.command.commands.keys())
-                        similar = [cmd for cmd in commands if 
-                                  cmd.startswith(command_name[:1]) or 
-                                  any(a == command_name for a in ["status", "start", "stop", "config"])]
-                        
-                        if similar:
-                            suggestion = f"\nDid you mean one of these?\n    {', '.join(similar)}"
-                            message += suggestion
-            
-            # For invalid option errors (like --detached instead of --detach)
-            elif "No such option:" in message or "Did you mean" in message:
-                command = self_ctx.command
-                
-                # If we have a specific command with --help, display its help
-                if hasattr(self_ctx, 'info_name') and self_ctx.info_name and len(self_ctx.info_name.split()) > 1:
-                    # Show the specific command's help
-                    complete_help = self_ctx.get_help()
-                    click.echo(complete_help)
-                    click.echo("\n")  # Add some spacing
-                else:
-                    # Fallback to general app help if we can't get specific command help
-                    click.echo(self_ctx.get_help())
-                    click.echo("\n")  # Add some spacing
-            
-            # For missing parameter errors, show the help
-            elif "Missing parameter" in message:
-                click.echo(self_ctx.get_help())
-                click.echo("\n")  # Add some spacing
-                
-            # For other errors, show the message, help, and suggest --help for more options
-            elif not message.endswith("--help"):
-                # Show help output before the error message
-                click.echo(self_ctx.get_help())
-                click.echo("\n")  # Add some spacing
-                
-                # Format the error message
-                if not message.endswith("."):
-                    message += "."
-                message += " Try '--help' for more detailed information."
-            
-            return self._original_fail(self_ctx, message)
-        
-        # Replace the method
-        click.Context.fail = custom_fail
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # Restore the original methods
-        click.Context.fail = self._original_fail
-        click.core.Command.format_help = self._original_format_help
-        return False  # Allow exceptions to propagate
 
 
 if __name__ == "__main__":

@@ -10,5 +10,9 @@ is run directly.
 import sys
 from codestory.cli.main import main
 
+def run():
+    """Run the CLI application with proper exit code."""
+    return main()
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())
