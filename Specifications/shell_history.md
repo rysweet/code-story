@@ -1,5 +1,14 @@
 # Shell Command History
 
+## May 16, 2025 (Fixing Integration Test Failures)
+- `cd /Users/ryan/src/msec/code-story && python3 scripts/check_ci_status.sh` - Trying to check CI status with Python script
+- `cd /Users/ryan/src/msec/code-story && bash scripts/check_ci_status.sh` - Checking CI status with bash script
+- `cd /Users/ryan/src/msec/code-story && gh run view 15075546551 --log-failed` - Checking detailed logs for failed CI run
+- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/tests/integration/test_ingestion_pipeline/test_filesystem_integration.py` - Examining failing test file
+- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/tests/integration/conftest.py` - Checking integration test configuration
+- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/src/codestory/ingestion_pipeline/celery_app.py` - Checking Celery app implementation
+- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/tests/unit/conftest.py` - Examining unit test fixture setup
+
 ## May 15, 2025 (Fixing Mount Verification Issues)
 - `cd /Users/ryan/src/msec/code-story && docker inspect codestory-service --format '{{json .Mounts}}'` - Inspecting actual container mounts
 - `cd /Users/ryan/src/msec/code-story && docker exec codestory-service ls -la /repositories` - Checking accessible repositories in container

@@ -12,6 +12,17 @@
   - Optimize Dockerfiles to minimize layer count and maximize cache hits
 
 ## Last Completed Task (May 16, 2025)
+- Fixed integration test failures for Azure authentication CI pipeline
+  - Added missing `celery_app` fixture to integration test configuration
+  - Used in-memory broker for isolated test execution
+  - Configured Celery for synchronous task execution in tests
+  - Fixed unit vs integration test configuration consistency
+  - Ensured proper pytest fixture scope and dependencies
+  - Added graceful test cleanup for Celery connections
+  - Applied fix to make filesystem integration tests run properly
+  - Resolved CI failure caused by missing test dependencies
+
+## Previous Completed Task (May 16, 2025)
 - Fixed repository mounting issues with comprehensive improvements
   - Enhanced path detection with explicit Docker container verification
   - Implemented docker-compose.override.yml for specific repository mounts

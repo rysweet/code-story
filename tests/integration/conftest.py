@@ -236,3 +236,19 @@ def neo4j_connector():
 
     # Clean up the connector
     connector.close()
+
+
+@pytest.fixture(scope="function")
+def celery_app():
+    """Provide a Celery app configured for integration testing."""
+    from codestory.ingestion_pipeline.celery_app import app
+
+    # Configure Celery for testing with in-memory broker
+    app.conf.update(
+        broker_url="memory://",
+        result_backend="rpc://",
+        task_always_eager=True,  # Tasks run synchronously in tests
+        task_eager_propagates=True,  # Exceptions are propagated
+        task_ignore_result=False,  # Results are tracked
+    )
+    return app
