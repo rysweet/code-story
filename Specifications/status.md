@@ -4,6 +4,19 @@
 Completed all implementation tasks - All sections completed and tests passing
 
 ## Last Completed Task (May 15, 2025)
+- Fixed repository mounting for Docker ingestion
+  - Enhanced ingest command to detect Docker deployments and map local paths to container paths
+  - Added automatic container path mapping for local repositories
+  - Improved mount_repository.sh script with better restart and container management
+  - Created repository config files to track mounting information
+  - Added comprehensive error messages with specific troubleshooting steps
+  - Enhanced documentation with detailed repository mounting guide
+  - Provided multiple approaches for working with Docker deployments
+  - Added explicit --container flag for path mapping control
+  - Verified fix resolves the "repository does not exist" errors
+  - Committed all changes to improve the CLI user experience
+
+## Previous Completed Task (May 15, 2025)
 - Fixed Console API usage in CLI service client
   - Fixed bug where ServiceClient was calling non-existent console.debug() method
   - Replaced all console.debug() calls with proper Console.print() using style="dim"

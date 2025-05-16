@@ -1,5 +1,31 @@
 # Prompt History
 
+## Prompt 53 (May 15, 2025)
+**Prompt**: ingestion is still not working for directories because the directories are not being mounted into the container: ```codestory-py3.12ryan@Ryans-MacBook-Pro-3 code-story % codestory ingest start .
+Starting ingestion of /Users/ryan/src/msec/code-story...
+Starting ingestion for repository at /Users/ryan/src/msec/code-story
+Repository directory exists: True
+Error: Failed to start ingestion: Client error '422 Unprocessable Entity' for url 'http://localhost:8000/v1/ingest'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422: [{'type': 'value_error', 
+'loc': ['body', 'source'], 'msg': "Value error, Local path '/Users/ryan/src/msec/code-story' does not exist", 
+'input': '/Users/ryan/src/msec/code-story', 'ctx': {'error': {}}}]
+
+If running in Docker, ensure the repository is mounted as a volume to the service container. Example:
+docker run -v /local/path/to/repo:/mounted/repo/path service-image```
+
+**Response**:
+- Identified issue with repository path mounting in Docker containers
+- Updated ingest command to automatically detect and handle container deployments
+- Added path mapping functionality to convert local paths to container paths
+- Enhanced mount_repository.sh script with better features including:
+  - Creating repository config files for better CLI integration
+  - Adding option to restart containers with proper mounting
+  - Providing more helpful guidance for CLI commands
+- Improved error messages with specific troubleshooting steps
+- Expanded repository mounting documentation with comprehensive guide
+- Added multiple approach options for working with containerized deployments
+- Updated ServiceClient to provide better error handling for path-related errors
+
 ## Prompt 52 (May 15, 2025)
 **Prompt**: This session is being continued from a previous conversation that ran out of context. The conversation is summarized below:
 <analysis>

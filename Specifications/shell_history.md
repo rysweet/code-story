@@ -1,5 +1,15 @@
 # Shell Command History
 
+## May 15, 2025 (Repository Mounting Fix)
+- `cd /Users/ryan/src/msec/code-story && codestory ingest start .` - Testing ingest command to reproduce repository mounting issue
+- `cd /Users/ryan/src/msec/code-story && cat docker-compose.yml | grep -A2 volume` - Checking Docker volume mounts
+- `cd /Users/ryan/src/msec/code-story && cat scripts/mount_repository.sh` - Reviewing the repository mount script
+- `cd /Users/ryan/src/msec/code-story && cat src/codestory/cli/commands/ingest.py | grep -A10 start_ingestion` - Examining ingest command implementation
+- `cd /Users/ryan/src/msec/code-story && cat docs/deployment/repository_mounting.md` - Reviewing mount documentation
+- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package in development mode
+- `cd /Users/ryan/src/msec/code-story && ./scripts/mount_repository.sh . --restart` - Testing enhanced mount script with restart
+- `cd /Users/ryan/src/msec/code-story && codestory ingest start . --container` - Testing with container flag
+
 ## May 15, 2025 (Console Debug Bug Fix)
 - `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run ingest /some/path` - Testing ingest command to reproduce the bug
 - `cd /Users/ryan/src/msec/code-story && grep -r "console.debug" src/` - Finding all instances of console.debug() in the codebase
