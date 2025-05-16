@@ -1,5 +1,19 @@
 # Prompt History
 
+## Prompt 48 (May 15, 2025)
+**Prompt**: The user sent the following message: ok now use your script to check ci
+
+**Response**:
+- Ran the script to check CI status of the pull request
+- Found that while Documentation Build succeeded, CI/CD Pipeline was failing
+- Investigated the error logs which showed Neo4j connection issues in tests
+- Identified the root cause: port mismatch between CI (7687) and local tests (7688)
+- Created a Python script (`ci_test_fix.py`) to fix the port configuration
+- Applied the fix to all affected test files with hardcoded ports
+- Created documentation in FIXED_CI_TESTS.md explaining the issue and solution
+- Committed and pushed the changes to fix the CI failures
+- Updated all history files to track the CI fix progress
+
 ## Prompt 47 (May 15, 2025)
 **Prompt**: There still appear to be lots of uncommitted changes
 
@@ -214,23 +228,3 @@ Please continue the conversation from where we left it off without asking the us
 - Committed and pushed service recovery improvements
 - Verified pull request was updated with all changes
 - Addressed requirements in CLAUDE.md for history maintenance
-
-## Prompt 44 (May 15, 2025)
-**Prompt**: here's an example where I typed an invalid command. ```codestory-py3.12ryan@Ryans-MacBook-Pro-3 code-story % codestory status
-Usage: codestory [OPTIONS] COMMAND [ARGS]...
-Try 'codestory --help' for help.
-
-Error: No such command 'status'.``` - instead of doing that what the cli should do is 1) make an effort to suggest a valid command instead, and 2) output the help instead of making the user ask for it. please review the cli error messages and command parsing, make a plan to implement these two changes, make the necessary updates, then test your work. Update any unit tests and integraiton tests, then run all checks and tests, fixing any errors that arise, commit, push, make a new pr, and check ci. 
-
-**Response**:
-- Examined CLI command handling in `main.py` to identify improvement areas
-- Found that we can use Click's DYMGroup for command suggestions
-- Planned to add auto-help display when no command is provided
-- Implemented command suggestions using click-didyoumean package
-- Added custom error handler for better error messages
-- Modified CLI to automatically show help when no command is provided
-- Created and updated tests to verify the new functionality
-- Fixed issues with unhealthy containers in service commands
-- Added service recovery functionality with detailed logging
-- Tested all changes, fixed test failures
-- Committed changes, created PR, verified in CI

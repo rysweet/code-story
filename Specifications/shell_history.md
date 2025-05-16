@@ -1,5 +1,18 @@
 # Shell Command History
 
+## May 15, 2025 (CI Test Fixes)
+- `cd /Users/ryan/src/msec/code-story && scripts/check_ci_status.sh` - Checking CI status for the branch
+- `cd /Users/ryan/src/msec/code-story && gh run view 15057372896` - Viewing details of the failed CI run
+- `cd /Users/ryan/src/msec/code-story && gh run view 15057372896 --log-failed` - Viewing logs of failed CI steps
+- `cd /Users/ryan/src/msec/code-story && grep -r "localhost:7688" --include="*.py" .` - Finding files with incorrect Neo4j port
+- `cd /Users/ryan/src/msec/code-story && chmod +x ci_test_fix.py` - Making CI test fix script executable
+- `cd /Users/ryan/src/msec/code-story && python ci_test_fix.py` - Running script to fix Neo4j port configuration
+- `cd /Users/ryan/src/msec/code-story && git add ci_test_fix.py FIXED_CI_TESTS.md` - Staging CI test fix files
+- `cd /Users/ryan/src/msec/code-story && git status` - Checking git status
+- `cd /Users/ryan/src/msec/code-story && git add scripts/run_filesystem_test.py scripts/run_test_directly.py tests/integration/conftest.py tests/integration/test_config.py tests/integration/test_config_api.py tests/integration/test_graphdb/test_neo4j_connectivity.py tests/integration/test_graphdb/test_neo4j_integration.py tests/integration/test_ingestion_pipeline/test_blarify_integration.py tests/integration/test_ingestion_pipeline/test_docgrapher_integration.py tests/integration/test_ingestion_pipeline/test_filesystem_direct.py tests/integration/test_ingestion_pipeline/test_filesystem_integration.py tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py tests/integration/test_ingestion_pipeline/test_pipeline_integration.py tests/integration/test_ingestion_pipeline/test_summarizer_integration.py` - Adding modified test files
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Fix Neo4j port configuration in tests for CI environment"` - Committing CI test fixes
+- `cd /Users/ryan/src/msec/code-story && git push origin cli-implementation` - Pushing CI test fixes
+
 ## May 15, 2025 (Additional Improvements)
 - `cd /Users/ryan/src/msec/code-story && git status` - Checking the status of the repo
 - `cd /Users/ryan/src/msec/code-story && git diff docs/deployment/index.md` - Viewing changes to deployment documentation
@@ -43,6 +56,3 @@
 - `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.main status` - Testing the CLI with an invalid command
 - `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.main servic` - Testing the CLI with a command that should trigger a suggestion
 - `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.main` - Testing the CLI with no command
-
-## May 15, 2025 (Service Recovery and Health Check Improvements)
-- `cd /Users/ryan/src/msec/code-story && codestory service start` - Testing service start command
