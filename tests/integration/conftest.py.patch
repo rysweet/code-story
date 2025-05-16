@@ -1,0 +1,34 @@
+--- conftest.py	2025-05-15 10:00:00
++++ conftest.py	2025-05-15 11:00:00
+@@ -91,8 +91,17 @@
+ @pytest.fixture(scope="session")
+ def neo4j_env():
+     """Setup Neo4j environment variables for tests."""
+-    os.environ["NEO4J_URI"] = "bolt://localhost:7688"
+-    os.environ["NEO4J__URI"] = "bolt://localhost:7688"
++    # Determine the correct Neo4j port to use
++    # In CI environment, Neo4j is often on the standard port
++    # In local docker-compose.test.yml, it's on port 7688
++    ci_env = os.environ.get("CI") == "true"
++    neo4j_port = "7687" if ci_env else "7688"
++    
++    # Set the environment variables
++    neo4j_uri = f"bolt://localhost:{neo4j_port}"
++    os.environ["NEO4J_URI"] = neo4j_uri
++    os.environ["NEO4J__URI"] = neo4j_uri
++    
+     os.environ["NEO4J_USERNAME"] = "neo4j"
+     os.environ["NEO4J_PASSWORD"] = "password"
+     os.environ["NEO4J_DATABASE"] = "testdb"
+@@ -113,7 +122,11 @@
+     # Get Neo4j connection details from environment variables
+     # with fallback to default test values
+     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
+-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or "bolt://localhost:7688"
++    
++    # Use correct Neo4j port based on environment
++    ci_env = os.environ.get("CI") == "true"
++    default_uri = f"bolt://localhost:{7687 if ci_env else 7688}"
++    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
+     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
+     database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
