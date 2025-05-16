@@ -138,9 +138,8 @@ class ServiceClient:
             except httpx.HTTPError:
                 pass
                 
-            # Provide a clear error message
-            if hasattr(self.console, "debug"):
-                self.console.debug(f"Health check failed: {str(e)}")
+            # Provide a clear error message with logging
+            self.console.print(f"[dim]Health check failed: {str(e)}[/]", style="dim")
             raise ServiceError(f"Health check failed: {str(e)}")
 
     def start_ingestion(self, repository_path: str) -> Dict[str, Any]:
@@ -165,8 +164,8 @@ class ServiceClient:
         }
         
         # Log important information about the repository path
-        self.console.debug(f"Starting ingestion for repository at {abs_repository_path}")
-        self.console.debug(f"Repository directory exists: {os.path.isdir(abs_repository_path)}")
+        self.console.print(f"Starting ingestion for repository at [cyan]{abs_repository_path}[/]", style="dim")
+        self.console.print(f"Repository directory exists: [cyan]{os.path.isdir(abs_repository_path)}[/]", style="dim")
         
         try:
             response = self.client.post("/ingest", json=data)
@@ -436,7 +435,7 @@ class ServiceClient:
                         client = self.client
                     
                     # Make the request
-                    self.console.debug(f"Trying visualization endpoint: {actual_endpoint}")
+                    self.console.print(f"Trying visualization endpoint: [cyan]{actual_endpoint}[/]", style="dim")
                     if params:
                         response = client.get(actual_endpoint, params=params)
                     else:
@@ -449,7 +448,7 @@ class ServiceClient:
                     # Log the error and continue to the next endpoint
                     error_msg = f"Failed with endpoint {endpoint}: {str(e)}"
                     errors.append(error_msg)
-                    self.console.debug(error_msg)
+                    self.console.print(f"{error_msg}", style="dim")
             
             # If we've tried all endpoints and none worked, raise an error
             raise ServiceError(f"Failed to generate visualization after trying multiple endpoints: {'; '.join(errors)}")
