@@ -1,5 +1,15 @@
 # Shell Command History
 
+## May 16, 2025 (Azure Authentication Resilience Implementation)
+- `cd /Users/ryan/src/msec/code-story && ls -la scripts/ingest_script.py` - Checking if the ingest script already exists
+- `cd /Users/ryan/src/msec/code-story && ls -la scripts/mount_repository.sh` - Checking if mount_repository.sh exists and is executable
+- `cd /Users/ryan/src/msec/code-story && ls -la ~/repositories` - Checking for available repositories or creating directory
+- `cd /Users/ryan/src/msec/code-story && docker-compose ps` - Checking the status of containers
+- `cd /Users/ryan/src/msec/code-story && chmod +x /Users/ryan/src/msec/code-story/scripts/ingest_script.py` - Making the ingest script executable
+- `cd /Users/ryan/src/msec/code-story && mkdir -p /Users/ryan/src/msec/code-story/tests/unit/test_scripts` - Creating test directory structure
+- `cd /Users/ryan/src/msec/code-story && python -m unittest tests/unit/test_scripts/test_ingest_script.py` - Testing ingest script functionality
+- `cd /Users/ryan/src/msec/code-story && docker-compose ps` - Checking final container status
+
 ## May 16, 2025 (Fixing Integration Test Failures)
 - `cd /Users/ryan/src/msec/code-story && python3 scripts/check_ci_status.sh` - Trying to check CI status with Python script
 - `cd /Users/ryan/src/msec/code-story && bash scripts/check_ci_status.sh` - Checking CI status with bash script

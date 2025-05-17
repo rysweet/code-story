@@ -70,8 +70,13 @@ class Neo4jAdapter:
             HTTPException: If the health check fails
         """
         try:
-            # Use synchronous method since async one is not available
-            connection_info = self.connector.check_connection()
+            # Use an executor to run the synchronous method in a thread pool
+            # to avoid blocking the async event loop
+            import asyncio
+            loop = asyncio.get_event_loop()
+            connection_info = await loop.run_in_executor(
+                None, self.connector.check_connection
+            )
 
             return {
                 "status": "healthy",

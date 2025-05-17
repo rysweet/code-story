@@ -136,6 +136,36 @@ Key metrics to monitor include:
 
 For production deployments, regular backups are essential. See the [Disaster Recovery Guide](../developer_guides/disaster_recovery.md) for details on backup and restore procedures.
 
+## Authentication Resilience
+
+Code Story provides resilient authentication features that allow services to operate even when Azure authentication is unavailable. This is particularly useful for development environments or when experiencing temporary Azure authentication issues.
+
+To enable resilient authentication:
+
+1. Create a `docker-compose.override.yml` file with fallback settings:
+
+```yaml
+services:
+  service:
+    environment:
+      - CODESTORY_NO_MODEL_CHECK=true
+      - OPENAI__API_KEY=your-openai-api-key
+      - CODESTORY_LLM_MODE=fallback
+  worker:
+    environment:
+      - CODESTORY_NO_MODEL_CHECK=true
+      - OPENAI__API_KEY=your-openai-api-key
+      - CODESTORY_LLM_MODE=fallback
+```
+
+2. Start the service with docker-compose:
+
+```bash
+docker-compose up -d
+```
+
+For more details, see the [Authentication Resilience Guide](../developer_guides/authentication_resilience.md).
+
 ## Next Steps
 
 Choose a deployment option based on your needs:

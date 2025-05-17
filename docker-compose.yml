@@ -102,11 +102,11 @@ services:
       - REDIS__URI=redis://redis:6379
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      # OpenAI settings
-      - OPENAI__ENDPOINT=https://api.openai.com/v1
-      - OPENAI__EMBEDDING_MODEL=text-embedding-3-small
-      - OPENAI__CHAT_MODEL=gpt-4o
-      - OPENAI__REASONING_MODEL=gpt-4o
+      # Azure OpenAI settings
+      - AZURE_OPENAI__ENDPOINT=https://ai-adapt-oai-eastus2.openai.azure.com
+      - AZURE_OPENAI__DEPLOYMENT_ID=o1
+      - AZURE_OPENAI__API_VERSION=2025-03-01-preview
+      - AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
       # Worker settings
       - WORKER_CONCURRENCY=4
       - WORKER_LOGLEVEL=info
@@ -150,7 +150,7 @@ services:
         echo \"Patching adapters to ensure real implementations...\" &&
         python /app/patch_adapters.py &&
         echo \"Starting service with real adapters only...\" &&
-        python -m src.codestory_service.main
+        python -m codestory_service.main
       '"
     depends_on:
       neo4j:
@@ -182,18 +182,15 @@ services:
       - CODESTORY_SERVICE_AUTH_ENABLED=false
       # Set core environment to development using standardized CODESTORY_ prefix
       - CODESTORY_ENVIRONMENT=development
-      # OpenAI settings - real API access
-      - OPENAI__ENDPOINT=https://api.openai.com/v1
-      - OPENAI__EMBEDDING_MODEL=text-embedding-3-small
-      - OPENAI__CHAT_MODEL=gpt-4o
-      - OPENAI__REASONING_MODEL=gpt-4o
-      # Azure OpenAI settings - these will be used if API keys are available
-      - AZURE_OPENAI__ENDPOINT=https://adapt-appsci.openai.azure.com
-      - AZURE_OPENAI__DEPLOYMENT_ID=gpt-4o
+      # Azure OpenAI settings
+      - AZURE_OPENAI__ENDPOINT=https://ai-adapt-oai-eastus2.openai.azure.com
+      - AZURE_OPENAI__DEPLOYMENT_ID=o1
+      - AZURE_OPENAI__API_VERSION=2025-03-01-preview
+      - AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/docs"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 10
       start_period: 120s
 

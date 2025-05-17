@@ -575,9 +575,12 @@ def get_docker_compose_command() -> List[str]:
 @service.command(name="auth-renew", help="Renew Azure authentication tokens across all containers.")
 @click.option("--tenant", help="Specify Azure tenant ID.")
 @click.option("--check", is_flag=True, help="Only check authentication status without renewing.")
+@click.option("--inject", is_flag=True, help="Inject tokens into containers after authentication.")
+@click.option("--restart", is_flag=True, help="Restart containers after token injection.")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed output from the renewal process.")
 @click.pass_context
-def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bool = False, verbose: bool = False) -> None:
+def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bool = False, 
+                    inject: bool = True, restart: bool = False, verbose: bool = False) -> None:
     """
     Renew Azure authentication tokens across all containers.
     
@@ -585,10 +588,13 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
     1. Check if there are Azure authentication issues
     2. Run az login if needed
     3. Inject the authentication tokens into all Code Story containers
+    4. Optionally restart containers to ensure they use the new tokens
     
     Args:
         tenant: Optional tenant ID to use for login
         check: Only check auth status without renewing
+        inject: Inject tokens into containers after authentication
+        restart: Restart containers after token injection
         verbose: Show detailed output
     """
     client: ServiceClient = ctx.obj["client"]
@@ -596,19 +602,38 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
     
     console.print("[bold]Azure Authentication Renewal[/]")
     
-    # Build the command
-    cmd = ["python", "/app/scripts/azure_auth_renew.py"]
-    if tenant:
-        cmd.extend(["--tenant", tenant])
-    if check:
-        cmd.append("--check")
+    # Build the command to run the token injection script
+    script_path = os.path.join(os.path.dirname(__file__), "../../../scripts/inject_azure_tokens.py")
     
-    # Check if working inside a container
+    # Check if we can find the script
+    if not os.path.exists(script_path):
+        # Try to find it relative to project root
+        try:
+            from codestory.config.settings import get_project_root
+            script_path = os.path.join(get_project_root(), "scripts/inject_azure_tokens.py")
+        except:
+            # Fallback to absolute path based on current file
+            script_path = os.path.abspath(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), 
+                "../../../../scripts/inject_azure_tokens.py"
+            ))
+    
+    # Build the command arguments
+    cmd = [sys.executable, script_path]
+    
+    if tenant:
+        cmd.extend(["--tenant-id", tenant])
+    if restart:
+        cmd.append("--restart-containers")
+    if verbose:
+        cmd.append("--verbose")
+    
+    # Check if we're running inside a container
     inside_container = os.path.exists("/.dockerenv")
     
     if inside_container:
         # We're inside a container, run the script directly
-        console.print("Running auth renewal script inside container...")
+        console.print("Running azure token injection inside container...")
         try:
             if verbose:
                 # Run with output shown
@@ -625,9 +650,13 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                 )
                 success = process.returncode == 0
                 
+                # Show the output if successful
+                if success and process.stdout:
+                    console.print(process.stdout)
+                
                 # Show a summary if not successful
                 if not success:
-                    console.print("[red]Auth renewal failed.[/]")
+                    console.print("[red]Azure authentication renewal failed.[/]")
                     console.print("Run with --verbose for full output.")
                     # Show the last few lines of the error
                     if process.stderr:
@@ -637,94 +666,185 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                             console.print(f"  {line}")
             
             if success:
-                console.print("[green]Azure authentication renewed successfully.[/]")
+                console.print("[green]Azure authentication tokens updated successfully.[/]")
             else:
                 sys.exit(1)
                 
         except Exception as e:
-            console.print(f"[bold red]Error running auth renewal script: {str(e)}[/]")
+            console.print(f"[bold red]Error running token injection: {str(e)}[/]")
             sys.exit(1)
     else:
-        # We're on the host, access the container
-        console.print("Running auth renewal in Code Story container...")
-        
-        # Find all Code Story containers
-        try:
-            containers = get_running_containers()
-            
-            if not containers:
-                console.print("[yellow]No Code Story containers found running.[/]")
-                console.print("Try starting the service with 'codestory service start'")
-                sys.exit(1)
-                
-            # Target the main service container first
-            target_container = next((c for c in containers if "service" in c.lower()), containers[0])
-            
-            # Run the auth renewal script in the container
-            docker_cmd = ["docker", "exec"]
-            if verbose:
-                docker_cmd.extend(["-it", target_container])
-                docker_cmd.extend(cmd)
-                
-                try:
-                    subprocess.run(docker_cmd, check=False)
-                    console.print("[green]Azure authentication renewal completed.[/]")
-                except Exception as e:
-                    console.print(f"[bold red]Error: {str(e)}[/]")
-                    sys.exit(1)
-            else:
-                docker_cmd.extend([target_container])
-                docker_cmd.extend(cmd)
-                
-                try:
-                    process = subprocess.run(
-                        docker_cmd,
-                        check=False,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True
-                    )
-                    
-                    if process.returncode == 0:
-                        console.print("[green]Azure authentication renewed successfully.[/]")
-                        if process.stdout and "Authentication is working" in process.stdout:
-                            console.print("[green]Authentication is working correctly in all containers.[/]")
-                    else:
-                        console.print("[red]Auth renewal failed.[/]")
-                        console.print("Run with --verbose for full output.")
-                        # Show the last few lines of the error
-                        if process.stderr:
-                            error_lines = process.stderr.strip().split('\n')[-5:]
-                            console.print("\n[bold red]Error output:[/]")
-                            for line in error_lines:
-                                console.print(f"  {line}")
-                        sys.exit(1)
-                        
-                except Exception as e:
-                    console.print(f"[bold red]Error running auth renewal in container: {str(e)}[/]")
-                    sys.exit(1)
-                    
-            # Check service health after auth renewal
+        # We're on the host, access the API or run the script directly
+        if inject:
+            # Try to call the auth-renew endpoint first if service is running
             try:
-                console.print("Checking service health after auth renewal...")
-                health = client.check_service_health()
+                # Check if service is running
+                health = client.check_service_health(timeout=5)
                 
-                # Check OpenAI component
-                if "components" in health and "openai" in health["components"]:
-                    openai_status = health["components"]["openai"].get("status", "unknown")
-                    if openai_status == "healthy":
-                        console.print("[green]OpenAI component is now healthy![/]")
-                    else:
-                        console.print(f"[yellow]OpenAI component status: {openai_status}[/]")
-                        console.print("Auth renewal might not have fixed all issues.")
-                else:
-                    console.print("[yellow]Could not verify OpenAI component health.[/]")
+                # Call the auth-renew endpoint
+                console.print("Service is running, calling auth-renew API endpoint...")
+                
+                # Build the URL with query parameters
+                url = f"{client.service_url}/auth-renew"
+                params = []
+                if tenant:
+                    params.append(f"tenant_id={tenant}")
+                if restart:
+                    params.append("restart_containers=true")
+                
+                if params:
+                    url += "?" + "&".join(params)
+                
+                # Send the request
+                response = client.session.get(url)
+                
+                if response.status_code == 200:
+                    result = response.json()
                     
-            except ServiceError as e:
-                console.print(f"[yellow]Could not check service health: {str(e)}[/]")
+                    # Display the login command if provided
+                    if "login_command" in result:
+                        # Add tenant ID context if available
+                        if "auth_message" in result:
+                            console.print(f"\n[bold]{result['auth_message']}[/]")
+                        
+                        console.print(f"\n[bold]Azure authentication required:[/]")
+                        console.print(f"[cyan]{result['login_command']}[/]\n")
+                        
+                        # Add more context from the auth details if available
+                        if "auth_details" in result and isinstance(result["auth_details"], dict):
+                            auth_details = result["auth_details"]
+                            if "tenant_id" in auth_details:
+                                console.print(f"[bold]Tenant ID:[/] {auth_details['tenant_id']}")
+                            if "scope" in auth_details:
+                                console.print(f"[bold]Scope:[/] {auth_details['scope']}")
+                            if "tenant_source" in result:
+                                console.print(f"[bold]Source:[/] {result['tenant_source']}")
+                            console.print("")
+                        
+                        # Run the login command if --verbose is used
+                        if verbose:
+                            console.print("Executing login command automatically...")
+                            login_cmd = result['login_command'].split()
+                            try:
+                                subprocess.run(login_cmd, check=True)
+                                console.print("[green]Authentication successful![/]")
+                                
+                                # Call the endpoint again to inject tokens
+                                console.print("Injecting tokens into containers...")
+                                response = client.session.get(url)
+                                if response.status_code == 200:
+                                    console.print("[green]Token injection completed.[/]")
+                                else:
+                                    console.print(f"[yellow]Token injection returned status code {response.status_code}[/]")
+                                    
+                            except Exception as e:
+                                console.print(f"[red]Error during authentication: {str(e)}[/]")
+                                console.print("Please run the command manually.")
+                        
+                    # Check token injection status
+                    if "token_injection" in result:
+                        token_result = result["token_injection"]
+                        if "status" in token_result:
+                            status = token_result["status"]
+                            if status == "success":
+                                console.print("[green]Token injection successful![/]")
+                            else:
+                                console.print(f"[yellow]Token injection status: {status}[/]")
+                                
+                                # Show error details if available
+                                if "error" in token_result:
+                                    console.print(f"[red]Error: {token_result['error']}[/]")
+                                    
+                                # Fallback to manual script execution
+                                console.print("Falling back to direct script execution...")
+                                run_script_directly = True
+                        
+                    console.print("[green]Authentication renewal process completed via API.[/]")
+                    
+                    # Check OpenAI component status
+                    try:
+                        health = client.check_service_health()
+                        if "components" in health and "openai" in health["components"]:
+                            openai_status = health["components"]["openai"].get("status")
+                            if openai_status == "healthy":
+                                console.print("[green]OpenAI component is now healthy![/]")
+                            else:
+                                console.print(f"[yellow]OpenAI component status: {openai_status}[/]")
+                    except:
+                        pass
+                    
+                    # Exit early if the API call succeeded
+                    return
+                else:
+                    console.print(f"[yellow]API returned status code {response.status_code}[/]")
+                    console.print("Falling back to direct script execution...")
+            except Exception as e:
+                console.print(f"[yellow]Could not use API for token renewal: {str(e)}[/]")
+                console.print("Running token injection script directly...")
+        
+        # Run the script directly if API approach failed or wasn't attempted
+        try:
+            # Make sure the script is executable
+            if os.path.exists(script_path):
+                try:
+                    os.chmod(script_path, 0o755)  # Make executable
+                except:
+                    pass  # Ignore permission errors
+            
+            # Run the script with the appropriate arguments
+            if verbose:
+                process = subprocess.run(cmd, check=False)
+                success = process.returncode == 0
+            else:
+                process = subprocess.run(
+                    cmd,
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                success = process.returncode == 0
                 
+                # Show the output if successful
+                if success and process.stdout:
+                    console.print(process.stdout)
+                
+                # Show errors if not successful
+                if not success:
+                    console.print("[red]Token injection failed.[/]")
+                    console.print("Run with --verbose for full output.")
+                    if process.stderr:
+                        error_lines = process.stderr.strip().split('\n')[-5:]
+                        console.print("\n[bold red]Error output:[/]")
+                        for line in error_lines:
+                            console.print(f"  {line}")
+                    sys.exit(1)
+            
+            if success:
+                console.print("[green]Azure authentication renewed successfully.[/]")
+                
+                # Check service health after token injection
+                try:
+                    console.print("Checking service health after token injection...")
+                    try:
+                        health = client.check_service_health(timeout=5)
+                        
+                        # Check OpenAI component
+                        if "components" in health and "openai" in health["components"]:
+                            openai_status = health["components"]["openai"].get("status", "unknown")
+                            if openai_status == "healthy":
+                                console.print("[green]OpenAI component is now healthy![/]")
+                            else:
+                                console.print(f"[yellow]OpenAI component status: {openai_status}[/]")
+                                console.print("Token injection might not have fixed all issues.")
+                        else:
+                            console.print("[yellow]Could not verify OpenAI component health.[/]")
+                    except Exception as inner_e:
+                        console.print(f"[yellow]Could not check service health: {str(inner_e)}[/]")
+                except Exception as e:
+                    console.print(f"[yellow]Error during token injection: {str(e)}[/]")
         except Exception as e:
-            console.print(f"[bold red]Error: {str(e)}[/]")
+            console.print(f"[bold red]Error running token injection: {str(e)}[/]")
             sys.exit(1)
 
 

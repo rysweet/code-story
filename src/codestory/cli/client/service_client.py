@@ -93,12 +93,13 @@ class ServiceClient:
 
         return headers
 
-    def check_service_health(self, auto_fix: bool = False) -> Dict[str, Any]:
+    def check_service_health(self, auto_fix: bool = False, timeout: Optional[int] = None) -> Dict[str, Any]:
         """
         Check if the service is healthy.
 
         Args:
             auto_fix: If True, attempt to automatically fix Azure authentication issues
+            timeout: Optional timeout in seconds for the health check request
 
         Returns:
             Health check response data.
@@ -113,7 +114,17 @@ class ServiceClient:
             # First try the standard v1 health endpoint
             try:
                 params = {"auto_fix": "true"} if auto_fix else {}
-                response = self.client.get("/v1/health", params=params)
+                client_params = {}
+                if timeout is not None:
+                    client_params["timeout"] = timeout
+                
+                client = httpx.Client(
+                    base_url=self.base_url,
+                    timeout=timeout or 30.0,
+                    headers=self._get_headers(),
+                )
+                
+                response = client.get("/v1/health", params=params)
                 response.raise_for_status()
                 health_data = response.json()
                 # Check if components are included
@@ -607,6 +618,57 @@ class ServiceClient:
             ui_url = "http://localhost:5173"
 
         webbrowser.open(ui_url)
+        
+    def renew_azure_auth(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Renew Azure authentication tokens.
+        
+        This method calls the Azure authentication renewal endpoint.
+        
+        Args:
+            tenant_id: Optional Azure tenant ID for authentication
+            
+        Returns:
+            Dictionary with renewal status information
+            
+        Raises:
+            ServiceError: If the renewal process fails
+        """
+        params = {}
+        if tenant_id:
+            params["tenant_id"] = tenant_id
+            
+        try:
+            # First try the v1 auth-renew endpoint
+            try:
+                response = self.client.get("/v1/auth-renew", params=params)
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPError:
+                # Fall back to root health endpoint
+                response = self.client.get("/auth-renew", params=params)
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPError as e:
+            # Check if the API returned a detailed error message
+            error_detail = str(e)
+            try:
+                if hasattr(e, 'response') and e.response is not None:
+                    error_json = e.response.json()
+                    if 'detail' in error_json:
+                        error_detail = error_json['detail']
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+            except Exception:
+                pass
+                
+            if "CLI error" in error_detail or "NormalizedResponse" in error_detail:
+                raise ServiceError(
+                    f"Azure authentication renewal failed due to Azure CLI installation issue: {error_detail}\n"
+                    "Try updating or reinstalling Azure CLI with: brew update && brew upgrade azure-cli"
+                )
+            else:
+                raise ServiceError(f"Azure authentication renewal failed: {error_detail}")
 
 
 class ServiceError(Exception):
