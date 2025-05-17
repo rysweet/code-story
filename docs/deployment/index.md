@@ -8,6 +8,8 @@ Code Story can be deployed in several ways:
 
 1. [Local Development](local.md) - Using Docker Compose for local development
 2. [Azure Deployment](azure.md) - Deploying to Azure Container Apps
+3. [Repository Mounting](repository_mounting.md) - Guide for correctly mounting repositories for ingestion
+4. [Azure Authentication](azure_authentication.md) - Managing Azure authentication for OpenAI access
 
 ## System Requirements
 
@@ -81,6 +83,36 @@ graph TD
     Worker --> Redis
 ```
 
+## Docker Volume Mounts
+
+For the ingestion pipeline to work correctly, the repository being ingested must be accessible to the service containers. When running in Docker, you must mount the repository as a volume:
+
+```bash
+# Mount a local repository for ingestion
+docker run -v /local/path/to/repo:/mounted/repo/path codestory-service
+```
+
+For Docker Compose deployments, add volume mounts in your `docker-compose.yml`:
+
+```yaml
+services:
+  service:
+    image: codestory-service
+    volumes:
+      - /local/path/to/repo:/mounted/repo/path
+      
+  worker:
+    image: codestory-worker
+    volumes:
+      - /local/path/to/repo:/mounted/repo/path
+```
+
+Important notes:
+- The CLI uses absolute paths when communicating with the service
+- Both the service and worker containers need access to the repository
+- Use consistent mount paths across containers to ensure path references remain valid
+- For production environments, consider using shared storage solutions like Azure Files or NFS
+
 ## Security Considerations
 
 - All services run as non-root users
@@ -103,6 +135,36 @@ Key metrics to monitor include:
 ## Backup and Recovery
 
 For production deployments, regular backups are essential. See the [Disaster Recovery Guide](../developer_guides/disaster_recovery.md) for details on backup and restore procedures.
+
+## Authentication Resilience
+
+Code Story provides resilient authentication features that allow services to operate even when Azure authentication is unavailable. This is particularly useful for development environments or when experiencing temporary Azure authentication issues.
+
+To enable resilient authentication:
+
+1. Create a `docker-compose.override.yml` file with fallback settings:
+
+```yaml
+services:
+  service:
+    environment:
+      - CODESTORY_NO_MODEL_CHECK=true
+      - OPENAI__API_KEY=your-openai-api-key
+      - CODESTORY_LLM_MODE=fallback
+  worker:
+    environment:
+      - CODESTORY_NO_MODEL_CHECK=true
+      - OPENAI__API_KEY=your-openai-api-key
+      - CODESTORY_LLM_MODE=fallback
+```
+
+2. Start the service with docker-compose:
+
+```bash
+docker-compose up -d
+```
+
+For more details, see the [Authentication Resilience Guide](../developer_guides/authentication_resilience.md).
 
 ## Next Steps
 

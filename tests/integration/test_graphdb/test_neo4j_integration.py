@@ -1,6 +1,10 @@
 """Integration tests for Neo4j connector using a test container."""
 
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import pytest
 import time
 from typing import Dict, List, Any, Generator
@@ -33,7 +37,7 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     
     # Use either NEO4J_URI or NEO4J__URI from environment (double underscore is for Settings)
     # CI environment uses 7687, local docker-compose.test.yml uses 7688
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or "bolt://localhost:7688"
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or f"bolt://localhost:{neo4j_port}"
     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
     database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"

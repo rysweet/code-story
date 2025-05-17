@@ -3,8 +3,10 @@ Ingestion commands for the Code Story CLI.
 """
 
 import os
+import sys
 import time
 from typing import Dict, Any, Optional
+import subprocess
 
 import click
 
@@ -31,28 +33,183 @@ def ingest():
 @ingest.command(name="start", help="Start ingestion of a repository.")
 @click.argument("repository_path", type=click.Path(exists=True))
 @click.option("--no-progress", is_flag=True, help="Don't show progress updates.")
+@click.option("--container", is_flag=True, help="Force container path mapping.")
+@click.option("--path-prefix", default="/repositories", help="Container path prefix where repositories are mounted.")
+@click.option("--auto-mount", is_flag=True, default=True, help="Automatically mount repository and restart containers if needed.")
+@click.option("--no-auto-mount", is_flag=True, help="Disable automatic repository mounting.")
 @click.pass_context
 def start_ingestion(
-    ctx: click.Context, repository_path: str, no_progress: bool = False
+    ctx: click.Context, 
+    repository_path: str, 
+    no_progress: bool = False,
+    container: bool = False,
+    path_prefix: str = "/repositories",
+    auto_mount: bool = True,
+    no_auto_mount: bool = False,
 ) -> None:
     """
     Start ingestion of a repository.
 
     REPOSITORY_PATH is the path to the repository to ingest.
+    
+    When using Docker deployment, this command will automatically:
+    1. Detect if you're connected to a containerized service
+    2. Mount the repository into the containers if needed
+    3. Restart the containers with proper volume mounts
+    4. Map local paths to container paths for proper access
+    
+    Examples:
+      Local path:     /Users/name/projects/my-repo
+      Container path: /repositories/my-repo
     """
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
-    # Get absolute path
-    repository_path = os.path.abspath(repository_path)
+    # Get absolute local path
+    local_path = os.path.abspath(repository_path)
+    console.print(f"Starting ingestion of [cyan]{local_path}[/]...")
+    
+    # Override auto_mount if no_auto_mount is specified
+    if no_auto_mount:
+        auto_mount = False
+    
+    # Detect if we're likely running against a container
+    is_container = container or "localhost" in client.base_url or "127.0.0.1" in client.base_url
+    
+    # Automatically mount the repository if needed
+    if is_container and auto_mount:
+        # Check if auto_mount.py script exists
+        auto_mount_script = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))), 
+                                          "scripts", "auto_mount.py")
+        
+        # If auto_mount script exists, check if the repository is already mounted in the container
+        if os.path.exists(auto_mount_script):
+            repo_name = os.path.basename(local_path)
+            container_path = os.path.join(path_prefix, repo_name)
+            
+            # Try to check if path exists in container
+            console.print("Checking if repository is properly mounted...")
+            try:
+                import subprocess
+                
+                # Check if Docker is running
+                result = subprocess.run(["docker", "ps", "--filter", "name=codestory-service", "--format", "{{.Names}}"], 
+                                       capture_output=True, text=True, check=False)
+                
+                if "codestory-service" in result.stdout:
+                    # Check if path exists in container
+                    docker_check = subprocess.run(
+                        ["docker", "exec", "codestory-service", "test", "-d", container_path, "&&", "echo", "exists"],
+                        shell=True, capture_output=True, text=True, check=False
+                    )
+                    
+                    if "exists" not in docker_check.stdout:
+                        console.print(f"[yellow]Repository not mounted in container. Running auto-mount...[/]")
+                        
+                        # Show what's currently in /repositories to help debug
+                        try:
+                            ls_result = subprocess.run(
+                                ["docker", "exec", "codestory-service", "ls", "-la", "/repositories"],
+                                capture_output=True, text=True, check=False
+                            )
+                            console.print(f"[dim]Current /repositories contents:\n{ls_result.stdout}[/]", style="dim")
+                        except Exception as e:
+                            console.print(f"[dim]Could not check /repositories: {e}[/]", style="dim")
+                        
+                        # Run auto_mount.py script with the repository path and force remount
+                        auto_mount_args = [
+                            sys.executable, 
+                            auto_mount_script, 
+                            local_path, 
+                            "--no-ingest",
+                            "--force-remount",  # Force remount to ensure proper mounting
+                            "--debug"  # Show detailed debug info
+                        ]
+                        if no_progress:
+                            auto_mount_args.append("--no-progress")
+                        
+                        console.print(f"Running: {' '.join(auto_mount_args)}")
+                        
+                        try:
+                            # Run auto-mount with force remount
+                            subprocess.run(auto_mount_args, check=True)
+                            
+                            # Verify mount was successful
+                            verify_check = subprocess.run(
+                                ["docker", "exec", "codestory-service", "test", "-d", container_path, "&&", "echo", "exists"],
+                                shell=True, capture_output=True, text=True, check=False
+                            )
+                            
+                            if "exists" in verify_check.stdout:
+                                console.print(f"[green]Repository successfully mounted at {container_path}![/]")
+                            else:
+                                console.print(f"[yellow]Warning: Repository mount could not be verified. Continuing anyway...[/]")
+                                # Show what's in /repositories after mount attempt
+                                try:
+                                    ls_result = subprocess.run(
+                                        ["docker", "exec", "codestory-service", "ls", "-la", "/repositories"],
+                                        capture_output=True, text=True, check=False
+                                    )
+                                    console.print(f"[dim]/repositories contents after mount attempt:\n{ls_result.stdout}[/]", style="dim")
+                                except Exception:
+                                    pass
+                        except subprocess.CalledProcessError as e:
+                            console.print(f"[red]Error running auto-mount: {e}[/]")
+                            console.print("[yellow]Continuing with ingestion, but it may fail if repository is not properly mounted[/]")
+                    else:
+                        console.print(f"[green]Repository is already properly mounted at {container_path}[/]")
+                else:
+                    console.print("[yellow]Docker containers not running. Running auto-mount...[/]")
+                    
+                    # Run auto_mount.py script with the repository path
+                    auto_mount_args = [sys.executable, auto_mount_script, local_path, "--no-ingest"]
+                    if no_progress:
+                        auto_mount_args.append("--no-progress")
+                    
+                    console.print(f"Running: {' '.join(auto_mount_args)}")
+                    subprocess.run(auto_mount_args, check=True)
+                    console.print("[green]Repository successfully mounted![/]")
+            except Exception as e:
+                console.print(f"[bold yellow]Warning:[/] Auto-mount check failed: {str(e)}")
+                console.print("Continuing with regular ingestion...")
+    
+    # Path mapping logic
+    if is_container:
+        # Get the repository name from the path (last part)
+        repo_name = os.path.basename(local_path)
+        
+        # Create container path
+        container_path = os.path.join(path_prefix, repo_name)
+        
+        console.print(f"Docker deployment detected. Mapping local path to container path:")
+        console.print(f"  Local path:     [cyan]{local_path}[/]")
+        console.print(f"  Container path: [cyan]{container_path}[/]")
+        
+        # Use container path for ingestion
+        ingestion_path = container_path
+    else:
+        # Use local path directly
+        console.print("Using direct path (non-container deployment)")
+        ingestion_path = local_path
 
-    console.print(f"Starting ingestion of [cyan]{repository_path}[/]...")
+    try:
+        response = client.start_ingestion(ingestion_path)
+        job_id = response.get("job_id")
 
-    response = client.start_ingestion(repository_path)
-    job_id = response.get("job_id")
-
-    if not job_id:
-        console.print("[bold red]Error:[/] Failed to start ingestion job.")
+        if not job_id:
+            console.print("[bold red]Error:[/] Failed to start ingestion job - no job ID returned.")
+            return
+    except Exception as e:
+        console.print(f"[bold red]Error:[/] {str(e)}")
+        # Provide additional help for path-related errors
+        if "does not exist" in str(e):
+            console.print("\n[yellow]Troubleshooting Suggestions:[/]")
+            console.print("1. Try our automatic mounting tool:")
+            console.print(f"   - Run: [bold]python scripts/auto_mount.py \"{local_path}\"[/]")
+            console.print("2. Or manually mount your repository:")
+            console.print(f"   - Run: [bold]export REPOSITORY_PATH=\"{local_path}\"[/]")
+            console.print("   - Run: [bold]docker-compose down && docker-compose up -d[/]")
+            console.print("3. For detailed instructions, see: [bold]docs/deployment/repository_mounting.md[/]")
         return
 
     console.print(f"Ingestion job started with ID: [green]{job_id}[/]")

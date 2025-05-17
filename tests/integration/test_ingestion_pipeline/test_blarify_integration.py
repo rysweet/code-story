@@ -5,6 +5,10 @@ and store AST and symbol bindings in the Neo4j database.
 """
 
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 import time
 from pathlib import Path
@@ -13,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Override environment variables to ensure we use the test instance
-os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "testdb"

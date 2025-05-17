@@ -180,7 +180,77 @@ if __name__ == "__main__":
 ```
 The above code shows how to use the Ingestion Pipeline to run the ingestion process. The `PipelineManager` class is used to start a new ingestion job, check the status of the job, and stop or cancel the job if needed. The `pipeline_config.yml` file is used to configure the order of execution of the workflow steps and their parameters.
 
-## 6.7 User Stories and Acceptance Criteria
+## 6.7 Repository Mounting
+
+When running the ingestion pipeline in Docker, repositories must be properly mounted to the Docker containers. This section describes the repository mounting process.
+
+### 6.7.1 Automatic Repository Mounting
+
+The CLI provides fully automated repository mounting:
+
+```bash
+# Simply run the ingestion command - everything else is automatic
+codestory ingest start /path/to/your/repository
+```
+
+The CLI performs the following steps:
+1. Detects if connected to a containerized service
+2. Checks if the repository is already properly mounted
+3. Automatically mounts the repository if needed
+4. Restarts containers with proper volume mounts if required
+5. Maps local paths to container paths for proper access
+6. Starts the ingestion process
+
+### 6.7.2 Repository Mount Architecture
+
+Repository mounting involves several components:
+
+1. **Docker Volume Mapping**: Each repository is mounted with a specific path mapping:
+   ```
+   /path/on/host/repository -> /repositories/repository-name
+   ```
+
+2. **Mount Detection**:
+   - The CLI checks if repositories exist in containers via `docker exec`
+   - Verification ensures paths are accessible to service and worker containers
+
+3. **Docker Compose Configuration**:
+   ```yaml
+   services:
+     worker:
+       volumes:
+         - ${REPOSITORY_SOURCE}:${REPOSITORY_DEST}
+     service:
+       volumes:
+         - ${REPOSITORY_SOURCE}:${REPOSITORY_DEST}
+   ```
+
+4. **Auto-Mount Script**:
+   - Creates docker-compose.override.yml for custom mounts
+   - Sets up environment variables for Docker Compose
+   - Handles container restart when necessary
+   - Verifies successful mounting before proceeding
+
+5. **CLI Integration**:
+   - The CLI detects Docker deployments automatically
+   - Maps paths between host and container transparently
+   - Supports command-line options for custom mounting behavior
+
+### 6.7.3 Repository Mount Operations
+
+The auto_mount.py script provides these operations:
+- `setup_repository_mount(repo_path)`: Mounts a repository and configures containers
+- `is_repo_mounted(repo_path)`: Checks if a repository is properly mounted
+- `wait_for_service()`: Waits for containers to become healthy
+- `create_repo_config(repo_path)`: Creates repository configuration files
+
+The CLI ingest command supports these options:
+- `--auto-mount`: Explicitly enable automatic mounting (on by default)
+- `--no-auto-mount`: Disable automatic repository mounting
+- `--path-prefix`: Specify custom container mount path
+- `--container`: Force container path mapping
+
+## 6.8 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |
 |------------|---------------------|
@@ -190,6 +260,8 @@ The above code shows how to use the Ingestion Pipeline to run the ingestion proc
 | As a developer, I want the ingestion pipeline to retry failed workflow steps or entire workflows so that transient errors do not require manual intervention. | • Failed workflow steps can be retried individually.<br>• Entire workflows can be retried from the beginning.<br>• Retry attempts are logged clearly. |
 | As a developer, I want workflow steps to optionally support an "Ingestion Update" mode so that I can update the graph incrementally without rerunning the entire pipeline. | • Workflow steps can be executed individually in "Ingestion Update" mode.<br>• Graph updates occur correctly without executing unrelated steps. |
 | As a developer, I want detailed logging of workflow step execution and errors so that I can easily diagnose and resolve issues. | • Execution status and errors for each workflow step are logged clearly.<br>• Logs contain sufficient context to diagnose issues quickly. |
+| As a user, I want repositories to be automatically mounted when using Docker so that I don't need to manually configure volume mounts. | • CLI automatically detects when repository mounting is needed.<br>• Repositories are mounted correctly in Docker containers.<br>• Users don't need to manually edit docker-compose files. |
+| As a developer, I want clear errors when repository mounting fails so that I can easily diagnose and fix mounting issues. | • Clear error messages explain mounting problems.<br>• Specific troubleshooting steps are provided.<br>• Detailed diagnostic information is available when needed. |
 
 ---
 

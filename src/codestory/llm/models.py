@@ -7,6 +7,7 @@ requests and responses for the Azure OpenAI API.
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union, TypeVar
 from pydantic import BaseModel, Field, ConfigDict
+import os
 
 
 class ChatRole(str, Enum):
@@ -194,3 +195,76 @@ class EmbeddingResponse(BaseModel):
     usage: UsageInfo
 
     model_config = ConfigDict(extra="allow")
+
+
+# Extended models for resilient LLM operation
+
+class LLMProvider(str, Enum):
+    """LLM provider type"""
+    
+    OPENAI = "openai"             # OpenAI direct API
+    AZURE_OPENAI = "azure_openai"  # Azure-hosted OpenAI
+    MOCK = "mock"                 # Mock provider for testing
+
+
+class LLMMode(str, Enum):
+    """LLM operating mode"""
+    
+    NORMAL = "normal"          # Normal operation mode using Azure credentials
+    FALLBACK = "fallback"      # Fallback mode using direct API key
+    MOCK = "mock"              # Mock mode for testing without real API calls
+    DISABLED = "disabled"      # Disabled mode (no LLM calls allowed)
+
+
+class LLMConfiguration(BaseModel):
+    """Configuration for resilient LLM operations"""
+    
+    # Primary configuration
+    mode: LLMMode = Field(default=LLMMode.NORMAL, description="Current LLM operation mode")
+    provider: LLMProvider = Field(default=LLMProvider.OPENAI, description="LLM provider")
+    
+    # Fallback configuration
+    allow_fallback: bool = Field(
+        default=True, 
+        description="Whether to allow automatic fallback to API key auth when Azure auth fails"
+    )
+    fallback_api_key: Optional[str] = Field(
+        default=None,
+        description="Fallback API key to use when Azure auth fails"
+    )
+    
+    # Environment variables for configuration
+    @classmethod
+    def from_environment(cls) -> 'LLMConfiguration':
+        """Create an LLMConfiguration instance from environment variables."""
+        
+        # Check environment variables for mode setting
+        mode_str = os.environ.get("CODESTORY_LLM_MODE", "normal").lower()
+        provider_str = os.environ.get("CODESTORY_LLM_PROVIDER", "openai").lower()
+        
+        # Parse mode with validation
+        try:
+            mode = LLMMode(mode_str)
+        except ValueError:
+            mode = LLMMode.NORMAL
+            
+        # Parse provider with validation
+        try:
+            provider = LLMProvider(provider_str)
+        except ValueError:
+            provider = LLMProvider.OPENAI
+            
+        # Check for fallback configuration
+        allow_fallback = os.environ.get("CODESTORY_LLM_ALLOW_FALLBACK", "true").lower() in ["true", "1", "yes"]
+        fallback_api_key = os.environ.get("OPENAI__API_KEY", None)
+        
+        # Special environment variable to disable model checking
+        if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
+            mode = LLMMode.FALLBACK
+        
+        return cls(
+            mode=mode,
+            provider=provider,
+            allow_fallback=allow_fallback,
+            fallback_api_key=fallback_api_key
+        )

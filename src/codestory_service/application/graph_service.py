@@ -470,7 +470,7 @@ class GraphService:
             <title>{title}</title>
             <script src="https://d3js.org/d3.v7.min.js"></script>
             <style>
-                :root {
+                :root {{
                     --bg-color: {bg_color};
                     --text-color: {text_color};
                     --node-color-file: #4285F4;
@@ -481,7 +481,7 @@ class GraphService:
                     --node-color-default: #757575;
                     --link-color: {link_color};
                     --focus-color: #FF5722;
-                }
+                }}
                 
                 body {{
                     margin: 0;

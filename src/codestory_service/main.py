@@ -23,9 +23,16 @@ try:
     apply_overrides()
     logging.info("Using real adapters for all components - mock/demo adapters disabled")
 except Exception as e:
-    logging.error(f"Failed to apply real adapter overrides: {e!s}")
-    logging.error("Service requires all components to be available - will fail if any are unhealthy")
-    raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
+    # In NO_MODEL_CHECK mode, we allow service to start even with adapter initialization errors
+    if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
+        logging.warning(f"Failed to apply real adapter overrides, but continuing in NO_MODEL_CHECK mode: {e!s}")
+        logging.warning("Service will operate in degraded mode with limited functionality")
+    else:
+        # In normal mode, we fail if any required adapter is not available
+        logging.error(f"Failed to apply real adapter overrides: {e!s}")
+        logging.error("Service requires all components to be available - will fail if any are unhealthy")
+        logging.error("To bypass this check, set CODESTORY_NO_MODEL_CHECK=true in environment")
+        raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -130,7 +137,6 @@ def create_app() -> FastAPI:
     app.include_router(service.router)
     app.include_router(auth.router)
     app.include_router(health.router)
-    app.include_router(health.legacy_router)  # Add legacy health router
     app.include_router(websocket.router)
     
     # Add legacy visualization endpoint at the root level (no /v1 prefix)

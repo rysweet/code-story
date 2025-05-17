@@ -81,7 +81,6 @@ def create_client():
     settings = get_settings()
     
     client = OpenAIClient(
-        api_key=settings.openai.api_key.get_secret_value(),
         endpoint=settings.openai.endpoint,
         embedding_model=settings.openai.embedding_model,
         chat_model=settings.openai.chat_model,
@@ -93,7 +92,82 @@ def create_client():
     return client
 ```
 
-### 5.4.2 Error Handling Strategy
+### 5.4.2 Azure Authentication
+
+The client supports Microsoft Azure authentication through `DefaultAzureCredential`:
+
+```python
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+# Inside OpenAIClient.__init__:
+if AZURE_IDENTITY_AVAILABLE:
+    # Extract tenant_id and subscription_id from settings
+    tenant_id = getattr(settings.openai, "tenant_id", None)
+    subscription_id = getattr(settings.openai, "subscription_id", None)
+    
+    # Check current Azure login tenant status
+    if tenant_id:
+        try:
+            # Get current tenant
+            show_result = subprocess.run(
+                ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
+                check=False, capture_output=True, text=True,
+            )
+            current_tenant = show_result.stdout.strip()
+            
+            # Warn if tenant doesn't match
+            if show_result.returncode != 0 or current_tenant != tenant_id:
+                logger.warning(
+                    f"Currently logged into tenant '{current_tenant}', but need tenant '{tenant_id}'. "
+                    f"Consider running 'az login --tenant {tenant_id}'"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to check Azure tenant: {e}")
+    
+    # Create DefaultAzureCredential for Azure OpenAI authentication
+    try:
+        credential = DefaultAzureCredential()
+        token_provider = get_bearer_token_provider(
+            credential, "https://cognitiveservices.azure.com/.default"
+        )
+        client_params["azure_ad_token_provider"] = token_provider
+    except Exception as e:
+        logger.warning(f"Failed to initialize Azure AD authentication: {e}")
+```
+
+### 5.4.3 Azure Authentication Renewal
+
+The system includes automated Azure authentication renewal and token injection for containers:
+
+```python
+# Authentication helper script
+def detect_auth_issues():
+    """Detect Azure authentication issues in logs or health check"""
+    # Check logs for auth failures
+    auth_failure, tenant_id = check_logs_for_auth_failures()
+    if not auth_failure:
+        # Check health API
+        auth_failure, tenant_id = check_health_api_for_auth_issues()
+    return auth_failure, tenant_id
+
+def renew_authentication(tenant_id=None):
+    """Renew Azure authentication tokens and inject into containers"""
+    # Run az login for host
+    login_success = login_to_azure(tenant_id)
+    if not login_success:
+        return False
+    
+    # Get running containers
+    containers = get_running_containers()
+    
+    # Inject tokens into all containers
+    for container in containers:
+        inject_azure_tokens_into_container(container)
+    
+    return True
+```
+
+### 5.4.4 Error Handling Strategy
 
 The client implements a comprehensive error handling strategy:
 
@@ -115,7 +189,7 @@ class ServiceUnavailableError(OpenAIError):
     """OpenAI service unavailable or internal server error."""
 ```
 
-### 5.4.3 Retry Logic
+### 5.4.5 Retry Logic
 
 Using tenacity for robust retry handling:
 
@@ -202,6 +276,7 @@ embeddings = await get_embedding_async()
 | As a developer, I want to make asynchronous API calls so that I can use the client in async web applications. | • The client provides async versions of all methods (`complete_async()`, `chat_async()`, `embed_async()`).<br>• Async methods have the same interface as their synchronous counterparts.<br>• Resource management works correctly in async contexts. |
 | As an operator, I want to monitor API usage and performance so that I can troubleshoot issues and optimize costs. | • Prometheus metrics track API calls, latency, and errors.<br>• OpenTelemetry traces provide detailed request tracking.<br>• Error rates and types are tracked for monitoring. |
 | As a developer, I want to handle different error types appropriately so that I can provide relevant feedback to users. | • Different error types (authentication, rate limiting, invalid requests) are properly categorized.<br>• Error messages provide actionable information.<br>• The client doesn't expose sensitive information in error messages. |
+| As an operator, I want automated Azure authentication renewal so that services continue to work when tokens expire. | • Authentication failures are automatically detected in logs and health checks.<br>• The system can automatically run `az login` with the correct tenant.<br>• Authentication tokens are properly injected into all containers.<br>• Clear error messages guide manual renewal when automatic renewal fails. |
 
 ## 5.7 Testing Strategy
 
@@ -267,7 +342,14 @@ embeddings = await get_embedding_async()
    - Document error handling strategies
    - Create visualization of database schema
 
-10. **Verification and Review**
+10. **Implement Azure Authentication Renewal**
+    - Create Azure authentication helper script
+    - Implement detection of authentication failures in logs and health checks
+    - Add Azure token injection into containers
+    - Create CLI command for manually renewing Azure auth tokens
+    - Add automated authentication renewal to health checks
+
+11. **Verification and Review**
     - Run all unit and integration tests to ensure complete functionality
     - Verify test coverage meets targets for all methods
     - Test with actual Azure OpenAI endpoints in test environment
@@ -276,6 +358,7 @@ embeddings = await get_embedding_async()
     - Test error handling and retry mechanisms with simulated failures
     - Verify proper handling of rate limits and other API errors
     - Validate authentication and token handling
+    - Test Azure authentication renewal process in containers
     - Check embedding dimensions and format consistency
     - Make necessary adjustments based on review findings
     - Re-run all tests after any changes

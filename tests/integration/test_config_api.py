@@ -1,5 +1,9 @@
 """Test for the config API."""
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import time
 from contextlib import asynccontextmanager
 import unittest.mock as mock
@@ -18,7 +22,7 @@ def neo4j_connector():
     """Create a Neo4j connector for integration tests."""
     # Create a connector that uses the Neo4j test container
     connector = Neo4jConnector(
-        uri="bolt://localhost:7688",  # Port defined in docker-compose.test.yml
+        uri=f"bolt://localhost:{neo4j_port}",  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
         database="testdb",  # Database defined in docker-compose.test.yml
@@ -51,8 +55,8 @@ def test_client(neo4j_connector):
     # Set up test environment variables for Neo4j
     os.environ["NEO4J_DATABASE"] = "testdb"
     os.environ["CS_NEO4J_DATABASE"] = "testdb"
-    os.environ["NEO4J_URI"] = "bolt://localhost:7688"
-    os.environ["CS_NEO4J_URI"] = "bolt://localhost:7688"
+    os.environ["NEO4J_URI"] = f"bolt://localhost:{neo4j_port}"
+    os.environ["CS_NEO4J_URI"] = f"bolt://localhost:{neo4j_port}"
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["CS_NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"

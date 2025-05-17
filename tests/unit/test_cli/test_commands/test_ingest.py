@@ -31,6 +31,7 @@ class TestIngestCommands:
         """Test 'ingest start' command."""
         # Configure mock client
         mock_service_client.start_ingestion.return_value = {"job_id": "test-123"}
+        mock_service_client.base_url = "http://localhost:8000/v1"
         
         # Create temporary directory for test
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -58,6 +59,7 @@ class TestIngestCommands:
         """Test 'ingest start --no-progress' command."""
         # Configure mock client
         mock_service_client.start_ingestion.return_value = {"job_id": "test-123"}
+        mock_service_client.base_url = "http://localhost:8000/v1"
         
         # Create temporary directory for test
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -81,6 +83,7 @@ class TestIngestCommands:
         """Test 'ingest start' with error."""
         # Configure mock client to return error
         mock_service_client.start_ingestion.return_value = {}
+        mock_service_client.base_url = "http://localhost:8000/v1"
         
         # Create temporary directory for test
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -144,7 +144,24 @@ def running_service(request) -> Generator[Dict[str, Any], None, None]:
                 print("Service failed to start in time")
                 if service_process:
                     print("Terminating service process...")
-                    os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
+                    try:
+                        # Safely terminate the process
+                        if service_process.poll() is None:  # Check if process is still running
+                            os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
+                    except (ProcessLookupError, OSError) as e:
+                        print(f"Process already terminated: {e}")
+                
+                # Even if service didn't start through our process, it might be running through docker-compose
+                # Let's check again
+                try:
+                    response = httpx.get(f"{health_url}", timeout=2.0)
+                    if response.status_code == 200:
+                        service_running = True
+                        print("Service is available despite startup issues!")
+                        return
+                except httpx.RequestError:
+                    pass
+                    
                 raise Exception("Failed to start Code Story service after multiple attempts")
     
     # Service is now running
@@ -158,7 +175,12 @@ def running_service(request) -> Generator[Dict[str, Any], None, None]:
     # Cleanup if we started the service
     if service_process:
         print("Stopping Code Story service...")
-        os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
+        try:
+            # Safely terminate the process if it's still running
+            if service_process.poll() is None:
+                os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
+        except (ProcessLookupError, OSError) as e:
+            print(f"Process already terminated: {e}")
         
         # Also stop any services started with docker-compose
         try:

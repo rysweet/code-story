@@ -32,8 +32,13 @@ def get_test_settings() -> Settings:
         Settings: Test-configured settings instance
     """
     # Define neo4j test settings
+    # Determine the correct port based on CI environment
+    ci_env = os.environ.get("CI") == "true"
+    neo4j_port = "7687" if ci_env else "7688"
+    neo4j_uri = f"bolt://localhost:{neo4j_port}"  # Test port from docker-compose.test.yml
+    
     neo4j = Neo4jSettings(
-        uri="bolt://localhost:7688",  # Test port from docker-compose.test.yml
+        uri=neo4j_uri,
         username="neo4j",
         password="password",
         database="testdb",

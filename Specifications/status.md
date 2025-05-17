@@ -1,312 +1,168 @@
 # Project Implementation Status
 
 ## Current Task
-Completed all implementation tasks - All sections completed and tests passing
+- TODO: Optimize Docker container startup time
+  - Create pre-built base images with dependencies for faster startup
+  - Implement effective Docker layer caching with dependencies first
+  - Set up docker-compose build caching with cache_from directives
+  - Consider implementing a local Docker registry for faster image pulls
+  - Mount dependency caches (pip/npm) into containers for faster installs
+  - Create dependency checking script to only rebuild when necessary
+  - Add volume caching for node_modules and Python virtual environments
+  - Optimize Dockerfiles to minimize layer count and maximize cache hits
 
-## Last Completed Task (May 14, 2025)
-- Created interactive visualization demo for documentation
-  - Added full HTML/CSS/JS example of code graph visualization
-  - Implemented dark theme with proper color coding for different node types
-  - Added interactive features: zoom, pan, search, node selection
-  - Created comprehensive directory and file structure examples
-  - Included class, function, and module nodes with relationships
-  - Implemented node details panel showing properties and connections
-  - Added sample data with dependency relationships between components
-  - Updated CLI demo to reference the visualization correctly
+## Last Completed Task (May 16, 2025)
+- Implemented comprehensive Azure authentication resilience solution
+  - Created ResilientLLMClient for automatic fallback to API key authentication
+  - Added environment variables to control authentication behavior (CODESTORY_NO_MODEL_CHECK, CODESTORY_LLM_MODE)
+  - Modified health check endpoint to work with degraded authentication
+  - Enhanced OpenAI adapter to gracefully handle authentication failures
+  - Created docker-compose.override.yml with resilient configuration 
+  - Developed comprehensive authentication resilience documentation
+  - Added unit tests for resilient authentication system
+  - Updated deployment guides with new authentication options
+  - Modified service initialization to continue despite adapter issues
+  - Improved error handling and reporting for authentication problems
+  - Created FIXED_AZURE_AUTH.md documenting the solution
 
-## Previous Completed Task (May 13, 2025)
-- Implemented visualization endpoint in the API service
-  - Added domain models for visualization types, themes, filters, and requests
-  - Implemented API endpoints for generating visualizations with different layouts
-  - Added legacy endpoint for backward compatibility with CLI and GUI
-  - Fixed tests for Neo4jAdapter and OpenAIAdapter in infrastructure layer
-  - Improved code formatting and error handling in API layer
-  - Implemented proper error chaining for better diagnostics
-  - Fixed all tests to ensure they pass with the new implementation
-  - Verified CLI visualization commands work correctly with the new endpoints
+## Previous Completed Task (May 16, 2025)
+- Fixed integration test failures for Azure authentication CI pipeline
+  - Added missing `celery_app` fixture to integration test configuration
+  - Used in-memory broker for isolated test execution
+  - Configured Celery for synchronous task execution in tests
+  - Fixed unit vs integration test configuration consistency
+  - Ensured proper pytest fixture scope and dependencies
+  - Added graceful test cleanup for Celery connections
+  - Applied fix to make filesystem integration tests run properly
+  - Resolved CI failure caused by missing test dependencies
 
-## Previous Completed Task (May 13, 2025)
-- Updated Neo4j connector to always require GDS for vector search
-  - Modified semantic_search to always use GDS with no fallback implementation
-  - Updated schema.py to raise errors when GDS plugin is unavailable
-  - Modified test_vector_search to verify GDS availability and skip test when unavailable
-  - Created CI status checker script using GitHub CLI
-  - Fixed create_connector function implementation
-  - Verified all Neo4j integration tests pass with GDS requirement
+## Previous Completed Task (May 16, 2025)
+- Fixed repository mounting issues with comprehensive improvements
+  - Enhanced path detection with explicit Docker container verification
+  - Implemented docker-compose.override.yml for specific repository mounts
+  - Added support for individual repository mounting with specific paths
+  - Created force remount option to handle difficult mount cases
+  - Added robust repository verification before and after mounting
+  - Implemented detailed debug output to diagnose mounting problems
+  - Fixed discrepancy between reported mount success and actual container state
+  - Added better error handling and diagnostics in the CLI
+  - Enhanced all docker-compose configuration with specific mount environment variables
+  - Fixed volume mapping in docker-compose.yml for precise repository mounting
 
-## Previous Completed Task (May 12, 2025)
-- Fixed Neo4j integration tests vector search functionality
-  - Updated Docker Compose test configuration to use Neo4j Enterprise with GDS plugin
-  - Added native implementation of cosine similarity for test environments
-  - Fixed database name handling for Neo4j test instance
-  - Created comprehensive test data fixtures for vector search testing
-  - Enhanced test runner script to load fixtures in correct order
-  - Fixed environment variables to properly override settings
-  - Made all Neo4j integration tests pass successfully
+## Previous Completed Task (May 15, 2025)
+- Added comprehensive test suite for repository mounting functionality
+  - Created unit tests for auto-mount functionality in the CLI commands
+  - Implemented unit tests for the auto_mount.py script with high coverage
+  - Added integration tests for repository mounting with real Docker containers
+  - Created test fixtures for temporary repositories and Docker management
+  - Implemented proper test directory structure with appropriate modules
+  - Added tests to verify repository existence in container after mounting
+  - Created tests for all CLI flags and configuration options
+  - Used mocks to test Docker interactions without requiring real containers for unit tests
+  - Added skippable integration tests with markers for CI environment
+  - Committed all tests with proper organization and documentation
 
-## Completed Tasks
-- Fixed Celery anti-pattern across all step implementations
-  - Identified all instances of result.get() anti-pattern in code
-  - Replaced with non-blocking result.result usage in all workflow steps
-  - Added timeouts to get() calls in non-task code for robustness
-  - Created comprehensive developer guide on Celery best practices
-  - Documented the anti-pattern and proper solutions
-  - Fixed CI workflow to properly install Azure dependencies
-  - Added proper error handling in task result processing
+## Previous Completed Task (May 15, 2025)
+- Implemented fully automatic repository mounting system
+  - Created auto_mount.py script for complete Docker mounting automation
+  - Enhanced ingest command to detect unmounted repositories and handle mounting automatically
+  - Added container health checking and repository existence verification
+  - Expanded CLI with multiple mounting control options (--auto-mount, --no-auto-mount)
+  - Implemented automatic container restarts with proper volume configuration
+  - Created comprehensive documentation for all mounting approaches
+  - Streamlined user experience - now users can simply run ingest command without worrying about mounts
+  - Made mounting scripts executable for easier use
+  - Fixed path mapping to use correct container paths
+  - Added comprehensive error handling with clear user guidance
+  - Committed all changes to enable one-click repository ingestion
 
-- Fixed integration test failures in ingestion pipeline
-  - Identified and corrected Celery anti-pattern using .get() inside tasks
-  - Implemented polling mechanism to replace blocking calls
-  - Fixed test configuration with Neo4j and Redis
-  - Ensured proper service startup in integration tests
-  - Fixed all failing tests and reduced skipped tests
-  - Improved error handling and assertions in tests
-- Completed Documentation implementation (Section 16.0)
-  - Set up Sphinx documentation framework with Markdown support
-  - Created comprehensive documentation structure
-  - Added API reference documentation with autodoc integration
-  - Created user guides for CLI and GUI usage
-  - Added architecture documentation with component diagrams
-  - Implemented developer guides for extending the system
-  - Created deployment documentation for local and Azure environments
-  - Added contribution guidelines
-  - Set up documentation build with GitHub Actions
-  - Added automated documentation deployment to GitHub Pages
-- Completed Infrastructure implementation (Section 15.0)
-  - Created Infrastructure as Code with Azure Bicep templates
-  - Implemented container-based architecture with Azure Container Apps
-  - Set up CI/CD pipeline using GitHub Actions
-  - Added security hardening for Docker containers:
-    - Non-root user execution with proper permissions
-    - Content Security Policy configuration
-    - Docker layer optimization
-    - Reduced container attack surface
-  - Implemented comprehensive monitoring with:
-    - Custom dashboards and workbooks
-    - Alert rules for critical service metrics
-    - Prometheus integration for application metrics
-    - Log Analytics integration
-  - Added disaster recovery functionality:
-    - Automated backup procedures for Neo4j data
-    - Geo-redundant storage across Azure regions
-    - Backup retention policies
-    - Database restore procedures
-    - Developer documentation for DR processes
-  - Added Azure Developer CLI (azd) support:
-    - Simplified deployment with azd templates
-    - Environment variable configuration for secrets
-    - Pre/post deployment hooks
-    - Comprehensive deployment validation
-- Completed GUI implementation (Section 14.0)
-  - Implemented comprehensive layout components with:
-    - Responsive design with mobile support
-    - Dark/light theme toggle
-    - Collapsible sidebar for space optimization
-    - Service status monitoring panel
-    - Proper error handling with boundaries
-    - Loading indicators for async operations
-  - Created Core UI components:
-    - Graph visualization with 3D Force Graph
-    - Ingestion panel with real-time progress tracking
-    - Configuration editor with schema validation
-    - MCP playground with template selection
-    - Natural language query interface with history
-  - Implemented Redux store with RTK Query for API integration
-  - Added WebSocket integration for real-time updates
-  - Created comprehensive test suite for all components
-  - Fixed GUI test infrastructure with proper mocking patterns
-  - Enhanced UI with accessibility features (proper ARIA attributes)
-  - Implemented layout components with responsive design:
-    - Header with mobile and desktop adaptations
-    - Sidebar with collapsible behavior
-    - Service drawer with status information
-  - Added local storage for persisting user preferences
-  - Created proper error handling and recovery mechanisms
-  - Implemented advanced markdown rendering for code snippets
-- Completed CLI implementation (Section 13.0)
-  - Implemented CLI client for API communication
-  - Added comprehensive command structure with Click and Rich
-  - Created Rich terminal UI with progress bars, tables, and trees
-  - Implemented query, visualization, and service management commands
-  - Added all required command aliases from the specification
-  - Created configuration management commands
-  - Added ingestion management with live progress tracking
-  - Fixed various issues with Table formatting and parameter handling
-  - Implemented comprehensive unit tests for all commands
-  - Created integration test structure for CLI components
-  - Added proper error handling and documentation
-  - Ensured code quality with formatting, linting, and type checking
-- Fixed test failures in all modules
-  - Addressed Pydantic v2 compatibility issues across the codebase
-  - Fixed SecretStr handling in configuration exports
-  - Resolved asynchronous testing patterns
-  - Fixed circular imports in CLI client modules
-  - Created proper integration tests for the CLI
-  - Updated patching strategies in all test modules
-- Created claude-1st-impl branch
-- Set up Specifications tracking directory
-- Completed scaffolding implementation (Section 2.0)
-- Completed Integration testing of the full ingestion pipeline
-  - Created environment setup scripts (start_project.sh and stop_project.sh)
-  - Set up Neo4j with non-standard ports to avoid conflicts
-  - Fixed Celery worker configuration using relative paths
-  - Added Azure SDK dependencies to support KeyVault integration
-  - Fixed Celery worker startup issues
-  - Implemented integration tests for the filesystem step
-  - Tested step dependencies and execution order
-  - Fixed linting issues in FileSystemStep
-  - Enhanced test documentation for dependency management
-  - Implemented comprehensive progress tracking tests
-  - Added tests for error handling and recovery
-  - Verified parallel step execution
-  - Created project directory structure
-  - Set up Python environment with Poetry
-  - Set up TypeScript/React with Vite
-  - Created configuration files (.env-template, .codestory.toml)
-  - Added linting and formatting configurations
-  - Created Docker and Docker Compose setup
-  - Set up CI workflows
-  - Created devcontainer configuration
-  - Created basic module structure
-  - Added initial settings implementation
-  - Created basic tests
-  - Set up basic GUI structure
-- Completed Configuration Module implementation (Section 3.0)
-  - Implemented comprehensive settings models with validation
-  - Created multi-source configuration loading with precedence rules
-  - Added Azure KeyVault integration for secrets
-  - Implemented configuration persistence mechanism
-  - Added configuration export functionality to various formats
-  - Created CLI interface for configuration management
-  - Added comprehensive tests for the configuration module
-- Completed Graph Database implementation (Section 4.0)
-  - Created Neo4jConnector class with comprehensive features
-  - Implemented connection pooling and resource management
-  - Added transaction support with automatic retries
-  - Implemented vector similarity search functionality
-  - Created data models for nodes and relationships
-  - Added schema management (constraints, indexes, vector indexes)
-  - Implemented detailed exception hierarchy with sensitive data redaction
-  - Added metrics collection with Prometheus
-  - Created export functionality for various formats
-  - Implemented database management scripts (backup, restore, import)
-  - Created Docker configurations for development and production
-  - Added Azure Container Apps deployment script
-  - Implemented comprehensive unit and integration tests
-  - Created benchmarking tools and schema visualization
-  - Added detailed documentation
-- Completed AI Client implementation (Section 5.0)
-  - Implemented OpenAIClient with Azure AD authentication
-  - Added support for both model name and deployment name parameters
-  - Implemented retry logic with exponential backoff
-  - Created custom exception hierarchy for error handling
-  - Added metrics collection with Prometheus
-  - Implemented both synchronous and asynchronous methods
-  - Created request and response models using Pydantic
-  - Added support for chat completions, text completions, and embeddings
-  - Implemented tenant_id and subscription_id handling
-  - Added test script for verifying Azure OpenAI connectivity
-  - Created comprehensive unit tests
-  - Added integration tests with proper handling of credentials
-- Completed Ingestion Pipeline implementation (Section 6.0)
-  - Implemented PipelineManager for orchestrating workflow steps
-  - Created PipelineStep interface for all workflow components
-  - Implemented Celery integration for distributed processing
-  - Added plugin discovery mechanism via entry points
-  - Created task management and status tracking
-  - Implemented progress reporting and monitoring
-  - Added error handling and recovery mechanisms
-  - Created dependency analysis for parallel processing
-  - Implemented comprehensive tests for pipeline components
-  - Added example implementations and documentation
-- Completed Blarify Workflow Step implementation (Section 7.0)
-  - Implemented BlarifyStep class
-  - Added Docker integration for running Blarify in a container
-  - Implemented progress tracking and logging
-  - Created comprehensive error handling
-  - Added integration tests with Docker mocking
-  - Implemented update mechanism for repository changes
-- Completed FileSystem Workflow Step implementation (Section 8.0)
-  - Implemented FileSystemStep class
-  - Added filesystem traversal with ignore patterns
-  - Created Neo4j node creation for directories and files
-  - Implemented relationship creation for filesystem hierarchy
-  - Added progress tracking and cancellation support
-  - Created comprehensive integration tests
-  - Implemented update mechanism for repository changes
-- Completed Summarizer Workflow Step implementation (Section 9.0)
-  - Implemented SummarizerStep class
-  - Created DependencyAnalyzer for building code dependency graphs
-  - Implemented ParallelExecutor for throttled concurrent processing
-  - Created prompt templates for different node types
-  - Added content extraction utilities for code and context
-  - Implemented progress tracking and reporting mechanisms
-  - Created Neo4j integration for storing summaries
-  - Added integration tests with LLM mocking
-  - Implemented robust error handling and recovery
-- Completed Documentation Grapher Step implementation (Section 10.0)
-  - Implemented DocumentationGrapherStep class
-  - Created DocumentFinder for locating documentation files
-  - Implemented parsers for different documentation formats (Markdown, RST, docstrings)
-  - Created EntityLinker for connecting documentation to code entities
-  - Implemented KnowledgeGraph builder for documentation entities
-  - Added ContentAnalyzer for extracting structured information
-  - Created comprehensive integration tests
-  - Implemented progress tracking and reporting
-- Completed Code Story Service implementation (Section 11.0)
-  - Created service-specific settings module extending core settings
-  - Implemented comprehensive domain models for:
-    - Ingestion (requests, jobs, progress events)
-    - Graph querying (Cypher, vector search, path finding)
-    - Configuration (schemas, validation, CRUD operations)
-    - Authentication (tokens, users, permissions)
-  - Implemented infrastructure adapters:
-    - Neo4jAdapter for graph database operations
-    - CeleryAdapter for task queue operations
-    - OpenAIAdapter for LLM interactions
-    - MSALValidator for authentication with Microsoft identity
-  - Created application services:
-    - GraphService for graph operations and queries
-    - IngestionService for pipeline management
-    - ConfigService for configuration management
-    - AuthService for authentication and authorization
-  - Implemented API endpoints:
-    - Ingestion management (/v1/ingest)
-    - Graph queries (/v1/query)
-    - Natural language questions (/v1/ask)
-    - Configuration management (/v1/config)
-    - Service control (/v1/service)
-    - Authentication (/v1/auth)
-    - Health checks (/v1/health)
-  - Added WebSocket support for real-time progress updates
-  - Implemented proper error handling and validation
-  - Added Prometheus metrics for observability
-  - Created comprehensive tests for all components
-  - Implemented JSON:API compliant response format
-- Completed MCP Adapter implementation (Section 12.0)
-  - Created MCP server foundation with HTTP endpoints
-  - Implemented authentication with Microsoft Entra ID
-  - Created scope verification for authorization
-  - Implemented four core MCP tools:
-    - searchGraph: Search the code graph for specific elements
-    - summarizeNode: Get a natural language summary of code
-    - pathTo: Find paths between code elements
-    - similarCode: Find semantically similar code
-  - Created Code Story Service adapter for API integration
-  - Added OpenAI Service adapter for LLM operations
-  - Implemented serializers for graph data conversion
-  - Added metrics and logging for observability
-  - Created Docker container configuration
-  - Added multi-stage Docker build for efficient images
-  - Integrated with docker-compose for easy deployment
-  - Wrote comprehensive unit tests for all components
-  - Added integration tests for API endpoints
-  - Created developer documentation on agent integration
-  - Added examples for Claude Code and GitHub Copilot
-  - Implemented CLI entry point for standalone usage
+## Previous Completed Task (May 15, 2025)
+- Fixed repository mounting for Docker ingestion
+  - Enhanced ingest command to detect Docker deployments and map local paths to container paths
+  - Added automatic container path mapping for local repositories
+  - Improved mount_repository.sh script with better restart and container management
+  - Created repository config files to track mounting information
+  - Added comprehensive error messages with specific troubleshooting steps
+  - Enhanced documentation with detailed repository mounting guide
+  - Provided multiple approaches for working with Docker deployments
+  - Added explicit --container flag for path mapping control
+  - Verified fix resolves the "repository does not exist" errors
+  - Committed all changes to improve the CLI user experience
 
-## In Progress Tasks
-- None
+## Previous Completed Task (May 15, 2025)
+- Fixed Console API usage in CLI service client
+  - Fixed bug where ServiceClient was calling non-existent console.debug() method
+  - Replaced all console.debug() calls with proper Console.print() using style="dim"
+  - Created comprehensive tests with real Console objects to catch invalid method usage
+  - Identified testing gap where mocks allowed calling non-existent methods
+  - Added test cases for all ServiceClient methods that use console logging
+  - Used real Console instances in tests instead of mocks
+  - Successfully verified fix resolves the runtime error during CLI ingestion
+  - Committed changes in logical parts: bug fix and test improvements
+  - Updated documentation to reflect the improvements
 
-## Pending Tasks
-- None
+## Previous Completed Task (May 15, 2025)
+- Enhanced CLI error handling and command discovery
+  - Implemented custom error handling with specific display order (error first, suggestions second, help last)
+  - Added direct command aliases for common operations (status, start, stop)
+  - Implemented automatic command suggestions for similar commands
+  - Added context-aware recommendations for subcommands
+  - Enhanced error display formatting with rich console output
+  - Improved usability with option aliases (--detach/--detached)
+  - Created test script for validating error handling behavior
+  - Tested with various invalid commands and subcommands
+  - Committed changes with comprehensive commit message
+  - Updated all documentation to reflect the improvements
+
+## Previous Completed Task (May 15, 2025)
+- Fixed syntax error in conftest.py for Neo4j port configuration
+  - Rewrote the conftest.py file to properly handle CI environment detection
+  - Fixed string concatenation syntax error that was breaking the CI build
+  - Restructured the Neo4j environment fixture for cleaner separation of concerns
+  - Enhanced environment variable setup to avoid duplicate code
+  - Made port selection more robust with explicit conditional logic
+  - Tested changes locally with unit tests before pushing
+  - Committed changes for the CI/CD pipeline to run again
+  - Updated all documentation to reflect the changes
+
+## Previous Completed Task (May 15, 2025)
+- Fixed CI failures by addressing Neo4j port configuration in tests
+  - Identified the root cause: port mismatch between CI (7687) and local tests (7688)
+  - Created Python script to fix the port configuration in all test files
+  - Applied fixes to 14 different files that had hardcoded Neo4j port references
+  - Made the fix environment-aware to work in both CI and local development
+  - Added comprehensive documentation in FIXED_CI_TESTS.md to explain the solution
+  - Tested the fix to ensure it properly detects the CI environment
+  - Committed and pushed changes to fix the CI failures
+  - Updated project documentation with the latest improvements
+
+## Previous Completed Task (May 15, 2025)
+- Committed multiple improvements to the CLI and service components
+  - Added repository mounting documentation and script for proper volume mounts
+  - Added dedicated CLI entry point to avoid circular imports
+  - Fixed CeleryAdapter parameter mapping for correct task execution
+  - Improved error handling in ingest command for better user experience
+  - Enhanced demo scripts with better error handling and sample data import
+  - Consolidated health check endpoints for easier maintenance
+  - Fixed service client to robustly handle different endpoints
+  - Improved documentation and standardized deployment patterns
+  - Removed dummy adapter implementations for more reliable behavior
+
+## Previous Completed Task (May 15, 2025)
+- Added comprehensive service recovery documentation
+  - Created detailed service recovery guide in `/docs/user_guides/service_recovery.md`
+  - Guide explains how to use the `service recover` command to fix unhealthy containers
+  - Documented advanced recovery options and troubleshooting steps
+  - Added common issues section with solutions for worker, service, and database problems
+  - Included preventative measures to minimize service disruptions
+
+## Previous Completed Task (May 15, 2025)
+- Improved CLI user experience with command suggestions and better error handling
+  - Added command suggestion feature for invalid commands using click-didyoumean package
+  - Updated CLI to automatically display help when no command is provided
+  - Added custom error handler to show more helpful error messages
+  - Created comprehensive unit and integration tests for new features
+  - Implemented service recovery command for fixing unhealthy containers
+  - Enhanced health checks for docker containers to be more reliable
+  - Created setup script for container configuration to ensure proper startup
+  - Made Docker service commands more robust with better error handling

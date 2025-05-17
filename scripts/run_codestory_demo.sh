@@ -112,13 +112,53 @@ if ! codestory service status | grep -q "Celery.*Healthy"; then
   exit 1
 fi
 
-# Note about ingestion 
-echo "Due to authentication issues with the ingestion API, we'll skip direct ingestion."
-echo "In a production environment, you would run: codestory ingest start ."
-echo "We'll still be able to generate a visualization since that endpoint now works without authentication."
+# Load sample data into Neo4j
+echo "Loading sample data into Neo4j for the demo..."
+docker exec codestory-neo4j sh -c 'cypher-shell -u neo4j -p password "LOAD CSV WITH HEADERS FROM \"file:///var/lib/neo4j/import/sample_data.csv\" AS row RETURN count(row)"' || echo "Error loading sample data"
 
-# Skip ingestion due to auth issues
-echo -e "\nSkipping ingestion status check due to authentication issues."
+# Import test fixture data to populate the database
+echo "Importing test fixture data to populate the database..."
+cat >neo4j_import.cypher <<EOF
+// Create schema constraints
+CREATE CONSTRAINT file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE;
+CREATE CONSTRAINT directory_path IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE;
+CREATE CONSTRAINT function_name_path IF NOT EXISTS FOR (f:Function) REQUIRE (f.name, f.path) IS UNIQUE;
+CREATE CONSTRAINT class_name_path IF NOT EXISTS FOR (c:Class) REQUIRE (c.name, c.path) IS UNIQUE;
+
+// Create sample data
+CREATE (proj:Directory {name: "code-story", path: "/code-story"})
+CREATE (src:Directory {name: "src", path: "/code-story/src"})
+CREATE (cs:Directory {name: "codestory", path: "/code-story/src/codestory"})
+CREATE (cli:Directory {name: "cli", path: "/code-story/src/codestory/cli"})
+CREATE (graphdb:Directory {name: "graphdb", path: "/code-story/src/codestory/graphdb"})
+CREATE (main:File {name: "main.py", path: "/code-story/src/codestory/cli/main.py", content: "# CLI main entry point"})
+CREATE (utils:File {name: "utils.py", path: "/code-story/src/codestory/cli/utils.py", content: "# CLI utilities"})
+CREATE (models:File {name: "models.py", path: "/code-story/src/codestory/graphdb/models.py", content: "# Graph database models"})
+CREATE (neo4j:File {name: "neo4j_connector.py", path: "/code-story/src/codestory/graphdb/neo4j_connector.py", content: "# Neo4j database connector"})
+
+// Create relationships
+CREATE (proj)-[:CONTAINS]->(src)
+CREATE (src)-[:CONTAINS]->(cs)
+CREATE (cs)-[:CONTAINS]->(cli)
+CREATE (cs)-[:CONTAINS]->(graphdb)
+CREATE (cli)-[:CONTAINS]->(main)
+CREATE (cli)-[:CONTAINS]->(utils)
+CREATE (graphdb)-[:CONTAINS]->(models)
+CREATE (graphdb)-[:CONTAINS]->(neo4j)
+
+// Create some code entities
+CREATE (cli_main:Function {name: "main", path: "/code-story/src/codestory/cli/main.py", content: "def main():\n    \"\"\"Main entry point for CLI.\"\"\"\n    pass"})
+CREATE (connector:Class {name: "Neo4jConnector", path: "/code-story/src/codestory/graphdb/neo4j_connector.py", content: "class Neo4jConnector:\n    \"\"\"Connector for Neo4j database.\"\"\"\n    pass"})
+
+// Connect code entities to files
+CREATE (main)-[:CONTAINS]->(cli_main)
+CREATE (neo4j)-[:CONTAINS]->(connector)
+EOF
+
+docker cp neo4j_import.cypher codestory-neo4j:/tmp/
+docker exec codestory-neo4j cypher-shell -u neo4j -p password -f /tmp/neo4j_import.cypher
+
+echo "Sample data imported for demo purposes."
 
 # Step 6: Create a visualization
 echo -e "\nStep 6: Creating a visualization of the Code Story structure"
@@ -127,12 +167,12 @@ echo -e "\nStep 6: Creating a visualization of the Code Story structure"
 mkdir -p docs/demos
 
 # First try using the API endpoint directly since authentication is no longer required
-SERVICE_HOST=$(grep SERVICE__HOST .env | cut -d= -f2)
-SERVICE_PORT=$(grep SERVICE__PORT .env | cut -d= -f2)
+SERVICE_HOST=$(grep CODESTORY_SERVICE_HOST .env | cut -d= -f2 || echo "localhost")
+SERVICE_PORT=$(grep CODESTORY_SERVICE_PORT .env | cut -d= -f2 || echo "8000")
 SERVICE_URL="http://${SERVICE_HOST:-localhost}:${SERVICE_PORT:-8000}"
 
-echo "Attempting to fetch visualization from service at ${SERVICE_URL}/visualize"
-if curl -s "${SERVICE_URL}/visualize" --output docs/demos/code_story_visualization.html; then
+echo "Attempting to fetch visualization from service at ${SERVICE_URL}/v1/visualize"
+if curl -s "${SERVICE_URL}/v1/visualize" --output docs/demos/code_story_visualization.html; then
   echo "✅ Successfully retrieved visualization from service"
   echo "Saved visualization to docs/demos/code_story_visualization.html"
 else
@@ -332,11 +372,11 @@ codestory vz = codestory visualize generate
 COMMANDS
 
 echo -e "\nNote: The visualization endpoint has been updated to allow unauthenticated access, making it"
-echo -e "accessible for CLI tools without requiring complex authentication handling."
+echo -e "accessible for CLI tools without needing to manage authentication tokens. This makes it especially useful for integrating with third-party tools or scripts."
 echo -e "The ingestion endpoints still require authentication for security reasons."
 echo -e ""
 echo -e "When you're done with the demo, you can clean up with: codestory service stop"
 
 echo -e "\n========================================="
 echo "CLI Demo completed"
-echo "========================================="
+echo "==========================================="

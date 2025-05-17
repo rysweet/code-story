@@ -5,6 +5,10 @@ and store its structure in the Neo4j database by directly executing the task.
 """
 
 import os
+
+# Determine Neo4j port based on CI environment
+ci_env = os.environ.get("CI") == "true"
+neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 from pathlib import Path
 
@@ -18,13 +22,13 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 from ..test_config import get_test_settings
 
 # Override environment variables to ensure we use the test instance
-os.environ["NEO4J__URI"] = "bolt://localhost:7688"
+os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "testdb"
 
 # Test settings for test connector
-TEST_URI = "bolt://localhost:7688"
+TEST_URI = f"bolt://localhost:{neo4j_port}"
 TEST_USERNAME = "neo4j"
 TEST_PASSWORD = "password"
 TEST_DATABASE = "testdb"
