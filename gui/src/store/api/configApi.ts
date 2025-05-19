@@ -1,6 +1,23 @@
 import { baseApi } from './baseApi';
 
 /**
+ * Database clear request interface
+ */
+interface DatabaseClearRequest {
+  confirm: boolean;
+  preserve_schema: boolean;
+}
+
+/**
+ * Database clear response interface
+ */
+interface DatabaseClearResponse {
+  status: string;
+  message: string;
+  timestamp: string;
+}
+
+/**
  * API endpoints for configuration operations
  */
 export const configApi = baseApi.injectEndpoints({
@@ -25,6 +42,14 @@ export const configApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Config'],
     }),
+    
+    clearDatabase: builder.mutation<DatabaseClearResponse, DatabaseClearRequest>({
+      query: (request) => ({
+        url: '/database/clear',
+        method: 'POST',
+        body: request,
+      }),
+    }),
   }),
 });
 
@@ -32,4 +57,5 @@ export const {
   useGetConfigQuery,
   useGetConfigSchemaQuery,
   useUpdateConfigMutation,
+  useClearDatabaseMutation,
 } = configApi;

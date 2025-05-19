@@ -133,6 +133,7 @@ def create_app() -> FastAPI:
     app.include_router(graph.query_router)
     app.include_router(graph.ask_router)
     app.include_router(graph.visualization_router)
+    app.include_router(graph.db_router)
     app.include_router(config.router)
     app.include_router(service.router)
     app.include_router(auth.router)

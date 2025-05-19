@@ -1,6 +1,7 @@
 """Domain models for graph interaction."""
 
 from enum import Enum
+import time
 from typing import Any
 from uuid import uuid4
 
@@ -382,4 +383,36 @@ class VisualizationRequest(BaseModel):
         description="Depth of relationships to include from focus node", 
         ge=1, 
         le=5
+    )
+    
+
+class DatabaseClearRequest(BaseModel):
+    """Request to clear the database."""
+    
+    confirm: bool = Field(
+        default=False,
+        description="Confirmation that the database should be cleared. Must be True."
+    )
+    preserve_schema: bool = Field(
+        default=True,
+        description="Whether to preserve constraints and indexes."
+    )
+    
+    @field_validator("confirm")
+    @classmethod
+    def confirm_must_be_true(cls, v: bool) -> bool:
+        """Validate that confirm is True."""
+        if not v:
+            raise ValueError("Database clear operation must be explicitly confirmed")
+        return v
+
+
+class DatabaseClearResponse(BaseModel):
+    """Response from database clear operation."""
+    
+    status: str = Field(..., description="Status of the operation")
+    message: str = Field(..., description="Description of the operation result")
+    timestamp: str = Field(
+        default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        description="Timestamp of the operation"
     )
