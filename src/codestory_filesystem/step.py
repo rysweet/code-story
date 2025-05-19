@@ -40,6 +40,7 @@ class FileSystemStep(PipelineStep):
                 - ignore_patterns: list of glob patterns to ignore
                 - max_depth: Maximum directory depth to traverse
                 - include_extensions: list of file extensions to include
+                - job_id: Optional job ID to use (will be generated if not provided)
 
         Returns:
             str: Job ID that can be used to check the status
@@ -47,8 +48,8 @@ class FileSystemStep(PipelineStep):
         Raises:
             ValueError: If the repository path is invalid
         """
-        # Generate a job ID
-        job_id = generate_job_id()
+        # Generate a job ID if not provided
+        job_id = config.pop('job_id', None) or generate_job_id()
 
         print("*** STEP DEBUG: Running FileSystemStep.run ***")
         print(f"Generated job_id: {job_id}")
@@ -62,11 +63,15 @@ class FileSystemStep(PipelineStep):
         print(f"Celery active queues: {celery_app.control.inspect().active_queues()}")
         print(f"Celery registered tasks: {celery_app.control.inspect().registered()}")
 
-        # Call the Celery task with explicit queue
+        # Make sure job_id is in kwargs, not args
+        kwargs = config.copy()
+        kwargs['job_id'] = job_id
+        
+        # Call the Celery task with explicit queue and the repository_path as first arg
         task = process_filesystem.apply_async(
-            args=[repository_path, job_id],
-            kwargs=config,
-            queue="ingestion",  # Explicitly set the queue here too
+            args=[repository_path],  # Just pass repository_path as first arg
+            kwargs=kwargs,           # Pass other parameters including job_id as kwargs
+            queue="ingestion",       # Explicitly set the queue here too
         )
 
         print(f"Celery task ID: {task.id}")
@@ -249,15 +254,16 @@ class FileSystemStep(PipelineStep):
 
 
 @shared_task(
+    # Register the task with a clear, consistent name
     name="filesystem.run", bind=True, queue="ingestion"  # Explicitly set the queue
 )
 def process_filesystem(
     self,
-    repository_path: str,
-    job_id: str,
+    repository_path: str,  # Required positional parameter
     ignore_patterns: list[str] | None = None,
     max_depth: int | None = None,
     include_extensions: list[str] | None = None,
+    job_id: str = None,  # Optional - will be generated if not provided
     **config: Any,
 ) -> dict[str, Any]:
     """Process the filesystem of a repository.
@@ -265,10 +271,10 @@ def process_filesystem(
     Args:
         self: The Celery task instance
         repository_path: Path to the repository to process
-        job_id: Identifier for the job
         ignore_patterns: list of glob patterns to ignore
         max_depth: Maximum directory depth to traverse
         include_extensions: list of file extensions to include
+        job_id: Identifier for the job
         **config: Additional configuration parameters
 
     Returns:
@@ -276,16 +282,39 @@ def process_filesystem(
     """
     start_time = time.time()
     print("*** CELERY DEBUG: Starting task process_filesystem (DEBUGGING) ***")
+    print(f"Task ID: {self.request.id}")
+    print(f"Args: repository_path={repository_path}")
+    print(f"Kwargs: {config}")
+    
+    # Validate repository_path - it's now a required parameter
+    if not repository_path:
+        raise ValueError("repository_path is required")
+        
+    if job_id is None:
+        # Generate a job ID if not provided
+        job_id = f"task-{self.request.id}" if hasattr(self, "request") else f"task-{time.time()}"
+    
+    # Enhanced debug logging
+    task_id = self.request.id if hasattr(self, "request") else "Unknown"
+    
+    print(f"======= FILESYSTEM STEP DEBUG ======")
+    print(f"Task ID: {task_id}")
     print(f"Repository path: {repository_path}")
+    print(f"Repository exists: {os.path.exists(repository_path)}")
+    print(f"Repository is directory: {os.path.isdir(repository_path)}")
+    try:
+        print(f"Repository contents: {os.listdir(repository_path)[:10]}... (first 10 entries)")
+    except Exception as e:
+        print(f"Error listing repository: {e}")
     print(f"Job ID: {job_id}")
     print(f"Ignore patterns: {ignore_patterns}")
+    print(f"Max depth: {max_depth}")
+    print(f"Include extensions: {include_extensions}")
     print(f"Other config: {config}")
+    print(f"====================================")
 
-    # Log additional info about the task
-    task_id = self.request.id if hasattr(self, "request") else "Unknown"
-    print(f"Celery task ID: {task_id}")
-
-    logger.info(f"Processing filesystem for {repository_path}")
+    logger.info(f"Starting filesystem processing for {repository_path} (task_id: {task_id}, job_id: {job_id})")
+    logger.info(f"Max depth: {max_depth}, Patterns: {ignore_patterns}")
 
     # Default ignore patterns if not provided
     if ignore_patterns is None:
@@ -302,20 +331,75 @@ def process_filesystem(
             ".vscode/",
         ]
 
-    # Set up Neo4j connection
-    try:
-        settings = get_settings()
-        neo4j = Neo4jConnector(
-            uri=settings.neo4j.uri,
-            username=settings.neo4j.username,
-            password=settings.neo4j.password.get_secret_value(),
-            database=settings.neo4j.database,
-        )
-    except Exception as e:
-        logger.exception(f"Error connecting to Neo4j: {e}")
+    # Try multiple Neo4j connection configurations
+    neo4j = None
+    errors = []
+    
+    # Get settings for the default configuration
+    settings = get_settings()
+    logger.info(f"Current Neo4j settings from config: uri={settings.neo4j.uri}, database={settings.neo4j.database}")
+    
+    # Different ways to connect to Neo4j
+    connection_params = [
+        # Default from settings
+        {
+            "uri": settings.neo4j.uri,
+            "username": settings.neo4j.username,
+            "password": settings.neo4j.password.get_secret_value(),
+            "database": settings.neo4j.database,
+        },
+        # Container hostname connection
+        {
+            "uri": "bolt://neo4j:7687",
+            "username": "neo4j",
+            "password": "password",
+            "database": "neo4j",
+        },
+        # Localhost connection (for main instance)
+        {
+            "uri": "bolt://localhost:7689",  # Port from docker-compose.yml
+            "username": "neo4j",
+            "password": "password",
+            "database": "neo4j",
+        },
+        # Localhost test connection
+        {
+            "uri": "bolt://localhost:7688",  # Port from docker-compose.test.yml
+            "username": "neo4j",
+            "password": "password",
+            "database": "testdb",
+        }
+    ]
+    
+    # Try each connection configuration until one works
+    for i, params in enumerate(connection_params):
+        try:
+            logger.info(f"Trying Neo4j connection {i+1}/{len(connection_params)}: {params['uri']}")
+            neo4j = Neo4jConnector(**params)
+            
+            # Test the connection with a simple query
+            test_result = neo4j.execute_query("MATCH (n) RETURN count(n) as count LIMIT 1")
+            logger.info(f"Neo4j connection successful: {test_result}")
+            
+            # If we get here, the connection is working
+            break
+        except Exception as e:
+            logger.warning(f"Neo4j connection {i+1} failed: {e}")
+            errors.append(f"Connection {i+1} ({params['uri']}): {e}")
+            if neo4j:
+                try:
+                    neo4j.close()
+                except:
+                    pass
+            neo4j = None
+    
+    # Check if a working connection was found
+    if not neo4j:
+        error_details = "\n".join(errors)
+        logger.error(f"All Neo4j connection attempts failed:\n{error_details}")
         return {
             "status": StepStatus.FAILED,
-            "error": f"Neo4j connection error: {e!s}",
+            "error": f"Neo4j connection error: No working connection found.\n{error_details}",
             "job_id": job_id,
         }
 
@@ -323,16 +407,45 @@ def process_filesystem(
     try:
         file_count = 0
         dir_count = 0
+        
+        # Log depth setting but don't limit it
+        logger.info(f"Using repository traversal depth: {max_depth} (unlimited if None)")
 
-        # Create repository node
+        # Debug info for neo4j
+        with open("/tmp/neo4j_debug.log", "w") as f:
+            f.write(f"Repository path: {repository_path}\n")
+            f.write(f"Neo4j URI: {settings.neo4j.uri}\n")
+            f.write(f"Neo4j database: {settings.neo4j.database}\n")
+            f.write(f"Max depth: {max_depth}\n")
+            f.write(f"Connection test...\n")
+            
+            try:
+                # Simple test query
+                test_query = "MATCH (n) RETURN count(n) as count"
+                test_result = neo4j.execute_query(test_query)
+                f.write(f"Test query result: {test_result}\n")
+            except Exception as e:
+                f.write(f"Test query failed: {str(e)}\n")
+
+        # Create repository node with MERGE to handle existing nodes
         repo_name = os.path.basename(repository_path)
-        repo_node = neo4j.create_node(
-            label="Repository",
-            properties={
-                "name": repo_name,
-                "path": repository_path,
-            },
+        repo_properties = {
+            "name": repo_name,
+            "path": repository_path,
+        }
+        
+        # Use direct query with MERGE to avoid constraint violations
+        repo_query = """
+        MERGE (r:Repository {path: $props.path})
+        SET r.name = $props.name
+        RETURN r
+        """
+        repo_result = neo4j.execute_query(
+            repo_query, params={"props": repo_properties}, write=True
         )
+        repo_node = repo_result[0]["r"] if repo_result else None
+        
+        logger.info(f"Repository node created or updated: {repo_node}")
 
         # Process the repository
         print(f"Starting to walk repository: {repository_path}")
@@ -376,39 +489,59 @@ def process_filesystem(
             else:
                 print(f"  Creating directory node: {rel_dir_path}")
                 try:
-                    dir_node = neo4j.create_node(
-                        label="Directory",
-                        properties={
-                            "name": os.path.basename(current_dir),
-                            "path": rel_dir_path,
-                        },
+                    # Use MERGE for directory nodes to handle existing nodes
+                    dir_properties = {
+                        "name": os.path.basename(current_dir),
+                        "path": rel_dir_path,
+                    }
+                    dir_query = """
+                    MERGE (d:Directory {path: $props.path})
+                    SET d.name = $props.name
+                    RETURN d
+                    """
+                    dir_result = neo4j.execute_query(
+                        dir_query, params={"props": dir_properties}, write=True
                     )
-                    print(f"  Directory node created successfully: {dir_node}")
+                    dir_node = dir_result[0]["d"] if dir_result else None
+                    print(f"  Directory node created or updated: {dir_node}")
                 except Exception as e:
                     print(f"  Error creating directory node: {e}")
                     raise
 
-                # Link to parent directory
+                # Link to parent directory using MERGE for relationship
                 parent_path = os.path.dirname(rel_dir_path)
                 if parent_path == "":
                     # Parent is the repo
-                    neo4j.create_relationship(
-                        start_node=repo_node,
-                        end_node=dir_node,
-                        rel_type="CONTAINS",
+                    rel_query = """
+                    MATCH (r:Repository {path: $repo_path})
+                    MATCH (d:Directory {path: $dir_path})
+                    MERGE (r)-[rel:CONTAINS]->(d)
+                    RETURN rel
+                    """
+                    neo4j.execute_query(
+                        rel_query,
+                        params={
+                            "repo_path": repository_path,
+                            "dir_path": rel_dir_path
+                        },
+                        write=True
                     )
                 else:
-                    # Find parent directory node
-                    parent_node = neo4j.find_node(
-                        label="Directory",
-                        properties={"path": parent_path},
+                    # Parent is another directory 
+                    rel_query = """
+                    MATCH (p:Directory {path: $parent_path})
+                    MATCH (d:Directory {path: $dir_path})
+                    MERGE (p)-[rel:CONTAINS]->(d)
+                    RETURN rel
+                    """
+                    neo4j.execute_query(
+                        rel_query,
+                        params={
+                            "parent_path": parent_path,
+                            "dir_path": rel_dir_path
+                        },
+                        write=True
                     )
-                    if parent_node:
-                        neo4j.create_relationship(
-                            start_node=parent_node,
-                            end_node=dir_node,
-                            rel_type="CONTAINS",
-                        )
 
                 dir_count += 1
 
@@ -435,58 +568,117 @@ def process_filesystem(
 
                 print(f"  Creating file node: {file_path}")
                 try:
-                    file_node = neo4j.create_node(
-                        label="File",
-                        properties={
-                            "name": file,
-                            "path": file_path,
-                            "extension": os.path.splitext(file)[1].lstrip(".") or None,
-                            "size": os.path.getsize(os.path.join(current_dir, file)),
-                            "modified": os.path.getmtime(
-                                os.path.join(current_dir, file)
-                            ),
-                        },
+                    # Use MERGE for file nodes to handle existing nodes
+                    file_properties = {
+                        "name": file,
+                        "path": file_path,
+                        "extension": os.path.splitext(file)[1].lstrip(".") or None,
+                        "size": os.path.getsize(os.path.join(current_dir, file)),
+                        "modified": os.path.getmtime(
+                            os.path.join(current_dir, file)
+                        ),
+                    }
+                    file_query = """
+                    MERGE (f:File {path: $props.path})
+                    SET f.name = $props.name,
+                        f.extension = $props.extension,
+                        f.size = $props.size,
+                        f.modified = $props.modified
+                    RETURN f
+                    """
+                    file_result = neo4j.execute_query(
+                        file_query, params={"props": file_properties}, write=True
                     )
-                    print(f"  File node created successfully: {file_node}")
+                    file_node = file_result[0]["f"] if file_result else None
+                    print(f"  File node created or updated: {file_node}")
                 except Exception as e:
                     print(f"  Error creating file node: {e}")
                     raise
 
-                # Link to directory
-                neo4j.create_relationship(
-                    start_node=dir_node,
-                    end_node=file_node,
-                    rel_type="CONTAINS",
-                )
+                # Link to directory using MERGE for relationship
+                if rel_dir_path == ".":
+                    # Parent is the repo
+                    rel_query = """
+                    MATCH (r:Repository {path: $repo_path})
+                    MATCH (f:File {path: $file_path})
+                    MERGE (r)-[rel:CONTAINS]->(f)
+                    RETURN rel
+                    """
+                    neo4j.execute_query(
+                        rel_query,
+                        params={
+                            "repo_path": repository_path,
+                            "file_path": file_path
+                        },
+                        write=True
+                    )
+                else:
+                    # Parent is a directory
+                    rel_query = """
+                    MATCH (d:Directory {path: $dir_path})
+                    MATCH (f:File {path: $file_path})
+                    MERGE (d)-[rel:CONTAINS]->(f)
+                    RETURN rel
+                    """
+                    neo4j.execute_query(
+                        rel_query,
+                        params={
+                            "dir_path": rel_dir_path,
+                            "file_path": file_path
+                        },
+                        write=True
+                    )
 
                 file_count += 1
 
-                # Report progress (every 100 files)
-                if file_count % 100 == 0:
-                    self.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "progress": None,  # Can't know total
-                            "message": f"Processed {file_count} files, {dir_count} directories",
-                        },
-                    )
+                # Report progress more frequently (every 10 files)
+                if file_count % 10 == 0:
+                    logger.info(f"Progress: {file_count} files, {dir_count} directories")
+                    try:
+                        self.update_state(
+                            state="PROGRESS",
+                            meta={
+                                "progress": None,  # Can't know total
+                                "message": f"Processed {file_count} files, {dir_count} directories",
+                                "file_count": file_count,
+                                "dir_count": dir_count,
+                            },
+                        )
+                    except Exception as e:
+                        logger.error(f"Error updating progress state: {e}")
+                        
+                # Add progress tracking for directories too
+                if dir_count % 10 == 0 and dir_count > 0:
+                    logger.info(f"Directory progress: {dir_count} directories processed")
 
         # Record end time
         end_time = time.time()
         duration = end_time - start_time
 
-        # Create a processing record
-        neo4j.create_node(
-            label="ProcessingRecord",
-            properties={
-                "step": "filesystem",
-                "job_id": job_id,
-                "repository": repo_name,
-                "timestamp": time.time(),
-                "duration": duration,
-                "file_count": file_count,
-                "dir_count": dir_count,
+        # Create a processing record with MERGE
+        record_query = """
+        MERGE (p:ProcessingRecord {step: $props.step, job_id: $props.job_id})
+        SET p.repository = $props.repository,
+            p.timestamp = $props.timestamp,
+            p.duration = $props.duration,
+            p.file_count = $props.file_count,
+            p.dir_count = $props.dir_count
+        RETURN p
+        """
+        neo4j.execute_query(
+            record_query,
+            params={
+                "props": {
+                    "step": "filesystem",
+                    "job_id": job_id,
+                    "repository": repo_name,
+                    "timestamp": time.time(),
+                    "duration": duration,
+                    "file_count": file_count,
+                    "dir_count": dir_count,
+                }
             },
+            write=True
         )
 
         logger.info(

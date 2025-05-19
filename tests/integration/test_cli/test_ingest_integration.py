@@ -2,12 +2,15 @@
 
 import time
 import json
+import os
+import tempfile
 from typing import Dict, Any
 
 import pytest
 from click.testing import CliRunner
 
 from codestory.cli.main import app
+from codestory.cli.commands.ingest import is_docker_running, is_repo_mounted
 
 
 class TestIngestCommands:
@@ -72,3 +75,66 @@ class TestIngestCommands:
         
         # Should either have jobs or indicate no jobs
         assert "Ingestion Jobs" in result.output or "No ingestion jobs found" in result.output
+        
+    @pytest.mark.integration
+    @pytest.mark.require_service
+    def test_mount_command(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+        """Test the 'ingest mount' command with a real repository."""
+        # Only run this test if Docker is available
+        if not is_docker_running():
+            pytest.skip("Docker is not running, skipping test")
+            
+        # Create a temporary test repository
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a simple file to verify the mount
+            with open(os.path.join(temp_dir, "test.txt"), "w") as f:
+                f.write("test content")
+            
+            # Run the mount command
+            result = cli_runner.invoke(
+                app, 
+                ["ingest", "mount", temp_dir, "--debug"], 
+                catch_exceptions=False
+            )
+            
+            # Check the result
+            assert result.exit_code == 0
+            
+            # The output should either indicate success or that it's already mounted
+            assert "Successfully mounted" in result.output or "already mounted" in result.output
+            
+            # Verify that the repository is actually mounted
+            assert is_repo_mounted(temp_dir)
+            
+    @pytest.mark.integration
+    @pytest.mark.require_service
+    def test_force_remount(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+        """Test the '--force-remount' option with a real repository."""
+        # Only run this test if Docker is available
+        if not is_docker_running():
+            pytest.skip("Docker is not running, skipping test")
+            
+        # Create a temporary test repository
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a simple file to verify the mount
+            with open(os.path.join(temp_dir, "test.txt"), "w") as f:
+                f.write("test content")
+            
+            # First mount the repository normally
+            cli_runner.invoke(app, ["ingest", "mount", temp_dir])
+            
+            # Then force remount
+            result = cli_runner.invoke(
+                app, 
+                ["ingest", "mount", temp_dir, "--force-remount"], 
+                catch_exceptions=False
+            )
+            
+            # Check the result
+            assert result.exit_code == 0
+            
+            # Should indicate successful mount
+            assert "Successfully mounted" in result.output
+            
+            # Verify that the repository is actually mounted
+            assert is_repo_mounted(temp_dir)

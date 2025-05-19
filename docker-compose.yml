@@ -79,7 +79,8 @@ services:
         pip install docker azure-identity &&
         cp /app/.codestory.container.toml /app/.codestory.toml &&
         echo \"Starting Celery worker...\" &&
-        cd /app && python -m celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=INFO --concurrency=4 -Q ingestion
+        # Fix import path for celery worker
+        cd /app && PYTHONPATH=/app python -m celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=INFO --concurrency=4 -Q ingestion
       '"
     depends_on:
       neo4j:
