@@ -49,11 +49,10 @@ def clear_database(ctx, force: bool):
     
     try:
         console.print("Clearing database...")
-        result = client.clear_database()
+        result = client.clear_database(confirm=True)
         console.print(Panel.fit(
             f"[green]Database cleared successfully.[/green]\n"
-            f"[dim]Deleted {result.get('nodes_deleted', 'unknown')} nodes and "
-            f"{result.get('relationships_deleted', 'unknown')} relationships.[/dim]",
+            f"[dim]Timestamp: {result.get('timestamp', 'unknown')}[/dim]",
             title="Database Clear",
             border_style="green"
         ))
