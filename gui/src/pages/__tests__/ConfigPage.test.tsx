@@ -4,9 +4,10 @@ import { renderWithProviders } from '../../tests/utils';
 import { setupMswTestServer } from '../../tests/mocks/server';
 import ConfigPage from '../ConfigPage';
 
-// Mock the ConfigEditor component
+// Mock the config components
 vi.mock('../../components/config', () => ({
   ConfigEditor: vi.fn(() => <div data-testid="config-editor">Mock ConfigEditor</div>),
+  DatabaseManager: vi.fn(() => <div data-testid="database-manager">Mock DatabaseManager</div>),
 }));
 
 // Setup MSW server for testing
@@ -24,6 +25,9 @@ describe('ConfigPage', () => {
     
     // Check ConfigEditor is rendered
     expect(screen.getByTestId('config-editor')).toBeInTheDocument();
+    
+    // Check DatabaseManager is rendered
+    expect(screen.getByTestId('database-manager')).toBeInTheDocument();
   });
 
   it('sets the active page in Redux on mount', async () => {
