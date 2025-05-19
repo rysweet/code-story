@@ -1,0 +1,10 @@
+# CodeStory repository configuration
+# Created by auto_mount.py
+
+[repository]
+name = "code-story"
+local_path = "/Users/ryan/src/msec/code-story"
+container_path = "/repositories/code-story"
+mounted = true
+mount_time = "2025-05-17T20:15:42Z"
+auto_mounted = true

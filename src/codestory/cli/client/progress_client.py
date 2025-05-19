@@ -42,36 +42,69 @@ class ProgressClient:
         self.console = console or Console()
         self.poll_interval = poll_interval
 
-        # Set up Redis connection
-        try:
-            # Get Redis URL from settings with proper localhost connection for CLI
-            if redis_url:
-                # Use provided URL if given
-                pass
-            elif hasattr(self.settings, "redis") and hasattr(self.settings.redis, "uri"):
-                redis_url = self.settings.redis.uri
-                # Convert docker-compose style URLs to localhost for CLI use
-                if "redis://redis:" in redis_url:
-                    # Map docker service name to localhost with port mapping
-                    redis_url = redis_url.replace("redis://redis:", "redis://localhost:")
-                    # Standard port mapping in docker-compose.yml is 6379:6379
-            else:
-                # Default to standard port
-                redis_url = "redis://localhost:6379"
+        # Set up Redis connection with multiple fallback options
+        self.console.print(f"[dim]Setting up Redis connection for progress tracking...[/]")
+        
+        # List of possible Redis URLs to try
+        redis_urls = []
+        
+        # 1. Use explicitly provided URL if given
+        if redis_url:
+            redis_urls.append(redis_url)
+        
+        # 2. Try to get from settings
+        if hasattr(self.settings, "redis") and hasattr(self.settings.redis, "uri"):
+            settings_url = self.settings.redis.uri
+            redis_urls.append(settings_url)
+            
+            # 3. Add localhost variant for Docker setups
+            if "redis://redis:" in settings_url:
+                # Standard port mapping in docker-compose.yml is 6379:6379
+                localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
+                redis_urls.append(localhost_url)
                 
-            self.console.print(f"[dim]Connecting to Redis at {redis_url}[/]")
-            self.redis = redis.from_url(redis_url)
-            self.use_redis = True
-            # Use the standard channel format that matches the service's format
-            self.channel = f"codestory:ingestion:progress:{job_id}"
-            # Test the connection to ensure it works
-            self.redis.ping()
-            self.console.print(f"[green]Connected to Redis for real-time progress updates[/]")
-        except (AttributeError, redis.RedisError) as e:
+                # Extract port number for additional variants
+                try:
+                    port = localhost_url.split(":")[-1].split("/")[0]
+                    # Try alternative localhost format
+                    redis_urls.append(f"redis://127.0.0.1:{port}")
+                except Exception:
+                    pass
+        
+        # 4. Default options
+        redis_urls.extend([
+            "redis://localhost:6379", 
+            "redis://127.0.0.1:6379",
+            "redis://localhost:6389",  # Alternative port sometimes used
+            "redis://127.0.0.1:6389"
+        ])
+        
+        # Remove duplicates while preserving order
+        redis_urls = list(dict.fromkeys(redis_urls))
+        
+        # Try each URL
+        connected = False
+        for url in redis_urls:
+            try:
+                self.console.print(f"[dim]Trying Redis connection at {url}...[/]")
+                redis_client = redis.from_url(url, socket_timeout=2.0)
+                # Test the connection
+                redis_client.ping()
+                # If we got here, connection successful
+                self.redis = redis_client
+                self.use_redis = True
+                self.channel = f"codestory:ingestion:progress:{job_id}"
+                self.console.print(f"[green]Connected to Redis at {url} for real-time progress updates[/]")
+                connected = True
+                break
+            except (redis.RedisError, Exception) as e:
+                self.console.print(f"[dim]Could not connect to Redis at {url}: {str(e)}[/]")
+                
+        if not connected:
             self.use_redis = False
             self.redis = None
             self.console.print(
-                f"[yellow]Warning: Redis not available ({str(e)}), falling back to polling[/]"
+                f"[yellow]Warning: Redis not available after trying multiple endpoints, falling back to polling[/]"
             )
 
         self._stop_event = threading.Event()

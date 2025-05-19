@@ -9,6 +9,7 @@ from click.testing import CliRunner
 
 from codestory.cli.main import app
 from codestory.cli.client import ServiceError
+from codestory.cli.commands import ingest
 
 
 class TestIngestCommands:
@@ -213,3 +214,135 @@ class TestIngestCommands:
         # Check result
         assert result.exit_code == 0
         assert "No ingestion jobs found" in result.output
+        
+    def test_is_repo_mounted(self) -> None:
+        """Test the is_repo_mounted function."""
+        # Mock the subprocess.run function
+        with patch("subprocess.run") as mock_run:
+            # Mock console
+            mock_console = MagicMock()
+            
+            # Configure mock to simulate repository not mounted
+            service_check = MagicMock()
+            service_check.stdout = "codestory-service"  # Container is running
+            
+            directory_check = MagicMock()
+            directory_check.returncode = 1  # Directory doesn't exist
+            
+            mock_run.side_effect = [service_check, directory_check]
+            
+            # Test with repository not mounted
+            result = ingest.is_repo_mounted("/fake/repo", mock_console)
+            assert not result
+            
+            # Reset mock
+            mock_run.reset_mock()
+            mock_run.side_effect = None
+            
+            # Configure mock to simulate repository mounted
+            service_check = MagicMock()
+            service_check.stdout = "codestory-service"  # Container is running
+            
+            directory_check = MagicMock()
+            directory_check.returncode = 0  # Directory exists with content
+            
+            file_check = MagicMock()
+            file_check.stdout = "exists"  # File exists in container
+            
+            mock_run.side_effect = [service_check, directory_check, file_check]
+            
+            # Test with repository mounted
+            result = ingest.is_repo_mounted("/fake/repo", mock_console)
+            assert result
+    
+    def test_setup_repository_mount(self) -> None:
+        """Test the setup_repository_mount function."""
+        # Create a temp directory for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Mock the necessary functions
+            with patch("codestory.cli.commands.ingest.is_docker_running") as mock_docker:
+                with patch("codestory.cli.commands.ingest.is_repo_mounted") as mock_mounted:
+                    with patch("codestory.cli.commands.ingest.create_override_file") as mock_create_file:
+                        with patch("codestory.cli.commands.ingest.run_command") as mock_run:
+                            with patch("codestory.cli.commands.ingest.wait_for_service") as mock_wait:
+                                with patch("codestory.cli.commands.ingest.create_repo_config") as mock_config:
+                                    # Mock console
+                                    mock_console = MagicMock()
+                                    
+                                    # Configure mocks - Docker is running, repo is not mounted
+                                    mock_docker.return_value = True
+                                    mock_mounted.return_value = False
+                                    mock_create_file.return_value = True
+                                    mock_run.return_value = True
+                                    mock_wait.return_value = True
+                                    mock_config.return_value = True
+                                    
+                                    # Test normal case
+                                    result = ingest.setup_repository_mount(temp_dir, mock_console)
+                                    assert result
+                                    
+                                    # Check function calls
+                                    mock_docker.assert_called_once()
+                                    mock_create_file.assert_called_once()
+                                    mock_run.assert_called_once()
+                                    mock_wait.assert_called_once()
+                                    mock_config.assert_called_once()
+                                    
+                                    # Reset mocks
+                                    mock_docker.reset_mock()
+                                    mock_mounted.reset_mock()
+                                    mock_create_file.reset_mock()
+                                    mock_run.reset_mock()
+                                    mock_wait.reset_mock()
+                                    mock_config.reset_mock()
+                                    
+                                    # Configure mocks - Docker is running, repo is already mounted
+                                    mock_docker.return_value = True
+                                    mock_mounted.return_value = True
+                                    
+                                    # Test when repo is already mounted
+                                    result = ingest.setup_repository_mount(temp_dir, mock_console)
+                                    assert result
+                                    
+                                    # Check function calls - should exit early
+                                    mock_mounted.assert_called_once()
+                                    mock_create_file.assert_not_called()
+
+    def test_ingest_mount_command(self, cli_runner: CliRunner) -> None:
+        """Test the 'ingest mount' command."""
+        # Create a temp directory for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Mock the repository mounting function
+            with patch("codestory.cli.commands.ingest.setup_repository_mount") as mock_setup:
+                # Configure mock to return success
+                mock_setup.return_value = True
+                
+                # Run CLI with ingest mount
+                result = cli_runner.invoke(
+                    app,
+                    ["ingest", "mount", temp_dir]
+                )
+                
+                # Check result
+                assert result.exit_code == 0
+                assert "mount" in result.output.lower()
+                assert "Successfully mounted" in result.output
+                
+                # Check function calls
+                mock_setup.assert_called_once()
+                
+                # Reset mock
+                mock_setup.reset_mock()
+                
+                # Configure mock to return failure
+                mock_setup.return_value = False
+                
+                # Run CLI with ingest mount
+                result = cli_runner.invoke(
+                    app,
+                    ["ingest", "mount", temp_dir]
+                )
+                
+                # Check result
+                assert result.exit_code == 0
+                assert "Failed to mount" in result.output

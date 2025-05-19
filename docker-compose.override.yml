@@ -1,0 +1,7 @@
+services:
+  service:
+    volumes:
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpsw3hzxam:/repositories/tmpsw3hzxam:ro
+  worker:
+    volumes:
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpsw3hzxam:/repositories/tmpsw3hzxam:ro
