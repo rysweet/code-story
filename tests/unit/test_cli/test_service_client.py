@@ -268,3 +268,69 @@ class TestServiceClient:
 
             # Verify browser was opened
             mock_open.assert_called_once_with("http://example.com/ui")
+            
+    def test_clear_database_success(self) -> None:
+        """Test successful database clearing."""
+        # Mock execute_query method
+        client = ServiceClient()
+        client.execute_query = MagicMock()
+        client.execute_query.return_value = {"status": "success"}
+        client.console = MagicMock()
+        
+        # Call clear_database with confirmation
+        result = client.clear_database(confirm=True)
+        
+        # Verify the result
+        assert result["status"] == "success"
+        assert "message" in result
+        assert "timestamp" in result
+        
+        # Verify execute_query was called twice
+        assert client.execute_query.call_count == 2
+        # First call should be to delete all nodes
+        client.execute_query.assert_any_call(
+            query="MATCH (n) DETACH DELETE n",
+            query_type="write"
+        )
+        # Second call should be to re-initialize schema
+        client.execute_query.assert_any_call(
+            query="CALL apoc.schema.assert({}, {})",
+            query_type="write"
+        )
+        
+    def test_clear_database_without_confirmation(self) -> None:
+        """Test clearing database without confirmation."""
+        # Create client
+        client = ServiceClient()
+        client.execute_query = MagicMock()
+        
+        # Call clear_database without confirmation
+        with pytest.raises(ValueError, match="must be explicitly confirmed"):
+            client.clear_database(confirm=False)
+        
+        # Verify execute_query was not called
+        client.execute_query.assert_not_called()
+        
+    def test_clear_database_error(self) -> None:
+        """Test database clearing with error."""
+        # Create client
+        client = ServiceClient()
+        client.execute_query = MagicMock()
+        client.execute_query.side_effect = ServiceError("Error message")
+        client.console = MagicMock()
+        
+        # Call clear_database
+        with pytest.raises(ServiceError, match="Failed to clear database"):
+            client.clear_database(confirm=True)
+        
+    def test_clear_database_auth_error(self) -> None:
+        """Test database clearing with authorization error."""
+        # Create client
+        client = ServiceClient()
+        client.execute_query = MagicMock()
+        client.execute_query.side_effect = ServiceError("Query execution failed: 403 Forbidden")
+        client.console = MagicMock()
+        
+        # Call clear_database
+        with pytest.raises(ServiceError, match="Administrative privileges required"):
+            client.clear_database(confirm=True)

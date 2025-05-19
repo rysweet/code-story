@@ -3,3 +3,4 @@
  */
 export { default as ConfigEditor } from './ConfigEditor';
 export { default as ConfigSchema } from './ConfigSchema';
+export { default as DatabaseManager } from './DatabaseManager';

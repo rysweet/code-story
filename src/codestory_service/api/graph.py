@@ -8,13 +8,15 @@ It also provides visualization endpoints for generating graph visualizations.
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from ..application.graph_service import GraphService, get_graph_service
 from ..domain.graph import (
     AskAnswer,
     AskRequest,
     CypherQuery,
+    DatabaseClearRequest,
+    DatabaseClearResponse,
     PathRequest,
     PathResult,
     QueryResult,
@@ -24,7 +26,7 @@ from ..domain.graph import (
     VisualizationTheme,
     VisualizationType,
 )
-from ..infrastructure.msal_validator import get_current_user, get_optional_user
+from ..infrastructure.msal_validator import get_current_user, get_optional_user, is_admin
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -37,6 +39,9 @@ ask_router = APIRouter(prefix="/v1/ask", tags=["ask"])
 
 # Create router for visualization endpoint
 visualization_router = APIRouter(prefix="/v1/visualize", tags=["visualization"])
+
+# Create router for database management endpoint
+db_router = APIRouter(prefix="/v1/database", tags=["database"])
 
 
 @query_router.post(
@@ -355,3 +360,43 @@ async def generate_visualization_legacy(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating visualization: {e!s}",
         ) from e
+            
+            
+@db_router.post(
+    "/clear",
+    response_model=DatabaseClearResponse,
+    summary="Clear database",
+    description="Clear all data from the database. Requires admin privileges.",
+)
+async def clear_database(
+    request: DatabaseClearRequest,
+    graph_service: GraphService = Depends(get_graph_service),
+    user: dict = Depends(is_admin),  # Require admin privileges
+) -> DatabaseClearResponse:
+    """Clear all data from the database.
+    
+    This is a destructive operation that will delete all nodes and relationships.
+    Schema constraints and indexes can be preserved.
+    
+    Args:
+        request: Clear request parameters, includes confirmation
+        graph_service: Graph service instance
+        user: Current admin user
+        
+    Returns:
+        DatabaseClearResponse with operation status
+        
+    Raises:
+        HTTPException: If the operation fails or user lacks permissions
+    """
+    try:
+        logger.warning(f"Database clear requested by user: {user.get('name', 'unknown')}")
+        return await graph_service.clear_database(request)
+    except Exception as e:
+        logger.error(f"Error clearing database: {e!s}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error clearing database: {e!s}",
+        )

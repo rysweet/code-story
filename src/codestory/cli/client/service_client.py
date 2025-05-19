@@ -386,7 +386,7 @@ class ServiceClient:
             raise ServiceError(f"Invalid response format: {str(e)}")
 
     def execute_query(
-        self, query: str, parameters: Optional[Dict[str, Any]] = None
+        self, query: str, parameters: Optional[Dict[str, Any]] = None, query_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute a Cypher query or MCP tool call.
@@ -394,6 +394,7 @@ class ServiceClient:
         Args:
             query: Cypher query or MCP tool call string.
             parameters: Optional query parameters.
+            query_type: Optional query type ("read" or "write"). If None, auto-detected based on query.
 
         Returns:
             Query results.
@@ -404,9 +405,30 @@ class ServiceClient:
 
         if parameters:
             data["parameters"] = parameters
+            
+        # If query_type is provided, add it to the request data
+        if query_type in ["read", "write"]:
+            data["query_type"] = query_type
 
         try:
-            response = self.client.post("/query", json=data)
+            # Determine if this is a Cypher query or MCP tool call
+            is_cypher = query.strip().upper().startswith(
+                ("MATCH", "CREATE", "MERGE", "RETURN", "DELETE", "REMOVE", "SET", "WITH")
+            )
+            endpoint_type = "cypher" if is_cypher else "mcp"
+            
+            # If query_type wasn't provided but this is a Cypher query, auto-detect if it's a write operation
+            if query_type is None and is_cypher:
+                # Writing operations typically start with these keywords
+                if query.strip().upper().startswith(("CREATE", "MERGE", "DELETE", "REMOVE", "SET")):
+                    data["query_type"] = "write"
+                else:
+                    data["query_type"] = "read"
+                    
+            # Use the appropriate endpoint based on query type
+            endpoint = "/query/cypher" if endpoint_type == "cypher" else "/query"
+            
+            response = self.client.post(endpoint, json=data)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
@@ -669,6 +691,58 @@ class ServiceClient:
                 )
             else:
                 raise ServiceError(f"Azure authentication renewal failed: {error_detail}")
+                
+    def clear_database(self, confirm: bool = False) -> Dict[str, Any]:
+        """
+        Clear all data from the database by executing a delete query.
+        
+        This is a destructive operation that will delete all nodes and relationships in
+        the database. It requires admin privileges. Schema constraints and indexes will remain.
+        
+        Args:
+            confirm: Whether the operation has been confirmed. Must be True to proceed.
+            
+        Returns:
+            Dictionary with status information
+            
+        Raises:
+            ServiceError: If the clear operation fails
+            ValueError: If the operation is not confirmed
+        """
+        if not confirm:
+            raise ValueError(
+                "Database clear operation must be explicitly confirmed by setting confirm=True"
+            )
+        
+        try:
+            # Execute delete all nodes query using our execute_query method
+            self.console.print("[yellow]Clearing all data from database...[/]")
+            self.execute_query(
+                query="MATCH (n) DETACH DELETE n",
+                query_type="write"
+            )
+            
+            # Re-initialize the schema
+            self.console.print("[yellow]Reinitializing database schema...[/]")
+            self.execute_query(
+                query="CALL apoc.schema.assert({}, {})",
+                query_type="write"
+            )
+            
+            return {
+                "status": "success",
+                "message": "Database cleared successfully",
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            }
+            
+        except ServiceError as e:
+            # Check if this is an authorization error
+            error_message = str(e)
+            if "403" in error_message or "forbidden" in error_message.lower():
+                raise ServiceError("Administrative privileges required to clear database")
+            raise ServiceError(f"Failed to clear database: {error_message}")
+        except Exception as e:
+            raise ServiceError(f"Failed to clear database: {str(e)}")
 
 
 class ServiceError(Exception):

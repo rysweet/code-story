@@ -15,6 +15,8 @@ from ..domain.graph import (
     AskAnswer,
     AskRequest,
     CypherQuery,
+    DatabaseClearRequest,
+    DatabaseClearResponse,
     PathRequest,
     PathResult,
     QueryResult,
@@ -1106,6 +1108,58 @@ class GraphService:
         )
         
         return formatted_html
+        
+    async def clear_database(self, request: DatabaseClearRequest) -> DatabaseClearResponse:
+        """Clear all data from the database.
+        
+        This is a destructive operation that will delete all nodes and relationships
+        in the database. Schema constraints and indexes will remain if preserve_schema
+        is True.
+        
+        Args:
+            request: Database clear request parameters
+        
+        Returns:
+            DatabaseClearResponse with status of the operation
+            
+        Raises:
+            HTTPException: If clearing the database fails
+        """
+        try:
+            logger.warning("Clearing all data from database")
+            
+            # Create a delete query to remove all nodes and relationships
+            delete_query = CypherQuery(
+                query="MATCH (n) DETACH DELETE n",
+                query_type="write"
+            )
+            
+            # Execute the query
+            await self.execute_cypher_query(delete_query)
+            
+            # If we need to reinitialize the schema
+            if request.preserve_schema:
+                logger.info("Preserving schema - reinitializing")
+                schema_query = CypherQuery(
+                    query="CALL apoc.schema.assert({}, {})",
+                    query_type="write"
+                )
+                await self.execute_cypher_query(schema_query)
+            
+            logger.info("Database successfully cleared")
+            return DatabaseClearResponse(
+                status="success",
+                message="Database successfully cleared"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error clearing database: {e!s}")
+            if isinstance(e, HTTPException):
+                raise e
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error clearing database: {e!s}",
+            )
 
 
 async def get_graph_service(

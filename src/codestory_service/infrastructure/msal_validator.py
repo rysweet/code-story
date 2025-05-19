@@ -319,3 +319,32 @@ def require_role(required_roles: List[str]):
         )
 
     return role_checker
+
+
+async def is_admin(
+    user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Check if the current user has admin role.
+
+    Args:
+        user: User claims dictionary
+
+    Returns:
+        The user claims if the user is an admin
+
+    Raises:
+        HTTPException: If the user doesn't have admin role
+    """
+    user_roles = user.get("roles", [])
+    
+    if "admin" in user_roles:
+        return user
+        
+    logger.warning(
+        f"Admin access denied: User {user.get('name')} with roles {user_roles} "
+        f"does not have the admin role"
+    )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, 
+        detail="Administrative privileges required"
+    )

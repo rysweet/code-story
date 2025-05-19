@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { Box, Title, Text, Stack } from '@mantine/core';
+import { Box, Title, Text, Stack, Space } from '@mantine/core';
 import { useDispatch } from 'react-redux';
 import { setActivePage } from '../store/slices/uiSlice';
-import { ConfigEditor } from '../components/config';
+import { ConfigEditor, DatabaseManager } from '../components/config';
 
 /**
  * ConfigPage component for managing configuration settings
@@ -26,6 +26,10 @@ const ConfigPage: React.FC = () => {
         </Text>
 
         <ConfigEditor />
+        
+        <Space h="md" />
+        
+        <DatabaseManager />
       </Stack>
     </Box>
   );
