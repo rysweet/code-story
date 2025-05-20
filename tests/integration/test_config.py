@@ -49,7 +49,7 @@ def get_test_settings() -> Settings:
         uri=neo4j_uri,
         username="neo4j",
         password="password",
-        database="neo4j",  # Match actual DB name in docker-compose
+        database="testdb",  # Match test DB name in docker-compose.test.yml
     )
 
     # Define redis test settings based on environment

@@ -255,7 +255,8 @@ def test_context_manager():
             skip_connection_check=True,
             skip_settings=True,
         ) as connector:
-            pass
+            # Should not raise exception
+            assert isinstance(connector, Neo4jConnector)
 
-        # Verify driver closed after context exit
+        # After exiting the context manager, close should be called
         mock_driver.close.assert_called_once()

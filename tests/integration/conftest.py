@@ -163,11 +163,11 @@ def neo4j_env():
     
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
+    os.environ["NEO4J_DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
     
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
+    os.environ["NEO4J__DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -206,11 +206,11 @@ def load_env_vars():
     
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
+    os.environ["NEO4J_DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
     
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
+    os.environ["NEO4J__DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
 
     # Set Redis environment variables based on environment
     if docker_env:

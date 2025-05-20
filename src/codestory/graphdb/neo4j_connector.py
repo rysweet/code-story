@@ -174,6 +174,9 @@ class Neo4jConnector:
 
     Provides methods for executing queries, managing transactions,
     and performing vector similarity search.
+    
+    This class implements the context manager protocol, allowing it to be used with
+    the 'with' statement to ensure proper cleanup of resources.
     """
 
     def __init__(
@@ -281,6 +284,28 @@ class Neo4jConnector:
         if hasattr(self, "driver") and self.driver:
             self.driver.close()
             logger.debug("Neo4j driver closed")
+            
+    def __enter__(self) -> 'Neo4jConnector':
+        """Enter the context manager.
+        
+        Returns:
+            Neo4jConnector: This instance.
+        """
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit the context manager.
+        
+        This method is called when exiting a 'with' block. It ensures
+        that the driver connection is closed properly, even if an exception
+        was raised within the with block.
+        
+        Args:
+            exc_type: The exception type, if an exception was raised, otherwise None.
+            exc_val: The exception value, if an exception was raised, otherwise None.
+            exc_tb: The traceback, if an exception was raised, otherwise None.
+        """
+        self.close()
 
     @instrument_query(query_type=QueryType.READ)
     @retry_on_transient()
