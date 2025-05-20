@@ -89,8 +89,12 @@ class BlarifyStep(PipelineStep):
         docker_image = config.get("docker_image", self.image)
         timeout = config.get("timeout", self.timeout)
 
-        # Start the Celery task
-        task = run_blarify.apply_async(
+        # Start the Celery task using current_app.send_task with the fully qualified task name
+        from celery import current_app
+        
+        # Use the fully qualified task name to avoid task routing issues
+        task = current_app.send_task(
+            "codestory_blarify.step.run_blarify",
             kwargs={
                 "repository_path": repository_path,
                 "job_id": job_id,
@@ -220,9 +224,12 @@ class BlarifyStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke
-
-        revoke(task_id, terminate=True)
+        from celery.app.control import Control
+        from celery import current_app
+        
+        # Use the control interface from the current app
+        control = Control(current_app)
+        control.revoke(task_id, terminate=True)
 
         # Try to stop the Docker container if running
         container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
@@ -292,7 +299,7 @@ class BlarifyStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="blarify.run_blarify")
+@shared_task(bind=True, name="codestory_blarify.step.run_blarify")
 def run_blarify(
     self,  # Celery task instance
     repository_path: str,

@@ -71,8 +71,12 @@ class SummarizerStep(PipelineStep):
         max_concurrency = config.get("max_concurrency", 5)
         max_tokens_per_file = config.get("max_tokens_per_file", 8000)
 
-        # Start the Celery task
-        task = run_summarizer.apply_async(
+        # Start the Celery task using current_app.send_task with the fully qualified task name
+        from celery import current_app
+        
+        # Use the fully qualified task name to avoid task routing issues
+        task = current_app.send_task(
+            "codestory_summarizer.step.run_summarizer",
             kwargs={
                 "repository_path": repository_path,
                 "job_id": job_id,
@@ -264,7 +268,7 @@ class SummarizerStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="summarizer.run_summarizer")
+@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")
 def run_summarizer(
     self: Any,
     repository_path: str,

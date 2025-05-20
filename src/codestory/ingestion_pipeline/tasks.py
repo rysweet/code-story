@@ -72,7 +72,9 @@ def run_step(
         # Map step name to the fully qualified task name
         task_name_map = {
             "filesystem": "codestory_filesystem.step.process_filesystem",
-            # Add other mappings as needed for other steps
+            "blarify": "codestory_blarify.step.run_blarify",
+            "summarizer": "codestory_summarizer.step.run_summarizer",
+            "docgrapher": "codestory_docgrapher.step.run_docgrapher",
         }
         
         # Get the task name from the map or fallback to legacy format
@@ -82,7 +84,7 @@ def run_step(
         logger.debug(f"Dispatching to task: {task_name}")
         logger.debug(f"Available tasks: {[t for t in app.tasks.keys() if step_name in t]}")
 
-        # Prepare configuration for the step task
+        # Prepare configuration for the step task - with parameter filtering
         step_config_copy = step_config.copy()
         
         # Don't add repository_path to kwargs as it's already passed in the task signature
@@ -95,6 +97,22 @@ def run_step(
         # Include job_id in kwargs if present
         if 'job_id' not in step_config_copy and job_id:
             step_config_copy['job_id'] = job_id
+        
+        # Filter out step-specific parameters that are not common to all steps
+        # This prevents "unexpected keyword argument" errors when passing step configs
+        if step_name == "blarify":
+            # Blarify step doesn't use concurrency parameter
+            if 'concurrency' in step_config_copy:
+                logger.debug(f"Removing 'concurrency' from blarify step config to avoid parameter mismatch")
+                del step_config_copy['concurrency']
+                
+        elif step_name == "summarizer" or step_name == "docgrapher":
+            # These steps might have specific parameters that other steps don't accept
+            safe_params = ['job_id', 'ignore_patterns', 'timeout', 'incremental'] 
+            for param in list(step_config_copy.keys()):
+                if param not in safe_params and param != step_name + "_specific":
+                    logger.debug(f"Removing '{param}' from {step_name} step config to avoid parameter mismatch")
+                    del step_config_copy[param]
             
         logger.debug(f"Sending task {task_name} with args=[repository_path={repository_path}] and kwargs={step_config_copy}")
         
