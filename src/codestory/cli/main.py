@@ -141,12 +141,13 @@ def app(
 # Register commands later to avoid circular imports
 def register_commands() -> None:
     """Register all CLI commands."""
-    from .commands import ask, config, ingest, query, service, ui, visualize
+    from .commands import ask, config, database, ingest, query, service, ui, visualize
 
     # Register command groups
     app.add_command(ingest.ingest)
     app.add_command(ask.ask)
     app.add_command(config.config)
+    app.add_command(database.database)
     app.add_command(query.query)
     app.add_command(service.service)
     app.add_command(ui.ui)
@@ -159,6 +160,7 @@ def register_commands() -> None:
     app.add_command(service.status, name="st")
     app.add_command(ask.ask, name="gs")  # Graph search
     app.add_command(visualize.generate, name="vz")  # Alias for visualize generate
+    app.add_command(database.database, name="db")  # Database commands
 
     # Additional aliases from the spec
     app.add_command(service.start_service, name="ss")  # Service start
@@ -166,6 +168,7 @@ def register_commands() -> None:
     app.add_command(ingest.stop_job, name="is")  # Ingest stop
     app.add_command(ingest.list_jobs, name="ij")  # Ingest jobs
     app.add_command(config.show_config, name="cfs")  # Config show
+    app.add_command(database.clear_database, name="dbc")  # Database clear
     
     # Enhanced aliases for better suggestions and direct command access
     # Add common top-level commands as direct aliases
@@ -173,6 +176,7 @@ def register_commands() -> None:
     app.add_command(service.start_service, name="start")  # Direct alias for "service start"
     app.add_command(service.stop_service, name="stop")  # Direct alias for "service stop"
     app.add_command(config.show_config, name="show")  # Direct alias for "config show"
+    app.add_command(database.clear_database, name="clear")  # Direct alias for "database clear"
 
 
 # Register commands after app is defined
