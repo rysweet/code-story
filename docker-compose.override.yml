@@ -1,7 +1,16 @@
 services:
   service:
+    environment:
+      # Override environment variables for service to fix Azure authentication issues
+      - CODESTORY_NO_MODEL_CHECK=true
+      - OPENAI__API_KEY=sk-dummy-apikey
     volumes:
-      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmptoj0fipr:/repositories/tmptoj0fipr:ro
+      - /Users/ryan/src/msec/code-story:/repositories/code-story:ro
+      
   worker:
+    environment:
+      # Override environment variables for worker to fix Azure authentication issues  
+      - CODESTORY_NO_MODEL_CHECK=true
+      - OPENAI__API_KEY=sk-dummy-apikey
     volumes:
-      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmptoj0fipr:/repositories/tmptoj0fipr:ro
+      - /Users/ryan/src/msec/code-story:/repositories/code-story:ro
