@@ -69,8 +69,14 @@ def run_step(
     try:
         # This task doesn't directly run the step - instead it dispatches
         # to the appropriate plugin's task which is registered separately
-        # Use the simple registered name format: "{step_name}.run"
-        task_name = f"{step_name}.run"  # e.g., "filesystem.run"
+        # Map step name to the fully qualified task name
+        task_name_map = {
+            "filesystem": "codestory_filesystem.step.process_filesystem",
+            # Add other mappings as needed for other steps
+        }
+        
+        # Get the task name from the map or fallback to legacy format
+        task_name = task_name_map.get(step_name, f"{step_name}.run")
         
         # Log what we're trying to do
         logger.debug(f"Dispatching to task: {task_name}")
