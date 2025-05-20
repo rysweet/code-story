@@ -38,7 +38,7 @@ def patch_prometheus_metrics():
 @pytest.fixture
 def mock_settings():
     """Create mock settings for testing."""
-    with patch("src.codestory.llm.client.get_settings") as mock_get_settings:
+    with patch("codestory.llm.client.get_settings") as mock_get_settings:
         settings = MagicMock()
 
         # Configure openai settings in the mock
@@ -64,18 +64,18 @@ def client():
     with (
         patch("openai.AzureOpenAI"),
         patch("openai.AsyncAzureOpenAI"),
-        patch("src.codestory.llm.client.DefaultAzureCredential"),
-        patch("src.codestory.llm.client.get_bearer_token_provider"),
+        patch("codestory.llm.client.DefaultAzureCredential"),
+        patch("codestory.llm.client.get_bearer_token_provider"),
         # Also patch the metric decorators to avoid registration conflicts
-        patch("src.codestory.llm.client.instrument_request", lambda op: lambda f: f),
+        patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
         patch(
-            "src.codestory.llm.client.instrument_async_request", lambda op: lambda f: f
+            "codestory.llm.client.instrument_async_request", lambda op: lambda f: f
         ),
         patch(
-            "src.codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f
+            "codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f
         ),
         patch(
-            "src.codestory.llm.client.retry_on_openai_errors_async",
+            "codestory.llm.client.retry_on_openai_errors_async",
             lambda **kw: lambda f: f,
         ),
     ):
@@ -100,8 +100,8 @@ class TestOpenAIClient:
         with (
             patch("openai.AzureOpenAI"),
             patch("openai.AsyncAzureOpenAI"),
-            patch("src.codestory.llm.client.DefaultAzureCredential"),
-            patch("src.codestory.llm.client.get_bearer_token_provider"),
+            patch("codestory.llm.client.DefaultAzureCredential"),
+            patch("codestory.llm.client.get_bearer_token_provider"),
         ):
             client = OpenAIClient(endpoint="https://test-endpoint.openai.azure.com")
 
@@ -122,15 +122,14 @@ class TestOpenAIClient:
             assert client.chat_model == "custom-chat-model"
             assert client.reasoning_model == "custom-reasoning-model"
 
-    @pytest.mark.skip(reason="This test is currently failing, needs fixing")
     def test_init_missing_credentials(self):
         """Test client initialization with missing credentials."""
         with patch(
-            "src.codestory.llm.client.get_settings",
+            "codestory.llm.client.get_settings",
             side_effect=Exception("No settings"),
         ):
-            with patch("src.codestory.llm.client.DefaultAzureCredential"), patch(
-                "src.codestory.llm.client.get_bearer_token_provider"
+            with patch("codestory.llm.client.DefaultAzureCredential"), patch(
+                "codestory.llm.client.get_bearer_token_provider"
             ), pytest.raises(AuthenticationError):
                 OpenAIClient()  # No endpoint provided
 
@@ -275,11 +274,11 @@ class TestOpenAIClient:
         with (
             patch("openai.AzureOpenAI") as mock_azure_openai,
             patch("openai.AsyncAzureOpenAI"),
-            patch("src.codestory.llm.backoff.retry_on_openai_errors"),
-            patch("src.codestory.llm.client.DefaultAzureCredential"),
-            patch("src.codestory.llm.client.get_bearer_token_provider"),
+            patch("codestory.llm.backoff.retry_on_openai_errors"),
+            patch("codestory.llm.client.DefaultAzureCredential"),
+            patch("codestory.llm.client.get_bearer_token_provider"),
             patch(
-                "src.codestory.llm.client.instrument_request", lambda op: lambda f: f
+                "codestory.llm.client.instrument_request", lambda op: lambda f: f
             ),
         ):
             # Configure the mock OpenAI client
@@ -347,14 +346,18 @@ class TestOpenAIClient:
 class TestCreateClient:
     """Tests for the create_client function."""
 
-    @pytest.mark.skip(reason="Complex mocking causing issues, to be fixed later")
     def test_create_client(self, mock_settings):
         """Test client creation with default settings."""
         with (
             patch("openai.AzureOpenAI"),
             patch("openai.AsyncAzureOpenAI"),
-            patch("src.codestory.llm.client.DefaultAzureCredential"),
-            patch("src.codestory.llm.client.get_bearer_token_provider"),
+            patch("codestory.llm.client.DefaultAzureCredential"),
+            patch("codestory.llm.client.get_bearer_token_provider"),
+            # Also patch metric decorators to avoid conflicts
+            patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
+            patch("codestory.llm.client.instrument_async_request", lambda op: lambda f: f),
+            patch("codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f),
+            patch("codestory.llm.client.retry_on_openai_errors_async", lambda **kw: lambda f: f),
         ):
             client = create_client()
 
@@ -364,17 +367,16 @@ class TestCreateClient:
             assert client.chat_model == "gpt-4o"
             assert client.reasoning_model == "gpt-4o"
 
-    @pytest.mark.skip(reason="Complex mocking causing issues, to be fixed later")
     def test_create_client_override(self):
         """Test client creation with overridden settings."""
         # Since we're mocking the client itself, let's make a simpler test
-        with patch("src.codestory.llm.client.OpenAIClient") as mock_client_class:
+        with patch("codestory.llm.client.OpenAIClient") as mock_client_class:
             # Configure our mock client
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client
 
             # Don't use the real settings, mock them with exact values we need
-            with patch("src.codestory.llm.client.get_settings") as mock_get_settings:
+            with patch("codestory.llm.client.get_settings") as mock_get_settings:
                 # Create a simple settings mock that has just what we need
                 mock_settings = MagicMock()
                 mock_settings.openai = MagicMock()
@@ -395,4 +397,13 @@ class TestCreateClient:
                 client = create_client()
 
                 # Verify client was created with the correct settings
-                mock_client_class.assert_called_once()
+                mock_client_class.assert_called_once_with(
+                    endpoint="https://test-endpoint.openai.azure.com",
+                    embedding_model="text-embedding-3-small",
+                    chat_model="gpt-4o",
+                    reasoning_model="gpt-4o",
+                    api_version="2025-03-01-preview",
+                    timeout=30.0,
+                    max_retries=3,
+                    retry_backoff_factor=2.0,
+                )
