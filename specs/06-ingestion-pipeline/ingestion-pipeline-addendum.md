@@ -111,3 +111,70 @@ The repository mounting subsystem now follows this improved architecture:
    8. Proceeds with ingestion using the proper container path
 
 This architecture ensures reliable repository mounting across different environments and deployment scenarios.
+
+## A.2 Authentication Resilience Improvements
+
+### A.2.1 OpenAI Adapter Resilience
+
+The ingestion pipeline has been enhanced with improved Azure OpenAI authentication resilience to minimize disruptions due to authentication failures:
+
+1. **Automatic Tenant ID Detection**:
+   - Extracts tenant IDs from error messages using sophisticated pattern matching
+   - Retrieves tenant ID from environment variables when available
+   - Checks Azure CLI configuration as a fallback mechanism
+
+2. **Authentication Renewal**:
+   - Automatically attempts to renew Azure authentication tokens when expired
+   - Uses Azure CLI with appropriate parameters to refresh credentials
+   - Injects credentials into containers for consistent authentication
+
+3. **Enhanced Error Handling**:
+   - Provides detailed error diagnostics for authentication failures
+   - Offers clear, actionable guidance for resolving authentication issues
+   - Detects various authentication error patterns including:
+     - DefaultAzureCredential failures
+     - AAD token expiration
+     - Azure CLI installation issues
+     - API endpoint configuration problems
+
+4. **Graceful Degradation**:
+   - Service continues operating with degraded capabilities when authentication fails
+   - Fallback to API key authentication when available
+   - DummyOpenAIAdapter implementation for completely offline operation
+
+### A.2.2 Authentication Architecture
+
+The authentication resilience system follows this architecture:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Authentication  │    │  OpenAIAdapter  │    │  LLM Client     │
+│    Detection    │───▶│   Health Check  │───▶│  Configuration  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                     │                      │
+         ▼                     ▼                      ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Tenant ID      │    │ Azure CLI Login │    │ Token Injection │
+│   Extraction    │───▶│    Attempt      │───▶│  to Containers  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### A.2.3 Environment Variable Configuration
+
+New environment variables control authentication behavior:
+
+```bash
+# Bypass strict authentication checking
+CODESTORY_NO_MODEL_CHECK=true
+
+# Fallback to API key when available
+OPENAI__API_KEY=sk-your-key-here
+
+# Specify tenant ID directly
+AZURE_TENANT_ID=your-tenant-id
+
+# Enable LLM client debug mode
+CODESTORY_LLM_DEBUG=true
+```
+
+These improvements ensure the ingestion pipeline can continue operating even when facing authentication challenges, creating a more resilient system.
