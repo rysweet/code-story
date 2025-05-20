@@ -144,22 +144,30 @@ def neo4j_env():
     """Setup Neo4j environment variables for tests."""
     # Determine the correct Neo4j port to use
     # In CI environment, Neo4j is often on the standard port
+    # In Docker environment, it's typically mapped to 7689 but with container-to-container networking
     # In local docker-compose.test.yml, it's on port 7688
     ci_env = os.environ.get("CI") == "true"
-    neo4j_port = "7687" if ci_env else "7688"
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
     
-    # Set the environment variables
-    neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    # Set the environment variables based on environment
+    if docker_env:
+        # In Docker environment, use container networking
+        neo4j_uri = "bolt://neo4j:7687"  # Direct container service name
+    else:
+        # Otherwise use localhost with mapped port
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    
     os.environ["NEO4J_URI"] = neo4j_uri
     os.environ["NEO4J__URI"] = neo4j_uri
     
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
     
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
+    os.environ["NEO4J__DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -180,28 +188,46 @@ def load_env_vars():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    # Set up Neo4j environment variables (replicate neo4j_env fixture logic to avoid calling it directly)
+    # Set up Neo4j environment variables (replicate neo4j_env fixture logic)
     ci_env = os.environ.get("CI") == "true"
-    neo4j_port = "7687" if ci_env else "7688"
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
     
-    # Set the environment variables
-    neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    # Set the environment variables based on environment
+    if docker_env:
+        # In Docker environment, use container networking
+        neo4j_uri = "bolt://neo4j:7687"  # Direct container service name
+    else:
+        # Otherwise use localhost with mapped port
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    
     os.environ["NEO4J_URI"] = neo4j_uri
     os.environ["NEO4J__URI"] = neo4j_uri
     
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
     
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
+    os.environ["NEO4J__DATABASE"] = "neo4j"  # Match actual DB name in docker-compose
 
-    # Set Redis environment variables
-    os.environ["REDIS_URI"] = "redis://localhost:6379/0"
-    os.environ["REDIS__URI"] = "redis://localhost:6379/0"
-    os.environ["REDIS_HOST"] = "localhost"
-    os.environ["REDIS_PORT"] = "6379"
+    # Set Redis environment variables based on environment
+    if docker_env:
+        # In Docker environment, use container networking
+        redis_host = "redis"
+        redis_port = "6379"
+        redis_uri = f"redis://{redis_host}:{redis_port}/0"
+    else:
+        # Otherwise use localhost with mapped port
+        redis_host = "localhost"
+        redis_port = "6389"  # Port mapped in docker-compose.yml
+        redis_uri = f"redis://{redis_host}:{redis_port}/0"
+    
+    os.environ["REDIS_URI"] = redis_uri
+    os.environ["REDIS__URI"] = redis_uri
+    os.environ["REDIS_HOST"] = redis_host
+    os.environ["REDIS_PORT"] = redis_port
 
     # Set OpenAI environment variables for testing
     os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
@@ -216,13 +242,22 @@ def neo4j_connector():
     # Get Neo4j connection details from environment variables
     # with fallback to default test values
     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
-    
-    # Use correct Neo4j port based on environment
-    ci_env = os.environ.get("CI") == "true"
-    default_uri = f"bolt://localhost:{7687 if ci_env else 7688}"
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
-    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
+    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "neo4j"
+    
+    # Use correct Neo4j connection based on environment
+    ci_env = os.environ.get("CI") == "true"
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    
+    if docker_env:
+        # In Docker environment, use container service name
+        default_uri = "bolt://neo4j:7687"
+    else:
+        # Otherwise use localhost with mapped port
+        neo4j_port = 7687 if ci_env else 7689  # Port mapped in docker-compose.yml
+        default_uri = f"bolt://localhost:{neo4j_port}"
+    
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
 
     # Create a Neo4j connector
     connector = Neo4jConnector(

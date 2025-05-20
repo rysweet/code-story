@@ -6,9 +6,11 @@ and store AST and symbol bindings in the Neo4j database.
 
 import os
 
-# Determine Neo4j port based on CI environment
+# Determine Neo4j port based on environment
 ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
+# In Docker setup, we use port 7689 mapped to container port 7687
+docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
 import tempfile
 import time
 from pathlib import Path
@@ -17,10 +19,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Override environment variables to ensure we use the test instance
-os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
+# If we're in a container environment, use the container service name instead of localhost
+if docker_env:
+    os.environ["NEO4J__URI"] = "bolt://neo4j:7687"  # Use container service name
+else:
+    os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
+    
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "testdb"
+os.environ["NEO4J__DATABASE"] = "neo4j"  # Use the actual database name from docker-compose
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector

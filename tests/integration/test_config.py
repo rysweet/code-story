@@ -32,21 +32,36 @@ def get_test_settings() -> Settings:
         Settings: Test-configured settings instance
     """
     # Define neo4j test settings
-    # Determine the correct port based on CI environment
+    # Determine the correct port based on environment
     ci_env = os.environ.get("CI") == "true"
-    neo4j_port = "7687" if ci_env else "7688"
-    neo4j_uri = f"bolt://localhost:{neo4j_port}"  # Test port from docker-compose.test.yml
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
+    
+    # Determine URI based on environment
+    if docker_env:
+        # In Docker environment, use container service name
+        neo4j_uri = "bolt://neo4j:7687"
+    else:
+        # Otherwise use localhost with mapped port
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
     
     neo4j = Neo4jSettings(
         uri=neo4j_uri,
         username="neo4j",
         password="password",
-        database="testdb",
+        database="neo4j",  # Match actual DB name in docker-compose
     )
 
-    # Define redis test settings
+    # Define redis test settings based on environment
+    if docker_env:
+        # In Docker environment, use container service name
+        redis_uri = "redis://redis:6379/0"
+    else:
+        # Otherwise use localhost with mapped port
+        redis_uri = "redis://localhost:6389/0"  # Port mapped in docker-compose.yml
+    
     redis = RedisSettings(
-        uri="redis://localhost:6380/0",  # Test port from docker-compose.test.yml
+        uri=redis_uri,
     )
 
     # Define OpenAI test settings
