@@ -1,5 +1,21 @@
 # Shell Command History
 
+## May 19, 2025 (OpenAI Adapter Resilience Enhancement)
+- `cd /Users/ryan/src/msec/code-story && python -m pytest -v` - Run all pytest tests in the project
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit -v` - Run only unit tests
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/test_client.py -v` - Run unit tests for the OpenAI client
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/test_metrics.py -v` - Run unit tests for the LLM metrics
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/test_backoff.py -v` - Run unit tests for the LLM backoff functionality
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_llm/test_client_integration.py -v` - Run integration tests for the LLM client
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_infrastructure.py -v` - Run tests for the OpenAI adapter in the service
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/ -v` - Run all unit tests for the LLM module
+- `cd /Users/ryan/src/msec/code-story && git status` - Check git status
+- `cd /Users/ryan/src/msec/code-story && git add src/codestory_service/infrastructure/openai_adapter.py tests/unit/test_codestory_service/test_infrastructure.py` - Add changed files
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/ tests/unit/test_codestory_service/test_infrastructure.py -v` - Run relevant tests
+- `cd /Users/ryan/src/msec/code-story && python -m ruff format src/codestory_service/infrastructure/openai_adapter.py` - Format the changed file
+- `cd /Users/ryan/src/msec/code-story && git push origin llm-ingestion-pipeline` - Push changes to remote
+- `cd /Users/ryan/src/msec/code-story && gh pr checks 13` - Check PR status
+
 ## May 16, 2025 (Azure Authentication Resilience Implementation)
 - `cd /Users/ryan/src/msec/code-story && ls -la scripts/ingest_script.py` - Checking if the ingest script already exists
 - `cd /Users/ryan/src/msec/code-story && ls -la scripts/mount_repository.sh` - Checking if mount_repository.sh exists and is executable
