@@ -103,3 +103,160 @@ class TestServiceClient:
                 client.generate_visualization()
             except ServiceError:
                 pass  # We expect this to fail with all mocks returning errors
+                
+    def test_list_ingestion_jobs_with_items_field(self):
+        """Test list_ingestion_jobs with 'items' field in response."""
+        # Create client
+        client = ServiceClient()
+        
+        # Mock the httpx get method
+        with patch('httpx.Client.get') as mock_get:
+            # Setup mock response with 'items' field
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {
+                "items": [
+                    {"job_id": "job1", "status": "running"},
+                    {"job_id": "job2", "status": "completed"}
+                ],
+                "total": 2,
+                "limit": 10,
+                "offset": 0,
+                "has_more": False
+            }
+            mock_get.return_value = mock_response
+            
+            # Call list_ingestion_jobs
+            jobs = client.list_ingestion_jobs()
+            
+            # Check result
+            assert len(jobs) == 2
+            assert jobs[0]["job_id"] == "job1"
+            assert jobs[1]["job_id"] == "job2"
+    
+    def test_list_ingestion_jobs_with_jobs_field(self):
+        """Test list_ingestion_jobs with 'jobs' field in response (legacy format)."""
+        # Create client
+        client = ServiceClient()
+        
+        # Mock the httpx get method
+        with patch('httpx.Client.get') as mock_get:
+            # Setup mock response with 'jobs' field
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {
+                "jobs": [
+                    {"job_id": "job1", "status": "running"},
+                    {"job_id": "job2", "status": "completed"}
+                ]
+            }
+            mock_get.return_value = mock_response
+            
+            # Call list_ingestion_jobs
+            jobs = client.list_ingestion_jobs()
+            
+            # Check result
+            assert len(jobs) == 2
+            assert jobs[0]["job_id"] == "job1"
+            assert jobs[1]["job_id"] == "job2"
+    
+    def test_list_ingestion_jobs_with_invalid_format(self):
+        """Test list_ingestion_jobs with response lacking both 'items' and 'jobs' fields."""
+        # Create client
+        client = ServiceClient()
+        
+        # Mock the httpx get method
+        with patch('httpx.Client.get') as mock_get:
+            # Setup mock response with neither field
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {
+                "status": "success",
+                "data": []  # Some other unexpected format
+            }
+            mock_get.return_value = mock_response
+            
+            # Call list_ingestion_jobs - should raise ServiceError
+            with pytest.raises(ServiceError) as excinfo:
+                client.list_ingestion_jobs()
+            
+            # Check error message contains useful information
+            assert "Invalid response format" in str(excinfo.value)
+            assert "expected job data structure" in str(excinfo.value)
+            
+    def test_list_ingestion_jobs_with_list_format(self):
+        """Test list_ingestion_jobs with direct list response format."""
+        # Create client
+        client = ServiceClient()
+        
+        # Mock the httpx get method
+        with patch('httpx.Client.get') as mock_get:
+            # Setup mock response as direct list
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = [
+                {"job_id": "job1", "status": "running"},
+                {"job_id": "job2", "status": "completed"}
+            ]
+            mock_get.return_value = mock_response
+            
+            # Call list_ingestion_jobs
+            jobs = client.list_ingestion_jobs()
+            
+            # Check result
+            assert len(jobs) == 2
+            assert jobs[0]["job_id"] == "job1"
+            assert jobs[1]["job_id"] == "job2"
+            
+    def test_list_ingestion_jobs_with_single_job_format(self):
+        """Test list_ingestion_jobs with single job response format."""
+        # Create client
+        client = ServiceClient()
+        
+        # Mock the httpx get method
+        with patch('httpx.Client.get') as mock_get:
+            # Setup mock response as single job
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {
+                "job_id": "job1",
+                "status": "running",
+                "progress": 50.0
+            }
+            mock_get.return_value = mock_response
+            
+            # Call list_ingestion_jobs
+            jobs = client.list_ingestion_jobs()
+            
+            # Check result
+            assert len(jobs) == 1
+            assert jobs[0]["job_id"] == "job1"
+            
+    def test_list_ingestion_jobs_with_mock_format(self):
+        """Test list_ingestion_jobs with mock service format (job_id='jobs')."""
+        # Create client with console mock to check warning
+        console = MagicMock()
+        client = ServiceClient(console=console)
+        
+        # Mock the httpx get method
+        with patch('httpx.Client.get') as mock_get:
+            # Setup mock response as mock format
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {
+                "job_id": "jobs",
+                "status": "pending",
+                "progress": 0.0
+            }
+            mock_get.return_value = mock_response
+            
+            # Call list_ingestion_jobs
+            jobs = client.list_ingestion_jobs()
+            
+            # Check result
+            assert len(jobs) == 1
+            assert jobs[0]["job_id"] == "jobs"
+            
+            # Check warning was printed
+            console.print.assert_called_once()
+            assert "Warning" in console.print.call_args[0][0]

@@ -189,11 +189,17 @@ class TestOpenAIAdapter:
             
         mock_client._async_client.models.list = mock_list_error
         
-        # Create adapter with the mock
-        adapter = OpenAIAdapter(client=mock_client)
-        
-        # Call health check
-        result = await adapter.check_health()
+        # Mock get_azure_tenant_id_from_environment to return None for this test
+        with mock.patch('codestory_service.infrastructure.openai_adapter.get_azure_tenant_id_from_environment', return_value=None):
+            # Also patch extract_tenant_id_from_error to return None
+            with mock.patch('codestory_service.infrastructure.openai_adapter.extract_tenant_id_from_error', return_value=None):
+                # Mock asyncio.create_subprocess_exec to avoid actual subprocess creation
+                with mock.patch('asyncio.create_subprocess_exec'):
+                    # Create adapter with the mock
+                    adapter = OpenAIAdapter(client=mock_client)
+                    
+                    # Call health check
+                    result = await adapter.check_health()
         
         # Verify detection of Azure auth issue
         assert result["status"] == "unhealthy"
@@ -206,7 +212,6 @@ class TestOpenAIAdapter:
         assert "codestory service auth-renew" in result["details"]["hint"]
         assert "tenant_id" in result["details"]
         assert result["details"]["tenant_id"] is None
-        assert "codestory service auth-renew" in result["details"]["hint"]
         
     @pytest.mark.asyncio
     async def test_health_check_azure_auth_error_with_tenant(self, mock_client):
@@ -224,11 +229,18 @@ class TestOpenAIAdapter:
             
         mock_client._async_client.models.list = mock_list_error
         
-        # Create adapter with the mock
-        adapter = OpenAIAdapter(client=mock_client)
-        
-        # Call health check
-        result = await adapter.check_health()
+        # Mock get_azure_tenant_id_from_environment to return None for this test
+        with mock.patch('codestory_service.infrastructure.openai_adapter.get_azure_tenant_id_from_environment', return_value=None):
+            # Mock extract_tenant_id_from_error to return the tenant ID from the error
+            with mock.patch('codestory_service.infrastructure.openai_adapter.extract_tenant_id_from_error', 
+                           return_value="12345678-1234-1234-1234-123456789012"):
+                # Mock asyncio.create_subprocess_exec to avoid actual subprocess creation
+                with mock.patch('asyncio.create_subprocess_exec'):
+                    # Create adapter with the mock
+                    adapter = OpenAIAdapter(client=mock_client)
+                    
+                    # Call health check
+                    result = await adapter.check_health()
         
         # Verify detection of Azure auth issue and tenant extraction
         assert result["status"] == "unhealthy"
@@ -236,6 +248,47 @@ class TestOpenAIAdapter:
         assert result["details"]["tenant_id"] == "12345678-1234-1234-1234-123456789012"
         assert "solution" in result["details"]
         assert "--tenant 12345678-1234-1234-1234-123456789012" in result["details"]["solution"]
+        
+    @pytest.mark.asyncio
+    async def test_health_check_nginx_404_error(self, mock_client):
+        """Test health check handles nginx 404 errors with proper error reporting."""
+        # Make models.list raise a 404 error with nginx pattern
+        nginx_error = Exception(
+            """<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>"""
+        )
+        
+        # Create an async mock for models.list that raises the error
+        async def mock_list_error():
+            raise nginx_error
+            
+        mock_client._async_client.models.list = mock_list_error
+        
+        # Create adapter with the mock
+        adapter = OpenAIAdapter(client=mock_client)
+        
+        # Call health check
+        result = await adapter.check_health()
+        
+        # Verify reported as unhealthy with clear configuration guidance
+        assert result["status"] == "unhealthy"
+        assert "details" in result
+        assert "message" in result["details"]
+        assert "Azure OpenAI endpoint returned a 404 error" in result["details"]["message"]
+        assert "error" in result["details"]
+        assert "Endpoint not found or unavailable" in result["details"]["error"]
+        assert "suggestion" in result["details"]
+        assert "current_config" in result["details"]
+        assert "deployment_id" in result["details"]["current_config"]
+        assert "required_config" in result["details"]
+        assert "AZURE_OPENAI__DEPLOYMENT_ID" in result["details"]["required_config"]
+        assert result["details"]["required_config"]["AZURE_OPENAI__DEPLOYMENT_ID"] == "o1"
+        assert result["details"]["required_config"]["AZURE_OPENAI__ENDPOINT"] == "https://ai-adapt-oai-eastus2.openai.azure.com"
 
     @pytest.mark.asyncio
     async def test_create_embeddings_success(self, adapter, mock_client):

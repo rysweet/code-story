@@ -38,25 +38,21 @@ logger = logging.getLogger(__name__)
 
 def get_azure_tenant_id_from_environment() -> Optional[str]:
     """Get Azure tenant ID from environment variables or config files.
-    
+
     Returns:
         Optional[str]: The tenant ID if found, None otherwise
     """
     # Check for environment variables in order of precedence
-    for env_var in [
-        "AZURE_TENANT_ID",
-        "AZURE_OPENAI__TENANT_ID",
-        "OPENAI__TENANT_ID"
-    ]:
+    for env_var in ["AZURE_TENANT_ID", "AZURE_OPENAI__TENANT_ID", "OPENAI__TENANT_ID"]:
         if env_var in os.environ and os.environ[env_var]:
             tenant_id = os.environ[env_var]
             logger.info(f"Found tenant ID in environment variable {env_var}: {tenant_id}")
             return tenant_id
-    
+
     # Check .azure/config file
     azure_dir = os.path.expanduser("~/.azure")
     azure_config = os.path.join(azure_dir, "config")
-    
+
     if os.path.exists(azure_config):
         try:
             with open(azure_config, "r") as f:
@@ -67,35 +63,36 @@ def get_azure_tenant_id_from_environment() -> Optional[str]:
                         return tenant_id
         except Exception as e:
             logger.warning(f"Error reading Azure config: {e}")
-    
+
     # Check if we can extract it from Azure CLI
     try:
         import subprocess
+
         result = subprocess.run(
             ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=5  # Timeout after 5 seconds
+            timeout=5,  # Timeout after 5 seconds
         )
-        
+
         if result.returncode == 0 and result.stdout.strip():
             tenant_id = result.stdout.strip()
             logger.info(f"Found tenant ID from Azure CLI: {tenant_id}")
             return tenant_id
     except Exception as e:
         logger.debug(f"Could not get tenant ID from Azure CLI: {e}")
-    
+
     logger.warning("Could not find Azure tenant ID in environment or config files")
     return None
 
 
 def extract_tenant_id_from_error(error_message: str) -> Optional[str]:
     """Extract tenant ID from an Azure authentication error message.
-    
+
     Args:
         error_message: The error message to parse
-        
+
     Returns:
         Optional[str]: The tenant ID if found, None otherwise
     """
@@ -103,17 +100,17 @@ def extract_tenant_id_from_error(error_message: str) -> Optional[str]:
     patterns = [
         r"tenant '([0-9a-f-]+)'",
         r"tenant ID: ([0-9a-f-]+)",
-        r"AADSTS500011.+?'([0-9a-f-]+)'", 
-        r"AADSTS700003.+?'([0-9a-f-]+)'"
+        r"AADSTS500011.+?'([0-9a-f-]+)'",
+        r"AADSTS700003.+?'([0-9a-f-]+)'",
     ]
-    
+
     for pattern in patterns:
         tenant_match = re.search(pattern, error_message)
         if tenant_match:
             tenant_id = tenant_match.group(1)
             logger.info(f"Extracted tenant ID from error message: {tenant_id}")
             return tenant_id
-    
+
     logger.debug(f"Could not extract tenant ID from error message")
     return None
 
@@ -171,51 +168,96 @@ class OpenAIAdapter:
                 # Check if we need to modify client before calling models.list()
                 # This fixes issues with SecretStr objects being passed as header values
                 client = self.client._async_client
-                
+
                 # Try to safely fetch models list
                 response_obj = await client.models.list()
                 available_models = [m.id for m in response_obj.data]
             except Exception as model_err:
                 # Check specifically for Azure authentication errors
                 error_message = str(model_err)
-                if "DefaultAzureCredential failed to retrieve a token" in error_message or "AADSTS700003" in error_message:
+
+                # Check for 404 errors - this indicates a serious API configuration issue that needs fixing
+                if (
+                    "<html>" in error_message
+                    and "404 Not Found" in error_message
+                    and "nginx" in error_message
+                ):
+                    logger.error(
+                        f"Received nginx 404 error when accessing Azure OpenAI API. This indicates a serious endpoint configuration issue."
+                    )
+                    # Ensure we use a consistent endpoint and deployment ID from environment
+                    from os import environ
+
+                    deployment_id = environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "o1")
+                    endpoint = environ.get(
+                        "AZURE_OPENAI__ENDPOINT", "https://ai-adapt-oai-eastus2.openai.azure.com"
+                    )
+                    api_version = environ.get("AZURE_OPENAI__API_VERSION", "2025-03-01-preview")
+
+                    # Report as unhealthy with clear configuration guidance
+                    return {
+                        "status": "unhealthy",
+                        "details": {
+                            "message": "Azure OpenAI endpoint returned a 404 error",
+                            "error": "Endpoint not found or unavailable",
+                            "current_config": {
+                                "deployment_id": deployment_id,
+                                "endpoint": endpoint,
+                                "api_version": api_version,
+                            },
+                            "required_config": {
+                                "AZURE_OPENAI__DEPLOYMENT_ID": "o1",
+                                "AZURE_OPENAI__ENDPOINT": "https://ai-adapt-oai-eastus2.openai.azure.com",
+                                "AZURE_OPENAI__API_VERSION": "2025-03-01-preview",
+                            },
+                            "suggestion": "Verify Azure OpenAI endpoint, deployment ID and API version configuration",
+                        },
+                    }
+
+                # Handle Azure authentication errors
+                elif (
+                    "DefaultAzureCredential failed to retrieve a token" in error_message
+                    or "AADSTS700003" in error_message
+                ):
                     # Extract tenant ID in priority order
                     # 1. From environment variables
                     # 2. From the error message
                     tenant_id = get_azure_tenant_id_from_environment()
-                    
+
                     # If not found in environment, try to extract from error message
                     if not tenant_id:
                         tenant_id = extract_tenant_id_from_error(error_message)
-                    
+
                     # Provide a helpful error message with renewal instructions
                     renewal_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
                     if tenant_id:
                         renewal_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
-                    
-                    logger.error(f"Azure authentication failure detected. Attempting automatic renewal with: {renewal_cmd}")
-                    
+
+                    logger.error(
+                        f"Azure authentication failure detected. Attempting automatic renewal with: {renewal_cmd}"
+                    )
+
                     # Try to automatically login using asyncio subprocess
                     try:
                         import asyncio
                         import shlex
-                        
+
                         # Build the command with device code login to trigger browser authentication
                         if tenant_id:
                             login_cmd = f"az login --tenant {tenant_id} --use-device-code --scope https://cognitiveservices.azure.com/.default"
                         else:
                             login_cmd = "az login --use-device-code --scope https://cognitiveservices.azure.com/.default"
-                        
+
                         # Run the login command asynchronously with timeout
                         logger.info(f"Attempting browser-based Azure login: {login_cmd}")
-                        
+
                         # Create subprocess with asyncio
                         proc = await asyncio.create_subprocess_exec(
                             *shlex.split(login_cmd),
                             stdout=asyncio.subprocess.PIPE,
                             stderr=asyncio.subprocess.PIPE,
                         )
-                        
+
                         # Wait for process to complete with timeout
                         # Create a result object class with the same structure as subprocess.run
                         class AsyncSubprocessResult:
@@ -223,16 +265,18 @@ class OpenAIAdapter:
                                 self.returncode = returncode
                                 self.stdout = stdout
                                 self.stderr = stderr
-                                
+
                         try:
                             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=15)
                             login_result_code = proc.returncode
-                            login_stdout = stdout.decode('utf-8') if stdout else ""
-                            login_stderr = stderr.decode('utf-8') if stderr else ""
-                            
+                            login_stdout = stdout.decode("utf-8") if stdout else ""
+                            login_stderr = stderr.decode("utf-8") if stderr else ""
+
                             # Create a result object
-                            login_result = AsyncSubprocessResult(login_result_code, login_stdout, login_stderr)
-                            
+                            login_result = AsyncSubprocessResult(
+                                login_result_code, login_stdout, login_stderr
+                            )
+
                         except asyncio.TimeoutError:
                             # Try to terminate if still running
                             if proc.returncode is None:
@@ -243,24 +287,24 @@ class OpenAIAdapter:
                             logger.error("Azure login subprocess timed out after 15 seconds")
                             # Create a result object with timeout information
                             login_result = AsyncSubprocessResult(
-                                -1, 
-                                "", 
-                                "Timeout: Azure login subprocess timed out after 15 seconds"
+                                -1, "", "Timeout: Azure login subprocess timed out after 15 seconds"
                             )
-                        
+
                         # Check if login was successful
                         if login_result.returncode == 0:
-                            logger.info("Azure login successful. Attempting to recreate client with new credentials.")
-                            
+                            logger.info(
+                                "Azure login successful. Attempting to recreate client with new credentials."
+                            )
+
                             # Try to recreate the client and check again
                             try:
                                 # Create a new client to pick up the new credentials
                                 self.client = OpenAIClient()
-                                
+
                                 # Try a simple check to verify new credentials work
                                 response_obj = await self.client._async_client.models.list()
                                 available_models = [m.id for m in response_obj.data]
-                                
+
                                 # Success - return healthy status
                                 return {
                                     "status": "healthy",
@@ -268,18 +312,24 @@ class OpenAIAdapter:
                                         "message": "Azure authentication renewed successfully",
                                         "auth_renewal": True,
                                         "models": available_models[:5] if available_models else [],
-                                    }
+                                    },
                                 }
-                                
+
                             except Exception as retry_err:
-                                logger.error(f"Failed to use new credentials after login: {retry_err}")
+                                logger.error(
+                                    f"Failed to use new credentials after login: {retry_err}"
+                                )
                                 # Fall through to return unhealthy status
                         else:
                             logger.error(f"Azure login failed: {login_result.stderr}")
                             # Login failed - needs manual intervention
-                            error_message = login_result.stderr if login_result.stderr else "Unknown error"
+                            error_message = (
+                                login_result.stderr if login_result.stderr else "Unknown error"
+                            )
                             if "Can't get attribute 'NormalizedResponse'" in error_message:
-                                logger.error("Azure CLI appears to have an installation issue. This may require fixing the Azure CLI installation.")
+                                logger.error(
+                                    "Azure CLI appears to have an installation issue. This may require fixing the Azure CLI installation."
+                                )
                                 # Create a more helpful message for the user
                                 return {
                                     "status": "unhealthy",
@@ -290,14 +340,14 @@ class OpenAIAdapter:
                                         "solution": f"Run: {renewal_cmd}",
                                         "renewal_attempted": True,
                                         "cli_error": "The Azure CLI appears to have an installation issue. You may need to reinstall or update the Azure CLI.",
-                                        "hint": "Try running 'az --version' to check your installation or reinstall the Azure CLI with 'brew update && brew upgrade azure-cli'"
+                                        "hint": "Try running 'az --version' to check your installation or reinstall the Azure CLI with 'brew update && brew upgrade azure-cli'",
                                     },
                                 }
                             else:
                                 logger.error(f"Azure login failed: {error_message}")
                     except Exception as login_err:
                         logger.error(f"Error attempting automatic Azure login: {login_err}")
-                    
+
                     # If we get here, the automatic renewal failed
                     return {
                         "status": "unhealthy",
@@ -307,18 +357,18 @@ class OpenAIAdapter:
                             "tenant_id": tenant_id,
                             "solution": f"Run: {renewal_cmd}",
                             "renewal_attempted": True,
-                            "hint": "You can use our CLI for manual renewal: codestory service auth-renew"
+                            "hint": "You can use our CLI for manual renewal: codestory service auth-renew",
                         },
                     }
                 else:
                     # Some other error occurred
                     logger.warning(f"Couldn't retrieve model list: {model_err}")
-            
+
             # Get our configured models
             embedding_model = self.client.embedding_model
             chat_model = self.client.chat_model
             reasoning_model = self.client.reasoning_model
-            
+
             # Check if our configured models are available
             models_availability = []
             for model in [embedding_model, chat_model, reasoning_model]:
@@ -329,13 +379,13 @@ class OpenAIAdapter:
                 else:
                     # Model isn't directly in the list, but may be available through Azure
                     models_availability.append(model is not None)
-            
+
             # If all models are available, we're healthy
             if all(models_availability) and len(models_availability) > 0:
                 status = "healthy"
             else:
                 status = "degraded"
-                
+
             return {
                 "status": status,
                 "details": {
@@ -343,53 +393,94 @@ class OpenAIAdapter:
                     "models": [
                         embedding_model or "unknown",
                         chat_model or "unknown",
-                        reasoning_model or "unknown"
+                        reasoning_model or "unknown",
                     ],
-                    "api_version": getattr(self.client, "api_version", "latest")
+                    "api_version": getattr(self.client, "api_version", "latest"),
                 },
             }
-            
+
         except Exception as e:
             error_message = str(e)
             logger.error(f"OpenAI health check failed: {error_message}")
-            
+
+            # Check for 404 errors - this indicates a serious API configuration issue that needs fixing
+            if (
+                "<html>" in error_message
+                and "404 Not Found" in error_message
+                and "nginx" in error_message
+            ):
+                logger.error(
+                    f"Received nginx 404 error when accessing Azure OpenAI API. This indicates a serious endpoint configuration issue."
+                )
+                # Ensure we use a consistent endpoint and deployment ID from environment
+                from os import environ
+
+                deployment_id = environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "o1")
+                endpoint = environ.get(
+                    "AZURE_OPENAI__ENDPOINT", "https://ai-adapt-oai-eastus2.openai.azure.com"
+                )
+                api_version = environ.get("AZURE_OPENAI__API_VERSION", "2025-03-01-preview")
+
+                # Report as unhealthy with clear configuration guidance
+                return {
+                    "status": "unhealthy",
+                    "details": {
+                        "message": "Azure OpenAI endpoint returned a 404 error",
+                        "error": "Endpoint not found or unavailable",
+                        "current_config": {
+                            "deployment_id": deployment_id,
+                            "endpoint": endpoint,
+                            "api_version": api_version,
+                        },
+                        "required_config": {
+                            "AZURE_OPENAI__DEPLOYMENT_ID": "o1",
+                            "AZURE_OPENAI__ENDPOINT": "https://ai-adapt-oai-eastus2.openai.azure.com",
+                            "AZURE_OPENAI__API_VERSION": "2025-03-01-preview",
+                        },
+                        "suggestion": "Verify Azure OpenAI endpoint, deployment ID and API version configuration",
+                    },
+                }
+
             # Check for Azure authentication errors
-            if "DefaultAzureCredential failed to retrieve a token" in error_message or "AADSTS700003" in error_message:
+            elif (
+                "DefaultAzureCredential failed to retrieve a token" in error_message
+                or "AADSTS700003" in error_message
+            ):
                 # Extract tenant ID in priority order
                 # 1. From environment variables
                 # 2. From the error message
                 tenant_id = get_azure_tenant_id_from_environment()
-                
+
                 # If not found in environment, try to extract from error message
                 if not tenant_id:
                     tenant_id = extract_tenant_id_from_error(error_message)
-                
+
                 # Provide a helpful error message with renewal instructions
                 renewal_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
                 if tenant_id:
                     renewal_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
-                
+
                 # Try to run the login command asynchronously
                 try:
                     import asyncio
                     import shlex
-                    
+
                     # Build the command with device code login to trigger browser authentication
                     if tenant_id:
                         login_cmd = f"az login --tenant {tenant_id} --use-device-code --scope https://cognitiveservices.azure.com/.default"
                     else:
                         login_cmd = "az login --use-device-code --scope https://cognitiveservices.azure.com/.default"
-                    
+
                     # Run the login command asynchronously with timeout
                     logger.info(f"Attempting browser-based Azure login: {login_cmd}")
-                    
+
                     # Create subprocess with asyncio
                     proc = await asyncio.create_subprocess_exec(
                         *shlex.split(login_cmd),
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
                     )
-                    
+
                     # Wait for process to complete with timeout
                     # Create a result object class with the same structure as subprocess.run
                     class AsyncSubprocessResult:
@@ -397,16 +488,18 @@ class OpenAIAdapter:
                             self.returncode = returncode
                             self.stdout = stdout
                             self.stderr = stderr
-                    
+
                     try:
                         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=15)
                         login_result_code = proc.returncode
-                        login_stdout = stdout.decode('utf-8') if stdout else ""
-                        login_stderr = stderr.decode('utf-8') if stderr else ""
-                        
+                        login_stdout = stdout.decode("utf-8") if stdout else ""
+                        login_stderr = stderr.decode("utf-8") if stderr else ""
+
                         # Create a result object
-                        login_result = AsyncSubprocessResult(login_result_code, login_stdout, login_stderr)
-                        
+                        login_result = AsyncSubprocessResult(
+                            login_result_code, login_stdout, login_stderr
+                        )
+
                     except asyncio.TimeoutError:
                         # Try to terminate if still running
                         if proc.returncode is None:
@@ -417,25 +510,25 @@ class OpenAIAdapter:
                         logger.error("Azure login subprocess timed out after 15 seconds")
                         # Create a result object with timeout information
                         login_result = AsyncSubprocessResult(
-                            -1, 
-                            "", 
-                            "Timeout: Azure login subprocess timed out after 15 seconds"
+                            -1, "", "Timeout: Azure login subprocess timed out after 15 seconds"
                         )
-                    
+
                     # Check if login was successful
                     if login_result.returncode == 0:
-                        logger.info("Azure login successful. Attempting to recreate client with new credentials.")
-                        
+                        logger.info(
+                            "Azure login successful. Attempting to recreate client with new credentials."
+                        )
+
                         # Try to recreate the client and check again
                         try:
                             # Create a new client to pick up the new credentials
                             self.client = OpenAIClient()
-                            
+
                             # Try a simple check to verify new credentials work - this will likely fail due to CLI error
                             # but we try anyway in case the CLI is fixed
                             response_obj = await self.client._async_client.models.list()
                             available_models = [m.id for m in response_obj.data]
-                            
+
                             # Success - return healthy status
                             return {
                                 "status": "healthy",
@@ -443,15 +536,19 @@ class OpenAIAdapter:
                                     "message": "Azure authentication renewed successfully",
                                     "auth_renewal": True,
                                     "models": available_models[:5] if available_models else [],
-                                }
+                                },
                             }
                         except Exception as retry_err:
                             logger.error(f"Failed to use new credentials after login: {retry_err}")
                     else:
                         # Check for CLI installation errors
-                        error_message = login_result.stderr if login_result.stderr else "Unknown error"
+                        error_message = (
+                            login_result.stderr if login_result.stderr else "Unknown error"
+                        )
                         if "Can't get attribute 'NormalizedResponse'" in error_message:
-                            logger.error("Azure CLI appears to have an installation issue. This may require fixing the Azure CLI installation.")
+                            logger.error(
+                                "Azure CLI appears to have an installation issue. This may require fixing the Azure CLI installation."
+                            )
                             # Create a more helpful message for the user
                             return {
                                 "status": "unhealthy",
@@ -462,13 +559,13 @@ class OpenAIAdapter:
                                     "solution": f"Run: {renewal_cmd}",
                                     "renewal_attempted": True,
                                     "cli_error": "The Azure CLI appears to have an installation issue. You may need to reinstall or update the Azure CLI.",
-                                    "hint": "Try running 'az --version' to check your installation or reinstall the Azure CLI with 'brew update && brew upgrade azure-cli'"
-                                }
+                                    "hint": "Try running 'az --version' to check your installation or reinstall the Azure CLI with 'brew update && brew upgrade azure-cli'",
+                                },
                             }
                         logger.error(f"Azure login failed: {error_message}")
                 except Exception as login_err:
                     logger.error(f"Error attempting automatic Azure login: {login_err}")
-                
+
                 # If we reach here, the login failed or the client recreation failed
                 return {
                     "status": "unhealthy",
@@ -478,10 +575,10 @@ class OpenAIAdapter:
                         "type": "AuthenticationError",
                         "tenant_id": tenant_id,
                         "solution": f"Run: {renewal_cmd}",
-                        "hint": "You can use our automatic renewal with: codestory service auth-renew"
+                        "hint": "You can use our automatic renewal with: codestory service auth-renew",
                     },
                 }
-            
+
             return {
                 "status": "unhealthy",
                 "details": {
@@ -600,16 +697,14 @@ class OpenAIAdapter:
                         name=item.get("name", "Unnamed"),
                         path=path,
                         snippet=snippet if request.include_code_snippets else None,
-                        relevance_score=item.get("score", 0.5)
-                        if "score" in item
-                        else 0.5,
+                        relevance_score=item.get("score", 0.5) if "score" in item else 0.5,
                     )
                 )
 
             # Format context for the LLM
             context_text = "Context from the code repository:\n\n"
             for i, ref in enumerate(references):
-                context_text += f"[{i+1}] {ref.type.value.capitalize()}: {ref.name}\n"
+                context_text += f"[{i + 1}] {ref.type.value.capitalize()}: {ref.name}\n"
                 if ref.path:
                     context_text += f"Path: {ref.path}\n"
                 if ref.snippet and request.include_code_snippets:
@@ -642,10 +737,12 @@ Based on the above context, please answer the question. Reference the specific c
             )
 
             # Call the OpenAI client
-            response = await self.client.chat_async(chat_request.messages, 
-                                                   model=chat_request.model,
-                                                   max_tokens=chat_request.max_tokens,
-                                                   temperature=chat_request.temperature)
+            response = await self.client.chat_async(
+                chat_request.messages,
+                model=chat_request.model,
+                max_tokens=chat_request.max_tokens,
+                temperature=chat_request.temperature,
+            )
 
             # Generate conversation ID for continuity
             conversation_id = request.conversation_id or f"conv-{int(time.time())}"
@@ -683,23 +780,23 @@ Based on the above context, please answer the question. Reference the specific c
 
 class DummyOpenAIAdapter(OpenAIAdapter):
     """OpenAI adapter for demo purposes with no API calls.
-    
+
     This adapter returns dummy responses for all methods and is used when
     no valid OpenAI credentials are available.
     """
-    
+
     def __init__(self):
         """Initialize the dummy adapter."""
         self.client = None
-        
+
         # Add dummy attributes that match the OpenAIClient interface
         # This avoids NoneType attribute errors
         self.embedding_model = "text-embedding-3-small"
         self.chat_model = "gpt-4o"
         self.reasoning_model = "gpt-4o"
-        
+
         logger.warning("Using DummyOpenAIAdapter - OpenAI functionality will be limited")
-        
+
     async def check_health(self) -> Dict[str, Any]:
         """Check OpenAI API health.
 
@@ -713,37 +810,37 @@ class DummyOpenAIAdapter(OpenAIAdapter):
             "details": {
                 "message": "Using dummy OpenAI adapter for demo purposes",
                 "models": ["text-embedding-3-small", "gpt-4o", "gpt-4o"],
-                "api_version": "demo"
+                "api_version": "demo",
             },
         }
-    
+
     async def create_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Return dummy embeddings.
-        
+
         Args:
             texts: List of text strings to embed
-            
+
         Returns:
             Dummy embeddings (all zeros)
         """
         logger.info(f"DummyOpenAIAdapter.create_embeddings called with {len(texts)} texts")
         # Return dummy embeddings
         return [[0.0] * 1536 for _ in texts]
-    
+
     async def answer_question(
         self, request: AskRequest, context_items: List[Dict[str, Any]]
     ) -> AskAnswer:
         """Return a dummy answer.
-        
+
         Args:
             request: The question and parameters
             context_items: Relevant context items from the graph
-            
+
         Returns:
             Dummy answer
         """
         logger.info(f"DummyOpenAIAdapter.answer_question called with question: {request.question}")
-        
+
         # Create dummy references
         references = []
         for i, item in enumerate(context_items[:3]):  # Limit to 3 references
@@ -757,7 +854,7 @@ class DummyOpenAIAdapter(OpenAIAdapter):
                     relevance_score=0.5,
                 )
             )
-        
+
         return AskAnswer(
             answer="This is a dummy answer as OpenAI API is not configured for this demo. In a real deployment, this would provide a detailed answer based on the code repository.",
             references=references,
@@ -781,25 +878,31 @@ async def get_openai_adapter() -> OpenAIAdapter:
     try:
         # Create a standard adapter with default client
         adapter = OpenAIAdapter()
-        
+
         # Verify it's functional with a health check
         health = await adapter.check_health()
-        
+
         # Allow unhealthy adapters with degraded status
-        if health["status"] == "unhealthy" and os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() not in ["true", "1", "yes"]:
+        if health["status"] == "unhealthy" and os.environ.get(
+            "CODESTORY_NO_MODEL_CHECK", ""
+        ).lower() not in ["true", "1", "yes"]:
             # Only fail if strict checks are enabled
-            raise RuntimeError(f"OpenAI adapter is unhealthy: {health.get('details', {}).get('error', 'Unknown error')}")
+            raise RuntimeError(
+                f"OpenAI adapter is unhealthy: {health.get('details', {}).get('error', 'Unknown error')}"
+            )
         elif health["status"] == "unhealthy":
             # Log but don't fail when CODESTORY_NO_MODEL_CHECK is enabled
-            logger.warning(f"OpenAI adapter is unhealthy but continuing due to CODESTORY_NO_MODEL_CHECK setting")
-        
+            logger.warning(
+                f"OpenAI adapter is unhealthy but continuing due to CODESTORY_NO_MODEL_CHECK setting"
+            )
+
         return adapter
     except Exception as e:
         # If the environment allows, return a DummyOpenAIAdapter instead of failing
         if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
             logger.warning(f"Using DummyOpenAIAdapter due to error: {e}")
             return DummyOpenAIAdapter()
-        
+
         # Otherwise, log the error and fail
         logger.error(f"Failed to create OpenAI adapter: {str(e)}")
         raise RuntimeError(f"OpenAI adapter is required but unavailable: {str(e)}")
