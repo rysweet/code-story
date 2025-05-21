@@ -258,9 +258,8 @@ class LLMConfiguration(BaseModel):
         allow_fallback = os.environ.get("CODESTORY_LLM_ALLOW_FALLBACK", "true").lower() in ["true", "1", "yes"]
         fallback_api_key = os.environ.get("OPENAI__API_KEY", None)
         
-        # Special environment variable to disable model checking
-        if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
-            mode = LLMMode.FALLBACK
+        # Note: CODESTORY_NO_MODEL_CHECK is no longer used
+        # We always require a working OpenAI model
         
         return cls(
             mode=mode,

@@ -23,16 +23,10 @@ try:
     apply_overrides()
     logging.info("Using real adapters for all components - mock/demo adapters disabled")
 except Exception as e:
-    # In NO_MODEL_CHECK mode, we allow service to start even with adapter initialization errors
-    if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
-        logging.warning(f"Failed to apply real adapter overrides, but continuing in NO_MODEL_CHECK mode: {e!s}")
-        logging.warning("Service will operate in degraded mode with limited functionality")
-    else:
-        # In normal mode, we fail if any required adapter is not available
-        logging.error(f"Failed to apply real adapter overrides: {e!s}")
-        logging.error("Service requires all components to be available - will fail if any are unhealthy")
-        logging.error("To bypass this check, set CODESTORY_NO_MODEL_CHECK=true in environment")
-        raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
+    # In normal mode, we fail if any required adapter is not available
+    logging.error(f"Failed to apply real adapter overrides: {e!s}")
+    logging.error("Service requires all components to be available for proper operation")
+    raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
 
 # Set up logging
 logger = logging.getLogger(__name__)

@@ -162,17 +162,34 @@ class OpenAIAdapter:
             Dictionary containing health information
         """
         try:
-            # We'll do a simple test call to get model list - non-sensitive test
-            available_models = []
+            # Run a simple, minimal test completion call instead of listing models
+            # This is more reliable as the models.list() endpoint can be blocked in some environments
+            client = self.client._async_client
+            test_message = "Hello"
+            test_model = self.client.chat_model
+            
             try:
-                # Get the list of available models
-                # Check if we need to modify client before calling models.list()
-                # This fixes issues with SecretStr objects being passed as header values
-                client = self.client._async_client
-
-                # Try to safely fetch models list
-                response_obj = await client.models.list()
-                available_models = [m.id for m in response_obj.data]
+                # Simple test of the chat completions API with minimal tokens
+                response = await client.chat.completions.create(
+                    deployment_name=test_model,
+                    model=test_model,
+                    messages=[{"role": "user", "content": test_message}],
+                    max_tokens=1,
+                    temperature=0
+                )
+                
+                # If we get here, the API is healthy
+                # Extract available models from configuration
+                available_models = [
+                    self.client.embedding_model,
+                    self.client.chat_model,
+                    self.client.reasoning_model
+                ]
+                
+                # Remove duplicates
+                available_models = list(set(available_models))
+                
+                logger.info(f"OpenAI API health check passed with a test completion using model {test_model}")
             except Exception as model_err:
                 # Check specifically for Azure authentication errors
                 error_message = str(model_err)
@@ -883,28 +900,14 @@ async def get_openai_adapter() -> OpenAIAdapter:
         # Verify it's functional with a health check
         health = await adapter.check_health()
 
-        # Allow unhealthy adapters with degraded status
-        if health["status"] == "unhealthy" and os.environ.get(
-            "CODESTORY_NO_MODEL_CHECK", ""
-        ).lower() not in ["true", "1", "yes"]:
-            # Only fail if strict checks are enabled
-            raise RuntimeError(
-                f"OpenAI adapter is unhealthy: {health.get('details', {}).get('error', 'Unknown error')}"
-            )
-        elif health["status"] == "unhealthy":
-            # Log but don't fail when CODESTORY_NO_MODEL_CHECK is enabled
-            logger.warning(
-                f"OpenAI adapter is unhealthy but continuing due to CODESTORY_NO_MODEL_CHECK setting"
-            )
+        # Verify health status - OpenAI is a critical component
+        if health["status"] == "unhealthy":
+            # Always fail if OpenAI is unhealthy - it's a critical component
+            error_details = health.get('details', {}).get('error', 'Unknown error')
+            raise RuntimeError(f"OpenAI adapter is unhealthy: {error_details}")
 
         return adapter
     except Exception as e:
-        # If the environment allows, return a standard adapter instead of failing
-        if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
-            logger.warning(f"OpenAI adapter is unavailable but continuing due to CODESTORY_NO_MODEL_CHECK setting: {e}")
-            # Return a standard adapter - it will be in an unhealthy state but won't block other functionality
-            return adapter
-
-        # Otherwise, log the error and fail
+        # Log the error and fail - OpenAI is required
         logger.error(f"Failed to create OpenAI adapter: {str(e)}")
         raise RuntimeError(f"OpenAI adapter is required but unavailable: {str(e)}")

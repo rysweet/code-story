@@ -65,32 +65,26 @@ async def get_real_celery_adapter() -> CeleryAdapter:
     return adapter
 
 async def get_real_openai_adapter() -> OpenAIAdapter:
-    """Create an OpenAI adapter with resilient client for fallbacks."""
-    # Import here to avoid circular imports
-    from .api.dependencies import get_resilient_openai_adapter
-    
-    # Check if we should bypass adapter strict checking
-    if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
-        # Use the resilient adapter that handles fallbacks automatically
-        adapter = await get_resilient_openai_adapter()
-        logger.info("Using resilient OpenAI adapter with fallback in NO_MODEL_CHECK mode")
-        return adapter
-    
-    # Normal strict mode
+    """Create an OpenAI adapter with a proper health check."""
+    # Create a standard adapter and validate it's working
     adapter = OpenAIAdapter()
     health = await adapter.check_health()
     
     # Check if this is using the demo mode
     if health["status"] == "degraded" and "demo" in str(health.get("details", {}).get("message", "")):
-        raise RuntimeError("OpenAI adapter is using demo mode")
-        
-    # Support degraded clients only when using fallback mode
-    if health["status"] == "degraded" and health.get("details", {}).get("fallback", False):
-        logger.warning("OpenAI adapter is in degraded state with fallback authentication")
-        # Accept fallback mode when needed
-    elif health["status"] != "healthy":
-        raise RuntimeError(f"OpenAI adapter is not healthy: {health}")
-        
+        raise RuntimeError("OpenAI adapter is using demo mode - requires real API credentials")
+    
+    # Verify adapter is healthy
+    if health["status"] != "healthy":
+        if health["status"] == "degraded":
+            # Degraded is acceptable in some cases - warn but continue
+            logger.warning("OpenAI adapter is in degraded state but will continue operation")
+            logger.warning(f"Details: {health.get('details', {})}")
+        else:
+            # Unhealthy means we can't proceed
+            error_details = health.get('details', {}).get('error', 'Unknown error')
+            raise RuntimeError(f"OpenAI adapter is not healthy: {error_details}")
+    
     return adapter
 
 # Apply the overrides when this module is imported
