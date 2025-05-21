@@ -1,16 +1,12 @@
 services:
   service:
     environment:
-      # Override environment variables for service to fix Azure authentication issues
       - CODESTORY_NO_MODEL_CHECK=true
-      - OPENAI__API_KEY=sk-dummy-apikey
     volumes:
-      - /Users/ryan/src/msec/code-story:/repositories/code-story:ro
-      
+      - /tmp/test-repo-small:/repositories/test-repo-small:ro
   worker:
     environment:
-      # Override environment variables for worker to fix Azure authentication issues  
       - CODESTORY_NO_MODEL_CHECK=true
-      - OPENAI__API_KEY=sk-dummy-apikey
+      - CELERY_TASK_ALWAYS_EAGER=true  # Run Celery tasks synchronously for easier testing
     volumes:
-      - /Users/ryan/src/msec/code-story:/repositories/code-story:ro
+      - /tmp/test-repo-small:/repositories/test-repo-small:ro
