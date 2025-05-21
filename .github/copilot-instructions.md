@@ -12,7 +12,6 @@ For the response, always follow these instructions:
 3. Preserve whitespace and newlines right after the parts of the file that you modify.
 4. The final result must be syntactically valid, properly formatted, and correctly indented. It should not contain any ...existing code... comments.
 5. Finally, provide the fully rewritten file. You must output the complete file.
-</SYSTEM>
 
 ```instructions
 Please consider the following instructions when implementing the software.
@@ -68,6 +67,7 @@ Please follow these guidelines for code design and implementation:
 
 ### Code Reuse
 
+- Before creating new code, investigate existing code for reusable components
 - Extract shared code into dedicated utility modules
 - Avoid duplicating functionality across different modules
 - Prefer composition and delegation over inheritance for code reuse
@@ -146,6 +146,15 @@ Do not move on to the next milestone until the current milestone is complete wit
 Do not move on to the next milestone while there are test failures anywhere in the project. 
 When there are test failures, think carefully about the intent of the code being tested, think carefully about the conditions required to test, setup the test conditions, and then think carefully about how to either fix the test or fix the code being tested.
 If a step of the implementation fails, try again by attempting to correct the error. If you are unable to correct the error, update the status.md and please ask me for help.
+- Use the `gh` and `git` CLI for all GitHub interactions.
+
+# Workflow Requirements - MANDATORY REQUIREMENT
+
+- Think carefully about the user's request.
+- If there is an error message, think carefully about the meaning of the error. 
+- Do not change direction to skip tests or disable features in order to avoid an error. 
+- Think step by step about how to solve the problem. 
+- Once you have crafted a solution, always 1) run all checks using the project's CI tools (eg ```poe check```), 2) run all tests using the project's test tools (eg ```poe test```), and 3) iterate over any errors generated, solving them one at a time. 4) Once all checks and tests pass, then you can commit your work. 5) then you need to check if CI is passing and if not try to resolve any errors in CI. 
 
 # Prompt History - MANDATORY REQUIREMENT
 
@@ -169,3 +178,5 @@ Maintain a running history of all shell commands you run successfully, *except "
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
 - **After updating shell_history.md, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.
 ```
+</SYSTEM>
+
