@@ -1,5 +1,18 @@
 # Shell Command History
 
+## May 20, 2025 (Ingestion Pipeline Parameter Filtering)
+- `cd /Users/ryan/src/msec/code-story && find tests -name "test_*.py" | grep -i ingestion` - Find ingestion-related test files
+- `cd /Users/ryan/src/msec/code-story && git status` - Check git status
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_ingestion_pipeline/test_filesystem_simple.py -v` - Run filesystem simple test
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_ingestion_pipeline/test_filesystem_direct.py -v` - Run filesystem direct test
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_infrastructure.py::TestCeleryAdapter::test_parameter_filtering -v` - Run parameter filtering test
+- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_ingestion_pipeline/test_filesystem_simple.py -v` - Run simple filesystem test again
+- `cd /Users/ryan/src/msec/code-story && git add src/codestory_service/infrastructure/celery_adapter.py src/codestory/ingestion_pipeline/tasks.py specs/06-ingestion-pipeline/ingestion-pipeline.md tests/unit/test_codestory_service/test_infrastructure.py` - Stage all changes
+- `cd /Users/ryan/src/msec/code-story && git commit -m "Add parameter filtering to CeleryAdapter and ingestion pipeline tasks"` - Commit changes
+- `cd /Users/ryan/src/msec/code-story && git push origin llm-ingestion-pipeline` - Push changes
+- `cd /Users/ryan/src/msec/code-story && bash scripts/check_ci_status.sh` - Check CI status
+- `cd /Users/ryan/src/msec/code-story && gh run view 15150025165 --log-failed` - Check failed CI logs
+
 ## May 19, 2025 (OpenAI Adapter Resilience Enhancement)
 - `cd /Users/ryan/src/msec/code-story && python -m pytest -v` - Run all pytest tests in the project
 - `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit -v` - Run only unit tests
