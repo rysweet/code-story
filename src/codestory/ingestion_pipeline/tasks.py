@@ -31,6 +31,9 @@ def run_step(
     """Run a single pipeline step.
 
     This task calls the appropriate plugin to execute a specific pipeline step.
+    It uses a task_name_map to route to the fully qualified task name for each step,
+    and applies parameter filtering to ensure each step receives only the parameters
+    it can handle.
 
     Args:
         repository_path: Path to the repository to process
@@ -48,6 +51,18 @@ def run_step(
             - end_time: When the step finished
             - duration: Duration in seconds
             - error: Optional error message if the step failed
+            
+    Notes:
+        This method includes two important mechanisms:
+        
+        1. Task routing using fully qualified names:
+           The task_name_map maps step names to fully qualified task names
+           (e.g., "filesystem" -> "codestory_filesystem.step.process_filesystem")
+           
+        2. Parameter filtering:
+           Each step may have different parameter requirements. To prevent
+           "unexpected keyword argument" errors, this method filters the parameters
+           based on the step type before passing them to the actual step task.
     """
     # Record start time
     start_time = time.time()

@@ -400,6 +400,68 @@ class TestCeleryAdapter:
 
         assert response.job_id == "job123"
         assert response.status == "pending"
+        
+    @pytest.mark.asyncio
+    async def test_parameter_filtering(self, adapter, mock_app):
+        """Test that parameter filtering is applied correctly to different steps."""
+        # Create a request with options that should be filtered differently for each step
+        request = IngestionRequest(
+            source_type=IngestionSourceType.LOCAL_PATH, 
+            source="/path/to/repo",
+            steps=["filesystem", "blarify", "summarizer", "docgrapher"],
+            options={
+                "concurrency": 5,           # Should be filtered out for blarify
+                "timeout": 300,             # Should be kept for all steps
+                "job_id": "test-job",       # Should be kept for all steps
+                "ignore_patterns": [".git"],# Should be kept for all steps
+                "custom_option": "value",   # Should be filtered for summarizer/docgrapher
+                "incremental": True,        # Should be kept for all steps
+            }
+        )
+        
+        # Mock the _run_ingestion_pipeline.apply_async method to capture kwargs
+        mock_apply_async = mock.MagicMock()
+        mock_apply_async.return_value = mock.MagicMock(id="job123")
+        adapter._run_ingestion_pipeline.apply_async = mock_apply_async
+        
+        # Call start_ingestion to trigger parameter filtering
+        await adapter.start_ingestion(request)
+        
+        # Check that apply_async was called with the right arguments
+        mock_apply_async.assert_called_once()
+        args, kwargs = mock_apply_async.call_args
+        
+        # Extract step_configs from the args
+        step_configs = kwargs.get('args', [None, None, None])[1]  # [repository_path, step_configs, job_id]
+        
+        # Verify each step has the correct filtered parameters
+        assert len(step_configs) == 4, "Should have 4 step configs"
+        
+        # Filesystem step should have all parameters
+        filesystem_config = next(cfg for cfg in step_configs if cfg["name"] == "filesystem")
+        assert "concurrency" in filesystem_config, "Filesystem should keep concurrency parameter"
+        assert "custom_option" in filesystem_config, "Filesystem should keep custom_option parameter"
+        
+        # Blarify step should not have concurrency parameter
+        blarify_config = next(cfg for cfg in step_configs if cfg["name"] == "blarify")
+        assert "concurrency" not in blarify_config, "Blarify should not have concurrency parameter"
+        assert "custom_option" in blarify_config, "Blarify should keep custom_option parameter"
+        
+        # Summarizer step should only have safe parameters
+        summarizer_config = next(cfg for cfg in step_configs if cfg["name"] == "summarizer")
+        assert "job_id" in summarizer_config, "Summarizer should keep job_id parameter"
+        assert "ignore_patterns" in summarizer_config, "Summarizer should keep ignore_patterns parameter"
+        assert "timeout" in summarizer_config, "Summarizer should keep timeout parameter"
+        assert "incremental" in summarizer_config, "Summarizer should keep incremental parameter"
+        assert "custom_option" not in summarizer_config, "Summarizer should not have custom_option parameter"
+        
+        # Docgrapher step should only have safe parameters
+        docgrapher_config = next(cfg for cfg in step_configs if cfg["name"] == "docgrapher")
+        assert "job_id" in docgrapher_config, "Docgrapher should keep job_id parameter"
+        assert "ignore_patterns" in docgrapher_config, "Docgrapher should keep ignore_patterns parameter"
+        assert "timeout" in docgrapher_config, "Docgrapher should keep timeout parameter"
+        assert "incremental" in docgrapher_config, "Docgrapher should keep incremental parameter"
+        assert "custom_option" not in docgrapher_config, "Docgrapher should not have custom_option parameter"
 
 
 class TestMSALValidator:
