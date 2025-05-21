@@ -6,9 +6,8 @@ a repository, extract documentation entities, and store them in Neo4j.
 
 import os
 
-# Determine Neo4j port based on CI environment
-ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
+# Always use port 7688 for test container
+neo4j_port = "7688"
 import tempfile
 import time
 from pathlib import Path
@@ -135,12 +134,11 @@ if __name__ == "__main__":
 @pytest.fixture
 def neo4j_connector():
     """Create a Neo4j connector for testing."""
-    settings = get_settings()
     connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        database=settings.neo4j.database,
+        uri=f"bolt://localhost:{neo4j_port}",
+        username="neo4j",
+        password="password",
+        database="testdb",
     )
 
     # Clear the database before each test

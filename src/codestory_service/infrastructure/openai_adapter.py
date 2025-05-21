@@ -8,6 +8,7 @@ by the service layer.
 import logging
 import re
 import subprocess
+import sys
 import time
 import os
 from typing import Any, Dict, List, Optional, Union
@@ -898,10 +899,11 @@ async def get_openai_adapter() -> OpenAIAdapter:
 
         return adapter
     except Exception as e:
-        # If the environment allows, return a DummyOpenAIAdapter instead of failing
+        # If the environment allows, return a standard adapter instead of failing
         if os.environ.get("CODESTORY_NO_MODEL_CHECK", "").lower() in ["true", "1", "yes"]:
-            logger.warning(f"Using DummyOpenAIAdapter due to error: {e}")
-            return DummyOpenAIAdapter()
+            logger.warning(f"OpenAI adapter is unavailable but continuing due to CODESTORY_NO_MODEL_CHECK setting: {e}")
+            # Return a standard adapter - it will be in an unhealthy state but won't block other functionality
+            return adapter
 
         # Otherwise, log the error and fail
         logger.error(f"Failed to create OpenAI adapter: {str(e)}")

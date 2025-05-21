@@ -221,13 +221,17 @@ def load_env_vars():
     else:
         # Otherwise use localhost with mapped port
         redis_host = "localhost"
-        redis_port = "6389"  # Port mapped in docker-compose.yml
+        redis_port = "6380"  # Port mapped in docker-compose.test.yml
         redis_uri = f"redis://{redis_host}:{redis_port}/0"
     
     os.environ["REDIS_URI"] = redis_uri
     os.environ["REDIS__URI"] = redis_uri
     os.environ["REDIS_HOST"] = redis_host
     os.environ["REDIS_PORT"] = redis_port
+    
+    # Set environment variable for Celery broker/backend
+    os.environ["CELERY_BROKER_URL"] = redis_uri
+    os.environ["CELERY_RESULT_BACKEND"] = redis_uri
 
     # Set OpenAI environment variables for testing
     os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
@@ -253,10 +257,11 @@ def neo4j_connector():
         # In Docker environment, use container service name
         default_uri = "bolt://neo4j:7687"
     else:
-        # Otherwise use localhost with mapped port
-        neo4j_port = 7687 if ci_env else 7689  # Port mapped in docker-compose.yml
+        # Otherwise use localhost with mapped port - 7688 is used in docker-compose.test.yml
+        neo4j_port = "7687" if ci_env else "7688"
         default_uri = f"bolt://localhost:{neo4j_port}"
     
+    # Use the environment variables that were already set by load_env_vars
     uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
 
     # Create a Neo4j connector
@@ -266,24 +271,124 @@ def neo4j_connector():
         password=password,
         database=database,
     )
+    
+    # Clean the database to ensure test isolation
+    try:
+        # Clear all data from the database to start with a clean slate
+        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        print("Neo4j database cleared for clean test.")
+    except Exception as e:
+        print(f"Warning: Could not clear Neo4j database: {e}")
 
     yield connector
 
-    # Clean up the connector
-    connector.close()
+    # Clean up the connector and database after the test
+    try:
+        # Clear all data created by this test to avoid affecting other tests
+        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        print("Neo4j database cleaned up after test.")
+    except Exception as e:
+        print(f"Warning: Could not clean up Neo4j database: {e}")
+    
+    # Always close the connection
+    try:
+        connector.close()
+    except Exception as e:
+        print(f"Warning: Error closing Neo4j connection: {e}")
 
 
 @pytest.fixture(scope="function")
-def celery_app():
-    """Provide a Celery app configured for integration testing."""
-    from codestory.ingestion_pipeline.celery_app import app
+def redis_client():
+    """Create a Redis client for testing and manage cleanup.
+    
+    This fixture provides a Redis client and ensures proper cleanup after tests.
+    """
+    import redis
+    
+    # Get Redis URI from environment
+    redis_uri = os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"
+    
+    # Create Redis client
+    client = redis.from_url(redis_uri)
+    
+    # Clear Redis database to ensure test isolation
+    try:
+        client.flushdb()
+        print("Redis database cleared for clean test.")
+    except Exception as e:
+        print(f"Warning: Could not clear Redis database: {e}")
+    
+    yield client
+    
+    # Clean up Redis after test
+    try:
+        client.flushdb()
+        print("Redis database cleaned up after test.")
+    except Exception as e:
+        print(f"Warning: Could not clean up Redis database: {e}")
 
-    # Configure Celery for testing with in-memory broker
+
+@pytest.fixture(scope="function")
+def celery_app(redis_client):
+    """Provide a Celery app configured for integration testing.
+    
+    This fixture depends on redis_client to ensure Redis is properly set up
+    and cleaned up for tests.
+    """
+    from codestory.ingestion_pipeline.celery_app import app
+    import importlib
+    
+    # Get the Redis URI from environment
+    redis_uri = os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"
+    
+    # Configure Celery for testing
     app.conf.update(
-        broker_url="memory://",
-        result_backend="rpc://",
+        broker_url=redis_uri,  # Use real Redis for better reliability
+        result_backend=redis_uri,  # Use real Redis for results
         task_always_eager=True,  # Tasks run synchronously in tests
         task_eager_propagates=True,  # Exceptions are propagated
         task_ignore_result=False,  # Results are tracked
+        worker_send_task_events=False,  # Don't send events for better performance
+        broker_connection_retry=True,  # Retry broker connections
+        broker_connection_max_retries=3,  # Limit retries
     )
-    return app
+    
+    # Purge any existing tasks
+    try:
+        app.control.purge()
+        print("Celery task queue purged for clean test.")
+    except Exception as e:
+        print(f"Warning: Could not purge Celery tasks: {e}")
+    
+    # Pre-register all task modules to avoid dynamic loading issues
+    task_modules = [
+        "codestory.ingestion_pipeline.tasks",
+        "codestory_filesystem.step",
+        "codestory_blarify.step",
+        "codestory_summarizer.step",
+        "codestory_docgrapher.step",
+    ]
+    
+    # Import modules to ensure tasks are registered
+    for module_name in task_modules:
+        try:
+            importlib.import_module(module_name)
+        except ImportError as e:
+            print(f"Warning: Could not import task module {module_name}: {e}")
+    
+    # Apply configuration immediately
+    app.finalize()
+    
+    yield app
+    
+    # Clean up any pending tasks
+    try:
+        app.control.purge()
+        print("Celery task queue purged after test.")
+    except Exception as e:
+        print(f"Warning: Could not purge Celery tasks after test: {e}")
+    
+    # Reset Celery app after test
+    app.conf.update(
+        task_always_eager=False,  # Reset to non-eager mode
+    )
