@@ -5,7 +5,8 @@ Progress client for tracking ingestion job progress.
 import json
 import threading
 import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 import redis
 from rich.console import Console
@@ -19,10 +20,10 @@ class ProgressClient:
     def __init__(
         self,
         job_id: str,
-        callback: Callable[[Dict[str, Any]], None],
-        redis_url: Optional[str] = None,
-        console: Optional[Console] = None,
-        settings: Optional[Settings] = None,
+        callback: Callable[[dict[str, Any]], None],
+        redis_url: str | None = None,
+        console: Console | None = None,
+        settings: Settings | None = None,
         poll_interval: float = 1.0,
     ):
         """
@@ -42,8 +43,8 @@ class ProgressClient:
         self.console = console or Console()
         self.poll_interval = poll_interval
 
-        # Set up Redis connection with multiple fallback options
-        self.console.print(f"[dim]Setting up Redis connection for progress tracking...[/]")
+        # Set up Redis connection with smarter fallback options
+        self.console.print("[dim]Setting up Redis connection for progress tracking...[/]")
         
         # List of possible Redis URLs to try
         redis_urls = []
@@ -57,30 +58,71 @@ class ProgressClient:
             settings_url = self.settings.redis.uri
             redis_urls.append(settings_url)
             
-            # 3. Add localhost variant for Docker setups
+            # 3. Check Docker port mappings if using container hostname
             if "redis://redis:" in settings_url:
-                # Standard port mapping in docker-compose.yml is 6379:6379
-                localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
-                redis_urls.append(localhost_url)
-                
-                # Extract port number for additional variants
+                # Try to detect Docker port mapping
                 try:
-                    port = localhost_url.split(":")[-1].split("/")[0]
-                    # Try alternative localhost format
-                    redis_urls.append(f"redis://127.0.0.1:{port}")
+                    import subprocess
+                    # Extract internal container port
+                    internal_port = settings_url.split(":")[-1].split("/")[0]
+                    container_name = "codestory-redis"
+                    
+                    # Try to get the port mapping from Docker
+                    try:
+                        # Use docker port command to get the mapping
+                        result = subprocess.run(
+                            ["docker", "port", container_name, internal_port],
+                            capture_output=True,
+                            text=True,
+                            check=False
+                        )
+                        
+                        if result.returncode == 0 and result.stdout.strip():
+                            # Parse the output to get the mapped port
+                            port_mapping = result.stdout.strip()
+                            # Format can be either "0.0.0.0:6389" or "127.0.0.1:6389"
+                            mapped_port = port_mapping.split(":")[-1]
+                            
+                            # Add these as highest priority in localhost variants
+                            mapped_localhost = f"redis://localhost:{mapped_port}"
+                            redis_urls.insert(1, mapped_localhost)
+                            redis_urls.insert(2, f"redis://127.0.0.1:{mapped_port}")
+                            
+                            self.console.print(f"[dim]Detected Docker port mapping: {internal_port} -> {mapped_port}[/]")
+                    except Exception as e:
+                        self.console.print(f"[dim]Could not detect Docker port mapping: {e!s}[/]")
+                    
+                    # Fallback to standard localhost variants if Docker command didn't work
+                    localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
+                    redis_urls.append(localhost_url)
+                    redis_urls.append(f"redis://127.0.0.1:{internal_port}")
                 except Exception:
-                    pass
+                    # Fallback to just replacing the hostname
+                    localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
+                    redis_urls.append(localhost_url)
+                    
+                    # Extract port number for additional variants
+                    try:
+                        port = localhost_url.split(":")[-1].split("/")[0]
+                        # Try alternative localhost format
+                        redis_urls.append(f"redis://127.0.0.1:{port}")
+                    except Exception:
+                        pass
         
-        # 4. Default options
+        # 4. Add common ports as fallbacks
+        # Check both standard port and port used in our docker-compose.yml
         redis_urls.extend([
             "redis://localhost:6379", 
             "redis://127.0.0.1:6379",
-            "redis://localhost:6389",  # Alternative port sometimes used
+            "redis://localhost:6389",  # Used in our docker-compose.yml
             "redis://127.0.0.1:6389"
         ])
         
         # Remove duplicates while preserving order
         redis_urls = list(dict.fromkeys(redis_urls))
+        
+        # Log the URLs we're going to try
+        self.console.print(f"[dim]Redis connection URLs to try: {', '.join(redis_urls)}[/]")
         
         # Try each URL
         connected = False
@@ -95,16 +137,21 @@ class ProgressClient:
                 self.use_redis = True
                 self.channel = f"codestory:ingestion:progress:{job_id}"
                 self.console.print(f"[green]Connected to Redis at {url} for real-time progress updates[/]")
+                
+                # Save this URL to settings for future use in this session
+                if hasattr(self.settings, "redis"):
+                    self.settings.redis.uri = url
+                
                 connected = True
                 break
             except (redis.RedisError, Exception) as e:
-                self.console.print(f"[dim]Could not connect to Redis at {url}: {str(e)}[/]")
+                self.console.print(f"[dim]Could not connect to Redis at {url}: {e!s}[/]")
                 
         if not connected:
             self.use_redis = False
             self.redis = None
             self.console.print(
-                f"[yellow]Warning: Redis not available after trying multiple endpoints, falling back to polling[/]"
+                "[yellow]Warning: Redis not available after trying multiple endpoints, falling back to polling[/]"
             )
 
         self._stop_event = threading.Event()

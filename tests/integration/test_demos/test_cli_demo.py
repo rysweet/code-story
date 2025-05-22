@@ -1,9 +1,10 @@
 """Test the CLI demo functionality."""
 
 import os
-import pytest
 import subprocess
 from pathlib import Path
+
+import pytest
 
 # Mark all tests with demo marker for selective running
 pytestmark = pytest.mark.demo
@@ -77,7 +78,7 @@ def test_cli_config_init(setup_test_env):
     assert config_path.exists()
     
     # Check content of config file
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         content = f.read()
         assert "neo4j" in content
         assert "openai" in content
@@ -195,7 +196,7 @@ def test_cli_visualize(setup_test_env, neo4j_connector):
     assert viz_path.exists()
     
     # Check content of visualization file
-    with open(viz_path, "r") as f:
+    with open(viz_path) as f:
         content = f.read()
         assert "html" in content
         assert "javascript" in content

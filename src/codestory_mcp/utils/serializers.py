@@ -4,7 +4,7 @@ This module provides functions for serializing Neo4j nodes and relationships
 to formats suitable for MCP responses.
 """
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 from neo4j.graph import Node, Relationship
 
@@ -19,10 +19,10 @@ class NodeSerializer:
     @staticmethod
     def to_dict(
         node: Node,
-        score: Optional[float] = None,
-        include_properties: Optional[List[str]] = None,
-        exclude_properties: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        score: float | None = None,
+        include_properties: list[str] | None = None,
+        exclude_properties: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Serialize a Neo4j node to a dictionary.
 
         Args:
@@ -78,10 +78,10 @@ class NodeSerializer:
 
     @staticmethod
     def to_mcp_result(
-        nodes: List[Union[Node, tuple[Node, float]]],
-        include_properties: Optional[List[str]] = None,
-        exclude_properties: Optional[List[str]] = None,
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        nodes: list[Node | tuple[Node, float]],
+        include_properties: list[str] | None = None,
+        exclude_properties: list[str] | None = None,
+    ) -> dict[str, list[dict[str, Any]]]:
         """Serialize a list of Neo4j nodes to an MCP result format.
 
         Args:
@@ -122,9 +122,9 @@ class RelationshipSerializer:
     @staticmethod
     def to_dict(
         relationship: Relationship,
-        include_properties: Optional[List[str]] = None,
-        exclude_properties: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        include_properties: list[str] | None = None,
+        exclude_properties: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Serialize a Neo4j relationship to a dictionary.
 
         Args:
@@ -161,12 +161,12 @@ class RelationshipSerializer:
 
     @staticmethod
     def to_mcp_path_result(
-        paths: List[List[Union[Node, Relationship]]],
-        include_node_properties: Optional[List[str]] = None,
-        exclude_node_properties: Optional[List[str]] = None,
-        include_rel_properties: Optional[List[str]] = None,
-        exclude_rel_properties: Optional[List[str]] = None,
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        paths: list[list[Node | Relationship]],
+        include_node_properties: list[str] | None = None,
+        exclude_node_properties: list[str] | None = None,
+        include_rel_properties: list[str] | None = None,
+        exclude_rel_properties: list[str] | None = None,
+    ) -> dict[str, list[dict[str, Any]]]:
         """Serialize a list of paths to an MCP result format.
 
         A path is a list of alternating nodes and relationships.

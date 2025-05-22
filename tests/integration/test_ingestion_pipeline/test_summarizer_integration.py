@@ -4,20 +4,19 @@ These tests verify that the SummarizerStep can correctly process a repository
 and generate summaries for code elements in the Neo4j database.
 """
 
+import os
 import tempfile
 import time
-import os
 
 # Determine Neo4j port based on CI environment
 ci_env = os.environ.get("CI") == "true"
 neo4j_port = "7687" if ci_env else "7688"
+import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import uuid
 
 import pytest
 
-from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory.llm.models import (
@@ -27,7 +26,6 @@ from codestory.llm.models import (
     ChatRole,
     Usage,
 )
-from codestory_filesystem.step import FileSystemStep
 from codestory_summarizer.step import SummarizerStep
 
 
@@ -466,10 +464,11 @@ def initialized_repo(sample_repo, neo4j_connector):
 def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client):
     """Test that the summarizer step can generate summaries for a repository."""
     # Create a direct run function that doesn't use Celery
-    from unittest.mock import patch
-    import uuid
-    from codestory.ingestion_pipeline.step import StepStatus
     import time
+    import uuid
+    from unittest.mock import patch
+
+    from codestory.ingestion_pipeline.step import StepStatus
 
     # Custom implementation of SummarizerStep's run method
     def mock_run(self, repository_path, **config):
@@ -748,8 +747,9 @@ def test_summarizer_step_ingestion_update(
 ):
     """Test that the summarizer step can update summaries for a modified repository."""
     # Create a direct run function that doesn't use Celery
-    from unittest.mock import patch
     import uuid
+    from unittest.mock import patch
+
     from codestory.ingestion_pipeline.step import StepStatus
 
     # Custom implementation of SummarizerStep's run method
@@ -914,7 +914,6 @@ def new_function():
     )
 
     # Update the filesystem representation using our custom implementation
-    import uuid
     from codestory.ingestion_pipeline.step import StepStatus
     
     # Use the custom_process_filesystem function defined at module level

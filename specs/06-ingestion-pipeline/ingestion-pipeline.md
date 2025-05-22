@@ -250,6 +250,36 @@ The CLI ingest command supports these options:
 - `--path-prefix`: Specify custom container mount path
 - `--container`: Force container path mapping
 
+### 6.7.4 Parameter Filtering
+
+To avoid parameter conflicts between different pipeline steps, the CeleryAdapter and ingestion pipeline implement parameter filtering:
+
+1. **Step-Specific Parameter Handling**:
+   - Different steps may require different parameters
+   - Parameter filtering prevents "unexpected keyword argument" errors
+   - Each step receives only the parameters it can handle
+
+2. **Implementation Details**:
+   - The CeleryAdapter filters parameters based on step type:
+     ```python
+     # Filter options for Blarify step
+     if step_name == "blarify":
+         # Blarify step doesn't use certain parameters
+         filtered_options = {k: v for k, v in options.items() 
+                           if k not in ['concurrency']}
+         step_config.update(filtered_options)
+     ```
+
+3. **Parameter Categories**:
+   - **Common Parameters**: Used by all steps (e.g., `job_id`, `repository_path`)
+   - **Step-Specific Parameters**: Used only by certain steps
+   - **Safe Parameters**: A set of parameters that work across multiple steps
+
+4. **Benefits**:
+   - Prevents runtime errors due to parameter mismatches
+   - Allows consistent configuration across different deployment environments
+   - Simplifies adding new parameters to specific steps without breaking others
+
 ## 6.8 User Stories and Acceptance Criteria
 
 | User Story | Acceptance Criteria |

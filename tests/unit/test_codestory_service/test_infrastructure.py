@@ -7,18 +7,16 @@ from unittest import mock
 
 import pytest
 from fastapi import HTTPException
-from neo4j import GraphDatabase
 
 from codestory.graphdb.exceptions import ConnectionError, QueryError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.llm.client import OpenAIClient
 from codestory.llm.exceptions import AuthenticationError
 from codestory_service.domain.graph import CypherQuery, QueryType
 from codestory_service.domain.ingestion import IngestionRequest, IngestionSourceType
-from codestory_service.infrastructure.neo4j_adapter import Neo4jAdapter
-from codestory_service.infrastructure.openai_adapter import OpenAIAdapter
 from codestory_service.infrastructure.celery_adapter import CeleryAdapter
 from codestory_service.infrastructure.msal_validator import MSALValidator
+from codestory_service.infrastructure.neo4j_adapter import Neo4jAdapter
+from codestory_service.infrastructure.openai_adapter import OpenAIAdapter
 
 
 class TestNeo4jAdapter:
@@ -106,14 +104,17 @@ class TestOpenAIAdapter:
         client.chat_model = "gpt-4"
         client.reasoning_model = "gpt-3.5-turbo"
 
-        # Setup the response for create_embeddings_async
-        mock_response = mock.MagicMock()
-        mock_response.model_dump.return_value = {
-            "object": "list",
-            "data": [{"embedding": [0.1, 0.2, 0.3], "index": 0, "object": "embedding"}],
-            "model": "text-embedding-ada-002",
-            "usage": {"prompt_tokens": 8, "total_tokens": 8},
-        }
+        # Setup the embedding response
+        from codestory.llm.models import EmbeddingData, EmbeddingResponse
+        
+        # Create a mock embedding response with the necessary structure
+        embedding_data = [EmbeddingData(embedding=[0.1, 0.2, 0.3], index=0, object="embedding")]
+        embedding_response = EmbeddingResponse(
+            object="list",
+            data=embedding_data,
+            model="text-embedding-ada-002",
+            usage={"prompt_tokens": 8, "total_tokens": 8}
+        )
 
         # Create an awaitable mock for model list
         models_response = mock.MagicMock()
@@ -126,8 +127,14 @@ class TestOpenAIAdapter:
         
         async def mock_list():
             return models_response
+        
+        # Set up the async mocks for the client
+        client.embed_async = mock.AsyncMock(return_value=embedding_response)
             
         # Create an awaitable mock for embeddings create
+        mock_response = mock.MagicMock()
+        mock_response.model_dump.return_value = embedding_response.model_dump()
+        
         async def mock_create(**kwargs):
             return mock_response
 
@@ -189,11 +196,17 @@ class TestOpenAIAdapter:
             
         mock_client._async_client.models.list = mock_list_error
         
-        # Create adapter with the mock
-        adapter = OpenAIAdapter(client=mock_client)
-        
-        # Call health check
-        result = await adapter.check_health()
+        # Mock get_azure_tenant_id_from_environment to return None for this test
+        with mock.patch('codestory_service.infrastructure.openai_adapter.get_azure_tenant_id_from_environment', return_value=None):
+            # Also patch extract_tenant_id_from_error to return None
+            with mock.patch('codestory_service.infrastructure.openai_adapter.extract_tenant_id_from_error', return_value=None):
+                # Mock asyncio.create_subprocess_exec to avoid actual subprocess creation
+                with mock.patch('asyncio.create_subprocess_exec'):
+                    # Create adapter with the mock
+                    adapter = OpenAIAdapter(client=mock_client)
+                    
+                    # Call health check
+                    result = await adapter.check_health()
         
         # Verify detection of Azure auth issue
         assert result["status"] == "unhealthy"
@@ -206,7 +219,6 @@ class TestOpenAIAdapter:
         assert "codestory service auth-renew" in result["details"]["hint"]
         assert "tenant_id" in result["details"]
         assert result["details"]["tenant_id"] is None
-        assert "codestory service auth-renew" in result["details"]["hint"]
         
     @pytest.mark.asyncio
     async def test_health_check_azure_auth_error_with_tenant(self, mock_client):
@@ -224,11 +236,18 @@ class TestOpenAIAdapter:
             
         mock_client._async_client.models.list = mock_list_error
         
-        # Create adapter with the mock
-        adapter = OpenAIAdapter(client=mock_client)
-        
-        # Call health check
-        result = await adapter.check_health()
+        # Mock get_azure_tenant_id_from_environment to return None for this test
+        with mock.patch('codestory_service.infrastructure.openai_adapter.get_azure_tenant_id_from_environment', return_value=None):
+            # Mock extract_tenant_id_from_error to return the tenant ID from the error
+            with mock.patch('codestory_service.infrastructure.openai_adapter.extract_tenant_id_from_error', 
+                           return_value="12345678-1234-1234-1234-123456789012"):
+                # Mock asyncio.create_subprocess_exec to avoid actual subprocess creation
+                with mock.patch('asyncio.create_subprocess_exec'):
+                    # Create adapter with the mock
+                    adapter = OpenAIAdapter(client=mock_client)
+                    
+                    # Call health check
+                    result = await adapter.check_health()
         
         # Verify detection of Azure auth issue and tenant extraction
         assert result["status"] == "unhealthy"
@@ -236,6 +255,48 @@ class TestOpenAIAdapter:
         assert result["details"]["tenant_id"] == "12345678-1234-1234-1234-123456789012"
         assert "solution" in result["details"]
         assert "--tenant 12345678-1234-1234-1234-123456789012" in result["details"]["solution"]
+        
+    @pytest.mark.asyncio
+    async def test_health_check_nginx_404_error(self, mock_client):
+        """Test health check handles nginx 404 errors with proper error reporting."""
+        # Make models.list raise a 404 error with nginx pattern
+        nginx_error = Exception(
+            """<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>"""
+        )
+        
+        # Create an async mock for models.list that raises the error
+        async def mock_list_error():
+            raise nginx_error
+            
+        mock_client._async_client.models.list = mock_list_error
+        
+        # Create adapter with the mock
+        adapter = OpenAIAdapter(client=mock_client)
+        
+        # Call health check
+        result = await adapter.check_health()
+        
+        # Verify reported as unhealthy with clear configuration guidance
+        assert result["status"] == "unhealthy"
+        assert "details" in result
+        assert "message" in result["details"]
+        assert "Azure OpenAI endpoint returned a 404 error" in result["details"]["message"]
+        assert "error" in result["details"]
+        assert "Endpoint not found or unavailable" in result["details"]["error"]
+        assert "suggestion" in result["details"]
+        assert "current_config" in result["details"]
+        assert "deployment_id" in result["details"]["current_config"]
+        assert "required_config" in result["details"]
+        assert "AZURE_OPENAI__DEPLOYMENT_ID" in result["details"]["required_config"]
+        assert "AZURE_OPENAI__ENDPOINT" in result["details"]["required_config"]
+        assert result["details"]["required_config"]["AZURE_OPENAI__DEPLOYMENT_ID"] == "<your-deployment-id>"
+        assert result["details"]["required_config"]["AZURE_OPENAI__ENDPOINT"] == "<your-endpoint>"
 
     @pytest.mark.asyncio
     async def test_create_embeddings_success(self, adapter, mock_client):
@@ -250,19 +311,14 @@ class TestOpenAIAdapter:
     async def test_create_embeddings_error(self, adapter, mock_client):
         """Test error handling when creating embeddings fails."""
 
-        # Replace the mock create function with one that raises an error
-        async def mock_create_error(**kwargs):
-            # Match the exception import used in the adapter
-            from codestory.llm.exceptions import AuthenticationError
-
-            raise AuthenticationError("Invalid API key")
-
-        mock_client._async_client.embeddings.create = mock_create_error
+        # Configure the mock to raise an AuthenticationError
+        from codestory.llm.exceptions import AuthenticationError
+        mock_client.embed_async.side_effect = AuthenticationError("Invalid API key")
 
         with pytest.raises(HTTPException) as exc_info:
             await adapter.create_embeddings(["Test text"])
 
-        # According to the adapter implementation, it maps AuthenticationError to 401
+        # According to the adapter implementation, it maps AuthenticationError to 502
         assert exc_info.value.status_code == 502  # Maps to BAD_GATEWAY in our adapter
         assert "Invalid API key" in exc_info.value.detail
 
@@ -299,9 +355,6 @@ class TestCeleryAdapter:
         adapter = CeleryAdapter()
         adapter.app = mock_app
         # Make the run_ingestion_pipeline task available
-        from codestory_service.infrastructure.celery_adapter import (
-            run_ingestion_pipeline,
-        )
 
         # Replace the actual run_ingestion_pipeline with the mock task
         adapter._run_ingestion_pipeline = mock_app.tasks["run_ingestion_pipeline"]
@@ -347,6 +400,68 @@ class TestCeleryAdapter:
 
         assert response.job_id == "job123"
         assert response.status == "pending"
+        
+    @pytest.mark.asyncio
+    async def test_parameter_filtering(self, adapter, mock_app):
+        """Test that parameter filtering is applied correctly to different steps."""
+        # Create a request with options that should be filtered differently for each step
+        request = IngestionRequest(
+            source_type=IngestionSourceType.LOCAL_PATH, 
+            source="/path/to/repo",
+            steps=["filesystem", "blarify", "summarizer", "docgrapher"],
+            options={
+                "concurrency": 5,           # Should be filtered out for blarify
+                "timeout": 300,             # Should be kept for all steps
+                "job_id": "test-job",       # Should be kept for all steps
+                "ignore_patterns": [".git"],# Should be kept for all steps
+                "custom_option": "value",   # Should be filtered for summarizer/docgrapher
+                "incremental": True,        # Should be kept for all steps
+            }
+        )
+        
+        # Mock the _run_ingestion_pipeline.apply_async method to capture kwargs
+        mock_apply_async = mock.MagicMock()
+        mock_apply_async.return_value = mock.MagicMock(id="job123")
+        adapter._run_ingestion_pipeline.apply_async = mock_apply_async
+        
+        # Call start_ingestion to trigger parameter filtering
+        await adapter.start_ingestion(request)
+        
+        # Check that apply_async was called with the right arguments
+        mock_apply_async.assert_called_once()
+        args, kwargs = mock_apply_async.call_args
+        
+        # Extract step_configs from the args
+        step_configs = kwargs.get('args', [None, None, None])[1]  # [repository_path, step_configs, job_id]
+        
+        # Verify each step has the correct filtered parameters
+        assert len(step_configs) == 4, "Should have 4 step configs"
+        
+        # Filesystem step should have all parameters
+        filesystem_config = next(cfg for cfg in step_configs if cfg["name"] == "filesystem")
+        assert "concurrency" in filesystem_config, "Filesystem should keep concurrency parameter"
+        assert "custom_option" in filesystem_config, "Filesystem should keep custom_option parameter"
+        
+        # Blarify step should not have concurrency parameter
+        blarify_config = next(cfg for cfg in step_configs if cfg["name"] == "blarify")
+        assert "concurrency" not in blarify_config, "Blarify should not have concurrency parameter"
+        assert "custom_option" in blarify_config, "Blarify should keep custom_option parameter"
+        
+        # Summarizer step should only have safe parameters
+        summarizer_config = next(cfg for cfg in step_configs if cfg["name"] == "summarizer")
+        assert "job_id" in summarizer_config, "Summarizer should keep job_id parameter"
+        assert "ignore_patterns" in summarizer_config, "Summarizer should keep ignore_patterns parameter"
+        assert "timeout" in summarizer_config, "Summarizer should keep timeout parameter"
+        assert "incremental" in summarizer_config, "Summarizer should keep incremental parameter"
+        assert "custom_option" not in summarizer_config, "Summarizer should not have custom_option parameter"
+        
+        # Docgrapher step should only have safe parameters
+        docgrapher_config = next(cfg for cfg in step_configs if cfg["name"] == "docgrapher")
+        assert "job_id" in docgrapher_config, "Docgrapher should keep job_id parameter"
+        assert "ignore_patterns" in docgrapher_config, "Docgrapher should keep ignore_patterns parameter"
+        assert "timeout" in docgrapher_config, "Docgrapher should keep timeout parameter"
+        assert "incremental" in docgrapher_config, "Docgrapher should keep incremental parameter"
+        assert "custom_option" not in docgrapher_config, "Docgrapher should not have custom_option parameter"
 
 
 class TestMSALValidator:

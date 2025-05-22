@@ -43,6 +43,7 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 | `codestory config show`          | `cs cfs` | Display current configuration settings.                    |
 | `codestory visualize`            | `cs vz`  | Output an HTML visualization of the graph database with a color-coded key and a 3D force-directed graph visualization. |
 
+
 ## 13.3 Implementation Steps
 
 1. `poetry add rich rich-markdown rich-click`
@@ -50,37 +51,42 @@ Offer a **Rich -based** command‑line interface enabling developers to:
 3. Use Rich live progress: subscribe to Redis `status::<run_id>`.
 4. Implement config TUI via `rich.prompt` + TOML editing.
 5. Package entry‑point in `pyproject.toml` → `console_scripts = { codestory = 'codestory.cli:app' }`.
-6. **Verification and Review**
-   - Run all unit tests to verify command parsing and execution
-   - Run integration tests against a real Code-story instance
-   - Test each command to ensure it functions as specified
-   - Verify proper formatting and display of Rich UI elements
-   - Test error handling for all edge cases
-   - Run linting and type checking on all code
-   - Perform thorough code review against requirements
-   - Verify that all commands in section 13.2 are implemented
-   - Test CLI in both interactive and non-interactive modes
-   - Make necessary adjustments based on review findings
-   - Re-run all tests after any changes
-   - Document discovered issues and their resolutions
-   - Create detailed PR for final review
+
+7. **Service Availability Pre-checks**
+   - For any CLI command that requires backend services (e.g., ingestion, job management, queries, visualization):
+     - The CLI must first check service availability by running `codestory service status` or an equivalent health check.
+     - If the service is not running or not healthy, the CLI should exit early with a clear, actionable message (e.g., "Code Story services are not running. Please start them with `codestory service start`.").
+     - This pre-check should be implemented as a reusable utility and applied to all relevant commands.
+     - If the service is running, proceed as normal.
+     - If the service is not running, do not attempt further actions that require it.
+   - This feature should be covered by both unit and integration tests.
 
 ## 13.4 Testing
 
-- **Unit** - ensure CLI commands parse and invoke the correct methods
+
+
+- **Unit**
+  - Ensure CLI commands parse and invoke the correct methods
   - Test command registration and argument parsing
   - Test client API calls and error handling
   - Test output formatting with Rich
   - Test configuration validation and updates
   - Mock all external dependencies (service API, Redis, browser)
+  - **Test service availability pre-checks:**
+    - Simulate service down and up scenarios; verify correct CLI behavior and error messages
+    - Ensure commands requiring the service do not proceed if unavailable
 
-- **Integration** - run CLI commands against a real Code-story instance; validate output format and data integrity
+- **Integration**
+  - Run CLI commands against a real Code-story instance; validate output format and data integrity
   - Test full command workflow with real or containerized services
   - Verify correct handling of service state (start/stop)
   - Test real ingestion process and progress reporting
   - Test query execution and result rendering
   - Test configuration updates persist correctly
   - Test visualization generation and browser interaction
+  - **Test end-to-end with service pre-checks enabled:**
+    - Stop the service and verify commands fail gracefully
+    - Start the service and verify commands proceed as expected
 
 See the [CLI Test Plan](./cli_test_plan.md) for a comprehensive testing strategy.
 

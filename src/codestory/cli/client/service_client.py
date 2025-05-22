@@ -7,8 +7,7 @@ import os
 import sys
 import time
 import webbrowser
-from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urljoin
+from typing import Any
 
 import httpx
 from pydantic import SecretStr
@@ -22,10 +21,10 @@ class ServiceClient:
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
-        console: Optional[Console] = None,
-        settings: Optional[Settings] = None,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        console: Console | None = None,
+        settings: Settings | None = None,
     ):
         """
         Initialize the service client.
@@ -75,8 +74,10 @@ class ServiceClient:
             timeout=30.0,
             headers=self._get_headers(),
         )
+        # For compatibility with legacy code, set self.session to self.client
+        self.session = self.client
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """
         Get headers for API requests.
 
@@ -93,7 +94,7 @@ class ServiceClient:
 
         return headers
 
-    def check_service_health(self, auto_fix: bool = False, timeout: Optional[int] = None) -> Dict[str, Any]:
+    def check_service_health(self, auto_fix: bool = False, timeout: int | None = None) -> dict[str, Any]:
         """
         Check if the service is healthy.
 
@@ -155,8 +156,8 @@ class ServiceClient:
                 # so it depends on whether we're in a test or not
                 if 'pytest' in sys.modules:
                     # In test mode, raise the error to match test expectations
-                    self.console.print(f"[dim]Health check failed: {str(e)}[/]", style="dim")
-                    raise ServiceError(f"Health check failed: {str(e)}")
+                    self.console.print(f"[dim]Health check failed: {e!s}[/]", style="dim")
+                    raise ServiceError(f"Health check failed: {e!s}")
                 
                 # In normal operation, try one more request
                 response = self.client.request("GET", "/")
@@ -171,18 +172,18 @@ class ServiceClient:
                     }
                     
                     # For compatibility, still log the error but return valid data
-                    self.console.print(f"[dim]Health check endpoint not available: {str(e)}[/]", style="dim")
+                    self.console.print(f"[dim]Health check endpoint not available: {e!s}[/]", style="dim")
                     return resp_data
             except httpx.HTTPError as connect_err:
                 # Complete failure to connect - log and raise
-                self.console.print(f"[dim]Server connection failed: {str(connect_err)}[/]", style="dim")
-                raise ServiceError(f"Health check failed: {str(connect_err)}")
+                self.console.print(f"[dim]Server connection failed: {connect_err!s}[/]", style="dim")
+                raise ServiceError(f"Health check failed: {connect_err!s}")
             
             # For normal operation outside of tests, give a helpful message and service partial data
-            self.console.print(f"[dim]Health check failed: {str(e)}[/]", style="dim")
-            raise ServiceError(f"Health check failed: {str(e)}")
+            self.console.print(f"[dim]Health check failed: {e!s}[/]", style="dim")
+            raise ServiceError(f"Health check failed: {e!s}")
             
-    def _check_for_azure_auth_issues(self, health_data: Dict[str, Any]) -> None:
+    def _check_for_azure_auth_issues(self, health_data: dict[str, Any]) -> None:
         """
         Check if health data indicates Azure authentication issues and provide guidance.
         
@@ -243,10 +244,10 @@ class ServiceClient:
                         # No automatic renewal was attempted
                         self.console.print("\n[bold yellow]Solution:[/bold yellow]")
                         self.console.print("Run the following command to renew your Azure credentials:")
-                        self.console.print(f"[bold cyan]codestory service auth-renew[/bold cyan]\n")
+                        self.console.print("[bold cyan]codestory service auth-renew[/bold cyan]\n")
                         
                         if tenant_id:
-                            self.console.print(f"Or with specific tenant ID:")
+                            self.console.print("Or with specific tenant ID:")
                             self.console.print(f"[bold cyan]codestory service auth-renew --tenant {tenant_id}[/bold cyan]\n")
                         
                         self.console.print("Alternatively, run this command manually:")
@@ -259,9 +260,9 @@ class ServiceClient:
                     health_data["components"]["openai"]["details"]["user_message"] = "Azure authentication credentials expired. See instructions for renewal."
         except Exception as e:
             # Don't let this check break the health check functionality
-            self.console.print(f"[dim]Error checking for Azure auth issues: {str(e)}[/dim]", style="dim")
+            self.console.print(f"[dim]Error checking for Azure auth issues: {e!s}[/dim]", style="dim")
 
-    def start_ingestion(self, repository_path: str) -> Dict[str, Any]:
+    def start_ingestion(self, repository_path: str) -> dict[str, Any]:
         """
         Start an ingestion job for the given repository path.
 
@@ -300,7 +301,7 @@ class ServiceClient:
         self.console.print(f"Starting ingestion for repository at [cyan]{abs_repository_path}[/]", style="dim")
         self.console.print(f"Repository directory exists: [cyan]{os.path.isdir(abs_repository_path)}[/]", style="dim")
         if is_container_path:
-            self.console.print(f"[dim]Using container path directly[/]", style="dim")
+            self.console.print("[dim]Using container path directly[/]", style="dim")
         
         try:
             response = self.client.post("/ingest", json=data)
@@ -324,18 +325,18 @@ class ServiceClient:
                 
                 # Provide specific guidance
                 repo_name = os.path.basename(abs_repository_path)
-                error_detail += f"\n\nTry these solutions:"
-                error_detail += f"\n1. Mount the repository using our script:"
+                error_detail += "\n\nTry these solutions:"
+                error_detail += "\n1. Mount the repository using our script:"
                 error_detail += f"\n   ./scripts/mount_repository.sh \"{abs_repository_path}\" --restart"
-                error_detail += f"\n\n2. Or use the container path format with the CLI:"
+                error_detail += "\n\n2. Or use the container path format with the CLI:"
                 error_detail += f"\n   codestory ingest start \"{abs_repository_path}\" --container"
-                error_detail += f"\n\n3. For manual mounting, modify your docker-compose.yml to include:"
-                error_detail += f"\n   volumes:"
+                error_detail += "\n\n3. For manual mounting, modify your docker-compose.yml to include:"
+                error_detail += "\n   volumes:"
                 error_detail += f"\n     - {abs_repository_path}:/repositories/{repo_name}"
             
             raise ServiceError(f"Failed to start ingestion: {error_detail}")
 
-    def get_ingestion_status(self, job_id: str) -> Dict[str, Any]:
+    def get_ingestion_status(self, job_id: str) -> dict[str, Any]:
         """
         Get the status of an ingestion job.
 
@@ -350,9 +351,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to get ingestion status: {str(e)}")
+            raise ServiceError(f"Failed to get ingestion status: {e!s}")
 
-    def stop_ingestion(self, job_id: str) -> Dict[str, Any]:
+    def stop_ingestion(self, job_id: str) -> dict[str, Any]:
         """
         Stop an ingestion job.
 
@@ -367,9 +368,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to stop ingestion: {str(e)}")
+            raise ServiceError(f"Failed to stop ingestion: {e!s}")
 
-    def list_ingestion_jobs(self) -> List[Dict[str, Any]]:
+    def list_ingestion_jobs(self) -> list[dict[str, Any]]:
         """
         List all ingestion jobs.
 
@@ -379,15 +380,38 @@ class ServiceClient:
         try:
             response = self.client.get("/ingest/jobs")
             response.raise_for_status()
-            return response.json()["jobs"]
+            response_data = response.json()
+            
+            # Handle different response formats
+            if "items" in response_data:
+                # Standard paginated response format
+                return response_data["items"]
+            elif "jobs" in response_data:
+                # Legacy format with 'jobs' field
+                return response_data["jobs"]
+            elif isinstance(response_data, list):
+                # Direct array of jobs
+                return response_data
+            elif "job_id" in response_data and response_data.get("job_id") == "jobs":
+                # Special case: API returns a single job with ID "jobs" instead of a list
+                # This appears to be a mock implementation behavior
+                self.console.print("[yellow]Warning: API returned unusual format. This might be a mock or development service.[/]")
+                # Return as a list with the single job
+                return [response_data]
+            elif isinstance(response_data, dict) and "job_id" in response_data:
+                # Single job object (not a list)
+                return [response_data]
+            else:
+                # If no recognizable format is found, raise an error with the response structure
+                raise KeyError(f"Response does not contain expected job data structure: {list(response_data.keys()) if isinstance(response_data, dict) else type(response_data)}")
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to list ingestion jobs: {str(e)}")
+            raise ServiceError(f"Failed to list ingestion jobs: {e!s}")
         except (KeyError, json.JSONDecodeError) as e:
-            raise ServiceError(f"Invalid response format: {str(e)}")
+            raise ServiceError(f"Invalid response format: {e!s}")
 
     def execute_query(
-        self, query: str, parameters: Optional[Dict[str, Any]] = None, query_type: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, query: str, parameters: dict[str, Any] | None = None, query_type: str | None = None
+    ) -> dict[str, Any]:
         """
         Execute a Cypher query or MCP tool call.
 
@@ -432,9 +456,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Query execution failed: {str(e)}")
+            raise ServiceError(f"Query execution failed: {e!s}")
 
-    def ask_question(self, question: str) -> Dict[str, Any]:
+    def ask_question(self, question: str) -> dict[str, Any]:
         """
         Ask a natural language question about the codebase.
 
@@ -453,9 +477,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to ask question: {str(e)}")
+            raise ServiceError(f"Failed to ask question: {e!s}")
 
-    def get_config(self, include_sensitive: bool = False) -> Dict[str, Any]:
+    def get_config(self, include_sensitive: bool = False) -> dict[str, Any]:
         """
         Get the current configuration.
 
@@ -474,9 +498,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to get configuration: {str(e)}")
+            raise ServiceError(f"Failed to get configuration: {e!s}")
 
-    def update_config(self, updates: Dict[str, Any]) -> Dict[str, Any]:
+    def update_config(self, updates: dict[str, Any]) -> dict[str, Any]:
         """
         Update configuration values.
 
@@ -491,9 +515,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to update configuration: {str(e)}")
+            raise ServiceError(f"Failed to update configuration: {e!s}")
 
-    def start_service(self) -> Dict[str, Any]:
+    def start_service(self) -> dict[str, Any]:
         """
         Start the Code Story service.
 
@@ -505,9 +529,9 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to start service: {str(e)}")
+            raise ServiceError(f"Failed to start service: {e!s}")
 
-    def stop_service(self) -> Dict[str, Any]:
+    def stop_service(self) -> dict[str, Any]:
         """
         Stop the Code Story service.
 
@@ -519,23 +543,38 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to stop service: {str(e)}")
+            raise ServiceError(f"Failed to stop service: {e!s}")
 
-    def get_service_status(self) -> Dict[str, Any]:
+    def get_service_status(self, renew_auth: bool = False) -> dict[str, Any]:
         """
-        Get the status of the Code Story service.
+        Query the health endpoint and return the status of the Code Story service and its dependencies.
+        """
+        import traceback
 
-        Returns:
-            Service status data.
-        """
+        import rich
+        import rich.console
+        import rich.panel
+        import rich.pretty
+        import rich.text
+        import rich.traceback
+        console = rich.console.Console()
+        console.log(f"[debug] get_service_status: base_url={self.base_url}")
         try:
-            response = self.client.get("/service/status")
+            response = self.session.get(f"{self.base_url}/health", timeout=10)
+            console.log(f"[debug] GET {self.base_url}/health -> status {response.status_code}")
             response.raise_for_status()
-            return response.json()
-        except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to get service status: {str(e)}")
+            health_data = response.json()
+            console.log("[debug] Health endpoint response:")
+            console.log(health_data)
+            return health_data
+        except Exception as e:
+            console.log(f"[error] Exception in get_service_status: {e}")
+            console.log("[error] Traceback:")
+            tb = traceback.format_exc()
+            console.log(tb)
+            raise
 
-    def generate_visualization(self, params: Optional[Dict[str, Any]] = None) -> str:
+    def generate_visualization(self, params: dict[str, Any] | None = None) -> str:
         """
         Generate a graph visualization.
 
@@ -613,7 +652,7 @@ class ServiceClient:
                 
                 except httpx.HTTPError as e:
                     # Log the error and continue to the next endpoint
-                    error_msg = f"Failed with endpoint {endpoint}: {str(e)}"
+                    error_msg = f"Failed with endpoint {endpoint}: {e!s}"
                     errors.append(error_msg)
                     self.console.print(f"{error_msg}", style="dim")
             
@@ -623,7 +662,7 @@ class ServiceClient:
         except Exception as e:
             if isinstance(e, ServiceError):
                 raise e
-            raise ServiceError(f"Failed to generate visualization: {str(e)}")
+            raise ServiceError(f"Failed to generate visualization: {e!s}")
 
     def open_ui(self) -> None:
         """
@@ -641,7 +680,7 @@ class ServiceClient:
 
         webbrowser.open(ui_url)
         
-    def renew_azure_auth(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+    def renew_azure_auth(self, tenant_id: str | None = None) -> dict[str, Any]:
         """
         Renew Azure authentication tokens.
         
@@ -692,7 +731,7 @@ class ServiceClient:
             else:
                 raise ServiceError(f"Azure authentication renewal failed: {error_detail}")
                 
-    def clear_database(self, confirm: bool = False) -> Dict[str, Any]:
+    def clear_database(self, confirm: bool = False) -> dict[str, Any]:
         """
         Clear all data from the database by executing a delete query.
         
@@ -742,7 +781,7 @@ class ServiceClient:
                 raise ServiceError("Administrative privileges required to clear database")
             raise ServiceError(f"Failed to clear database: {error_message}")
         except Exception as e:
-            raise ServiceError(f"Failed to clear database: {str(e)}")
+            raise ServiceError(f"Failed to clear database: {e!s}")
 
 
 class ServiceError(Exception):

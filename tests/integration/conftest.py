@@ -1,15 +1,16 @@
 """Pytest configuration for integration tests."""
 
-import os
-import pytest
-import sys
-import re
 import glob
+import os
+import re
+import sys
 from unittest.mock import patch
-from typing import Dict, Any
 
+import pytest
 from dotenv import load_dotenv
+
 from .test_config import get_test_settings
+
 
 # Auto-fix Neo4j port configuration in test files
 def fix_neo4j_port_config():
@@ -20,7 +21,7 @@ def fix_neo4j_port_config():
     
     for file_path in test_files:
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
             
             # Fix syntax error with port configuration
@@ -129,7 +130,6 @@ def mock_settings():
     for all integration tests.
     """
     # We need to mock get_settings() to return test settings for integration tests
-    from codestory.config.settings import get_settings as original_get_settings
 
     # Create a patch for the get_settings function
     with patch(
@@ -144,22 +144,30 @@ def neo4j_env():
     """Setup Neo4j environment variables for tests."""
     # Determine the correct Neo4j port to use
     # In CI environment, Neo4j is often on the standard port
+    # In Docker environment, it's typically mapped to 7689 but with container-to-container networking
     # In local docker-compose.test.yml, it's on port 7688
     ci_env = os.environ.get("CI") == "true"
-    neo4j_port = "7687" if ci_env else "7688"
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
     
-    # Set the environment variables
-    neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    # Set the environment variables based on environment
+    if docker_env:
+        # In Docker environment, use container networking
+        neo4j_uri = "bolt://neo4j:7687"  # Direct container service name
+    else:
+        # Otherwise use localhost with mapped port
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    
     os.environ["NEO4J_URI"] = neo4j_uri
     os.environ["NEO4J__URI"] = neo4j_uri
     
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
     
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
+    os.environ["NEO4J__DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -180,28 +188,50 @@ def load_env_vars():
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    # Set up Neo4j environment variables (replicate neo4j_env fixture logic to avoid calling it directly)
+    # Set up Neo4j environment variables (replicate neo4j_env fixture logic)
     ci_env = os.environ.get("CI") == "true"
-    neo4j_port = "7687" if ci_env else "7688"
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
     
-    # Set the environment variables
-    neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    # Set the environment variables based on environment
+    if docker_env:
+        # In Docker environment, use container networking
+        neo4j_uri = "bolt://neo4j:7687"  # Direct container service name
+    else:
+        # Otherwise use localhost with mapped port
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    
     os.environ["NEO4J_URI"] = neo4j_uri
     os.environ["NEO4J__URI"] = neo4j_uri
     
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
     
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
+    os.environ["NEO4J__DATABASE"] = "testdb"  # Match test DB name in docker-compose.test.yml
 
-    # Set Redis environment variables
-    os.environ["REDIS_URI"] = "redis://localhost:6379/0"
-    os.environ["REDIS__URI"] = "redis://localhost:6379/0"
-    os.environ["REDIS_HOST"] = "localhost"
-    os.environ["REDIS_PORT"] = "6379"
+    # Set Redis environment variables based on environment
+    if docker_env:
+        # In Docker environment, use container networking
+        redis_host = "redis"
+        redis_port = "6379"
+        redis_uri = f"redis://{redis_host}:{redis_port}/0"
+    else:
+        # Otherwise use localhost with mapped port
+        redis_host = "localhost"
+        redis_port = "6380"  # Port mapped in docker-compose.test.yml
+        redis_uri = f"redis://{redis_host}:{redis_port}/0"
+    
+    os.environ["REDIS_URI"] = redis_uri
+    os.environ["REDIS__URI"] = redis_uri
+    os.environ["REDIS_HOST"] = redis_host
+    os.environ["REDIS_PORT"] = redis_port
+    
+    # Set environment variable for Celery broker/backend
+    os.environ["CELERY_BROKER_URL"] = redis_uri
+    os.environ["CELERY_RESULT_BACKEND"] = redis_uri
 
     # Set OpenAI environment variables for testing
     os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
@@ -216,13 +246,23 @@ def neo4j_connector():
     # Get Neo4j connection details from environment variables
     # with fallback to default test values
     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
-    
-    # Use correct Neo4j port based on environment
-    ci_env = os.environ.get("CI") == "true"
-    default_uri = f"bolt://localhost:{7687 if ci_env else 7688}"
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
-    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
+    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "neo4j"
+    
+    # Use correct Neo4j connection based on environment
+    ci_env = os.environ.get("CI") == "true"
+    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
+    
+    if docker_env:
+        # In Docker environment, use container service name
+        default_uri = "bolt://neo4j:7687"
+    else:
+        # Otherwise use localhost with mapped port - 7688 is used in docker-compose.test.yml
+        neo4j_port = "7687" if ci_env else "7688"
+        default_uri = f"bolt://localhost:{neo4j_port}"
+    
+    # Use the environment variables that were already set by load_env_vars
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
 
     # Create a Neo4j connector
     connector = Neo4jConnector(
@@ -231,24 +271,125 @@ def neo4j_connector():
         password=password,
         database=database,
     )
+    
+    # Clean the database to ensure test isolation
+    try:
+        # Clear all data from the database to start with a clean slate
+        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        print("Neo4j database cleared for clean test.")
+    except Exception as e:
+        print(f"Warning: Could not clear Neo4j database: {e}")
 
     yield connector
 
-    # Clean up the connector
-    connector.close()
+    # Clean up the connector and database after the test
+    try:
+        # Clear all data created by this test to avoid affecting other tests
+        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        print("Neo4j database cleaned up after test.")
+    except Exception as e:
+        print(f"Warning: Could not clean up Neo4j database: {e}")
+    
+    # Always close the connection
+    try:
+        connector.close()
+    except Exception as e:
+        print(f"Warning: Error closing Neo4j connection: {e}")
 
 
 @pytest.fixture(scope="function")
-def celery_app():
-    """Provide a Celery app configured for integration testing."""
-    from codestory.ingestion_pipeline.celery_app import app
+def redis_client():
+    """Create a Redis client for testing and manage cleanup.
+    
+    This fixture provides a Redis client and ensures proper cleanup after tests.
+    """
+    import redis
+    
+    # Get Redis URI from environment
+    redis_uri = os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"
+    
+    # Create Redis client
+    client = redis.from_url(redis_uri)
+    
+    # Clear Redis database to ensure test isolation
+    try:
+        client.flushdb()
+        print("Redis database cleared for clean test.")
+    except Exception as e:
+        print(f"Warning: Could not clear Redis database: {e}")
+    
+    yield client
+    
+    # Clean up Redis after test
+    try:
+        client.flushdb()
+        print("Redis database cleaned up after test.")
+    except Exception as e:
+        print(f"Warning: Could not clean up Redis database: {e}")
 
-    # Configure Celery for testing with in-memory broker
+
+@pytest.fixture(scope="function")
+def celery_app(redis_client):
+    """Provide a Celery app configured for integration testing.
+    
+    This fixture depends on redis_client to ensure Redis is properly set up
+    and cleaned up for tests.
+    """
+    import importlib
+
+    from codestory.ingestion_pipeline.celery_app import app
+    
+    # Get the Redis URI from environment
+    redis_uri = os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"
+    
+    # Configure Celery for testing
     app.conf.update(
-        broker_url="memory://",
-        result_backend="rpc://",
+        broker_url=redis_uri,  # Use real Redis for better reliability
+        result_backend=redis_uri,  # Use real Redis for results
         task_always_eager=True,  # Tasks run synchronously in tests
         task_eager_propagates=True,  # Exceptions are propagated
         task_ignore_result=False,  # Results are tracked
+        worker_send_task_events=False,  # Don't send events for better performance
+        broker_connection_retry=True,  # Retry broker connections
+        broker_connection_max_retries=3,  # Limit retries
     )
-    return app
+    
+    # Purge any existing tasks
+    try:
+        app.control.purge()
+        print("Celery task queue purged for clean test.")
+    except Exception as e:
+        print(f"Warning: Could not purge Celery tasks: {e}")
+    
+    # Pre-register all task modules to avoid dynamic loading issues
+    task_modules = [
+        "codestory.ingestion_pipeline.tasks",
+        "codestory_filesystem.step",
+        "codestory_blarify.step",
+        "codestory_summarizer.step",
+        "codestory_docgrapher.step",
+    ]
+    
+    # Import modules to ensure tasks are registered
+    for module_name in task_modules:
+        try:
+            importlib.import_module(module_name)
+        except ImportError as e:
+            print(f"Warning: Could not import task module {module_name}: {e}")
+    
+    # Apply configuration immediately
+    app.finalize()
+    
+    yield app
+    
+    # Clean up any pending tasks
+    try:
+        app.control.purge()
+        print("Celery task queue purged after test.")
+    except Exception as e:
+        print(f"Warning: Could not purge Celery tasks after test: {e}")
+    
+    # Reset Celery app after test
+    app.conf.update(
+        task_always_eager=False,  # Reset to non-eager mode
+    )

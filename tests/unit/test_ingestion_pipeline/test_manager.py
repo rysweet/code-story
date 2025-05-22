@@ -1,12 +1,22 @@
 """Tests for the ingestion pipeline manager."""
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+from codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+
+# Create mock modules
+mock_celery = MagicMock()
+mock_app = MagicMock()
+mock_celery.Celery.return_value = mock_app
+sys.modules["celery"] = mock_celery
+sys.modules["celery.result"] = MagicMock()
 
 
 # Mock Prometheus metrics to prevent registration conflicts
@@ -24,22 +34,6 @@ def mock_prometheus_metrics():
         mock_histogram.return_value.labels.return_value.observe = MagicMock()
 
         yield
-
-
-# Mock the Celery app to avoid requiring an actual Celery instance
-import sys
-from unittest.mock import MagicMock
-
-# Create mock modules
-mock_celery = MagicMock()
-mock_app = MagicMock()
-mock_celery.Celery.return_value = mock_app
-sys.modules["celery"] = mock_celery
-sys.modules["celery.result"] = MagicMock()
-
-# Now we can import our modules
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
-from codestory.ingestion_pipeline.manager import PipelineManager
 
 
 class TestPipelineManager:

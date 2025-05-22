@@ -1,7 +1,7 @@
 """Test fixtures for CLI unit tests."""
 
-import json
-from typing import Dict, Any, Generator
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -49,7 +49,7 @@ def mock_service_client() -> Generator[MagicMock, None, None]:
 
 
 @pytest.fixture
-def sample_health_data() -> Dict[str, Any]:
+def sample_health_data() -> dict[str, Any]:
     """
     Sample health check data.
     
@@ -77,7 +77,7 @@ def sample_health_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_ingestion_status() -> Dict[str, Any]:
+def sample_ingestion_status() -> dict[str, Any]:
     """
     Sample ingestion status data.
     
@@ -115,7 +115,7 @@ def sample_ingestion_status() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_query_result() -> Dict[str, Any]:
+def sample_query_result() -> dict[str, Any]:
     """
     Sample query result data.
     
@@ -137,7 +137,7 @@ def sample_query_result() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_config_data() -> Dict[str, Any]:
+def sample_config_data() -> dict[str, Any]:
     """
     Sample configuration data.
     

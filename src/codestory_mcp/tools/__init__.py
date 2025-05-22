@@ -9,10 +9,10 @@ from typing import Dict, List, Type
 from .base import BaseTool
 
 # Tool registry will be populated when modules are imported
-_tools: Dict[str, Type[BaseTool]] = {}
+_tools: dict[str, type[BaseTool]] = {}
 
 
-def register_tool(tool_class: Type[BaseTool]) -> Type[BaseTool]:
+def register_tool(tool_class: type[BaseTool]) -> type[BaseTool]:
     """Register a tool class in the registry.
 
     Args:
@@ -25,7 +25,7 @@ def register_tool(tool_class: Type[BaseTool]) -> Type[BaseTool]:
     return tool_class
 
 
-def get_tool(name: str) -> Type[BaseTool]:
+def get_tool(name: str) -> type[BaseTool]:
     """Get a tool class by name.
 
     Args:
@@ -40,7 +40,7 @@ def get_tool(name: str) -> Type[BaseTool]:
     return _tools[name]
 
 
-def get_all_tools() -> List[Type[BaseTool]]:
+def get_all_tools() -> list[type[BaseTool]]:
     """Get all registered tool classes.
 
     Returns:

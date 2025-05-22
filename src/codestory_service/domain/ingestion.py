@@ -7,14 +7,14 @@ for ingestion pipeline operations.
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, ClassVar
+from typing import Any
 
 from pydantic import (
     BaseModel,
     Field,
+    field_serializer,
     field_validator,
     model_validator,
-    field_serializer,
 )
 
 from codestory.ingestion_pipeline.step import StepStatus
@@ -52,31 +52,31 @@ class IngestionRequest(BaseModel):
         ...,
         description="Path or URL to the source code repository",
     )
-    branch: Optional[str] = Field(
+    branch: str | None = Field(
         None,
         description="Branch to ingest (for Git repositories)",
     )
-    steps: Optional[List[str]] = Field(
+    steps: list[str] | None = Field(
         None,
         description="Specific steps to run (defaults to all configured steps)",
     )
-    config: Optional[Dict[str, Any]] = Field(
+    config: dict[str, Any] | None = Field(
         None,
         description="Additional configuration for ingestion",
     )
-    options: Optional[Dict[str, Any]] = Field(
+    options: dict[str, Any] | None = Field(
         None,
         description="Additional options for ingestion",
     )
-    created_by: Optional[str] = Field(
+    created_by: str | None = Field(
         None,
         description="User or system that created the request",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         description="Description of the ingestion job",
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         None,
         description="Tags for categorizing the ingestion job",
     )
@@ -120,7 +120,7 @@ class IngestionRequest(BaseModel):
             import os
             import sys
 
-            if not os.path.exists(v) and not "pytest" in sys.modules:
+            if not os.path.exists(v) and "pytest" not in sys.modules:
                 raise ValueError(f"Local path '{v}' does not exist")
 
         elif source_type in (
@@ -172,14 +172,14 @@ class IngestionStarted(BaseModel):
     status: str = Field(JobStatus.RUNNING, description="Initial job status")
     source: str = Field(..., description="Source being ingested")
     started_at: datetime = Field(default_factory=datetime.now, description="Start time")
-    steps: List[str] = Field(..., description="Steps to be executed")
-    message: Optional[str] = Field(None, description="Status message")
-    eta: Optional[int] = Field(
+    steps: list[str] = Field(..., description="Steps to be executed")
+    message: str | None = Field(None, description="Status message")
+    eta: int | None = Field(
         None, description="Estimated time of start (unix timestamp)"
     )
 
     @field_serializer("started_at")
-    def serialize_dt(self, dt: datetime, _info: Any) -> Optional[str]:
+    def serialize_dt(self, dt: datetime, _info: Any) -> str | None:
         """Serialize datetime to ISO format string."""
         return dt.isoformat() if dt else None
 
@@ -204,14 +204,14 @@ class StepProgress(BaseModel):
     name: str = Field(..., description="Step name")
     status: StepStatus = Field(..., description="Step status")
     progress: float = Field(..., description="Progress percentage (0-100)")
-    message: Optional[str] = Field(None, description="Status message")
-    error: Optional[str] = Field(None, description="Error message if applicable")
-    started_at: Optional[datetime] = Field(None, description="Start time")
-    completed_at: Optional[datetime] = Field(None, description="Completion time")
-    duration: Optional[float] = Field(None, description="Duration in seconds")
+    message: str | None = Field(None, description="Status message")
+    error: str | None = Field(None, description="Error message if applicable")
+    started_at: datetime | None = Field(None, description="Start time")
+    completed_at: datetime | None = Field(None, description="Completion time")
+    duration: float | None = Field(None, description="Duration in seconds")
 
     @field_serializer("started_at", "completed_at")
-    def serialize_dt(self, dt: datetime, _info: Any) -> Optional[str]:
+    def serialize_dt(self, dt: datetime, _info: Any) -> str | None:
         """Serialize datetime to ISO format string."""
         return dt.isoformat() if dt else None
 
@@ -221,27 +221,27 @@ class IngestionJob(BaseModel):
 
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatus = Field(..., description="Overall job status")
-    source: Optional[str] = Field(None, description="Source being ingested")
-    source_type: Optional[IngestionSourceType] = Field(
+    source: str | None = Field(None, description="Source being ingested")
+    source_type: IngestionSourceType | None = Field(
         None, description="Type of ingestion source"
     )
-    branch: Optional[str] = Field(None, description="Branch name if applicable")
+    branch: str | None = Field(None, description="Branch name if applicable")
     progress: float = Field(..., description="Overall progress percentage (0-100)")
-    created_at: Optional[int] = Field(None, description="Creation timestamp")
-    updated_at: Optional[int] = Field(None, description="Last update timestamp")
-    started_at: Optional[datetime] = Field(None, description="Start time")
-    completed_at: Optional[datetime] = Field(None, description="Completion time")
-    duration: Optional[float] = Field(None, description="Duration in seconds")
-    steps: Optional[Dict[str, StepProgress]] = Field(
+    created_at: int | None = Field(None, description="Creation timestamp")
+    updated_at: int | None = Field(None, description="Last update timestamp")
+    started_at: datetime | None = Field(None, description="Start time")
+    completed_at: datetime | None = Field(None, description="Completion time")
+    duration: float | None = Field(None, description="Duration in seconds")
+    steps: dict[str, StepProgress] | None = Field(
         None, description="Progress by step"
     )
-    current_step: Optional[str] = Field(None, description="Current step name")
-    message: Optional[str] = Field(None, description="Status message")
-    error: Optional[str] = Field(None, description="Error message if applicable")
-    result: Optional[Any] = Field(None, description="Job result data")
+    current_step: str | None = Field(None, description="Current step name")
+    message: str | None = Field(None, description="Status message")
+    error: str | None = Field(None, description="Error message if applicable")
+    result: Any | None = Field(None, description="Job result data")
 
     @field_serializer("started_at", "completed_at")
-    def serialize_dt(self, dt: datetime, _info: Any) -> Optional[str]:
+    def serialize_dt(self, dt: datetime, _info: Any) -> str | None:
         """Serialize datetime to ISO format string."""
         return dt.isoformat() if dt else None
 
@@ -302,7 +302,7 @@ class JobProgressEvent(BaseModel):
     status: StepStatus = Field(..., description="Step status")
     progress: float = Field(..., description="Progress percentage (0-100)")
     overall_progress: float = Field(..., description="Overall job progress")
-    message: Optional[str] = Field(None, description="Status message")
+    message: str | None = Field(None, description="Status message")
     timestamp: float = Field(default_factory=time.time, description="Event timestamp")
 
 
@@ -318,7 +318,7 @@ class PaginationParams(BaseModel):
 class PaginatedResponse(BaseModel):
     """Generic paginated response wrapper."""
 
-    items: List[Any] = Field(..., description="List of items")
+    items: list[Any] = Field(..., description="List of items")
     total: int = Field(..., description="Total number of items")
     offset: int = Field(..., description="Offset used in the query")
     limit: int = Field(..., description="Limit used in the query")
@@ -330,4 +330,4 @@ class PaginatedResponse(BaseModel):
 class PaginatedIngestionJobs(PaginatedResponse):
     """Paginated response for ingestion jobs."""
 
-    items: List[IngestionJob] = Field(..., description="List of ingestion jobs")
+    items: list[IngestionJob] = Field(..., description="List of ingestion jobs")

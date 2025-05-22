@@ -11,8 +11,10 @@ import os
 ci_env = os.environ.get("CI") == "true"
 neo4j_port = "7687" if ci_env else "7688"
 import pytest
+
 from codestory.config import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 
 @pytest.mark.parametrize("use_env_check", [True])
 def test_neo4j_connection_env_vars(use_env_check):

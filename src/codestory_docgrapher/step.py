@@ -65,8 +65,12 @@ class DocumentationGrapherStep(PipelineStep):
         ignore_patterns = config.get("ignore_patterns", [])
         use_llm = config.get("use_llm", True)
 
-        # Start the Celery task
-        task = run_docgrapher.apply_async(
+        # Start the Celery task using current_app.send_task with the fully qualified task name
+        from celery import current_app
+        
+        # Use the fully qualified task name to avoid task routing issues
+        task = current_app.send_task(
+            "codestory_docgrapher.step.run_docgrapher",
             kwargs={
                 "repository_path": repository_path,
                 "job_id": job_id,
@@ -254,7 +258,7 @@ class DocumentationGrapherStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="docgrapher.run_docgrapher")
+@shared_task(bind=True, name="codestory_docgrapher.step.run_docgrapher")
 def run_docgrapher(
     self,  # Celery task instance
     repository_path: str,

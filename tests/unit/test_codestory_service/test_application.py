@@ -8,23 +8,23 @@ from unittest import mock
 import pytest
 from fastapi import HTTPException, WebSocket
 
+from codestory_service.application.auth_service import AuthService
+from codestory_service.application.config_service import ConfigService
+from codestory_service.application.graph_service import GraphService
+from codestory_service.application.ingestion_service import IngestionService
 from codestory_service.domain.auth import LoginRequest, TokenResponse
 from codestory_service.domain.config import ConfigPatch
 from codestory_service.domain.graph import (
+    AskRequest,
     CypherQuery,
     QueryType,
     VectorQuery,
-    AskRequest,
 )
 from codestory_service.domain.ingestion import (
     IngestionRequest,
     IngestionSourceType,
     JobStatus,
 )
-from codestory_service.application.auth_service import AuthService
-from codestory_service.application.config_service import ConfigService
-from codestory_service.application.graph_service import GraphService
-from codestory_service.application.ingestion_service import IngestionService
 
 
 class TestAuthService:
@@ -144,10 +144,10 @@ class TestConfigService:
             ConfigGroup,
             ConfigItem,
             ConfigMetadata,
-            ConfigSection,
-            ConfigValueType,
             ConfigPermission,
+            ConfigSection,
             ConfigSource,
+            ConfigValueType,
         )
 
         # Create a sample config dump
@@ -195,12 +195,11 @@ class TestConfigService:
             ConfigGroup,
             ConfigItem,
             ConfigMetadata,
-            ConfigSection,
-            ConfigValueType,
             ConfigPermission,
+            ConfigSection,
             ConfigSource,
             ConfigValidationResult,
-            ConfigPatch,
+            ConfigValueType,
         )
 
         # Setup mock validation method
@@ -379,7 +378,6 @@ class TestIngestionService:
     @pytest.mark.asyncio
     async def test_start_ingestion(self, service, mock_celery):
         """Test starting an ingestion job."""
-        from codestory_service.domain.ingestion import JobProgressEvent
 
         # Mock publish_progress method
         service.publish_progress = mock.AsyncMock()

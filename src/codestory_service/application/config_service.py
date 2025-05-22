@@ -6,21 +6,17 @@ including reading, writing, and validating configuration settings.
 
 import json
 import logging
-import os
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
-from fastapi import HTTPException, status
 import redis.asyncio as redis
+from fastapi import HTTPException, status
 
 from codestory.config.settings import get_settings as get_core_settings
-from codestory.config.export import export_to_json, export_to_toml, create_env_template
 from codestory.config.writer import (
     update_config,
     update_env,
     update_toml,
-    get_config_value,
 )
 
 
@@ -29,17 +25,17 @@ class ConfigWriter:
     """Wrapper for configuration writing functions."""
 
     def update_config(
-        self, setting_path: str, value: Any, persist_to: Optional[str] = None
+        self, setting_path: str, value: Any, persist_to: str | None = None
     ) -> None:
         """Update a configuration setting."""
         update_config(setting_path, value, persist_to)
 
-    def update_env(self, key: str, value: str, env_file: Optional[str] = None) -> None:
+    def update_env(self, key: str, value: str, env_file: str | None = None) -> None:
         """Update a value in the .env file."""
         update_env(key, value, env_file)
 
     def update_toml(
-        self, section: str, key: str, value: Any, toml_file: Optional[str] = None
+        self, section: str, key: str, value: Any, toml_file: str | None = None
     ) -> None:
         """Update a value in the .codestory.toml file."""
         update_toml(section, key, value, toml_file)
@@ -118,11 +114,11 @@ class ConfigService:
             logger.info("Connected to Redis successfully for config notifications")
         except Exception as e:
             logger.error(
-                f"Failed to connect to Redis for config notifications: {str(e)}"
+                f"Failed to connect to Redis for config notifications: {e!s}"
             )
             self.redis = None
 
-    async def notify_config_updated(self, changes: Set[str]) -> None:
+    async def notify_config_updated(self, changes: set[str]) -> None:
         """Notify subscribers that configuration has been updated.
 
         Args:
@@ -159,7 +155,7 @@ class ConfigService:
                 f"Published config update notification for {len(changes)} changes"
             )
         except Exception as e:
-            logger.error(f"Failed to publish config update notification: {str(e)}")
+            logger.error(f"Failed to publish config update notification: {e!s}")
 
     def get_config_dump(self, include_sensitive: bool = False) -> ConfigDump:
         """Get a complete dump of the configuration.
@@ -182,7 +178,7 @@ class ConfigService:
         settings_export.update(service_export)
 
         # Build configuration groups
-        groups: Dict[ConfigSection, ConfigGroup] = {}
+        groups: dict[ConfigSection, ConfigGroup] = {}
 
         # Process settings by section
         for full_key, value in settings_export.items():
@@ -336,10 +332,10 @@ class ConfigService:
             # Return the updated configuration
             return self.get_config_dump()
         except Exception as e:
-            logger.error(f"Failed to update configuration: {str(e)}")
+            logger.error(f"Failed to update configuration: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to update configuration: {str(e)}",
+                detail=f"Failed to update configuration: {e!s}",
             )
 
     def _validate_config_patch(self, patch: ConfigPatch) -> ConfigValidationResult:
@@ -459,7 +455,7 @@ class ConfigService:
                             )
                         )
                 except Exception as e:
-                    logger.warning(f"Error validating {item.key}: {str(e)}")
+                    logger.warning(f"Error validating {item.key}: {e!s}")
 
         return ConfigValidationResult(valid=len(errors) == 0, errors=errors)
 

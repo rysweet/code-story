@@ -20,6 +20,7 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
 from rich.table import Table
 
 from ..client import ProgressClient, ServiceClient
+from ..require_service_available import require_service_available
 
 
 @click.group(help="Ingest a repository into Code Story.")
@@ -367,6 +368,8 @@ def start_ingestion(
       Local path:     /Users/name/projects/my-repo
       Container path: /repositories/my-repo
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -540,6 +543,8 @@ def job_status(ctx: click.Context, job_id: str) -> None:
 
     JOB_ID is the ID of the ingestion job.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -559,6 +564,8 @@ def stop_job(ctx: click.Context, job_id: str) -> None:
 
     JOB_ID is the ID of the ingestion job to stop.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -580,6 +587,8 @@ def list_jobs(ctx: click.Context) -> None:
     """
     List all ingestion jobs.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -599,21 +608,50 @@ def list_jobs(ctx: click.Context) -> None:
     table.add_column("Progress", style="yellow")
 
     for job in jobs:
-        status = job.get("status", "unknown")
+        # Ensure all values are properly converted to strings for rendering
+        status = str(job.get("status", "unknown"))
+        
+        # Extract repository path from either source or repository_path
+        repo_path = job.get("repository_path", job.get("source", ""))
+        if repo_path is None:
+            repo_path = ""
+        else:
+            repo_path = str(repo_path)
+        
+        # Format created_at timestamp
+        created_at = job.get("created_at", "")
+        if isinstance(created_at, (int, float)):
+            from datetime import datetime
+            try:
+                created_at = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError, OverflowError):
+                created_at = str(created_at)
+        else:
+            created_at = str(created_at) if created_at is not None else ""
+            
+        # Get and safely format progress value
+        progress = job.get("progress", 0)
+        try:
+            progress_str = f"{float(progress):.1f}%" if progress is not None else "0.0%"
+        except (ValueError, TypeError):
+            progress_str = "0.0%"
+        
+        # Set status style
         status_style = {
             "completed": "green",
             "failed": "red",
             "cancelled": "yellow",
-            "running": "blue",
+            "cancelling": "yellow",
+            "running": "blue", 
             "pending": "magenta",
         }.get(status.lower(), "white")
 
         table.add_row(
-            job.get("job_id", ""),
+            str(job.get("job_id", "")),
             f"[{status_style}]{status}[/]",
-            job.get("repository_path", ""),
-            job.get("created_at", ""),
-            f"{job.get('progress', 0):.1f}%",
+            repo_path,
+            created_at,
+            progress_str,
         )
 
     console.print(table)
@@ -640,6 +678,8 @@ def mount_repository(
     2. Recreates the necessary containers with the mount
     3. Verifies that the mount was successful
     """
+    require_service_available()
+
     console: Console = ctx.obj["console"]
     
     # Get absolute local path

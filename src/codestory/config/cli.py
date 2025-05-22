@@ -2,10 +2,7 @@
 
 import json
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
-import rich
 import typer
 from rich.console import Console
 from rich.syntax import Syntax
@@ -54,7 +51,7 @@ def get_setting(
         console.print(f"[bold red]Error:[/] {e.message}")
         sys.exit(1)
     except Exception as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
 
 
@@ -105,13 +102,13 @@ def set_setting(
             console.print(e.details)
         sys.exit(1)
     except Exception as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
 
 
 @app.command("list")
 def list_settings(
-    section: Optional[str] = typer.Option(
+    section: str | None = typer.Option(
         None, "--section", "-s", help="Section to list (e.g., 'neo4j')"
     ),
     format: str = typer.Option(
@@ -169,7 +166,7 @@ def export_config(
     format: str = typer.Option(
         "env", "--format", "-f", help="Output format (env, json, toml)"
     ),
-    output: Optional[str] = typer.Option(
+    output: str | None = typer.Option(
         None, "--output", "-o", help="Output file path (default: stdout)"
     ),
     include_secrets: bool = typer.Option(
@@ -213,7 +210,7 @@ def export_config(
             console.print(f"[bold green]Success:[/] Configuration exported to {output}")
 
     except Exception as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
 
 
@@ -226,7 +223,7 @@ def refresh_config():
             "[bold green]Success:[/] Configuration refreshed from all sources"
         )
     except Exception as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)
 
 

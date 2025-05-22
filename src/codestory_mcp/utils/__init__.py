@@ -10,8 +10,8 @@ from .metrics import MCPMetrics
 from .serializers import NodeSerializer, RelationshipSerializer
 
 __all__ = [
-    "get_mcp_settings",
     "MCPMetrics",
     "NodeSerializer",
     "RelationshipSerializer",
+    "get_mcp_settings",
 ]

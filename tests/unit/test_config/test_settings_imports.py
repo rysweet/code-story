@@ -5,10 +5,9 @@ import pytest
 
 def test_settings_import():
     """Test importing settings at the module level."""
-    import sys
     try:
         # This is the problematic import - ensure it works in test environment
-        from codestory.ingestion_pipeline.celery_app import app, settings
+        from codestory.ingestion_pipeline.celery_app import settings
         
         # If we got here without error, the test passes
         assert settings is not None

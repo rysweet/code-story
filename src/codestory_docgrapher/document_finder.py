@@ -8,11 +8,10 @@ documentation within code files.
 import logging
 import os
 import re
-from typing import Dict, List, Optional, Set, Tuple
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from .models import DocumentationFile, DocumentType
 
+from .models import DocumentationFile, DocumentType
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +60,8 @@ class DocumentFinder:
         }
 
     def find_documentation_files(
-        self, ignore_patterns: Optional[List[str]] = None
-    ) -> List[DocumentationFile]:
+        self, ignore_patterns: list[str] | None = None
+    ) -> list[DocumentationFile]:
         """Find documentation files in the repository.
 
         Args:
@@ -81,7 +80,7 @@ class DocumentFinder:
         logger.info(f"Found {len(doc_files)} documentation files in repository")
         return doc_files
 
-    def _compile_ignore_patterns(self, patterns: List[str]) -> List[re.Pattern]:
+    def _compile_ignore_patterns(self, patterns: list[str]) -> list[re.Pattern]:
         """Compile ignore patterns into regular expressions.
 
         Args:
@@ -100,7 +99,7 @@ class DocumentFinder:
                 logger.warning(f"Invalid ignore pattern: {pattern}")
         return result
 
-    def _should_ignore(self, path: str, ignore_patterns: List[re.Pattern]) -> bool:
+    def _should_ignore(self, path: str, ignore_patterns: list[re.Pattern]) -> bool:
         """Check if a path should be ignored.
 
         Args:
@@ -116,8 +115,8 @@ class DocumentFinder:
         return False
 
     def _find_standalone_docs(
-        self, ignore_patterns: List[re.Pattern]
-    ) -> List[DocumentationFile]:
+        self, ignore_patterns: list[re.Pattern]
+    ) -> list[DocumentationFile]:
         """Find standalone documentation files (Markdown, RST, etc.).
 
         Args:
@@ -173,7 +172,7 @@ class DocumentFinder:
                 # Read the file content
                 absolute_path = os.path.join(self.repository_path, file_path)
                 try:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
                 except Exception as e:
                     logger.warning(f"Error reading file {absolute_path}: {e}")
@@ -192,8 +191,8 @@ class DocumentFinder:
         return result
 
     def _find_code_docstrings(
-        self, ignore_patterns: List[re.Pattern]
-    ) -> List[DocumentationFile]:
+        self, ignore_patterns: list[re.Pattern]
+    ) -> list[DocumentationFile]:
         """Find documentation within code files (docstrings, comments).
 
         Args:
@@ -228,7 +227,7 @@ class DocumentFinder:
             # For Python files, we specifically look for docstrings
             if file_extension == "py":
                 try:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
 
                         # Simple docstring detection
@@ -251,7 +250,7 @@ class DocumentFinder:
             # For JavaScript, TypeScript files - check for JSDoc
             elif file_extension in ["js", "ts"]:
                 try:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
 
                         # Simple JSDoc detection
@@ -276,7 +275,7 @@ class DocumentFinder:
             # For Java, C, C++ files
             elif file_extension in ["java", "c", "cpp", "h", "hpp"]:
                 try:
-                    with open(absolute_path, "r", encoding="utf-8") as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
 
                         # Simple Javadoc/Doxygen detection

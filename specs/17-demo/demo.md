@@ -5,10 +5,10 @@ There will be a demo of the system, showcasing its capabilities and features. Th
 - [GUI Demo](./demo.md#GUI%20Demo) which showcases the [graphical user interface](../14-gui/gui.md) and its features.
 - [Agent Based MCP Demo](./demo.md#MCP%20Demo) which demonstrates the [MCP service](../12-mcp-adapter/mcp-adapter.md) being consumed by an agent.
 
-
 # CLI Demo
 
 The CLI Demo will showcase the command line interface of the system. It will include the following steps:
+
 1. **Installation**: Instructions on how to install the CLI tool.
 2. **Configuration**: Setting up the configuration file and environment variables.
 3. **Code Ingestion**: The demo will show how to ingest code files into the system using the CLI. We will use the CodeStory codebase as an example.

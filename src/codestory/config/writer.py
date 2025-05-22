@@ -6,7 +6,7 @@ and persisting those changes to .env or .codestory.toml files.
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import tomli
 import tomli_w
@@ -17,7 +17,7 @@ from .exceptions import SettingNotFoundError
 from .settings import get_project_root, get_settings, refresh_settings
 
 
-def update_env(key: str, value: str, env_file: Optional[str] = None) -> None:
+def update_env(key: str, value: str, env_file: str | None = None) -> None:
     """Update a value in the .env file.
 
     Args:
@@ -47,7 +47,7 @@ def update_toml(
     section: str,
     key: str,
     value: Any,
-    toml_file: Optional[str] = None,
+    toml_file: str | None = None,
     create_if_missing: bool = True,
 ) -> None:
     """Update a value in the .codestory.toml file.
@@ -68,7 +68,7 @@ def update_toml(
         toml_file = str(get_project_root() / ".codestory.toml")
 
     # Load existing TOML if it exists
-    config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
     if os.path.exists(toml_file):
         with open(toml_file, "rb") as f:
             try:
@@ -123,7 +123,7 @@ def parse_setting_path(setting_path: str) -> tuple[str, str]:
 def update_config(
     setting_path: str,
     value: Any,
-    persist_to: Optional[str] = None,
+    persist_to: str | None = None,
 ) -> None:
     """Update a configuration setting in memory and optionally persist to file.
 

@@ -1,7 +1,7 @@
 """Integration tests for CLI query commands."""
 
 import os
-from typing import Dict, Any
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
@@ -13,7 +13,7 @@ from codestory.cli.main import app
 class TestQueryCommands:
     """Integration tests for query-related CLI commands."""
     
-    def test_query_help(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_query_help(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query --help' command."""
         # Run CLI with query --help
         result = cli_runner.invoke(app, ["query", "--help"])
@@ -25,7 +25,7 @@ class TestQueryCommands:
         assert "explore" in result.output.lower()
         assert "export" in result.output.lower()
     
-    def test_query_run_cypher(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_query_run_cypher(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query run' command with simple Cypher query."""
         # Run a simple query
         result = cli_runner.invoke(
@@ -38,7 +38,7 @@ class TestQueryCommands:
         assert "Query Results" in result.output
         assert "count" in result.output
     
-    def test_query_run_with_format(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_query_run_with_format(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query run' with different output formats."""
         # Test JSON format
         result = cli_runner.invoke(
@@ -59,7 +59,7 @@ class TestQueryCommands:
         assert result.exit_code == 0
         assert "count" in result.output
     
-    def test_query_run_with_limit(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_query_run_with_limit(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query run' with result limit."""
         result = cli_runner.invoke(
             app, 
@@ -69,7 +69,7 @@ class TestQueryCommands:
         assert result.exit_code == 0
         assert "limit=3" in result.output.lower()
     
-    def test_query_export(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_query_export(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query export' command."""
         output_file = "test_export.json"
         
@@ -87,7 +87,7 @@ class TestQueryCommands:
             assert os.path.exists(output_file)
             
             # Read file content
-            with open(output_file, "r") as f:
+            with open(output_file) as f:
                 content = f.read()
                 assert "records" in content
                 assert "count" in content
@@ -97,7 +97,7 @@ class TestQueryCommands:
             if os.path.exists(output_file):
                 os.remove(output_file)
     
-    def test_query_explore(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_query_explore(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query explore' command."""
         # Run query explore with small limit to speed up test
         result = cli_runner.invoke(

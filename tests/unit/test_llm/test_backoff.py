@@ -4,6 +4,19 @@ from unittest.mock import MagicMock, patch
 
 import openai
 import pytest
+from codestory.llm.backoff import (
+    before_retry_callback,
+    get_retry_after,
+    retry_on_openai_errors,
+    retry_on_openai_errors_async,
+)
+from codestory.llm.exceptions import (
+    ContextLengthError,
+    RateLimitError,
+    ServiceUnavailableError,
+    TimeoutError,
+)
+from codestory.llm.metrics import OperationType
 
 
 # Create mock fixture to prevent real Prometheus metrics from being used
@@ -24,21 +37,6 @@ def mock_all_prometheus():
         mock_histogram.return_value.labels = mock_labels
 
         yield
-
-
-from codestory.llm.backoff import (
-    before_retry_callback,
-    get_retry_after,
-    retry_on_openai_errors,
-    retry_on_openai_errors_async,
-)
-from codestory.llm.exceptions import (
-    ContextLengthError,
-    RateLimitError,
-    ServiceUnavailableError,
-    TimeoutError,
-)
-from codestory.llm.metrics import OperationType
 
 
 class TestRetryFunctions:

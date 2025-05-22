@@ -5,19 +5,18 @@ ingestion pipeline jobs.
 """
 
 import logging
-from typing import List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 
 from ..application.ingestion_service import IngestionService, get_ingestion_service
 from ..domain.ingestion import (
+    IngestionJob,
     IngestionRequest,
     IngestionStarted,
-    IngestionJob,
     JobStatus,
     PaginatedIngestionJobs,
 )
-from ..infrastructure.msal_validator import get_current_user, require_role
+from ..infrastructure.msal_validator import get_current_user
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -58,12 +57,12 @@ async def start_ingestion(
         logger.info(f"Starting ingestion for source: {request.source}")
         return await ingestion_service.start_ingestion(request)
     except Exception as e:
-        logger.error(f"Failed to start ingestion: {str(e)}")
+        logger.error(f"Failed to start ingestion: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start ingestion: {str(e)}",
+            detail=f"Failed to start ingestion: {e!s}",
         )
 
 
@@ -74,7 +73,7 @@ async def start_ingestion(
     description="Get a paginated list of ingestion jobs with optional filtering by status.",
 )
 async def list_jobs(
-    status: Optional[List[JobStatus]] = Query(None, description="Filter by job status"),
+    status: list[JobStatus] | None = Query(None, description="Filter by job status"),
     limit: int = Query(10, description="Maximum number of jobs to return"),
     offset: int = Query(0, description="Number of jobs to skip"),
     sort_by: str = Query("created_at", description="Field to sort by"),
@@ -109,12 +108,12 @@ async def list_jobs(
             sort_order=sort_order,
         )
     except Exception as e:
-        logger.error(f"Failed to list jobs: {str(e)}")
+        logger.error(f"Failed to list jobs: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list jobs: {str(e)}",
+            detail=f"Failed to list jobs: {e!s}",
         )
 
 
@@ -146,12 +145,12 @@ async def get_job_status(
         logger.info(f"Getting status for job: {job_id}")
         return await ingestion_service.get_job_status(job_id)
     except Exception as e:
-        logger.error(f"Failed to get job status: {str(e)}")
+        logger.error(f"Failed to get job status: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job status: {str(e)}",
+            detail=f"Failed to get job status: {e!s}",
         )
 
 
@@ -183,12 +182,12 @@ async def cancel_job(
         logger.info(f"Cancelling job: {job_id}")
         return await ingestion_service.cancel_job(job_id)
     except Exception as e:
-        logger.error(f"Failed to cancel job: {str(e)}")
+        logger.error(f"Failed to cancel job: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel job: {str(e)}",
+            detail=f"Failed to cancel job: {e!s}",
         )
 
 
@@ -212,7 +211,7 @@ async def job_status_websocket(
         # Subscribe to job status updates
         await ingestion_service.subscribe_to_progress(websocket, job_id)
     except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
+        logger.error(f"WebSocket error: {e!s}")
         # WebSocket connection is likely already closed
         # but try to close it explicitly just in case
         try:

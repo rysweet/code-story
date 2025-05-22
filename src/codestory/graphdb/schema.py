@@ -4,10 +4,8 @@ This module provides functions to initialize and manage the Neo4j database schem
 including constraints, indexes, and vector indexes for embedding search.
 """
 
-from typing import Dict, List, Optional
 
 from .exceptions import SchemaError
-
 
 # Node label constraints
 FILE_CONSTRAINTS = [
@@ -90,7 +88,7 @@ VECTOR_INDEXES = [
 ]
 
 
-def get_all_schema_elements() -> Dict[str, List[str]]:
+def get_all_schema_elements() -> dict[str, list[str]]:
     """Get all schema elements organized by type.
 
     Returns:
@@ -110,7 +108,7 @@ def get_all_schema_elements() -> Dict[str, List[str]]:
     }
 
 
-def get_schema_initialization_queries() -> List[str]:
+def get_schema_initialization_queries() -> list[str]:
     """Get all queries needed to initialize the schema.
 
     Returns:
@@ -154,9 +152,9 @@ def create_custom_vector_index(
         # GDS plugin is not available, this is an error
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"Graph Data Science plugin not available: {str(e)}. Vector indices require GDS plugin.")
+        logger.error(f"Graph Data Science plugin not available: {e!s}. Vector indices require GDS plugin.")
         raise SchemaError(
-            f"Graph Data Science plugin required for vector indices: {str(e)}",
+            f"Graph Data Science plugin required for vector indices: {e!s}",
             operation="create_vector_index",
             cause=e,
             label=label,
@@ -170,9 +168,9 @@ def create_custom_vector_index(
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"Failed to create vector index on {label}.{property_name}: {str(e)}")
+        logger.error(f"Failed to create vector index on {label}.{property_name}: {e!s}")
         raise SchemaError(
-            f"Failed to create vector index on {label}.{property_name}: {str(e)}",
+            f"Failed to create vector index on {label}.{property_name}: {e!s}",
             operation="create_vector_index",
             cause=e,
             label=label,
@@ -225,7 +223,7 @@ def initialize_schema(connector, force: bool = False) -> None:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f"Error dropping schema elements: {str(e)}")
+            logger.warning(f"Error dropping schema elements: {e!s}")
 
     # Simplified schema for tests
     schema_queries = [
@@ -258,7 +256,7 @@ def initialize_schema(connector, force: bool = False) -> None:
 
             logger = logging.getLogger(__name__)
             logger.error(f"Schema initialization error for query: {query}")
-            logger.error(f"Error details: {str(e)}")
+            logger.error(f"Error details: {e!s}")
 
             details = {
                 "operation": query,
@@ -268,7 +266,7 @@ def initialize_schema(connector, force: bool = False) -> None:
             raise SchemaError("Failed to initialize schema", details=details, cause=e)
 
 
-def verify_schema(connector) -> Dict[str, Dict[str, bool]]:
+def verify_schema(connector) -> dict[str, dict[str, bool]]:
     """Verify that all required schema elements exist.
 
     Args:

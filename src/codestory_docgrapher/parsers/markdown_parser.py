@@ -6,11 +6,15 @@ from Markdown documentation files.
 
 import logging
 import re
-import uuid
-from typing import Dict, List, Optional, Tuple
 
-from ..models import DocumentationEntity, DocumentationFile, DocumentationRelationship
-from ..models import DocumentType, EntityType, RelationType
+from ..models import (
+    DocumentationEntity,
+    DocumentationFile,
+    DocumentationRelationship,
+    DocumentType,
+    EntityType,
+    RelationType,
+)
 from .parser_factory import Parser, ParserFactory
 
 logger = logging.getLogger(__name__)
@@ -44,7 +48,7 @@ class MarkdownParser(Parser):
             re.compile(r"`((?:[a-zA-Z0-9_]+/)+[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9]+)?)`"),
         ]
 
-    def parse(self, document: DocumentationFile) -> Dict:
+    def parse(self, document: DocumentationFile) -> dict:
         """Parse a Markdown documentation file.
 
         Args:
@@ -107,7 +111,7 @@ class MarkdownParser(Parser):
 
     def _extract_headings(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract headings from Markdown content.
 
         Args:
@@ -144,8 +148,8 @@ class MarkdownParser(Parser):
         return entities
 
     def _create_heading_hierarchy(
-        self, headings: List[DocumentationEntity]
-    ) -> List[DocumentationRelationship]:
+        self, headings: list[DocumentationEntity]
+    ) -> list[DocumentationRelationship]:
         """Create hierarchy relationships between headings.
 
         Args:
@@ -189,7 +193,7 @@ class MarkdownParser(Parser):
 
     def _extract_code_blocks(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract code blocks from Markdown content.
 
         Args:
@@ -225,7 +229,7 @@ class MarkdownParser(Parser):
 
         return entities
 
-    def _extract_links(self, content: str, file_path: str) -> List[DocumentationEntity]:
+    def _extract_links(self, content: str, file_path: str) -> list[DocumentationEntity]:
         """Extract links from Markdown content.
 
         Args:
@@ -263,7 +267,7 @@ class MarkdownParser(Parser):
 
     def _extract_images(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract images from Markdown content.
 
         Args:
@@ -299,7 +303,7 @@ class MarkdownParser(Parser):
 
         return entities
 
-    def _extract_lists(self, content: str, file_path: str) -> List[DocumentationEntity]:
+    def _extract_lists(self, content: str, file_path: str) -> list[DocumentationEntity]:
         """Extract lists from Markdown content.
 
         Args:
@@ -336,7 +340,7 @@ class MarkdownParser(Parser):
 
     def _extract_code_references(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract code references from Markdown content.
 
         Args:
@@ -374,9 +378,9 @@ class MarkdownParser(Parser):
 
     def _create_entity_relationships(
         self,
-        containers: List[DocumentationEntity],
-        contained: List[DocumentationEntity],
-    ) -> List[DocumentationRelationship]:
+        containers: list[DocumentationEntity],
+        contained: list[DocumentationEntity],
+    ) -> list[DocumentationRelationship]:
         """Create relationships between container entities and contained entities.
 
         Args:

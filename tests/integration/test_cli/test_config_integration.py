@@ -1,6 +1,6 @@
 """Integration tests for CLI configuration commands."""
 
-from typing import Dict, Any
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
@@ -14,7 +14,7 @@ class TestConfigCommands:
     
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_config_show(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_config_show(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'config show' command with real configuration."""
         # Show configuration
         result = cli_runner.invoke(app, ["config", "show"])
@@ -32,7 +32,7 @@ class TestConfigCommands:
     
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_config_show_sensitive(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_config_show_sensitive(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'config show --sensitive' command with real configuration."""
         # Show configuration including sensitive values
         result = cli_runner.invoke(app, ["config", "show", "--sensitive"])

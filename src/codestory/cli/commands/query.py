@@ -3,7 +3,7 @@ Query commands for the Code Story CLI.
 """
 
 import json
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 import click
 
@@ -11,13 +11,14 @@ import click
 try:
     import rich_click
 except ImportError:
-    import click as rich_click
+    pass
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
 from ..client import ServiceClient, ServiceError
+from ..require_service_available import require_service_available
 
 
 @click.group(help="Execute queries and explore the Code Story graph.")
@@ -46,16 +47,18 @@ def run_query(
     ctx: click.Context,
     query_string: str,
     format: str = "auto",
-    output: Optional[str] = None,
-    param: Optional[List[str]] = None,
+    output: str | None = None,
+    param: list[str] | None = None,
     color: bool = True,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> None:
     """
     Execute a Cypher query or MCP tool call.
 
     QUERY_STRING is the Cypher query or MCP tool call to execute.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -156,7 +159,7 @@ def run_query(
                 console.print(f"[green]{record_count} record(s) written to file[/]")
 
     except ServiceError as e:
-        console.print(f"[bold red]Query failed:[/] {str(e)}")
+        console.print(f"[bold red]Query failed:[/] {e!s}")
 
 
 @query.command(name="explore", help="Interactive query explorer for the graph.")
@@ -180,7 +183,7 @@ def explore_query(ctx: click.Context, limit: int = 10) -> None:
         )
         result = client.execute_query(node_count_query)
 
-        if "records" in result and result["records"]:
+        if result.get("records"):
             table = Table("Node Types in Graph")
             table.add_column("Type", style="cyan")
             table.add_column("Count", style="green", justify="right")
@@ -209,7 +212,7 @@ def explore_query(ctx: click.Context, limit: int = 10) -> None:
         rel_query = "MATCH ()-[r]->() RETURN type(r) as type, count(r) as count ORDER BY count DESC"
         rel_result = client.execute_query(rel_query)
 
-        if "records" in rel_result and rel_result["records"]:
+        if rel_result.get("records"):
             table = Table("Relationship Types in Graph")
             table.add_column("Type", style="magenta")
             table.add_column("Count", style="green", justify="right")
@@ -234,7 +237,7 @@ def explore_query(ctx: click.Context, limit: int = 10) -> None:
         )
 
     except ServiceError as e:
-        console.print(f"[bold red]Query failed:[/] {str(e)}")
+        console.print(f"[bold red]Query failed:[/] {e!s}")
 
 
 @query.command(name="export", help="Export query results to a file.")
@@ -256,7 +259,7 @@ def export_query(
     query_string: str,
     output_path: str,
     format: str = "json",
-    param: Optional[List[str]] = None,
+    param: list[str] | None = None,
 ) -> None:
     """
     Export query results to a file.
@@ -301,16 +304,16 @@ def export_query(
             )
 
     except ServiceError as e:
-        console.print(f"[bold red]Export failed:[/] {str(e)}")
-    except IOError as e:
-        console.print(f"[bold red]Failed to write file:[/] {str(e)}")
+        console.print(f"[bold red]Export failed:[/] {e!s}")
+    except OSError as e:
+        console.print(f"[bold red]Failed to write file:[/] {e!s}")
 
 
 def _display_query_result(
     console: Console,
-    result: Dict[str, Any],
+    result: dict[str, Any],
     color: bool = True,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> None:
     """
     Display formatted query results.
@@ -423,7 +426,7 @@ def _display_query_result(
 
 
 def _display_results_as_tree(
-    console: Console, result: Dict[str, Any], color: bool = True
+    console: Console, result: dict[str, Any], color: bool = True
 ) -> None:
     """
     Display query results as a tree.
@@ -509,7 +512,7 @@ def _add_result_to_tree(tree: Any, item: Any, color: bool = True) -> None:
         tree.add(_format_value(item, color))
 
 
-def _results_to_csv(result: Dict[str, Any]) -> str:
+def _results_to_csv(result: dict[str, Any]) -> str:
     """
     Convert query results to CSV format.
 
@@ -525,7 +528,7 @@ def _results_to_csv(result: Dict[str, Any]) -> str:
     output = StringIO()
     writer = csv.writer(output)
 
-    if "records" in result and result["records"]:
+    if result.get("records"):
         records = result["records"]
 
         # Get columns from first record

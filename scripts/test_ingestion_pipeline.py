@@ -5,18 +5,18 @@ This script demonstrates how to use the PipelineManager to start and monitor
 ingestion jobs.
 """
 
+import argparse
 import os
 import sys
 import time
-import argparse
 from pathlib import Path
 
 # Add the source directory to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from codestory.config.settings import get_settings
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
-from codestory.config.settings import get_settings
 
 
 def main():
@@ -96,7 +96,7 @@ def main():
 
             # Final status
             if status["status"] == StepStatus.COMPLETED:
-                print(f"✅ Step completed successfully!")
+                print("✅ Step completed successfully!")
                 if "result" in status:
                     print(f"Result: {status['result']}")
             else:
@@ -131,7 +131,7 @@ def main():
 
             # Final status
             if status["status"] == StepStatus.COMPLETED:
-                print(f"✅ Pipeline completed successfully!")
+                print("✅ Pipeline completed successfully!")
             else:
                 print(f"❌ Pipeline failed: {status.get('error', 'Unknown error')}")
 

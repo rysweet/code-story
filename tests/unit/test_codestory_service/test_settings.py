@@ -6,8 +6,6 @@ This module contains tests for the service-specific settings implementation.
 import os
 from unittest import mock
 
-import pytest
-
 from codestory_service.settings import ServiceSettings, get_service_settings
 
 

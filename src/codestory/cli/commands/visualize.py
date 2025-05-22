@@ -6,7 +6,7 @@ import os
 import webbrowser
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 import click
 
@@ -14,13 +14,14 @@ import click
 try:
     import rich_click
 except ImportError:
-    import click as rich_click
+    pass
 from rich.console import Console
-from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ..client import ServiceClient, ServiceError
+from ..client import ServiceClient
+from ..require_service_available import require_service_available
 
 
 @click.group(help="Generate and manage visualizations of the Code Story graph.")
@@ -61,15 +62,17 @@ def visualize():
 @click.pass_context
 def generate(
     ctx: click.Context,
-    output: Optional[str] = None,
+    output: str | None = None,
     open_browser: bool = True,
     viz_type: str = "force",
     theme: str = "auto",
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> None:
     """
     Generate a visualization of the Code Story graph.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -87,7 +90,7 @@ def generate(
 
         try:
             # Generate visualization with options
-            params: Dict[str, Any] = {
+            params: dict[str, Any] = {
                 "type": viz_type,
                 "theme": theme,
             }
@@ -113,7 +116,7 @@ def generate(
                 f.write(html_content)
 
         except Exception as e:
-            console.print(f"[bold red]Error:[/] {str(e)}")
+            console.print(f"[bold red]Error:[/] {e!s}")
             console.print("[bold red]The Code Story service must be running.[/]")
             console.print("Starting service automatically...")
             
@@ -159,7 +162,7 @@ def generate(
                     f.write(html_content)
             
             except Exception as start_error:
-                console.print(f"[bold red]Failed to start service:[/] {str(start_error)}")
+                console.print(f"[bold red]Failed to start service:[/] {start_error!s}")
                 console.print("[bold red]Please start the service manually:[/] codestory service start")
                 return
 

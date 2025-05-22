@@ -7,22 +7,22 @@ import os
 import sys
 import tempfile
 import time
-import yaml
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import yaml
 
 # Add src to Python path
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src_dir = os.path.join(current_dir, "src")
 sys.path.insert(0, src_dir)
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
-from codestory_filesystem.step import FileSystemStep
 from codestory_blarify.step import BlarifyStep
-from codestory_summarizer.step import SummarizerStep
 from codestory_docgrapher.step import DocumentationGrapherStep
+from codestory_filesystem.step import FileSystemStep
+from codestory_summarizer.step import SummarizerStep
 
 
 def create_test_config(config_path, steps_to_include=None):

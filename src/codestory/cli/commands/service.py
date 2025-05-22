@@ -2,31 +2,52 @@
 Service commands for the Code Story CLI.
 """
 
+import hashlib
 import os
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-
-import click
 
 # Import rich_click if available, otherwise create a stub
 try:
-    import rich_click
+    import rich_click as click
 except ImportError:
-    import click as rich_click
+    import click
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 from ..client import ServiceClient, ServiceError
+from ..require_service_available import require_service_available
 
 
 @click.group(help="Manage the Code Story service.")
 def service() -> None:
     """Command group for service operations."""
     pass
+
+
+def docker_image_needs_rebuild(service_name: str = "service") -> bool:
+    """
+    Check if the Docker image for the given service needs to be rebuilt by comparing the hash of the Dockerfile and source code.
+    Returns True if the image is missing or the code has changed since the last build.
+    """
+    dockerfile = Path(f"Dockerfile.{service_name}")
+    src_dir = Path("src/")
+    hash_file = Path(f".docker_{service_name}_build_hash")
+    hash_md5 = hashlib.md5()
+    # Hash Dockerfile
+    if dockerfile.exists():
+        hash_md5.update(dockerfile.read_bytes())
+    # Hash all .py files in src/
+    for pyfile in src_dir.rglob("*.py"):
+        hash_md5.update(pyfile.read_bytes())
+    new_hash = hash_md5.hexdigest()
+    # Compare to last build hash
+    if not hash_file.exists() or hash_file.read_text().strip() != new_hash:
+        hash_file.write_text(new_hash)
+        return True
+    return False
 
 
 @service.command(name="start", help="Start the Code Story service.")
@@ -47,6 +68,8 @@ def start_service(ctx: click.Context, detach: bool = False, wait: bool = False, 
     try:
         health = client.check_service_health()
         console.print("[yellow]Service is already running.[/]")
+        # Show status if already running
+        ctx.invoke(status)
         return
     except ServiceError:
         # Service is not running, continue
@@ -79,8 +102,16 @@ def start_service(ctx: click.Context, detach: bool = False, wait: bool = False, 
         console.print(f"Running command: [cyan]{' '.join(cmd)}[/]")
 
         try:
+            # Before starting, check if rebuild is needed
+            if docker_image_needs_rebuild("service"):
+                console.print("[yellow]Code or Dockerfile changed. Rebuilding service image...[/yellow]")
+                subprocess.run(["docker", "compose", "build", "service"], check=True)
+
             if detach:
                 subprocess.run(cmd, check=True)
+                console.print("[green]Service started successfully.[/]")
+                # Show status after starting in detached mode
+                ctx.invoke(status)
             else:
                 # If not detached, run in a separate process and wait
                 process = subprocess.Popen(cmd)
@@ -93,6 +124,8 @@ def start_service(ctx: click.Context, detach: bool = False, wait: bool = False, 
                         try:
                             client.check_service_health()
                             console.print("[green]Service is now running.[/]")
+                            # Show status after service is running
+                            ctx.invoke(status)
                             break
                         except ServiceError:
                             if i < max_attempts - 1:  # Don't sleep on the last iteration
@@ -101,16 +134,16 @@ def start_service(ctx: click.Context, detach: bool = False, wait: bool = False, 
                                 console.print("[yellow]Service health check timed out, but containers might still be starting...[/]")
                                 # Continue execution rather than exiting
 
-                    return
-
                 # If not waiting, return immediately
                 console.print("[green]Service starting in background.[/]")
+                # Show status after starting in foreground
+                ctx.invoke(status)
                 return
 
             console.print("[green]Service started successfully.[/]")
 
         except subprocess.CalledProcessError as e:
-            console.print(f"[bold red]Error starting service:[/] {str(e)}")
+            console.print(f"[bold red]Error starting service:[/] {e!s}")
             
             # Check if the error might be related to unhealthy containers
             if "unhealthy" in str(e) and not skip_healthchecks:
@@ -125,10 +158,10 @@ def start_service(ctx: click.Context, detach: bool = False, wait: bool = False, 
             sys.exit(1)
 
     except subprocess.CalledProcessError as e:
-        console.print(f"[bold red]Error starting service:[/] {str(e)}")
+        console.print(f"[bold red]Error starting service:[/] {e!s}")
         sys.exit(1)
     except Exception as e:
-        console.print(f"[bold red]Unexpected error starting service:[/] {str(e)}")
+        console.print(f"[bold red]Unexpected error starting service:[/] {e!s}")
         sys.exit(1)
 
 
@@ -138,6 +171,8 @@ def stop_service(ctx: click.Context) -> None:
     """
     Stop the Code Story service.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -171,7 +206,7 @@ def stop_service(ctx: click.Context) -> None:
         console.print("[green]Service stopped successfully.[/]")
 
     except subprocess.CalledProcessError as e:
-        console.print(f"[bold red]Error stopping service:[/] {str(e)}")
+        console.print(f"[bold red]Error stopping service:[/] {e!s}")
         sys.exit(1)
 
 
@@ -184,6 +219,8 @@ def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False
     """
     Restart the Code Story service.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -235,8 +272,16 @@ def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False
         console.print(f"Starting service: [cyan]{' '.join(cmd)}[/]")
 
         try:
+            # Before starting, check if rebuild is needed
+            if docker_image_needs_rebuild("service"):
+                console.print("[yellow]Code or Dockerfile changed. Rebuilding service image...[/yellow]")
+                subprocess.run(["docker", "compose", "build", "service"], check=True)
+
             if detach:
                 subprocess.run(cmd, check=True)
+                console.print("[green]Service started successfully.[/]")
+                # Show status after starting in detached mode
+                ctx.invoke(status)
             else:
                 # If not detached, run in a separate process
                 process = subprocess.Popen(cmd)
@@ -250,6 +295,8 @@ def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False
                     try:
                         client.check_service_health()
                         console.print("[green]Service restarted successfully.[/]")
+                        # Show status after service is running
+                        ctx.invoke(status)
                         break
                     except ServiceError:
                         if i < max_attempts - 1:  # Don't sleep on the last iteration
@@ -260,7 +307,7 @@ def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False
                 console.print("[green]Service restart initiated.[/]")
                 
         except subprocess.CalledProcessError as e:
-            console.print(f"[bold red]Error restarting service:[/] {str(e)}")
+            console.print(f"[bold red]Error restarting service:[/] {e!s}")
             
             # Check if the error might be related to unhealthy containers
             if "unhealthy" in str(e) and not skip_healthchecks:
@@ -275,10 +322,10 @@ def restart_service(ctx: click.Context, detach: bool = False, wait: bool = False
             sys.exit(1)
 
     except subprocess.CalledProcessError as e:
-        console.print(f"[bold red]Error restarting service:[/] {str(e)}")
+        console.print(f"[bold red]Error restarting service:[/] {e!s}")
         sys.exit(1)
     except Exception as e:
-        console.print(f"[bold red]Unexpected error restarting service:[/] {str(e)}")
+        console.print(f"[bold red]Unexpected error restarting service:[/] {e!s}")
         sys.exit(1)
 
 
@@ -297,86 +344,126 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
     console.print("Checking Code Story service status...")
 
-    # Check service API health first
-    service_api_healthy = False
+    auto_renew = renew_auth  # CLI flag always triggers auto-renew
     try:
-        health = client.check_service_health(auto_fix=renew_auth)
-        service_api_healthy = True
-
-        # Create status table
-        table = Table(title="Service Status")
-        table.add_column("Component", style="cyan")
-        table.add_column("Status", style="green")
-        table.add_column("Details", style="magenta")
-
-        # Add overall status
-        overall_status = health.get("status", "unknown")
-        status_style = {
-            "healthy": "green",
-            "degraded": "yellow", 
-            "unhealthy": "red"
-        }.get(overall_status.lower(), "white")
-        table.add_row(
-            "Service Overall",
-            f"[{status_style}]{overall_status}[/]",
-            health.get("timestamp", "")
-        )
-        
-        # Add components to table if they exist
-        if "components" in health:
-            for component_name, component_data in health["components"].items():
-                status = component_data.get("status", "unknown")
-                status_style = {
-                    "healthy": "green",
-                    "degraded": "yellow",
-                    "unhealthy": "red",
-                }.get(status.lower(), "white")
-                
-                # Get details from component data if available
-                details = ""
-                if "details" in component_data and isinstance(component_data["details"], dict):
-                    if "message" in component_data["details"]:
-                        details = component_data["details"]["message"]
-                    elif "error" in component_data["details"]:
-                        details = component_data["details"]["error"]
-                    elif component_name.lower() == "celery":
-                        # Add specific details for Celery
-                        active_workers = component_data["details"].get("active_workers", 0)
-                        registered_tasks = component_data["details"].get("registered_tasks", 0)
-                        details = f"Workers: {active_workers}, Tasks: {registered_tasks}"
-                    elif component_name.lower() == "redis":
-                        # Add specific details for Redis
-                        connection = component_data["details"].get("connection", "")
-                        details = f"Connection: {connection}"
-
-                # Add the component row to the table
-                table.add_row(
-                    component_name.capitalize(), 
-                    f"[{status_style}]{status.capitalize()}[/]", 
-                    details
-                )
-        
-        # Add missing important components if they're not in the response
-        important_components = {"redis", "celery", "neo4j"}
-        existing_components = set() if "components" not in health else set(c.lower() for c in health["components"].keys())
-        
-        for component in important_components - existing_components:
-            table.add_row(
-                component.capitalize(),
-                "[yellow]Unknown[/]",
-                "Status information not available"
-            )
-
-        # Print table and service info
-        console.print(table)
-        console.print(
-            f"[green]Service is running.[/] Version: {health.get('version', 'unknown')}, Uptime: {health.get('uptime', 0)} seconds"
-        )
-
+        health = client.check_service_health(auto_fix=False)
+        openai = health.get("components", {}).get("openai", {})
+        if (
+            openai.get("status") == "unhealthy"
+            and openai.get("details", {}).get("type") == "AuthenticationError"
+        ):
+            auto_renew = True
+            # Run az login directly in the user's shell for interactive auth
+            tenant_id = openai.get("details", {}).get("tenant_id")
+            renewal_cmd = ["az", "login", "--scope", "https://cognitiveservices.azure.com/.default"]
+            if tenant_id:
+                renewal_cmd.extend(["--tenant", tenant_id])
+            console.print("[yellow]Azure credentials expired. Launching interactive Azure login...[/yellow]")
+            import subprocess
+            subprocess.run(renewal_cmd, check=True)
+            console.print("[green]Azure login complete. Injecting tokens into containers...")
+            ctx.invoke(renew_azure_auth, tenant=tenant_id, inject=True)
+            # After renewal, re-check health
+            health = client.check_service_health(auto_fix=False)
+            console.print("[green]Azure authentication renewed. Service health after renewal:[/green]")
     except ServiceError as e:
-        console.print(f"[bold red]Service API is not responding:[/] {str(e)}")
-        service_api_healthy = False
+        if "Azure authentication credentials expired" in str(e):
+            auto_renew = True
+            # Fallback: run az login without tenant
+            console.print("[yellow]Azure credentials expired. Launching interactive Azure login...[/yellow]")
+            import subprocess
+            subprocess.run(["az", "login", "--scope", "https://cognitiveservices.azure.com/.default"], check=True)
+            console.print("[green]Azure login complete. Injecting tokens into containers...")
+            ctx.invoke(renew_azure_auth, inject=True)
+            health = client.check_service_health(auto_fix=False)
+            console.print("[green]Azure authentication renewed. Service health after renewal:[/green]")
+        else:
+            raise
+
+    if auto_renew:
+        console.print("[yellow]Azure credentials expired or renewal requested. Attempting automatic renewal...[/yellow]")
+        # Call the CLI auth-renew command (in-process)
+        ctx.invoke(renew_azure_auth)
+        # After renewal, re-check health
+        try:
+            health = client.check_service_health(auto_fix=False)
+            console.print("[green]Azure authentication renewed. Service health after renewal:[/green]")
+        except ServiceError as e:
+            console.print(f"[red]Service health check failed after renewal: {e}[/red]")
+            return
+    else:
+        health = client.check_service_health(auto_fix=False)
+
+    # Create status table
+    table = Table(title="Service Status")
+    table.add_column("Component", style="cyan")
+    table.add_column("Status", style="green")
+    table.add_column("Details", style="magenta")
+
+    # Add overall status
+    overall_status = health.get("status", "unknown")
+    status_style = {
+        "healthy": "green",
+        "degraded": "yellow", 
+        "unhealthy": "red"
+    }.get(overall_status.lower(), "white")
+    table.add_row(
+        "Service Overall",
+        f"[{status_style}]{overall_status}[/]",
+        health.get("timestamp", "")
+    )
     
+    # Add components to table if they exist
+    if "components" in health:
+        for component_name, component_data in health["components"].items():
+            status = component_data.get("status", "unknown")
+            status_style = {
+                "healthy": "green",
+                "degraded": "yellow",
+                "unhealthy": "red",
+            }.get(status.lower(), "white")
+            
+            # Get details from component data if available
+            details = ""
+            if "details" in component_data and isinstance(component_data["details"], dict):
+                if "message" in component_data["details"]:
+                    details = component_data["details"]["message"]
+                elif "error" in component_data["details"]:
+                    details = component_data["details"]["error"]
+                elif component_name.lower() == "celery":
+                    # Add specific details for Celery
+                    active_workers = component_data["details"].get("active_workers", 0)
+                    registered_tasks = component_data["details"].get("registered_tasks", 0)
+                    details = f"Workers: {active_workers}, Tasks: {registered_tasks}"
+                elif component_name.lower() == "redis":
+                    # Add specific details for Redis
+                    connection = component_data["details"].get("connection", "")
+                    details = f"Connection: {connection}"
+
+            # Add the component row to the table
+            table.add_row(
+                component_name.capitalize(), 
+                f"[{status_style}]{status.capitalize()}[/]", 
+                details
+            )
+    
+    # Add missing important components if they're not in the response
+    important_components = {"redis", "celery", "neo4j"}
+    existing_components = set() if "components" not in health else set(c.lower() for c in health["components"].keys())
+    
+    for component in important_components - existing_components:
+        table.add_row(
+            component.capitalize(),
+            "[yellow]Unknown[/]",
+            "Status information not available"
+        )
+
+    # Print table and service info
+    console.print(table)
+    console.print(
+        f"[green]Service is running.[/] Version: {health.get('version', 'unknown')}, Uptime: {health.get('uptime', 0)} seconds"
+    )
+
     # Check Docker container status regardless of API health
     console.print("\n[bold]Docker Container Status:[/]")
     
@@ -402,12 +489,10 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             console.print("[yellow]No Code Story containers are currently running.[/]")
             console.print("Use 'codestory service start' to start the service.")
         else:
-            # Create container status table
             container_table = Table(title="Container Status")
             container_table.add_column("Container", style="cyan")
             container_table.add_column("Status", style="green")
             container_table.add_column("Health", style="magenta")
-            
             # Check status of each container
             for container in containers:
                 try:
@@ -458,7 +543,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                     container_table.add_row(
                         container,
                         "[red]error[/]",
-                        f"[red]Error checking status: {str(e)}[/]"
+                        f"[red]Error checking status: {e!s}[/]"
                     )
             
             # Print the table
@@ -484,7 +569,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 console.print("Use 'codestory service recover' to attempt automatic recovery")
     
     # Provide advice based on status
-    if not service_api_healthy and docker_available and containers:
+    if docker_available and containers:
         console.print("\n[yellow]The service containers are running but the API is not responding.[/]")
         console.print("This might indicate that the service is still starting up or there's an issue with the service container.")
         console.print("Suggestions:")
@@ -493,11 +578,9 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
         console.print("  3. Run 'codestory service restart --skip-healthchecks' to restart without health checks")
         console.print("  4. Check container logs with 'docker logs codestory-service'")
         sys.exit(1)
-    elif not service_api_healthy:
-        sys.exit(1)
 
 
-def find_docker_compose_file() -> Optional[str]:
+def find_docker_compose_file() -> str | None:
     """Find the docker-compose file to use.
     
     Tries different variants and locations of the docker-compose file.
@@ -534,7 +617,7 @@ def find_docker_compose_file() -> Optional[str]:
     # If no file is found, return None
     return None
 
-def get_docker_compose_command() -> List[str]:
+def get_docker_compose_command() -> list[str]:
     """Get the appropriate docker compose command.
     
     Checks if 'docker compose' or 'docker-compose' should be used.
@@ -579,7 +662,7 @@ def get_docker_compose_command() -> List[str]:
 @click.option("--restart", is_flag=True, help="Restart containers after token injection.")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed output from the renewal process.")
 @click.pass_context
-def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bool = False, 
+def renew_azure_auth(ctx: click.Context, tenant: str | None = None, check: bool = False, 
                     inject: bool = True, restart: bool = False, verbose: bool = False) -> None:
     """
     Renew Azure authentication tokens across all containers.
@@ -671,7 +754,7 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                 sys.exit(1)
                 
         except Exception as e:
-            console.print(f"[bold red]Error running token injection: {str(e)}[/]")
+            console.print(f"[bold red]Error running token injection: {e!s}[/]")
             sys.exit(1)
     else:
         # We're on the host, access the API or run the script directly
@@ -685,7 +768,7 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                 console.print("Service is running, calling auth-renew API endpoint...")
                 
                 # Build the URL with query parameters
-                url = f"{client.service_url}/auth-renew"
+                url = f"{client.base_url}/auth-renew"
                 params = []
                 if tenant:
                     params.append(f"tenant_id={tenant}")
@@ -707,7 +790,7 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                         if "auth_message" in result:
                             console.print(f"\n[bold]{result['auth_message']}[/]")
                         
-                        console.print(f"\n[bold]Azure authentication required:[/]")
+                        console.print("\n[bold]Azure authentication required:[/]")
                         console.print(f"[cyan]{result['login_command']}[/]\n")
                         
                         # Add more context from the auth details if available
@@ -738,7 +821,7 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                                     console.print(f"[yellow]Token injection returned status code {response.status_code}[/]")
                                     
                             except Exception as e:
-                                console.print(f"[red]Error during authentication: {str(e)}[/]")
+                                console.print(f"[red]Error during authentication: {e!s}[/]")
                                 console.print("Please run the command manually.")
                         
                     # Check token injection status
@@ -779,7 +862,7 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                     console.print(f"[yellow]API returned status code {response.status_code}[/]")
                     console.print("Falling back to direct script execution...")
             except Exception as e:
-                console.print(f"[yellow]Could not use API for token renewal: {str(e)}[/]")
+                console.print(f"[yellow]Could not use API for token renewal: {e!s}[/]")
                 console.print("Running token injection script directly...")
         
         # Run the script directly if API approach failed or wasn't attempted
@@ -840,11 +923,11 @@ def renew_azure_auth(ctx: click.Context, tenant: Optional[str] = None, check: bo
                         else:
                             console.print("[yellow]Could not verify OpenAI component health.[/]")
                     except Exception as inner_e:
-                        console.print(f"[yellow]Could not check service health: {str(inner_e)}[/]")
+                        console.print(f"[yellow]Could not check service health: {inner_e!s}[/]")
                 except Exception as e:
-                    console.print(f"[yellow]Error during token injection: {str(e)}[/]")
+                    console.print(f"[yellow]Error during token injection: {e!s}[/]")
         except Exception as e:
-            console.print(f"[bold red]Error running token injection: {str(e)}[/]")
+            console.print(f"[bold red]Error running token injection: {e!s}[/]")
             sys.exit(1)
 
 
@@ -888,7 +971,7 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
         if process.returncode == 0:
             unhealthy_containers = [c for c in process.stdout.strip().split('\n') if c]
     except Exception as e:
-        console.print(f"[yellow]Could not identify unhealthy containers: {str(e)}[/]")
+        console.print(f"[yellow]Could not identify unhealthy containers: {e!s}[/]")
     
     # If specifically requested to restart worker only
     if restart_worker:
@@ -914,7 +997,7 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
             if process.returncode == 0:
                 health_status = process.stdout.strip()
                 if health_status == "healthy":
-                    console.print(f"[green]Worker container is now healthy![/]")
+                    console.print("[green]Worker container is now healthy![/]")
                 else:
                     console.print(f"[yellow]Worker container status: {health_status}[/]")
                     console.print("Showing worker logs for debugging:")
@@ -922,11 +1005,11 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
             else:
                 console.print("[yellow]Could not check worker health status[/]")
         except subprocess.CalledProcessError as e:
-            console.print(f"[bold red]Error restarting worker container: {str(e)}[/]")
+            console.print(f"[bold red]Error restarting worker container: {e!s}[/]")
             console.print("[yellow]Trying a full service recovery instead...[/]")
             force = True  # Fall back to force recovery
         except Exception as e:
-            console.print(f"[bold red]Unexpected error: {str(e)}[/]")
+            console.print(f"[bold red]Unexpected error: {e!s}[/]")
             force = True  # Fall back to force recovery
     
     # If unhealthy containers were found or force is specified
@@ -950,9 +1033,9 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
                             console.print(f"Stopping container: {container}")
                             subprocess.run(["docker", "stop", container], check=True)
                         except Exception as e:
-                            console.print(f"[red]Could not stop container {container}: {str(e)}[/]")
+                            console.print(f"[red]Could not stop container {container}: {e!s}[/]")
             except Exception as e:
-                console.print(f"[red]Error stopping containers: {str(e)}[/]")
+                console.print(f"[red]Error stopping containers: {e!s}[/]")
             
             # Wait a moment for everything to settle
             console.print("Waiting for containers to stop...")
@@ -972,7 +1055,7 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
                 console.print("[green]Service started with health checks disabled via environment variable.[/]")
                 console.print("[yellow]Note: Service may take longer to fully initialize.[/]")
             except subprocess.CalledProcessError as e:
-                console.print(f"[bold red]Error starting service: {str(e)}[/]")
+                console.print(f"[bold red]Error starting service: {e!s}[/]")
                 
                 # Fall back to normal startup if environment variable approach fails
                 console.print("Falling back to normal startup...")
@@ -981,7 +1064,7 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
                     subprocess.run(cmd, check=True)
                     console.print("[green]Service started normally.[/]")
                 except subprocess.CalledProcessError as e:
-                    console.print(f"[bold red]Error starting service: {str(e)}[/]")
+                    console.print(f"[bold red]Error starting service: {e!s}[/]")
                     sys.exit(1)
         else:
             # Targeted recovery for specific unhealthy containers
@@ -1000,7 +1083,7 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
                     subprocess.run(["docker", "restart", container], check=True)
                     console.print(f"[green]Successfully restarted {container}[/]")
                 except subprocess.CalledProcessError as e:
-                    console.print(f"[red]Error restarting {container}: {str(e)}[/]")
+                    console.print(f"[red]Error restarting {container}: {e!s}[/]")
             
             # Wait a bit for containers to initialize
             console.print("Waiting for containers to initialize...")
@@ -1048,12 +1131,12 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
                 # Suggest a restart if needed
                 console.print("\n[yellow]Consider restarting the service with: 'codestory service restart'[/]")
             except Exception as e:
-                console.print(f"[red]Error checking service containers: {str(e)}[/]")
+                console.print(f"[red]Error checking service containers: {e!s}[/]")
                 console.print("[yellow]Try a force recovery with: 'codestory service recover --force'[/]")
     
     console.print("[bold]Recovery process completed.[/]")
 
-def get_running_containers() -> List[str]:
+def get_running_containers() -> list[str]:
     """Get a list of running containers that might be part of the service.
     
     Returns:
@@ -1085,7 +1168,7 @@ def get_running_containers() -> List[str]:
     return []
 
 
-def show_unhealthy_container_logs(compose_cmd: List[str], compose_file: str, console: Console) -> None:
+def show_unhealthy_container_logs(compose_cmd: list[str], compose_file: str, console: Console) -> None:
     """Show logs for potentially unhealthy containers.
     
     Args:
@@ -1183,9 +1266,9 @@ def show_unhealthy_container_logs(compose_cmd: List[str], compose_file: str, con
                         for line in last_error_lines:
                             console.print(f"  {line}")
                 except Exception as e:
-                    console.print(f"[red]Could not get logs for {container}: {str(e)}[/]")
+                    console.print(f"[red]Could not get logs for {container}: {e!s}[/]")
         else:
             console.print("[yellow]No specific unhealthy containers identified. Check all container logs for more details.[/]")
             
     except Exception as e:
-        console.print(f"[yellow]Error checking unhealthy containers: {str(e)}[/]")
+        console.print(f"[yellow]Error checking unhealthy containers: {e!s}[/]")

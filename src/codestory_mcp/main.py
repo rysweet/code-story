@@ -9,10 +9,9 @@ import sys
 import structlog
 
 from codestory_mcp.server import run_server
-from codestory_mcp.utils.config import get_mcp_settings
 
 # Import all tools to register them
-from codestory_mcp.tools import path_to, search_graph, similar_code, summarize_node
+from codestory_mcp.utils.config import get_mcp_settings
 
 
 def setup_logging() -> None:

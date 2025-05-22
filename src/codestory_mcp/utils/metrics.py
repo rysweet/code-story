@@ -4,7 +4,6 @@ This module provides metrics collection for the MCP Adapter using Prometheus.
 """
 
 from functools import lru_cache
-from typing import Dict, List, Optional
 
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -146,7 +145,7 @@ class MCPMetrics:
         self.graph_operation_total.labels(operation_type=operation_type).inc()
 
 
-@lru_cache()
+@lru_cache
 def get_metrics() -> MCPMetrics:
     """Get metrics singleton.
 

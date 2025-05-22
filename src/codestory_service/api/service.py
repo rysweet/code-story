@@ -6,15 +6,10 @@ available in development mode and are no-ops in production.
 """
 
 import logging
-import os
-import signal
-import subprocess
-import sys
-from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from ..infrastructure.msal_validator import get_current_user, require_role
+from ..infrastructure.msal_validator import require_role
 from ..settings import get_service_settings
 
 # Set up logging
@@ -31,7 +26,7 @@ router = APIRouter(prefix="/v1/service", tags=["service"])
 )
 async def start_service(
     user: dict = Depends(require_role(["admin"])),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Start the Code Story service and its dependencies.
 
     This endpoint is only available in development mode and is a no-op in production.
@@ -61,10 +56,10 @@ async def start_service(
 
         return {"status": "success", "message": "Service started successfully"}
     except Exception as e:
-        logger.error(f"Failed to start service: {str(e)}")
+        logger.error(f"Failed to start service: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start service: {str(e)}",
+            detail=f"Failed to start service: {e!s}",
         )
 
 
@@ -73,7 +68,7 @@ async def start_service(
     summary="Stop service",
     description="Stop the Code Story service and its dependencies. Only available in development mode.",
 )
-async def stop_service(user: dict = Depends(require_role(["admin"]))) -> Dict[str, str]:
+async def stop_service(user: dict = Depends(require_role(["admin"]))) -> dict[str, str]:
     """Stop the Code Story service and its dependencies.
 
     This endpoint is only available in development mode and is a no-op in production.
@@ -103,8 +98,8 @@ async def stop_service(user: dict = Depends(require_role(["admin"]))) -> Dict[st
 
         return {"status": "success", "message": "Service stopped successfully"}
     except Exception as e:
-        logger.error(f"Failed to stop service: {str(e)}")
+        logger.error(f"Failed to stop service: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to stop service: {str(e)}",
+            detail=f"Failed to stop service: {e!s}",
         )

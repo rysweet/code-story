@@ -1,10 +1,7 @@
 """Unit tests for CLI output formatting."""
 
-import io
-import sys
-from unittest import mock
 import subprocess
-import pytest
+
 
 def test_cli_version_command_no_debug_output():
     """Test that the CLI version command produces clean output."""

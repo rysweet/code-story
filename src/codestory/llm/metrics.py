@@ -4,10 +4,11 @@ This module provides Prometheus metrics for monitoring OpenAI API usage,
 including request counts, latencies, token usage, and errors.
 """
 
-import time
 import functools
+import time
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from prometheus_client import Counter, Gauge, Histogram
 from prometheus_client.registry import REGISTRY
@@ -117,7 +118,7 @@ def record_request(
     model: str,
     status: str,
     duration: float,
-    tokens: Optional[Dict[str, int]] = None,
+    tokens: dict[str, int] | None = None,
 ) -> None:
     """Record metrics for an OpenAI API request.
 
@@ -232,7 +233,7 @@ def instrument_request(
                 # Decrement current requests counter
                 CURRENT_REQUESTS.labels(operation=operation.value, model=model).dec()
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator
 
@@ -301,6 +302,6 @@ def instrument_async_request(
                 # Decrement current requests counter
                 CURRENT_REQUESTS.labels(operation=operation.value, model=model).dec()
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator

@@ -4,10 +4,10 @@ This module defines the base class for all MCP tools.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class ToolParameters(BaseModel):
@@ -24,14 +24,14 @@ class BaseTool(ABC):
 
     name: ClassVar[str]
     description: ClassVar[str]
-    parameters: ClassVar[Dict[str, Any]]
+    parameters: ClassVar[dict[str, Any]]
 
     def __init__(self) -> None:
         """Initialize the tool."""
         pass
 
     @abstractmethod
-    async def __call__(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def __call__(self, params: dict[str, Any]) -> dict[str, Any]:
         """Execute the tool with the given parameters.
 
         Args:
@@ -45,7 +45,7 @@ class BaseTool(ABC):
         """
         pass
 
-    def validate_parameters(self, params: Dict[str, Any]) -> None:
+    def validate_parameters(self, params: dict[str, Any]) -> None:
         """Validate tool parameters.
 
         Args:
@@ -76,7 +76,7 @@ class ToolError(Exception):
         self,
         message: str,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize the error.
 

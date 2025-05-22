@@ -11,13 +11,12 @@ ci_env = os.environ.get("CI") == "true"
 neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 import time
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 import uuid
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
@@ -301,8 +300,6 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
     # Create a custom implementation of the filesystem step processing
     # to avoid Celery dependency and neo4j hostname issues
     # Use the local custom_process_filesystem defined at the top of this file
-    from unittest.mock import patch
-    import uuid
 
     # Generate a predictable job ID for testing
     test_job_id = str(uuid.uuid4())
@@ -376,8 +373,6 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
 
     # Create custom implementation to avoid Celery
     # Use the local custom_process_filesystem defined at the top of this file
-    from unittest.mock import patch
-    import uuid
 
     # Generate a predictable job ID for testing
     test_job_id = str(uuid.uuid4())
@@ -435,8 +430,6 @@ def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_con
 
     # Create custom implementation to avoid Celery
     # Use the local custom_process_filesystem defined at the top of this file
-    from unittest.mock import patch, MagicMock
-    import uuid
 
     # Generate a predictable job ID for testing
     test_job_id = str(uuid.uuid4())

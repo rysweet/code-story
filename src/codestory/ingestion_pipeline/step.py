@@ -6,7 +6,7 @@ This module defines the base interface that all ingestion pipeline steps must im
 import abc
 import uuid
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 class StepStatus(str, Enum):
@@ -46,7 +46,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def status(self, job_id: str) -> Dict[str, Any]:
+    def status(self, job_id: str) -> dict[str, Any]:
         """Check the status of a job.
 
         Args:
@@ -65,7 +65,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def stop(self, job_id: str) -> Dict[str, Any]:
+    def stop(self, job_id: str) -> dict[str, Any]:
         """Stop a running job.
 
         Args:
@@ -81,7 +81,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def cancel(self, job_id: str) -> Dict[str, Any]:
+    def cancel(self, job_id: str) -> dict[str, Any]:
         """Cancel a job.
 
         Unlike stop(), cancel attempts to immediately terminate the job

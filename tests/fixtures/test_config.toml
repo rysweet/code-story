@@ -14,10 +14,11 @@ api_key = "sk-test-key-openai"
 embedding_model = "text-embedding-3-small"
 chat_model = "gpt-4o"
 reasoning_model = "gpt-4o"
+endpoint = "<your-endpoint>"
 
 [azure_openai]
 api_key = "sk-test-key-azure"
-endpoint = "https://test-openai.openai.azure.com/"
+endpoint = "<your-endpoint>"
 deployment_id = "gpt-4o"
 embedding_model = "text-embedding-3-small"
 chat_model = "gpt-4o"
@@ -28,7 +29,6 @@ host = "0.0.0.0"
 port = 8000
 workers = 4
 log_level = "INFO"
-environment = "testing"
 enable_telemetry = true
 worker_concurrency = 4
 

@@ -9,20 +9,15 @@ with real containers. They may modify your Docker environment.
 """
 
 import os
-import sys
+import subprocess
 import tempfile
 import time
-import subprocess
-import json
-from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 from rich.console import Console
 
 from codestory.cli.commands.ingest import ingest, start_ingestion
-from codestory.cli.client.service_client import ServiceClient
-
 
 # Mark these tests as requiring Docker
 pytestmark = [
@@ -100,7 +95,7 @@ class TestRepositoryMounting:
         # Create container with a known mount point for testing
         container_name = "codestory-mount-test"
         repo_name = os.path.basename(temp_repository)
-        container_path = f"/test-mount"
+        container_path = "/test-mount"
         
         # Try to stop any existing container first
         subprocess.run(
@@ -128,7 +123,7 @@ class TestRepositoryMounting:
         assert container_name in container_check.stdout, "Test container is not running"
         
         # Test case 1: Verify path does NOT exist in container (should fail)
-        print(f"Test 1: Verifying path doesn't exist without mounting")
+        print("Test 1: Verifying path doesn't exist without mounting")
         path_check = subprocess.run(
             f"docker exec {container_name} sh -c 'test -d {container_path} && echo exists'",
             shell=True, capture_output=True, text=True, check=False
@@ -145,7 +140,7 @@ class TestRepositoryMounting:
         )
         
         # Test case 2: Start container WITH the repository mounted
-        print(f"Test 2: Starting container with repository mounted")
+        print("Test 2: Starting container with repository mounted")
         mount_result = subprocess.run(
             ["docker", "run", "-d", "--name", container_name, "-v", f"{temp_repository}:{container_path}", "alpine", "sleep", "60"],
             capture_output=True,
@@ -165,7 +160,7 @@ class TestRepositoryMounting:
         assert container_name in container_check.stdout, "Test container with mount is not running"
         
         # Verify path exists in container
-        print(f"Verifying path exists with mounting")
+        print("Verifying path exists with mounting")
         path_check = subprocess.run(
             f"docker exec {container_name} sh -c 'test -d {container_path} && echo exists'",
             shell=True, capture_output=True, text=True, check=False
@@ -228,10 +223,8 @@ class TestCliAutoMount:
         if docker_check.returncode != 0:
             pytest.skip("Docker is not running")
             
-        from codestory.cli.commands.ingest import start_ingestion
-        from unittest.mock import MagicMock
         from io import StringIO
-        from rich.console import Console
+        from unittest.mock import MagicMock
         
         print(f"\nTesting CLI mount verification with repository: {temp_repository}")
         
@@ -298,7 +291,7 @@ class TestCliAutoMount:
                 )
             
             # Verify the error mentions the repository path
-            print(f"Got expected exception: {str(excinfo.value)}")
+            print(f"Got expected exception: {excinfo.value!s}")
             output = console.file.getvalue()
             assert "Repository not mounted" in output or "does not exist" in str(excinfo.value), \
                 f"CLI did not detect missing mount. Output: {output}, Exception: {excinfo.value}"

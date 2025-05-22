@@ -6,7 +6,7 @@ facilitating interaction with the ingestion pipeline and other background tasks.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -14,12 +14,11 @@ from codestory.ingestion_pipeline.celery_app import app as celery_app
 from codestory.ingestion_pipeline.tasks import (
     orchestrate_pipeline as run_ingestion_pipeline,
 )
-from codestory.ingestion_pipeline.tasks import run_step as run_single_step
 
 from ..domain.ingestion import (
+    IngestionJob,
     IngestionRequest,
     IngestionStarted,
-    IngestionJob,
     JobStatus,
 )
 
@@ -38,7 +37,7 @@ class CeleryAdapter:
         """Initialize the Celery adapter."""
         self.app = celery_app
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         """Check Celery worker health.
 
         Returns:
@@ -69,7 +68,7 @@ class CeleryAdapter:
                 },
             }
         except Exception as e:
-            logger.error(f"Celery health check failed: {str(e)}")
+            logger.error(f"Celery health check failed: {e!s}")
             return {
                 "status": "unhealthy",
                 "details": {"error": str(e), "type": type(e).__name__},
@@ -86,6 +85,18 @@ class CeleryAdapter:
 
         Raises:
             HTTPException: If starting the ingestion job fails
+            
+        Notes:
+            This method applies parameter filtering to ensure each pipeline step only
+            receives parameters it can handle. Different steps have different parameter
+            requirements, and parameter filtering prevents "unexpected keyword argument"
+            errors when passing configuration between steps.
+            
+            Parameter filtering is applied as follows:
+            - blarify: Excludes 'concurrency' parameter
+            - summarizer/docgrapher: Only includes safe parameters ('job_id', 'ignore_patterns', 
+              'timeout', 'incremental') plus step-specific parameters
+            - filesystem and other steps: Receives all parameters
         """
         try:
             # The orchestrate_pipeline task expects repository_path, step_configs, and job_id
@@ -108,10 +119,31 @@ class CeleryAdapter:
                 for step_name in ["filesystem", "blarify", "summarizer", "docgrapher"]:
                     step_configs.append({"name": step_name})
             
-            # Add options to each step if provided
+            # Add options to each step if provided, with parameter filtering
             if request.options:
                 for step_config in step_configs:
-                    step_config.update(request.options)
+                    step_name = step_config["name"]
+                    
+                    # Filter options based on step type to avoid parameter conflicts
+                    if step_name == "blarify":
+                        # Blarify step doesn't use certain parameters
+                        filtered_options = {k: v for k, v in request.options.items() 
+                                          if k not in ['concurrency']}
+                        step_config.update(filtered_options)
+                        logger.debug(f"Applied filtered options for blarify step: {filtered_options}")
+                        
+                    elif step_name in ["summarizer", "docgrapher"]:
+                        # These steps have specific parameters
+                        safe_params = ['job_id', 'ignore_patterns', 'timeout', 'incremental']
+                        filtered_options = {k: v for k, v in request.options.items() 
+                                          if k in safe_params or k == step_name + "_specific"}
+                        step_config.update(filtered_options)
+                        logger.debug(f"Applied filtered options for {step_name} step: {filtered_options}")
+                        
+                    else:
+                        # For filesystem and other steps, include all options
+                        step_config.update(request.options)
+                        logger.debug(f"Applied all options for {step_name} step")
             
             # Submit the Celery task with positional parameters
             # For testing, use a local reference that can be mocked
@@ -133,10 +165,10 @@ class CeleryAdapter:
             )
 
         except Exception as e:
-            logger.error(f"Failed to start ingestion job: {str(e)}")
+            logger.error(f"Failed to start ingestion job: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to start ingestion: {str(e)}",
+                detail=f"Failed to start ingestion: {e!s}",
             )
 
     async def get_job_status(self, job_id: str) -> IngestionJob:
@@ -242,10 +274,10 @@ class CeleryAdapter:
             )
 
         except Exception as e:
-            logger.error(f"Failed to get job status for {job_id}: {str(e)}")
+            logger.error(f"Failed to get job status for {job_id}: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get job status: {str(e)}",
+                detail=f"Failed to get job status: {e!s}",
             )
 
     async def cancel_job(self, job_id: str) -> IngestionJob:
@@ -301,15 +333,15 @@ class CeleryAdapter:
             )
 
         except Exception as e:
-            logger.error(f"Failed to cancel job {job_id}: {str(e)}")
+            logger.error(f"Failed to cancel job {job_id}: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to cancel job: {str(e)}",
+                detail=f"Failed to cancel job: {e!s}",
             )
 
     async def list_jobs(
-        self, status: Optional[List[JobStatus]] = None, limit: int = 10, offset: int = 0
-    ) -> List[IngestionJob]:
+        self, status: list[JobStatus] | None = None, limit: int = 10, offset: int = 0
+    ) -> list[IngestionJob]:
         """List ingestion jobs with optional filtering by status.
 
         Args:
@@ -336,10 +368,10 @@ class CeleryAdapter:
             return []
 
         except Exception as e:
-            logger.error(f"Failed to list jobs: {str(e)}")
+            logger.error(f"Failed to list jobs: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to list jobs: {str(e)}",
+                detail=f"Failed to list jobs: {e!s}",
             )
 
 
@@ -371,5 +403,5 @@ async def get_celery_adapter() -> CeleryAdapter:
         raise RuntimeError(f"Celery component unhealthy: {error_msg}")
     except Exception as e:
         # Log the error and fail
-        logger.error(f"Failed to create Celery adapter: {str(e)}")
-        raise RuntimeError(f"Celery component required but unavailable: {str(e)}")
+        logger.error(f"Failed to create Celery adapter: {e!s}")
+        raise RuntimeError(f"Celery component required but unavailable: {e!s}")

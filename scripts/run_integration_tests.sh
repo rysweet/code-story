@@ -223,6 +223,12 @@ setup_environment_variables() {
   export REDIS_URI="redis://localhost:6380/0"
   export REDIS__URI="redis://localhost:6380/0"
   
+  # Set Celery environment variables
+  export CELERY_BROKER_URL="redis://localhost:6380/0"
+  export CELERY_RESULT_BACKEND="redis://localhost:6380/0"
+  export CELERY_TASK_ALWAYS_EAGER="True"
+  export CELERY_TASK_EAGER_PROPAGATES="True"
+  
   # Set OpenAI mock credentials for tests
   export OPENAI_API_KEY="sk-test-key-openai"
   export OPENAI__API_KEY="sk-test-key-openai"
@@ -290,8 +296,22 @@ run_tests() {
   print_step "Running tests: $TEST_PATH"
   print_info "Using command: poetry run pytest $TEST_PATH -v --override-ini=\"addopts=\" $PYTEST_ARGS"
   
-  # Run the tests
-  poetry run pytest "$TEST_PATH" -v --override-ini="addopts=" $PYTEST_ARGS
+  # Set timeout for tests
+  TEST_TIMEOUT=${TEST_TIMEOUT:-60}  # Default to 60 seconds if not specified
+  
+  # Customize timeout based on test path
+  if [[ "$TEST_PATH" == *"test_ingestion_pipeline"* ]]; then
+    # Ingestion pipeline tests need more time
+    TEST_TIMEOUT=${TEST_TIMEOUT:-90}
+  elif [[ "$TEST_PATH" == *"test_graphdb"* ]]; then
+    # Neo4j tests usually finish quickly
+    TEST_TIMEOUT=${TEST_TIMEOUT:-30}
+  fi
+  
+  print_info "Using timeout: ${TEST_TIMEOUT} seconds"
+  
+  # Run the tests with timeout
+  poetry run pytest "$TEST_PATH" -v --override-ini="addopts=" --timeout=$TEST_TIMEOUT $PYTEST_ARGS
   
   # Store the exit code for later use
   TEST_EXIT_CODE=$?

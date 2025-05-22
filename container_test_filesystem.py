@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-"""
-Script to test the filesystem step inside the container environment.
-"""
+"""Script to test the filesystem step inside the container environment."""
 
 import logging
-import sys
 import time
 import uuid
+
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory_filesystem.step import process_filesystem
 
 # Configure logging
 logging.basicConfig(
@@ -14,10 +15,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-# Set up Neo4j connection for testing
-from codestory.config.settings import get_settings
-from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory_filesystem.step import process_filesystem
 
 def test_filesystem_step():
     """Test the process_filesystem function directly."""

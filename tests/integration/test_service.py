@@ -4,15 +4,12 @@ These tests verify the service's API endpoints behave correctly
 when interacting with real or mocked dependencies.
 """
 
-import json
 import os
 from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
 
-from codestory.config.settings import get_settings
-from codestory_service.api import health
 from codestory_service.main import app
 
 

@@ -3,8 +3,7 @@
 This module implements the searchGraph tool for the MCP Adapter.
 """
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import structlog
 from fastapi import status
@@ -52,7 +51,7 @@ class SearchGraphTool(BaseTool):
         self.graph_service = get_graph_service()
         self.metrics = get_metrics()
 
-    async def __call__(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def __call__(self, params: dict[str, Any]) -> dict[str, Any]:
         """Execute the tool with the given parameters.
 
         Args:
@@ -118,6 +117,6 @@ class SearchGraphTool(BaseTool):
                 raise
 
             raise ToolError(
-                f"Search failed: {str(e)}",
+                f"Search failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

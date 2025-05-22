@@ -3,7 +3,6 @@ Natural language query commands for the Code Story CLI.
 """
 
 import json
-from typing import Dict, Any, Optional
 
 import click
 
@@ -11,12 +10,13 @@ import click
 try:
     import rich_click
 except ImportError:
-    import click as rich_click
+    pass
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
 from ..client import ServiceClient, ServiceError
+from ..require_service_available import require_service_available
 
 
 @click.command(help="Ask a natural language question about the codebase.")
@@ -24,6 +24,8 @@ from ..client import ServiceClient, ServiceError
 @click.option("--json", "output_json", is_flag=True, help="Output raw JSON.")
 @click.pass_context
 def ask(ctx: click.Context, question: str, output_json: bool = False) -> None:
+    require_service_available()
+
     """
     Ask a natural language question about the codebase.
 
@@ -68,4 +70,4 @@ def ask(ctx: click.Context, question: str, output_json: bool = False) -> None:
                 )
 
     except ServiceError as e:
-        console.print(f"[bold red]Query failed:[/] {str(e)}")
+        console.print(f"[bold red]Query failed:[/] {e!s}")

@@ -9,11 +9,10 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
 
-from .celery_app import app
 from .step import PipelineStep, StepStatus
-from .tasks import orchestrate_pipeline, get_job_status, stop_job
+from .tasks import get_job_status, orchestrate_pipeline, stop_job
 from .utils import (
     discover_pipeline_steps,
     find_step_manually,
@@ -33,7 +32,7 @@ class PipelineManager:
     monitor ingestion jobs.
     """
 
-    def __init__(self, config_path: Union[str, Path] = "pipeline_config.yml"):
+    def __init__(self, config_path: str | Path = "pipeline_config.yml"):
         """Initialize the pipeline manager.
 
         Args:
@@ -52,9 +51,9 @@ class PipelineManager:
         logger.info(f"Discovered {len(self.steps)} pipeline steps")
 
         # Active jobs
-        self.active_jobs: Dict[str, Dict[str, Any]] = {}
+        self.active_jobs: dict[str, dict[str, Any]] = {}
 
-    def _get_step_class(self, step_name: str) -> Optional[Type[PipelineStep]]:
+    def _get_step_class(self, step_name: str) -> type[PipelineStep] | None:
         """Get the step class for a step name.
 
         First tries to find the step in the discovered entry points,
@@ -78,7 +77,7 @@ class PipelineManager:
 
         return None
 
-    def _prepare_step_configs(self) -> List[Dict[str, Any]]:
+    def _prepare_step_configs(self) -> list[dict[str, Any]]:
         """Prepare step configurations from the loaded config.
 
         Returns:
@@ -168,7 +167,7 @@ class PipelineManager:
 
         return job_id
 
-    def status(self, job_id: str) -> Dict[str, Any]:
+    def status(self, job_id: str) -> dict[str, Any]:
         """Check the status of an ingestion job.
 
         Args:
@@ -205,7 +204,7 @@ class PipelineManager:
 
         return job_info
 
-    def stop(self, job_id: str) -> Dict[str, Any]:
+    def stop(self, job_id: str) -> dict[str, Any]:
         """Stop an ingestion job.
 
         Args:
@@ -236,7 +235,7 @@ class PipelineManager:
 
         return job_info
 
-    def cancel(self, job_id: str) -> Dict[str, Any]:
+    def cancel(self, job_id: str) -> dict[str, Any]:
         """Cancel an ingestion job.
 
         This is functionally the same as stop() for Celery tasks.

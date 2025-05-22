@@ -3,14 +3,13 @@
 This module provides an adapter for interacting with the Code Story Graph Service.
 """
 
-import asyncio
 import time
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import httpx
 import structlog
-from fastapi import HTTPException, status
+from fastapi import status
 from neo4j.graph import Node, Relationship
 
 from codestory_mcp.tools.base import ToolError
@@ -23,7 +22,7 @@ logger = structlog.get_logger(__name__)
 class GraphServiceAdapter:
     """Adapter for the Code Story Graph Service."""
 
-    def __init__(self, base_url: Optional[str] = None) -> None:
+    def __init__(self, base_url: str | None = None) -> None:
         """Initialize the adapter.
 
         Args:
@@ -41,8 +40,8 @@ class GraphServiceAdapter:
         )
 
     async def search(
-        self, query: str, node_types: Optional[List[str]] = None, limit: int = 10
-    ) -> List[Tuple[Node, float]]:
+        self, query: str, node_types: list[str] | None = None, limit: int = 10
+    ) -> list[tuple[Node, float]]:
         """Search for nodes in the graph database.
 
         Args:
@@ -113,7 +112,7 @@ class GraphServiceAdapter:
 
         except httpx.RequestError as e:
             # Handle network errors
-            error_message = f"Search failed: {str(e)}"
+            error_message = f"Search failed: {e!s}"
             logger.exception(
                 "Search request error",
                 error=str(e),
@@ -183,7 +182,7 @@ class GraphServiceAdapter:
 
         except httpx.RequestError as e:
             # Handle network errors
-            error_message = f"Failed to find node: {str(e)}"
+            error_message = f"Failed to find node: {e!s}"
             logger.exception(
                 "Node request error",
                 node_id=node_id,
@@ -196,7 +195,7 @@ class GraphServiceAdapter:
 
     async def find_paths(
         self, from_id: str, to_id: str, max_paths: int = 3
-    ) -> List[List[Union[Node, Relationship]]]:
+    ) -> list[list[Node | Relationship]]:
         """Find paths between two nodes.
 
         Args:
@@ -280,7 +279,7 @@ class GraphServiceAdapter:
 
         except httpx.RequestError as e:
             # Handle network errors
-            error_message = f"Path finding failed: {str(e)}"
+            error_message = f"Path finding failed: {e!s}"
             logger.exception(
                 "Path finding request error",
                 error=str(e),
@@ -291,8 +290,8 @@ class GraphServiceAdapter:
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
 
     async def execute_cypher(
-        self, query: str, parameters: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Execute a Cypher query.
 
         Args:
@@ -343,7 +342,7 @@ class GraphServiceAdapter:
 
         except httpx.RequestError as e:
             # Handle network errors
-            error_message = f"Cypher query failed: {str(e)}"
+            error_message = f"Cypher query failed: {e!s}"
             logger.exception(
                 "Cypher query request error",
                 error=str(e),
@@ -361,7 +360,7 @@ class GraphServiceAdapter:
 class MockNode:
     """Mock Neo4j Node for use with the adapter."""
 
-    def __init__(self, id: str, labels: List[str], properties: Dict[str, Any]) -> None:
+    def __init__(self, id: str, labels: list[str], properties: dict[str, Any]) -> None:
         """Initialize the mock node.
 
         Args:
@@ -385,7 +384,7 @@ class MockNode:
         """
         return self.properties.get(key, default)
 
-    def items(self) -> List[Tuple[str, Any]]:
+    def items(self) -> list[tuple[str, Any]]:
         """Get all properties as key-value pairs.
 
         Returns:
@@ -419,7 +418,7 @@ class MockRelationship:
         type: str,
         start_node_id: str,
         end_node_id: str,
-        properties: Dict[str, Any],
+        properties: dict[str, Any],
     ) -> None:
         """Initialize the mock relationship.
 
@@ -450,7 +449,7 @@ class MockRelationship:
         """
         return self.properties.get(key, default)
 
-    def items(self) -> List[Tuple[str, Any]]:
+    def items(self) -> list[tuple[str, Any]]:
         """Get all properties as key-value pairs.
 
         Returns:
@@ -475,7 +474,7 @@ class MockRelationship:
         raise KeyError(key)
 
 
-@lru_cache()
+@lru_cache
 def get_graph_service() -> GraphServiceAdapter:
     """Get the graph service adapter singleton.
 

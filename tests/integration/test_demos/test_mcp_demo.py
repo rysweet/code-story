@@ -1,11 +1,12 @@
 """Test the MCP demo functionality."""
 
 import os
+import subprocess
+import time
+from pathlib import Path
+
 import pytest
 import requests
-import time
-import subprocess
-from pathlib import Path
 
 # Mark all tests with demo marker for selective running
 pytestmark = pytest.mark.demo

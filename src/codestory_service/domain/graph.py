@@ -1,7 +1,7 @@
 """Domain models for graph interaction."""
 
-from enum import Enum
 import time
+from enum import Enum
 from typing import Any
 from uuid import uuid4
 

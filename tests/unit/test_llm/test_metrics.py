@@ -25,12 +25,12 @@ def mock_all_metrics_objects():
 
         # Now import the metrics functions after patching
         from codestory.llm.metrics import (
+            CURRENT_REQUESTS,
             ERROR_COUNT,
             REQUEST_COUNT,
             REQUEST_DURATION,
             RETRY_COUNT,
             TOKEN_USAGE,
-            CURRENT_REQUESTS,
             instrument_async_request,
             instrument_request,
             record_error,
@@ -62,12 +62,12 @@ class TestMetricsFunctions:
     def test_record_request(self, mock_all_metrics_objects):
         """Test record_request function."""
         record_request = mock_all_metrics_objects["record_request"]
-        REQUEST_COUNT = mock_all_metrics_objects["REQUEST_COUNT"]
-        REQUEST_DURATION = mock_all_metrics_objects["REQUEST_DURATION"]
+        request_count = mock_all_metrics_objects["REQUEST_COUNT"]
+        request_duration = mock_all_metrics_objects["REQUEST_DURATION"]
 
         with (
-            patch.object(REQUEST_COUNT, "labels") as mock_count_labels,
-            patch.object(REQUEST_DURATION, "labels") as mock_duration_labels,
+            patch.object(request_count, "labels") as mock_count_labels,
+            patch.object(request_duration, "labels") as mock_duration_labels,
         ):
             # Configure mocks
             mock_count_labels.return_value.inc = MagicMock()
@@ -95,14 +95,14 @@ class TestMetricsFunctions:
     def test_record_request_with_tokens(self, mock_all_metrics_objects):
         """Test record_request function with token usage."""
         record_request = mock_all_metrics_objects["record_request"]
-        REQUEST_COUNT = mock_all_metrics_objects["REQUEST_COUNT"]
-        REQUEST_DURATION = mock_all_metrics_objects["REQUEST_DURATION"]
-        TOKEN_USAGE = mock_all_metrics_objects["TOKEN_USAGE"]
+        request_count = mock_all_metrics_objects["REQUEST_COUNT"]
+        request_duration = mock_all_metrics_objects["REQUEST_DURATION"]
+        token_usage = mock_all_metrics_objects["TOKEN_USAGE"]
 
         with (
-            patch.object(REQUEST_COUNT, "labels") as mock_count_labels,
-            patch.object(REQUEST_DURATION, "labels") as mock_duration_labels,
-            patch.object(TOKEN_USAGE, "labels") as mock_token_labels,
+            patch.object(request_count, "labels") as mock_count_labels,
+            patch.object(request_duration, "labels") as mock_duration_labels,
+            patch.object(token_usage, "labels") as mock_token_labels,
         ):
             # Configure mocks
             mock_count_labels.return_value.inc = MagicMock()
@@ -148,9 +148,9 @@ class TestMetricsFunctions:
     def test_record_error(self, mock_all_metrics_objects):
         """Test record_error function."""
         record_error = mock_all_metrics_objects["record_error"]
-        ERROR_COUNT = mock_all_metrics_objects["ERROR_COUNT"]
+        error_count = mock_all_metrics_objects["ERROR_COUNT"]
 
-        with patch.object(ERROR_COUNT, "labels") as mock_error_labels:
+        with patch.object(error_count, "labels") as mock_error_labels:
             # Configure mock
             mock_error_labels.return_value.inc = MagicMock()
 
@@ -172,9 +172,9 @@ class TestMetricsFunctions:
     def test_record_retry(self, mock_all_metrics_objects):
         """Test record_retry function."""
         record_retry = mock_all_metrics_objects["record_retry"]
-        RETRY_COUNT = mock_all_metrics_objects["RETRY_COUNT"]
+        retry_count = mock_all_metrics_objects["RETRY_COUNT"]
 
-        with patch.object(RETRY_COUNT, "labels") as mock_retry_labels:
+        with patch.object(retry_count, "labels") as mock_retry_labels:
             # Configure mock
             mock_retry_labels.return_value.inc = MagicMock()
 
@@ -194,7 +194,7 @@ class TestInstrumentRequestDecorator:
     def test_instrument_request_success(self, mock_all_metrics_objects):
         """Test instrument_request decorator with successful response."""
         instrument_request = mock_all_metrics_objects["instrument_request"]
-        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+        current_requests = mock_all_metrics_objects["CURRENT_REQUESTS"]
 
         # Create a mock function that returns a result with usage info
         mock_function = MagicMock()
@@ -207,7 +207,7 @@ class TestInstrumentRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch.object(current_requests, "labels") as mock_current,
             patch("codestory.llm.metrics.record_request") as mock_record,
         ):
             # Configure the mock
@@ -239,7 +239,7 @@ class TestInstrumentRequestDecorator:
     def test_instrument_request_error(self, mock_all_metrics_objects):
         """Test instrument_request decorator with an error response."""
         instrument_request = mock_all_metrics_objects["instrument_request"]
-        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+        current_requests = mock_all_metrics_objects["CURRENT_REQUESTS"]
 
         # Create a mock function that raises an exception
         mock_function = MagicMock()
@@ -250,7 +250,7 @@ class TestInstrumentRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch.object(current_requests, "labels") as mock_current,
             patch("codestory.llm.metrics.record_request") as mock_record_req,
             patch("codestory.llm.metrics.record_error") as mock_record_err,
         ):
@@ -295,7 +295,7 @@ class TestInstrumentAsyncRequestDecorator:
     async def test_instrument_async_request_success(self, mock_all_metrics_objects):
         """Test instrument_async_request decorator with successful response."""
         instrument_async_request = mock_all_metrics_objects["instrument_async_request"]
-        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+        current_requests = mock_all_metrics_objects["CURRENT_REQUESTS"]
 
         # Create a mock async function that returns a result with usage info
         mock_function = MagicMock()
@@ -315,7 +315,7 @@ class TestInstrumentAsyncRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch.object(current_requests, "labels") as mock_current,
             patch("codestory.llm.metrics.record_request") as mock_record,
         ):
             # Configure the mock
@@ -348,7 +348,7 @@ class TestInstrumentAsyncRequestDecorator:
     async def test_instrument_async_request_error(self, mock_all_metrics_objects):
         """Test instrument_async_request decorator with an error response."""
         instrument_async_request = mock_all_metrics_objects["instrument_async_request"]
-        CURRENT_REQUESTS = mock_all_metrics_objects["CURRENT_REQUESTS"]
+        current_requests = mock_all_metrics_objects["CURRENT_REQUESTS"]
 
         # Create a mock async function that raises an exception
         mock_function = MagicMock()
@@ -366,7 +366,7 @@ class TestInstrumentAsyncRequestDecorator:
 
         # Patch the metrics functions
         with (
-            patch.object(CURRENT_REQUESTS, "labels") as mock_current,
+            patch.object(current_requests, "labels") as mock_current,
             patch("codestory.llm.metrics.record_request") as mock_record_req,
             patch("codestory.llm.metrics.record_error") as mock_record_err,
         ):

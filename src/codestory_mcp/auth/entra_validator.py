@@ -3,12 +3,10 @@
 This module provides functions for validating JWT tokens issued by Microsoft Entra ID.
 """
 
-import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import jwt
 import structlog
-from fastapi import HTTPException, status
 from jwt.jwks_client import PyJWKClient
 
 from codestory_mcp.auth.scope_manager import ScopeManager
@@ -65,7 +63,7 @@ class EntraValidator:
         # Create scope manager
         self.scope_manager = scope_manager or ScopeManager()
 
-    async def validate_token(self, token: str) -> Dict[str, Any]:
+    async def validate_token(self, token: str) -> dict[str, Any]:
         """Validate JWT token and return claims if valid.
 
         Args:
@@ -105,12 +103,12 @@ class EntraValidator:
 
         except jwt.PyJWTError as e:
             logger.warning("Token validation failed", error=str(e))
-            raise AuthenticationError(f"Token validation failed: {str(e)}")
+            raise AuthenticationError(f"Token validation failed: {e!s}")
         except Exception as e:
             logger.exception("Unexpected error during token validation")
-            raise AuthenticationError(f"Token validation failed: {str(e)}")
+            raise AuthenticationError(f"Token validation failed: {e!s}")
 
-    def _verify_scopes(self, claims: Dict[str, Any]) -> None:
+    def _verify_scopes(self, claims: dict[str, Any]) -> None:
         """Verify the token contains required scopes.
 
         Args:

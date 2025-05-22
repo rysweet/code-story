@@ -6,13 +6,17 @@ documentation entities and relationships, and storing it in Neo4j.
 
 import logging
 import time
-from typing import Dict, List, Optional, Set, Tuple
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from .models import DocumentationEntity, DocumentationFile
-from .models import DocumentationGraph, DocumentationRelationship
-from .models import EntityType, RelationType
+
 from .entity_linker import EntityLinker
+from .models import (
+    DocumentationEntity,
+    DocumentationFile,
+    DocumentationGraph,
+    DocumentationRelationship,
+    RelationType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +48,7 @@ class KnowledgeGraph:
         """
         self.graph.add_document(document)
 
-    def add_entities(self, entities: List[DocumentationEntity]) -> None:
+    def add_entities(self, entities: list[DocumentationEntity]) -> None:
         """Add entities to the graph.
 
         Args:
@@ -53,7 +57,7 @@ class KnowledgeGraph:
         for entity in entities:
             self.graph.add_entity(entity)
 
-    def add_relationships(self, relationships: List[DocumentationRelationship]) -> None:
+    def add_relationships(self, relationships: list[DocumentationRelationship]) -> None:
         """Add relationships to the graph.
 
         Args:
@@ -264,7 +268,7 @@ class KnowledgeGraph:
                         f"Failed to create relationship {rel.type.value} between documentation and code entities"
                     )
 
-    def get_graph_stats(self) -> Dict:
+    def get_graph_stats(self) -> dict:
         """Get statistics about the graph.
 
         Returns:
@@ -278,7 +282,7 @@ class KnowledgeGraph:
             "relationship_types": self._count_relationship_types(),
         }
 
-    def _count_entity_types(self) -> Dict[str, int]:
+    def _count_entity_types(self) -> dict[str, int]:
         """Count entities by type.
 
         Returns:
@@ -290,7 +294,7 @@ class KnowledgeGraph:
             counts[type_name] = counts.get(type_name, 0) + 1
         return counts
 
-    def _count_relationship_types(self) -> Dict[str, int]:
+    def _count_relationship_types(self) -> dict[str, int]:
         """Count relationships by type.
 
         Returns:

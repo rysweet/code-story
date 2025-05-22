@@ -5,7 +5,7 @@ representing documentation entities, their relationships, and metadata.
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Union
+
 from pydantic import BaseModel, Field
 
 
@@ -70,8 +70,8 @@ class DocumentationFile(BaseModel):
     name: str
     doc_type: DocumentType
     content: str
-    file_id: Optional[str] = None  # Neo4j ID of corresponding File node
-    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    file_id: str | None = None  # Neo4j ID of corresponding File node
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
 class DocumentationEntity(BaseModel):
@@ -82,13 +82,13 @@ class DocumentationEntity(BaseModel):
     content: str
     file_path: str
     source_text: str
-    start_pos: Optional[int] = None
-    end_pos: Optional[int] = None
-    line_number: Optional[int] = None
-    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
-    parent_id: Optional[str] = None
-    children: List[str] = Field(default_factory=list)
-    referenced_code: List[str] = Field(
+    start_pos: int | None = None
+    end_pos: int | None = None
+    line_number: int | None = None
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
+    parent_id: str | None = None
+    children: list[str] = Field(default_factory=list)
+    referenced_code: list[str] = Field(
         default_factory=list
     )  # Neo4j IDs of referenced code entities
 
@@ -100,15 +100,15 @@ class DocumentationRelationship(BaseModel):
     type: RelationType
     source_id: str  # ID of source entity
     target_id: str  # ID of target entity
-    properties: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    properties: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
 class DocumentationGraph(BaseModel):
     """Represents a graph of documentation entities and relationships."""
 
-    documents: Dict[str, DocumentationFile] = Field(default_factory=dict)
-    entities: Dict[str, DocumentationEntity] = Field(default_factory=dict)
-    relationships: Dict[str, DocumentationRelationship] = Field(default_factory=dict)
+    documents: dict[str, DocumentationFile] = Field(default_factory=dict)
+    entities: dict[str, DocumentationEntity] = Field(default_factory=dict)
+    relationships: dict[str, DocumentationRelationship] = Field(default_factory=dict)
 
     # Keep track of progress
     processed_files: int = 0

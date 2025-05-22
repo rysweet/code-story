@@ -1,17 +1,44 @@
 # Project Implementation Status
 
 ## Current Task
-- TODO: Optimize Docker container startup time
-  - Create pre-built base images with dependencies for faster startup
-  - Implement effective Docker layer caching with dependencies first
-  - Set up docker-compose build caching with cache_from directives
-  - Consider implementing a local Docker registry for faster image pulls
-  - Mount dependency caches (pip/npm) into containers for faster installs
-  - Create dependency checking script to only rebuild when necessary
-  - Add volume caching for node_modules and Python virtual environments
-  - Optimize Dockerfiles to minimize layer count and maximize cache hits
+- IN PROGRESS: Fix and optimize ingestion pipeline
+  - Fix issues with ingesting repositories including the code-story codebase itself
+  - Test the entire pipeline including LLM summarization
+  - Optimize performance of the ingestion steps for faster processing
+  - Ensure proper error handling and graceful degradation during ingestion
+  - Fix any identified issues with LLM connection during ingestion
+  - Address specific issues with Docker container mounting and repository access
+  - Improve diagnostics and progress tracking during ingestion
+  - Update documentation with latest ingestion pipeline features
 
-## Last Completed Task (May 16, 2025)
+## Last Completed Task (May 20, 2025)
+- Fixed Docker test failures in CI for pipeline integration tests
+  - Enhanced BlarifyStep to better handle container status updates in CI environment
+  - Fixed task invocation in Celery to use apply_async with registered tasks
+  - Implemented robust error handling for Docker container operations
+  - Added container state verification with retries in CI environment
+  - Improved status tracking to prioritize internal state over Celery state
+  - Added special handling for REVOKED task state in status checks
+  - Enhanced test timeout settings for CI environment
+  - Added container verification in tests to ensure proper cleanup
+  - Fixed race conditions between stopping containers and checking status
+  - Used additional logging to help diagnose test failures in CI
+  - Committed all changes with comprehensive tests
+
+## Previous Completed Task (May 19, 2025)
+- Enhanced OpenAI adapter with robust Azure authentication handling
+  - Added automatic tenant ID extraction from environment variables and error messages
+  - Implemented automatic Azure CLI login attempt for authentication renewal
+  - Improved error handling and detection for various authentication failure patterns
+  - Added detailed diagnostic information and guidance for authentication issues
+  - Enhanced tests to properly validate tenant ID extraction and authentication handling
+  - Fixed formatting issues with ruff to ensure code quality
+  - Made service more resilient to authentication failures
+  - Added proper mocking in tests to prevent actual network calls
+  - Corrected tests to match implementation changes
+  - Added comprehensive error pattern detection for various Azure authentication errors
+
+## Previous Completed Task (May 16, 2025)
 - Implemented comprehensive Azure authentication resilience solution
   - Created ResilientLLMClient for automatic fallback to API key authentication
   - Added environment variables to control authentication behavior (CODESTORY_NO_MODEL_CHECK, CODESTORY_LLM_MODE)
@@ -113,56 +140,3 @@
   - Tested with various invalid commands and subcommands
   - Committed changes with comprehensive commit message
   - Updated all documentation to reflect the improvements
-
-## Previous Completed Task (May 15, 2025)
-- Fixed syntax error in conftest.py for Neo4j port configuration
-  - Rewrote the conftest.py file to properly handle CI environment detection
-  - Fixed string concatenation syntax error that was breaking the CI build
-  - Restructured the Neo4j environment fixture for cleaner separation of concerns
-  - Enhanced environment variable setup to avoid duplicate code
-  - Made port selection more robust with explicit conditional logic
-  - Tested changes locally with unit tests before pushing
-  - Committed changes for the CI/CD pipeline to run again
-  - Updated all documentation to reflect the changes
-
-## Previous Completed Task (May 15, 2025)
-- Fixed CI failures by addressing Neo4j port configuration in tests
-  - Identified the root cause: port mismatch between CI (7687) and local tests (7688)
-  - Created Python script to fix the port configuration in all test files
-  - Applied fixes to 14 different files that had hardcoded Neo4j port references
-  - Made the fix environment-aware to work in both CI and local development
-  - Added comprehensive documentation in FIXED_CI_TESTS.md to explain the solution
-  - Tested the fix to ensure it properly detects the CI environment
-  - Committed and pushed changes to fix the CI failures
-  - Updated project documentation with the latest improvements
-
-## Previous Completed Task (May 15, 2025)
-- Committed multiple improvements to the CLI and service components
-  - Added repository mounting documentation and script for proper volume mounts
-  - Added dedicated CLI entry point to avoid circular imports
-  - Fixed CeleryAdapter parameter mapping for correct task execution
-  - Improved error handling in ingest command for better user experience
-  - Enhanced demo scripts with better error handling and sample data import
-  - Consolidated health check endpoints for easier maintenance
-  - Fixed service client to robustly handle different endpoints
-  - Improved documentation and standardized deployment patterns
-  - Removed dummy adapter implementations for more reliable behavior
-
-## Previous Completed Task (May 15, 2025)
-- Added comprehensive service recovery documentation
-  - Created detailed service recovery guide in `/docs/user_guides/service_recovery.md`
-  - Guide explains how to use the `service recover` command to fix unhealthy containers
-  - Documented advanced recovery options and troubleshooting steps
-  - Added common issues section with solutions for worker, service, and database problems
-  - Included preventative measures to minimize service disruptions
-
-## Previous Completed Task (May 15, 2025)
-- Improved CLI user experience with command suggestions and better error handling
-  - Added command suggestion feature for invalid commands using click-didyoumean package
-  - Updated CLI to automatically display help when no command is provided
-  - Added custom error handler to show more helpful error messages
-  - Created comprehensive unit and integration tests for new features
-  - Implemented service recovery command for fixing unhealthy containers
-  - Enhanced health checks for docker containers to be more reliable
-  - Created setup script for container configuration to ensure proper startup
-  - Made Docker service commands more robust with better error handling

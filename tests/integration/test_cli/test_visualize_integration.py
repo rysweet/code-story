@@ -2,11 +2,8 @@
 
 import os
 import tempfile
-from glob import glob
-from typing import Dict, Any
 from unittest.mock import patch
 
-import pytest
 from click.testing import CliRunner
 
 from codestory.cli.main import app

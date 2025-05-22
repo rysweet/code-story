@@ -6,10 +6,9 @@ including step orchestration and status tracking.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
-from pathlib import Path
+from typing import Any
 
-from celery import chain, group
+from celery import chain
 from celery.result import AsyncResult
 
 from .celery_app import app
@@ -25,12 +24,15 @@ def run_step(
     self,
     repository_path: str,
     step_name: str,
-    step_config: Dict[str, Any],
-    job_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    step_config: dict[str, Any],
+    job_id: str | None = None,
+) -> dict[str, Any]:
     """Run a single pipeline step.
 
     This task calls the appropriate plugin to execute a specific pipeline step.
+    It uses a task_name_map to route to the fully qualified task name for each step,
+    and applies parameter filtering to ensure each step receives only the parameters
+    it can handle.
 
     Args:
         repository_path: Path to the repository to process
@@ -48,6 +50,18 @@ def run_step(
             - end_time: When the step finished
             - duration: Duration in seconds
             - error: Optional error message if the step failed
+            
+    Notes:
+        This method includes two important mechanisms:
+        
+        1. Task routing using fully qualified names:
+           The task_name_map maps step names to fully qualified task names
+           (e.g., "filesystem" -> "codestory_filesystem.step.process_filesystem")
+           
+        2. Parameter filtering:
+           Each step may have different parameter requirements. To prevent
+           "unexpected keyword argument" errors, this method filters the parameters
+           based on the step type before passing them to the actual step task.
     """
     # Record start time
     start_time = time.time()
@@ -69,26 +83,50 @@ def run_step(
     try:
         # This task doesn't directly run the step - instead it dispatches
         # to the appropriate plugin's task which is registered separately
-        # Use the simple registered name format: "{step_name}.run"
-        task_name = f"{step_name}.run"  # e.g., "filesystem.run"
+        # Map step name to the fully qualified task name
+        task_name_map = {
+            "filesystem": "codestory_filesystem.step.process_filesystem",
+            "blarify": "codestory_blarify.step.run_blarify",
+            "summarizer": "codestory_summarizer.step.run_summarizer",
+            "docgrapher": "codestory_docgrapher.step.run_docgrapher",
+        }
+        
+        # Get the task name from the map or fallback to legacy format
+        task_name = task_name_map.get(step_name, f"{step_name}.run")
         
         # Log what we're trying to do
         logger.debug(f"Dispatching to task: {task_name}")
         logger.debug(f"Available tasks: {[t for t in app.tasks.keys() if step_name in t]}")
 
-        # Prepare configuration for the step task
+        # Prepare configuration for the step task - with parameter filtering
         step_config_copy = step_config.copy()
         
         # Don't add repository_path to kwargs as it's already passed in the task signature
         # This avoids the "got multiple values for argument" error
         if 'repository_path' in step_config_copy:
             # If it's already in the config, remove it to avoid conflicts
-            logger.warning(f"Removing duplicate repository_path from step config to avoid conflicts")
+            logger.warning("Removing duplicate repository_path from step config to avoid conflicts")
             del step_config_copy['repository_path']
         
         # Include job_id in kwargs if present
         if 'job_id' not in step_config_copy and job_id:
             step_config_copy['job_id'] = job_id
+        
+        # Filter out step-specific parameters that are not common to all steps
+        # This prevents "unexpected keyword argument" errors when passing step configs
+        if step_name == "blarify":
+            # Blarify step doesn't use concurrency parameter
+            if 'concurrency' in step_config_copy:
+                logger.debug("Removing 'concurrency' from blarify step config to avoid parameter mismatch")
+                del step_config_copy['concurrency']
+                
+        elif step_name == "summarizer" or step_name == "docgrapher":
+            # These steps might have specific parameters that other steps don't accept
+            safe_params = ['job_id', 'ignore_patterns', 'timeout', 'incremental'] 
+            for param in list(step_config_copy.keys()):
+                if param not in safe_params and param != step_name + "_specific":
+                    logger.debug(f"Removing '{param}' from {step_name} step config to avoid parameter mismatch")
+                    del step_config_copy[param]
             
         logger.debug(f"Sending task {task_name} with args=[repository_path={repository_path}] and kwargs={step_config_copy}")
         
@@ -203,8 +241,8 @@ def run_step(
 
 @app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)
 def orchestrate_pipeline(
-    self, repository_path: str, step_configs: List[Dict[str, Any]], job_id: str
-) -> Dict[str, Any]:
+    self, repository_path: str, step_configs: list[dict[str, Any]], job_id: str
+) -> dict[str, Any]:
     """Orchestrate the execution of the entire pipeline.
 
     This task creates a chain of steps to be executed in order,
@@ -383,7 +421,7 @@ def orchestrate_pipeline(
 
 
 @app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)
-def get_job_status(self, task_id: str) -> Dict[str, Any]:
+def get_job_status(self, task_id: str) -> dict[str, Any]:
     """Get the status of a running job.
 
     Args:
@@ -417,12 +455,12 @@ def get_job_status(self, task_id: str) -> Dict[str, Any]:
         logger.exception(f"Error checking job status: {e}")
         return {
             "status": StepStatus.FAILED,
-            "error": f"Error checking status: {str(e)}",
+            "error": f"Error checking status: {e!s}",
         }
 
 
 @app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)
-def stop_job(self, task_id: str) -> Dict[str, Any]:
+def stop_job(self, task_id: str) -> dict[str, Any]:
     """Stop a running job.
 
     Args:
@@ -457,5 +495,5 @@ def stop_job(self, task_id: str) -> Dict[str, Any]:
         logger.exception(f"Error stopping job: {e}")
         return {
             "status": StepStatus.FAILED,
-            "error": f"Error stopping job: {str(e)}",
+            "error": f"Error stopping job: {e!s}",
         }

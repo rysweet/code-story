@@ -4,7 +4,6 @@ This module provides prompt templates specifically designed for generating
 high-quality summaries of directory nodes.
 """
 
-from typing import Any
 
 
 def get_directory_summary_prompt(

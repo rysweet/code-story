@@ -3,16 +3,15 @@
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import tomli
 
 from codestory.config import (
+    update_config,
     update_env,
     update_toml,
-    update_config,
-    get_config_value,
 )
 from codestory.config.exceptions import SettingNotFoundError
 
@@ -59,7 +58,7 @@ def test_update_env(temp_env_file):
     update_env("NEO4J__URI", "bolt://neo4j:7687", env_file=temp_env_file)
 
     # Read the file and check content
-    with open(temp_env_file, "r") as f:
+    with open(temp_env_file) as f:
         content = f.read()
 
     assert "NEO4J__URI='bolt://neo4j:7687'" in content
@@ -69,7 +68,7 @@ def test_update_env(temp_env_file):
     update_env("NEW_SETTING", "new-value", env_file=temp_env_file)
 
     # Read the file and check content
-    with open(temp_env_file, "r") as f:
+    with open(temp_env_file) as f:
         content = f.read()
 
     assert "NEW_SETTING='new-value'" in content

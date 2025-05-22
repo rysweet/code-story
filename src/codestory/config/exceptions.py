@@ -1,6 +1,6 @@
 """Configuration-related exceptions."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ConfigurationError(Exception):
@@ -9,7 +9,7 @@ class ConfigurationError(Exception):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """Initialize ConfigurationError.
 
@@ -28,7 +28,7 @@ class ValidationError(ConfigurationError):
     def __init__(
         self,
         message: str,
-        errors: Optional[List[Dict[str, Any]]] = None,
+        errors: list[dict[str, Any]] | None = None,
     ) -> None:
         """Initialize ValidationError.
 
@@ -47,8 +47,8 @@ class SourceError(ConfigurationError):
         self,
         message: str,
         source: str,
-        source_path: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        source_path: str | None = None,
+        cause: Exception | None = None,
     ) -> None:
         """Initialize SourceError.
 
@@ -73,9 +73,9 @@ class KeyVaultError(ConfigurationError):
     def __init__(
         self,
         message: str,
-        vault_name: Optional[str] = None,
-        secret_name: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        vault_name: str | None = None,
+        secret_name: str | None = None,
+        cause: Exception | None = None,
     ) -> None:
         """Initialize KeyVaultError.
 
@@ -100,7 +100,7 @@ class SettingNotFoundError(ConfigurationError):
     def __init__(
         self,
         setting_path: str,
-        available_settings: Optional[List[str]] = None,
+        available_settings: list[str] | None = None,
     ) -> None:
         """Initialize SettingNotFoundError.
 
@@ -122,8 +122,8 @@ class PermissionError(ConfigurationError):
     def __init__(
         self,
         message: str,
-        file_path: Optional[str] = None,
-        operation: Optional[str] = None,
+        file_path: str | None = None,
+        operation: str | None = None,
     ) -> None:
         """Initialize PermissionError.
 

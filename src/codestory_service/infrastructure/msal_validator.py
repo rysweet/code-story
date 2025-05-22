@@ -7,7 +7,7 @@ for validating JWT tokens and authenticating users against Microsoft Entra ID
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any
 
 import jwt
 from fastapi import Depends, HTTPException, Request, status
@@ -56,7 +56,7 @@ class MSALValidator:
 
         self.jwt_algorithm = self.settings.jwt_algorithm
 
-    async def validate_token(self, token: str) -> Dict[str, Any]:
+    async def validate_token(self, token: str) -> dict[str, Any]:
         """Validate a JWT token and return the claims.
 
         Args:
@@ -107,10 +107,10 @@ class MSALValidator:
                     headers={"WWW-Authenticate": "Bearer"},
                 )
             except jwt.InvalidTokenError as e:
-                logger.warning(f"Invalid token: {str(e)}")
+                logger.warning(f"Invalid token: {e!s}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"Invalid token: {str(e)}",
+                    detail=f"Invalid token: {e!s}",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
@@ -123,7 +123,7 @@ class MSALValidator:
             detail="Full MSAL validation not implemented",
         )
 
-    async def create_dev_token(self, username: str, roles: List[str] = ["user"]) -> str:
+    async def create_dev_token(self, username: str, roles: list[str] = ["user"]) -> str:
         """Create a development JWT token.
 
         This is only available in development mode and should not be used in production.
@@ -170,10 +170,10 @@ class MSALValidator:
             return token
 
         except Exception as e:
-            logger.error(f"Failed to create token: {str(e)}")
+            logger.error(f"Failed to create token: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create token: {str(e)}",
+                detail=f"Failed to create token: {e!s}",
             )
 
 
@@ -190,9 +190,9 @@ async def get_msal_validator() -> MSALValidator:
 
 async def get_current_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     validator: MSALValidator = Depends(get_msal_validator),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the current authenticated user from the request.
 
     This function is used as a FastAPI dependency for protected endpoints.
@@ -250,9 +250,9 @@ async def get_current_user(
 
 async def get_optional_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     validator: MSALValidator = Depends(get_msal_validator),
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Get the current user if authenticated, otherwise None.
 
     This function is used as a FastAPI dependency for endpoints that
@@ -288,7 +288,7 @@ async def get_optional_user(
         return None
 
 
-def require_role(required_roles: List[str]):
+def require_role(required_roles: list[str]):
     """Create a dependency that requires the user to have one of the specified roles.
 
     Args:
@@ -302,8 +302,8 @@ def require_role(required_roles: List[str]):
     """
 
     async def role_checker(
-        user: Dict[str, Any] = Depends(get_current_user)
-    ) -> Dict[str, Any]:
+        user: dict[str, Any] = Depends(get_current_user)
+    ) -> dict[str, Any]:
         user_roles = user.get("roles", [])
 
         # Check if the user has any of the required roles
@@ -322,8 +322,8 @@ def require_role(required_roles: List[str]):
 
 
 async def is_admin(
-    user: Dict[str, Any] = Depends(get_current_user)
-) -> Dict[str, Any]:
+    user: dict[str, Any] = Depends(get_current_user)
+) -> dict[str, Any]:
     """Check if the current user has admin role.
 
     Args:

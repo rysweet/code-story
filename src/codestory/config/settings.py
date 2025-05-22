@@ -4,10 +4,10 @@ import os
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Any, List, Literal, Optional, ClassVar
+from typing import Any, ClassVar
 
 import tomli
-from pydantic import BaseModel, Field, field_validator, SecretStr, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,16 +36,16 @@ class RedisSettings(BaseModel):
 class OpenAISettings(BaseModel):
     """OpenAI API settings."""
 
-    api_key: Optional[SecretStr] = Field(
+    api_key: SecretStr | None = Field(
         None, description="OpenAI API key (for direct API key auth)"
     )
     endpoint: str = Field(
         "https://api.openai.com/v1", description="OpenAI API endpoint"
     )
-    tenant_id: Optional[str] = Field(
+    tenant_id: str | None = Field(
         None, description="Azure AD tenant ID for authentication"
     )
-    subscription_id: Optional[str] = Field(None, description="Azure subscription ID")
+    subscription_id: str | None = Field(None, description="Azure subscription ID")
     embedding_model: str = Field(
         "text-embedding-3-small", description="OpenAI embedding model to use"
     )
@@ -68,8 +68,8 @@ class OpenAISettings(BaseModel):
 class AzureOpenAISettings(BaseModel):
     """Azure OpenAI API settings."""
 
-    api_key: Optional[SecretStr] = Field(None, description="Azure OpenAI API key")
-    endpoint: Optional[str] = Field(None, description="Azure OpenAI endpoint")
+    api_key: SecretStr | None = Field(None, description="Azure OpenAI API key")
+    endpoint: str | None = Field(None, description="Azure OpenAI endpoint")
     deployment_id: str = Field("gpt-4o", description="Azure OpenAI deployment ID")
     api_version: str = Field("2024-05-01", description="Azure OpenAI API version")
     embedding_model: str = Field(
@@ -88,9 +88,6 @@ class ServiceSettings(BaseModel):
     port: int = Field(8000, description="Service port")
     workers: int = Field(4, description="Number of worker processes")
     log_level: str = Field("INFO", description="Logging level")
-    environment: Literal["development", "testing", "production"] = Field(
-        "development", description="Deployment environment"
-    )
     enable_telemetry: bool = Field(True, description="Enable OpenTelemetry")
     worker_concurrency: int = Field(4, description="Celery worker concurrency")
 
@@ -122,7 +119,7 @@ class IngestionSettings(BaseModel):
         2.0, description="Backoff multiplier between retries"
     )
     concurrency: int = Field(5, description="Default concurrency for ingestion tasks")
-    steps: Dict[str, Dict[str, Any]] = Field(
+    steps: dict[str, dict[str, Any]] = Field(
         default_factory=dict, description="Step-specific configuration"
     )
 
@@ -144,7 +141,7 @@ class IngestionSettings(BaseModel):
 class PluginSettings(BaseModel):
     """Plugin settings."""
 
-    enabled: List[str] = Field(
+    enabled: list[str] = Field(
         ["blarify", "filesystem", "summarizer", "docgrapher"],
         description="List of enabled plugins",
     )
@@ -186,10 +183,10 @@ class InterfaceSettings(BaseModel):
 class AzureSettings(BaseModel):
     """Azure settings."""
 
-    keyvault_name: Optional[str] = Field(None, description="Azure KeyVault name")
-    tenant_id: Optional[str] = Field(None, description="Azure tenant ID")
-    client_id: Optional[str] = Field(None, description="Azure client ID")
-    client_secret: Optional[SecretStr] = Field(None, description="Azure client secret")
+    keyvault_name: str | None = Field(None, description="Azure KeyVault name")
+    tenant_id: str | None = Field(None, description="Azure tenant ID")
+    client_id: str | None = Field(None, description="Azure client ID")
+    client_secret: SecretStr | None = Field(None, description="Azure client secret")
 
 
 def get_project_root() -> Path:
@@ -217,9 +214,6 @@ class Settings(BaseSettings):
     description: str = Field(
         "A system to convert codebases into richly-linked knowledge graphs with natural-language summaries",
         description="Application description",
-    )
-    environment: Literal["development", "testing", "production"] = Field(
-        "development", description="Deployment environment"
     )
     log_level: str = Field("INFO", description="Logging level")
 
@@ -368,7 +362,7 @@ class Settings(BaseSettings):
 
                 # Azure OpenAI settings
                 "azure_openai__api_key": "sk-test-key-azure",
-                "azure_openai__endpoint": "https://test-openai.openai.azure.com/",
+                "azure_openai__endpoint": "<your-endpoint>",
                 "azure_openai__deployment_id": "gpt-4o",
                 "azure_openai__api_version": "2024-05-01",
                 "azure_openai__embedding_model": "text-embedding-3-small",
@@ -380,7 +374,6 @@ class Settings(BaseSettings):
                 "service__port": 8000,
                 "service__workers": 4,
                 "service__log_level": "INFO",
-                "service__environment": "testing",
                 "service__enable_telemetry": True,
                 "service__worker_concurrency": 4,
 
@@ -435,7 +428,7 @@ class Settings(BaseSettings):
             print(f"Number of merged settings: {len(merged_settings)}")
 
         # Check if we have flattened settings (looking for keys with separator)
-        has_flattened = any("__" in k for k in merged_settings.keys())
+        has_flattened = any("__" in k for k in merged_settings)
 
         if has_flattened:
             if in_test_env:
@@ -466,7 +459,7 @@ class Settings(BaseSettings):
                            "ingestion", "plugins", "telemetry", "interface", "azure"]
             for field in required_fields:
                 # Check if the field exists in any form (flat or nested)
-                if not any(k.startswith(f"{field}__") or k == field for k in merged_settings.keys()):
+                if not any(k.startswith(f"{field}__") or k == field for k in merged_settings):
                     if in_test_env:
                         print(f"Adding missing required field: {field}")
                     merged_settings[field] = {}
@@ -537,8 +530,8 @@ class Settings(BaseSettings):
 
 
 def flatten_dict(
-    d: Dict[str, Any], parent_key: str = "", sep: str = "__"
-) -> Dict[str, Any]:
+    d: dict[str, Any], parent_key: str = "", sep: str = "__"
+) -> dict[str, Any]:
     """Flatten nested dictionary with separator in keys.
 
     Example:
@@ -554,8 +547,8 @@ def flatten_dict(
     return dict(items)
 
 def unflatten_dict(
-    d: Dict[str, Any], sep: str = "__"
-) -> Dict[str, Any]:
+    d: dict[str, Any], sep: str = "__"
+) -> dict[str, Any]:
     """Unflatten a dictionary with separator in keys into nested dictionaries.
 
     Example:
@@ -583,7 +576,7 @@ def unflatten_dict(
     return result
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Return cached settings instance.
 

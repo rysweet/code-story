@@ -6,11 +6,10 @@ and other shared functionalities for the ingestion pipeline.
 
 import importlib
 import logging
-import os
-import time
-import yaml
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any
+
+import yaml
 
 # Use importlib.metadata instead of pkg_resources (which is deprecated)
 try:
@@ -19,7 +18,7 @@ except ImportError:
     # Fallback for Python < 3.8
     import pkg_resources
 
-from prometheus_client import Counter, Histogram, Gauge, REGISTRY
+from prometheus_client import Counter, Gauge, Histogram
 
 from .step import PipelineStep, StepStatus
 
@@ -133,7 +132,7 @@ INGESTION_ACTIVE_JOBS = _get_or_create_gauge(
 )
 
 
-def load_pipeline_config(config_path: Union[str, Path]) -> Dict[str, Any]:
+def load_pipeline_config(config_path: str | Path) -> dict[str, Any]:
     """Load and validate the pipeline configuration.
 
     Args:
@@ -156,7 +155,7 @@ def load_pipeline_config(config_path: Union[str, Path]) -> Dict[str, Any]:
 
     # Load the YAML file
     try:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in pipeline configuration: {e}")
@@ -190,7 +189,7 @@ def load_pipeline_config(config_path: Union[str, Path]) -> Dict[str, Any]:
     return config
 
 
-def discover_pipeline_steps() -> Dict[str, Type[PipelineStep]]:
+def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
     """Discover all registered pipeline step plugins.
 
     Uses entry points to find all registered pipeline steps.
@@ -247,7 +246,7 @@ def discover_pipeline_steps() -> Dict[str, Type[PipelineStep]]:
     return steps
 
 
-def find_step_manually(step_name: str) -> Optional[Type[PipelineStep]]:
+def find_step_manually(step_name: str) -> type[PipelineStep] | None:
     """Find a pipeline step class by name without entry points.
 
     This is a fallback for development and testing when entry points
@@ -286,7 +285,7 @@ def find_step_manually(step_name: str) -> Optional[Type[PipelineStep]]:
 
 
 def record_step_metrics(
-    step_name: str, status: StepStatus, duration: Optional[float] = None
+    step_name: str, status: StepStatus, duration: float | None = None
 ) -> None:
     """Record metrics for a pipeline step.
 

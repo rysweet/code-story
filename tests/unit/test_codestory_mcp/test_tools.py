@@ -4,14 +4,14 @@ import asyncio
 from unittest import mock
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import status
 
 from codestory_mcp.tools import get_all_tools, get_tool, register_tool
 from codestory_mcp.tools.base import BaseTool, ToolError
-from codestory_mcp.tools.search_graph import SearchGraphTool
-from codestory_mcp.tools.summarize_node import SummarizeNodeTool
 from codestory_mcp.tools.path_to import PathToTool
+from codestory_mcp.tools.search_graph import SearchGraphTool
 from codestory_mcp.tools.similar_code import SimilarCodeTool
+from codestory_mcp.tools.summarize_node import SummarizeNodeTool
 
 
 class TestToolsRegistry:

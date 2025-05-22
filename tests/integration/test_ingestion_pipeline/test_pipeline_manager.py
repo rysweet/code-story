@@ -1,11 +1,8 @@
 import threading
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any
 
-from neo4j import Driver
-
-from codestory.graphdb.exceptions import QueryError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
@@ -26,7 +23,7 @@ class TestPipelineManager:
         self._stop_event = threading.Event()
         self._job_complete = threading.Event()
 
-    def register_step(self, step: PipelineStep, dependencies: Optional[List[PipelineStep]] = None) -> None:
+    def register_step(self, step: PipelineStep, dependencies: list[PipelineStep] | None = None) -> None:
         """Register a step with the pipeline manager.
 
         Args:
@@ -39,7 +36,7 @@ class TestPipelineManager:
             self.dependency_graph[step_name] = [self._get_step_name(d) for d in dependencies] if dependencies else []
             self._step_instances[step_name] = step
 
-    def start_job(self, parameters: Dict[str, Any]) -> str:
+    def start_job(self, parameters: dict[str, Any]) -> str:
         """Start a new job with the given parameters.
         
         Args:
@@ -53,7 +50,7 @@ class TestPipelineManager:
                 raise RuntimeError("A job is already running")
             
             self.job_parameters = parameters
-            self.steps_status = {name: "pending" for name in self.dependency_graph}
+            self.steps_status = dict.fromkeys(self.dependency_graph, "pending")
             self.steps_results = {}
             self.steps_errors = {}
             self._job_complete.clear()
@@ -69,7 +66,7 @@ class TestPipelineManager:
         """Run the pipeline steps in dependency order."""
         try:
             remaining_steps = set(self.dependency_graph.keys())
-            completed_steps: Set[str] = set()
+            completed_steps: set[str] = set()
 
             while remaining_steps and not self._stop_event.is_set():
                 # Find steps that can be run (all dependencies satisfied)
@@ -144,10 +141,10 @@ class TestPipelineManager:
                 for step in self.dependency_graph:
                     if step not in completed_steps:
                         self.steps_status[step] = "failed"
-                        self.steps_errors[step] = f"Pipeline error: {str(e)}"
+                        self.steps_errors[step] = f"Pipeline error: {e!s}"
             self._job_complete.set()
 
-    def _propagate_failure(self, failed_step: str, remaining_steps: Set[str], error: str) -> None:
+    def _propagate_failure(self, failed_step: str, remaining_steps: set[str], error: str) -> None:
         """Mark all steps that depend on the failed step as failed."""
         dependent_steps = [
             step for step in remaining_steps
@@ -168,7 +165,7 @@ class TestPipelineManager:
         # Use class name as the step name
         return step.__class__.__name__
 
-    def _get_step_instance(self, step_name: str) -> Optional[PipelineStep]:
+    def _get_step_instance(self, step_name: str) -> PipelineStep | None:
         """Find the step instance by name from the registered steps."""
         with self._lock:
             # First check if we already have an instance
@@ -184,7 +181,7 @@ class TestPipelineManager:
 
         return None
 
-    def get_job_status(self, job_id: str) -> Dict[str, Any]:
+    def get_job_status(self, job_id: str) -> dict[str, Any]:
         """Get the status of a job.
         
         Args:
@@ -224,7 +221,7 @@ class TestPipelineManager:
                 }
             }
 
-    def wait_for_job(self, job_id: str, timeout: Optional[float] = None) -> bool:
+    def wait_for_job(self, job_id: str, timeout: float | None = None) -> bool:
         """Wait for a job to complete.
         
         Args:
@@ -257,7 +254,7 @@ class TestPipelineManager:
         return True
 
     @property
-    def _registered_steps(self) -> List[Type[PipelineStep]]:
+    def _registered_steps(self) -> list[type[PipelineStep]]:
         """Return all registered step classes.
 
         This should be implemented by subclasses to return all step classes

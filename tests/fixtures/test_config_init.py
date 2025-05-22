@@ -5,8 +5,6 @@ test configuration is properly initialized and loaded.
 """
 
 import os
-import sys
-from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 # Ensure we're in a test environment
@@ -33,13 +31,12 @@ os.environ["OPENAI__REASONING_MODEL"] = "gpt-4o"
 
 # Azure OpenAI settings
 os.environ["AZURE_OPENAI__API_KEY"] = "test-azure-key"
-os.environ["AZURE_OPENAI__ENDPOINT"] = "https://test-azure-endpoint.openai.azure.com"
+os.environ["AZURE_OPENAI__ENDPOINT"] = "<your-endpoint>"
 os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "gpt-4o"
 
 # Service settings
 os.environ["SERVICE__HOST"] = "127.0.0.1"
 os.environ["SERVICE__PORT"] = "8000"
-os.environ["SERVICE__ENVIRONMENT"] = "testing"
 
 # Ingestion settings
 os.environ["INGESTION__CONFIG_PATH"] = "pipeline_config.yml"
@@ -84,7 +81,7 @@ reasoning_model = "gpt-4o"
 
 [azure_openai]
 api_key = "sk-test-key-azure"
-endpoint = "https://test-openai.openai.azure.com/"
+endpoint = "<your-endpoint>"
 deployment_id = "gpt-4o"
 embedding_model = "text-embedding-3-small"
 chat_model = "gpt-4o"

@@ -22,13 +22,14 @@ codestory --version
 ```
 
 Expected output:
-```
+
+```text
 codestory, version 0.1.0
 ```
 
 ## Configuration
 
-The CLI uses environment variables and a configuration file. The default configuration file is `.codestory.toml` in your project directory.
+The CLI uses a configuration file. The default configuration file is `.codestory.toml` in your project directory.
 
 For connecting to Neo4j (which runs in Docker), ensure your configuration file has the correct URI:
 
@@ -61,7 +62,8 @@ codestory service status
 ```
 
 Example output:
-```
+
+```text
                                  Service Status                                 
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Component       ┃ Status   ┃ Details                                         ┃
@@ -95,7 +97,8 @@ codestory --help
 ```
 
 Output:
-```
+
+```text
 Usage: codestory [OPTIONS] COMMAND [ARGS]...
 
   [bold]Code Story[/bold] - A tool for exploring and documenting codebases.
@@ -135,7 +138,8 @@ codestory visualize help
 ```
 
 Output from `visualize help`:
-```
+
+```text
 # Code Story Graph Visualization
 
 The visualization feature allows you to create interactive, browser-based visualizations
@@ -184,7 +188,7 @@ codestory ingest start . --no-progress
 
 The CLI uses Redis for real-time progress tracking, with a fallback to API polling if Redis is unavailable:
 
-```
+```text
 Connected to Redis for real-time progress updates
 Ingestion job started with ID: 01234567-89ab-cdef-0123-456789abcdef
 
@@ -240,7 +244,7 @@ codestory visualize open visualization.html
 
 Code Story provides convenient aliases for frequently used commands:
 
-```
+```text
 ask        -> gs (Get Summary)
 config     -> cfg
 ingest     -> in
@@ -267,6 +271,7 @@ For a quick demo with a small, easy-to-understand sample project (recommended fo
 ```
 
 This script performs the following steps:
+
 1. Verifies CLI installation and configuration
 2. Starts the service using Docker Compose
 3. Prepares a small sample project for ingestion (a simple Python greeting application)
@@ -288,6 +293,7 @@ For a more extensive demo that ingests the entire Code Story codebase (recommend
 ```
 
 This script performs the following steps:
+
 1. Verifies CLI installation and configuration
 2. Starts the service using Docker Compose
 3. Loads sample data representing the Code Story codebase structure
@@ -345,6 +351,7 @@ If you encounter issues with the CLI:
 1. **Service Connection Failed**: If you see "Connection refused" errors, ensure the service is running with `codestory service start` and wait a few seconds for it to initialize.
 
    If the service continues to fail to start:
+
    ```bash
    # Stop any running containers
    docker-compose down
@@ -368,6 +375,7 @@ If you encounter issues with the CLI:
 2. **Neo4j Connection Issues**: The Neo4j database runs in Docker and is exposed on port 7689 (remapped from the internal 7687). Make sure your `.codestory.toml` has the correct URI: `bolt://localhost:7689`.
 
    Verify Neo4j is running and accessible:
+
    ```bash
    # Check if Neo4j is running
    docker ps | grep neo4j
@@ -385,6 +393,7 @@ If you encounter issues with the CLI:
 6. **Port Conflicts**: If you see errors about ports already being allocated, you may have other services using those ports. Either stop those services or modify the port mappings in `docker-compose.yml`.
 
 7. **Visualization API Access**: If you're having issues accessing the visualization endpoint directly:
+
    ```bash
    # Verify the service is running and the endpoint is accessible
    curl -v http://localhost:8000/v1/visualize

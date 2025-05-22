@@ -4,9 +4,10 @@ import logging
 import os
 import sys
 
+from ..config.settings import get_settings
+
 # Import the Celery app
 from .celery_app import app
-from ..config.settings import get_settings
 
 # Set up logging
 logging.basicConfig(

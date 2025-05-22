@@ -1,11 +1,12 @@
 """Test the GUI demo functionality."""
 
 import os
-import pytest
 import subprocess
 import time
 from pathlib import Path
-from playwright.sync_api import sync_playwright, expect
+
+import pytest
+from playwright.sync_api import expect, sync_playwright
 
 # Mark all tests with demo marker for selective running
 pytestmark = pytest.mark.demo

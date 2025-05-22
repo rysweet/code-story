@@ -5,7 +5,6 @@ the type of documentation file.
 """
 
 import logging
-from typing import Dict, Optional, Type
 
 from ..models import DocumentationFile, DocumentType
 
@@ -18,7 +17,7 @@ class Parser:
     All document parsers should implement this interface.
     """
 
-    def parse(self, document: DocumentationFile) -> Dict:
+    def parse(self, document: DocumentationFile) -> dict:
         """Parse a documentation file and extract entities and relationships.
 
         Args:
@@ -36,7 +35,7 @@ class ParserFactory:
     This class creates the appropriate parser for a given document type.
     """
 
-    _parsers: Dict[DocumentType, Type[Parser]] = {}
+    _parsers: dict[DocumentType, type[Parser]] = {}
 
     @classmethod
     def register(cls, doc_type: DocumentType) -> callable:
@@ -51,14 +50,14 @@ class ParserFactory:
             Decorator function
         """
 
-        def decorator(parser_class: Type[Parser]) -> Type[Parser]:
+        def decorator(parser_class: type[Parser]) -> type[Parser]:
             cls._parsers[doc_type] = parser_class
             return parser_class
 
         return decorator
 
     @classmethod
-    def create(cls, doc_type: DocumentType) -> Optional[Parser]:
+    def create(cls, doc_type: DocumentType) -> Parser | None:
         """Create a parser for the given document type.
 
         Args:
@@ -75,7 +74,7 @@ class ParserFactory:
         return parser_class()
 
 
-def get_parser_for_file(document: DocumentationFile) -> Optional[Parser]:
+def get_parser_for_file(document: DocumentationFile) -> Parser | None:
     """Get a parser for the given documentation file.
 
     Args:

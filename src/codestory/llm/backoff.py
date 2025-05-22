@@ -4,18 +4,19 @@ This module provides retry logic with exponential backoff for handling
 rate limiting and transient errors from the Azure OpenAI API.
 """
 
-import logging
 import functools
-from typing import Any, Callable, Optional, TypeVar, cast
+import logging
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 import openai
 from tenacity import (
+    RetryCallState,
+    before_sleep_log,
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-    RetryCallState,
 )
 
 from .exceptions import (
@@ -23,7 +24,7 @@ from .exceptions import (
     ServiceUnavailableError,
     TimeoutError,
 )
-from .metrics import record_retry, OperationType
+from .metrics import OperationType, record_retry
 
 # Type variable for decorated functions
 F = TypeVar("F", bound=Callable[..., Any])
@@ -66,7 +67,7 @@ def before_retry_callback(retry_state: RetryCallState) -> None:
     wait_time = retry_state.next_action.sleep
 
     logger.warning(
-        f"Retrying {operation} request to model {model} after error: {str(exception)}. "
+        f"Retrying {operation} request to model {model} after error: {exception!s}. "
         f"Attempt {attempt}, waiting {wait_time:.2f} seconds..."
     )
 
@@ -79,7 +80,7 @@ def before_retry_callback(retry_state: RetryCallState) -> None:
 def retry_on_openai_errors(
     max_retries: int = 5,
     retry_backoff_factor: float = 2.0,
-    operation_type: Optional[OperationType] = None,
+    operation_type: OperationType | None = None,
 ) -> Callable[[F], F]:
     """Decorator for retrying OpenAI API calls with exponential backoff.
 
@@ -129,40 +130,40 @@ def retry_on_openai_errors(
                             retry_after = None
 
                 raise RateLimitError(
-                    f"Rate limit exceeded: {str(e)}", retry_after=retry_after, cause=e
+                    f"Rate limit exceeded: {e!s}", retry_after=retry_after, cause=e
                 ) from e
             except openai.APIConnectionError as e:
                 raise ServiceUnavailableError(
-                    f"API connection error: {str(e)}", cause=e
+                    f"API connection error: {e!s}", cause=e
                 ) from e
             except openai.APITimeoutError as e:
-                raise TimeoutError(f"API request timed out: {str(e)}", cause=e) from e
+                raise TimeoutError(f"API request timed out: {e!s}", cause=e) from e
             except openai.BadRequestError as e:
                 # Check for context length error
                 if "maximum context length" in str(e).lower():
                     from .exceptions import ContextLengthError
 
                     raise ContextLengthError(
-                        f"Input context length exceeded model maximum: {str(e)}",
+                        f"Input context length exceeded model maximum: {e!s}",
                         cause=e,
                     ) from e
 
                 from .exceptions import InvalidRequestError
 
-                raise InvalidRequestError(f"Invalid request: {str(e)}", cause=e) from e
+                raise InvalidRequestError(f"Invalid request: {e!s}", cause=e) from e
             except openai.AuthenticationError as e:
                 from .exceptions import AuthenticationError
 
                 raise AuthenticationError(
-                    f"Authentication error: {str(e)}", cause=e
+                    f"Authentication error: {e!s}", cause=e
                 ) from e
             except openai.APIError as e:
-                raise ServiceUnavailableError(f"API error: {str(e)}", cause=e) from e
+                raise ServiceUnavailableError(f"API error: {e!s}", cause=e) from e
             except Exception as e:
                 # Re-raise other exceptions
                 raise e
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator
 
@@ -170,7 +171,7 @@ def retry_on_openai_errors(
 def retry_on_openai_errors_async(
     max_retries: int = 5,
     retry_backoff_factor: float = 2.0,
-    operation_type: Optional[OperationType] = None,
+    operation_type: OperationType | None = None,
 ) -> Callable[[F], F]:
     """Decorator for retrying async OpenAI API calls with exponential backoff.
 
@@ -220,39 +221,39 @@ def retry_on_openai_errors_async(
                             retry_after = None
 
                 raise RateLimitError(
-                    f"Rate limit exceeded: {str(e)}", retry_after=retry_after, cause=e
+                    f"Rate limit exceeded: {e!s}", retry_after=retry_after, cause=e
                 ) from e
             except openai.APIConnectionError as e:
                 raise ServiceUnavailableError(
-                    f"API connection error: {str(e)}", cause=e
+                    f"API connection error: {e!s}", cause=e
                 ) from e
             except openai.APITimeoutError as e:
-                raise TimeoutError(f"API request timed out: {str(e)}", cause=e) from e
+                raise TimeoutError(f"API request timed out: {e!s}", cause=e) from e
             except openai.BadRequestError as e:
                 # Check for context length error
                 if "maximum context length" in str(e).lower():
                     from .exceptions import ContextLengthError
 
                     raise ContextLengthError(
-                        f"Input context length exceeded model maximum: {str(e)}",
+                        f"Input context length exceeded model maximum: {e!s}",
                         cause=e,
                     ) from e
 
                 from .exceptions import InvalidRequestError
 
-                raise InvalidRequestError(f"Invalid request: {str(e)}", cause=e) from e
+                raise InvalidRequestError(f"Invalid request: {e!s}", cause=e) from e
             except openai.AuthenticationError as e:
                 from .exceptions import AuthenticationError
 
                 raise AuthenticationError(
-                    f"Authentication error: {str(e)}", cause=e
+                    f"Authentication error: {e!s}", cause=e
                 ) from e
             except openai.APIError as e:
-                raise ServiceUnavailableError(f"API error: {str(e)}", cause=e) from e
+                raise ServiceUnavailableError(f"API error: {e!s}", cause=e) from e
             except Exception as e:
                 # Re-raise other exceptions
                 raise e
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator

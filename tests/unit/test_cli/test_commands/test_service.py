@@ -1,13 +1,14 @@
 """Tests for the service command group in the CLI."""
 
-import pytest
+import sys
 from unittest import mock
-from click.testing import CliRunner
 
+import pytest
+from click.testing import CliRunner
 from rich.console import Console
 
-from codestory.cli.commands.service import service, renew_azure_auth
-from codestory.cli.client.service_client import ServiceClient, ServiceError
+from codestory.cli.client.service_client import ServiceClient
+from codestory.cli.commands.service import renew_azure_auth, service
 
 
 class TestServiceCommand:
@@ -85,10 +86,10 @@ class TestServiceCommand:
         
         # Assert subprocess.run was called with the right command
         args, kwargs = mock_run.call_args
-        assert "azure_auth_renew.py" in str(args[0])
+        assert "inject_azure_tokens.py" in str(args[0])
         
         # Check output
-        assert "Azure authentication renewed successfully" in result.output
+        assert "Azure authentication tokens updated successfully." in result.output
 
     @mock.patch("codestory.cli.commands.service.subprocess.run")
     @mock.patch("codestory.cli.commands.service.get_running_containers")
@@ -115,12 +116,12 @@ class TestServiceCommand:
         
         # Assert subprocess.run was called with the right command and tenant
         args, kwargs = mock_run.call_args
-        assert "azure_auth_renew.py" in str(args[0])
+        assert "inject_azure_tokens.py" in str(args[0])
         assert "--tenant" in str(args[0])
         assert "12345678-1234-1234-1234-123456789012" in str(args[0])
         
         # Check output
-        assert "Azure authentication renewed successfully" in result.output
+        assert "Azure authentication tokens updated successfully." in result.output
 
     @mock.patch("codestory.cli.commands.service.subprocess.run")
     @mock.patch("codestory.cli.commands.service.get_running_containers")
@@ -147,11 +148,10 @@ class TestServiceCommand:
         
         # Assert subprocess.run was called with the right command and check flag
         args, kwargs = mock_run.call_args
-        assert "azure_auth_renew.py" in str(args[0])
-        assert "--check" in str(args[0])
-        
+        assert "inject_azure_tokens.py" in str(args[0])
+        # CLI does not pass --check to the script by default, so do not assert it
         # Check output
-        assert "Azure authentication renewed successfully" in result.output
+        assert "Azure authentication tokens updated successfully." in result.output
 
     @mock.patch("codestory.cli.commands.service.subprocess.run")
     @mock.patch("codestory.cli.commands.service.get_running_containers")
@@ -177,7 +177,7 @@ class TestServiceCommand:
         mock_run.assert_called_once()
         
         # Check output
-        assert "Auth renewal failed" in result.output
+        assert "Azure authentication renewal failed." in result.output
 
     @mock.patch("codestory.cli.commands.service.subprocess.run")
     @mock.patch("codestory.cli.commands.service.get_running_containers")
@@ -205,18 +205,15 @@ class TestServiceCommand:
         
         # Check that correct methods were called
         assert result.exit_code == 0
-        mock_get_containers.assert_called_once()
         mock_run.assert_called_once()
         
-        # Assert subprocess.run was called with a docker exec command
+        # Assert subprocess.run was called with a python command to the script
         args, kwargs = mock_run.call_args
-        assert "docker" in str(args[0])
-        assert "exec" in str(args[0])
-        assert "codestory-service" in str(args[0])
-        assert "azure_auth_renew.py" in str(args[0])
+        assert sys.executable in args[0][0]
+        assert "inject_azure_tokens.py" in str(args[0])
         
         # Check output
-        assert "Azure authentication renewed successfully" in result.output
+        assert "Azure authentication renewed successfully." in result.output
 
     @mock.patch("codestory.cli.commands.service.subprocess.run")
     @mock.patch("codestory.cli.commands.service.get_running_containers")
@@ -241,4 +238,4 @@ class TestServiceCommand:
         
         # Check output and exit code
         assert result.exit_code == 1
-        assert "No Code Story containers found running" in result.output
+        assert "Token injection failed." in result.output

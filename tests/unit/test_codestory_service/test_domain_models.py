@@ -4,34 +4,33 @@ This module contains tests for the domain models used in the service.
 """
 
 from datetime import datetime
-import pytest
 from unittest import mock
+
+import pytest
 from pydantic import ValidationError
 
+from codestory.ingestion_pipeline.step import StepStatus
 from codestory_service.domain.auth import LoginRequest, TokenResponse, UserInfo
 from codestory_service.domain.config import (
-    ConfigDump,
     ConfigItem,
     ConfigMetadata,
     ConfigPatch,
+    ConfigPermission,
     ConfigSection,
     ConfigValueType,
-    ConfigPermission,
 )
 from codestory_service.domain.graph import (
     CypherQuery,
-    QueryResult,
-    VectorQuery,
     PathRequest,
+    VectorQuery,
 )
 from codestory_service.domain.ingestion import (
     IngestionRequest,
+    IngestionSourceType,
     IngestionStarted,
     JobStatus,
     StepProgress,
-    IngestionSourceType,
 )
-from codestory.ingestion_pipeline.step import StepStatus
 
 
 class TestAuthModels:

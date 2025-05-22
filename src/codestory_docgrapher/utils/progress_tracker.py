@@ -6,7 +6,6 @@ documentation processing during the DocumentationGrapher step.
 
 import logging
 import time
-from typing import Dict, Optional
 
 from ..models import DocumentationGraph
 
@@ -80,7 +79,7 @@ class ProgressTracker:
         """
         return time.time() - self.start_time
 
-    def get_estimated_remaining_time(self) -> Optional[float]:
+    def get_estimated_remaining_time(self) -> float | None:
         """Get the estimated remaining time in seconds.
 
         Returns:
@@ -153,7 +152,7 @@ class ProgressTracker:
             minutes = (seconds % 3600) / 60
             return f"{hours:.1f}h {minutes:.0f}m"
 
-    def get_status_dict(self) -> Dict:
+    def get_status_dict(self) -> dict:
         """Get the current status as a dictionary.
 
         Returns:

@@ -4,11 +4,10 @@ This module provides prompt templates specifically designed for generating
 high-quality summaries of class nodes.
 """
 
-from typing import Dict, List, Union
 
 
 def get_class_summary_prompt(
-    content: str, context: List[str], max_tokens: int = 8000
+    content: str, context: list[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a class.
 
@@ -49,7 +48,7 @@ Summary:
     return prompt
 
 
-def get_summary_prompt(content: str, context: List[str], max_tokens: int = 8000) -> str:
+def get_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a class.
 
     This is a wrapper around get_class_summary_prompt to maintain

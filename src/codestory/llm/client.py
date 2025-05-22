@@ -6,10 +6,8 @@ asynchronous APIs.
 """
 
 import logging
-import asyncio
 import os
-import subprocess
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any
 
 import openai
 from openai import AsyncAzureOpenAI, AzureOpenAI
@@ -30,7 +28,7 @@ from .exceptions import (
     InvalidRequestError,
     OpenAIError,
 )
-from .metrics import OperationType, instrument_request, instrument_async_request
+from .metrics import OperationType, instrument_async_request, instrument_request
 from .models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -50,7 +48,7 @@ class OpenAIClient:
 
     def __init__(
         self,
-        endpoint: Optional[str] = None,
+        endpoint: str | None = None,
         embedding_model: str = "text-embedding-3-small",
         chat_model: str = "gpt-4o",
         reasoning_model: str = "gpt-4o",
@@ -238,7 +236,7 @@ class OpenAIClient:
                 api_key = getattr(settings.openai, "api_key", None)
                 if api_key:
                     # Convert SecretStr to string if needed
-                    if hasattr(api_key, "get_secret_value") and callable(getattr(api_key, "get_secret_value")):
+                    if hasattr(api_key, "get_secret_value") and callable(api_key.get_secret_value):
                         client_params["api_key"] = api_key.get_secret_value()
                     else:
                         client_params["api_key"] = api_key
@@ -272,10 +270,10 @@ class OpenAIClient:
     @retry_on_openai_errors(operation_type=OperationType.COMPLETION)
     def complete(
         self,
-        prompt: Union[str, List[str]],
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        prompt: str | list[str],
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
         **kwargs: Any,
     ) -> CompletionResponse:
         """Generate completions using specified model.
@@ -344,9 +342,9 @@ class OpenAIClient:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
-                logger.error(f"Unexpected error in completion: {str(e)}")
+                logger.error(f"Unexpected error in completion: {e!s}")
                 raise OpenAIError(
-                    f"Error generating completion: {str(e)}", cause=e
+                    f"Error generating completion: {e!s}", cause=e
                 ) from e
             raise
 
@@ -354,10 +352,10 @@ class OpenAIClient:
     @retry_on_openai_errors(operation_type=OperationType.CHAT)
     def chat(
         self,
-        messages: List[ChatMessage],
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        messages: list[ChatMessage],
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
         **kwargs: Any,
     ) -> ChatCompletionResponse:
         """Generate chat completions from message list.
@@ -426,16 +424,16 @@ class OpenAIClient:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
-                logger.error(f"Unexpected error in chat: {str(e)}")
+                logger.error(f"Unexpected error in chat: {e!s}")
                 raise OpenAIError(
-                    f"Error generating chat completion: {str(e)}", cause=e
+                    f"Error generating chat completion: {e!s}", cause=e
                 ) from e
             raise
 
     @instrument_request(operation=OperationType.EMBEDDING)
     @retry_on_openai_errors(operation_type=OperationType.EMBEDDING)
     def embed(
-        self, texts: Union[str, List[str]], model: Optional[str] = None, **kwargs: Any
+        self, texts: str | list[str], model: str | None = None, **kwargs: Any
     ) -> EmbeddingResponse:
         """Generate embeddings for provided texts.
 
@@ -499,9 +497,9 @@ class OpenAIClient:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
-                logger.error(f"Unexpected error in embedding: {str(e)}")
+                logger.error(f"Unexpected error in embedding: {e!s}")
                 raise OpenAIError(
-                    f"Error generating embeddings: {str(e)}", cause=e
+                    f"Error generating embeddings: {e!s}", cause=e
                 ) from e
             raise
 
@@ -509,10 +507,10 @@ class OpenAIClient:
     @retry_on_openai_errors_async(operation_type=OperationType.COMPLETION)
     async def complete_async(
         self,
-        prompt: Union[str, List[str]],
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        prompt: str | list[str],
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
         **kwargs: Any,
     ) -> CompletionResponse:
         """Asynchronous version of complete() method.
@@ -581,9 +579,9 @@ class OpenAIClient:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
-                logger.error(f"Unexpected error in async completion: {str(e)}")
+                logger.error(f"Unexpected error in async completion: {e!s}")
                 raise OpenAIError(
-                    f"Error generating completion: {str(e)}", cause=e
+                    f"Error generating completion: {e!s}", cause=e
                 ) from e
             raise
 
@@ -591,10 +589,10 @@ class OpenAIClient:
     @retry_on_openai_errors_async(operation_type=OperationType.CHAT)
     async def chat_async(
         self,
-        messages: List[ChatMessage],
-        model: Optional[str] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        messages: list[ChatMessage],
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
         **kwargs: Any,
     ) -> ChatCompletionResponse:
         """Asynchronous version of chat() method.
@@ -663,16 +661,16 @@ class OpenAIClient:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
-                logger.error(f"Unexpected error in async chat: {str(e)}")
+                logger.error(f"Unexpected error in async chat: {e!s}")
                 raise OpenAIError(
-                    f"Error generating chat completion: {str(e)}", cause=e
+                    f"Error generating chat completion: {e!s}", cause=e
                 ) from e
             raise
 
     @instrument_async_request(operation=OperationType.EMBEDDING)
     @retry_on_openai_errors_async(operation_type=OperationType.EMBEDDING)
     async def embed_async(
-        self, texts: Union[str, List[str]], model: Optional[str] = None, **kwargs: Any
+        self, texts: str | list[str], model: str | None = None, **kwargs: Any
     ) -> EmbeddingResponse:
         """Asynchronous version of embed() method.
 
@@ -736,9 +734,9 @@ class OpenAIClient:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
-                logger.error(f"Unexpected error in async embedding: {str(e)}")
+                logger.error(f"Unexpected error in async embedding: {e!s}")
                 raise OpenAIError(
-                    f"Error generating embeddings: {str(e)}", cause=e
+                    f"Error generating embeddings: {e!s}", cause=e
                 ) from e
             raise
 

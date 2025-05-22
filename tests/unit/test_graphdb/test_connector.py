@@ -1,14 +1,12 @@
 """Unit tests for the Neo4jConnector class."""
 
-import asyncio
-import pytest
-import time
-from unittest.mock import MagicMock, patch, AsyncMock
-from typing import Dict, Any, List
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from neo4j.exceptions import ServiceUnavailable
+
+from codestory.graphdb.exceptions import TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.graphdb.exceptions import ConnectionError, QueryError, TransactionError
 
 
 @pytest.fixture
@@ -139,7 +137,7 @@ def test_execute_query_max_retries_exceeded(connector, mock_driver):
     with patch("time.sleep"):
         # The retry decorator is applied to execute_query
         # When called with non-retryable exception it should bubble up as QueryError
-        with pytest.raises(Exception):
+        with pytest.raises(QueryError):
             connector.execute_query("MATCH (n) RETURN n", retry_count=2)
 
 
@@ -255,7 +253,8 @@ def test_context_manager():
             skip_connection_check=True,
             skip_settings=True,
         ) as connector:
-            pass
+            # Should not raise exception
+            assert isinstance(connector, Neo4jConnector)
 
-        # Verify driver closed after context exit
+        # After exiting the context manager, close should be called
         mock_driver.close.assert_called_once()
