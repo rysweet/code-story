@@ -114,6 +114,9 @@ Commands:
   cfg        Manage Code Story configuration.
   cfs        Show current configuration.
   config     Manage Code Story configuration.
+  database   Manage the graph database.
+  db         Manage the graph database.
+  dbc        Clear all data from the database.
   gs         Ask a natural language question about the codebase.
   ij         List all ingestion jobs.
   in         Ingest a repository into Code Story.
@@ -245,16 +248,38 @@ codestory visualize open visualization.html
 Code Story provides convenient aliases for frequently used commands:
 
 ```text
-ask        -> gs (Get Summary)
-config     -> cfg
-ingest     -> in
-ingest jobs -> ij
-ingest stop -> is
-query      -> q
-service start -> ss
-service status -> st
-service stop  -> sx
-visualize  -> vz
+ask             -> gs (Get Summary)
+config          -> cfg
+config show     -> cfs
+database        -> db
+database clear  -> dbc
+ingest          -> in
+ingest jobs     -> ij
+ingest stop     -> is
+query           -> q
+service start   -> ss
+service status  -> st
+service stop    -> sx
+visualize       -> vz
+```
+
+### Database Management
+
+The CLI includes commands for managing the database:
+
+```bash
+# Show database commands
+codestory database --help
+
+# Clear the database (with confirmation prompt)
+codestory database clear
+
+# Clear the database without confirmation
+codestory database clear --force
+
+# Using shortcuts
+codestory db clear
+codestory dbc  # Shorthand for database clear
 ```
 
 ## End-to-End Demo Scripts
@@ -278,8 +303,9 @@ This script performs the following steps:
 4. Ingests the sample code with real-time progress tracking
 5. Demonstrates querying the graph with Cypher and natural language
 6. Generates an HTML visualization of the code
-7. Shows example commands for further exploration
-8. Cleans up resources
+7. Shows database management commands
+8. Shows example commands for further exploration
+9. Cleans up resources
 
 This demo is ideal for understanding the core functionality of Code Story without waiting for a large codebase to be processed.
 
@@ -299,7 +325,8 @@ This script performs the following steps:
 3. Loads sample data representing the Code Story codebase structure
 4. Demonstrates querying the graph with meaningful examples specific to the Code Story project
 5. Generates an HTML visualization showing the Code Story architecture using the direct API endpoint
-6. Provides example commands tailored for exploring a larger, real-world codebase
+6. Demonstrates database management commands
+7. Provides example commands tailored for exploring a larger, real-world codebase
 
 The demo includes an example of using the visualization endpoint directly:
 
