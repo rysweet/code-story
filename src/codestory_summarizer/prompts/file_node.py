@@ -5,7 +5,6 @@ high-quality summaries of file nodes.
 """
 
 
-
 def get_file_summary_prompt(
     content: str, context: list[str], max_tokens: int = 8000
 ) -> str:

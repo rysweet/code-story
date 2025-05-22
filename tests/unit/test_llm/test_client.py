@@ -68,12 +68,8 @@ def client():
         patch("codestory.llm.client.get_bearer_token_provider"),
         # Also patch the metric decorators to avoid registration conflicts
         patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
-        patch(
-            "codestory.llm.client.instrument_async_request", lambda op: lambda f: f
-        ),
-        patch(
-            "codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f
-        ),
+        patch("codestory.llm.client.instrument_async_request", lambda op: lambda f: f),
+        patch("codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f),
         patch(
             "codestory.llm.client.retry_on_openai_errors_async",
             lambda **kw: lambda f: f,
@@ -127,11 +123,11 @@ class TestOpenAIClient:
         with patch(
             "codestory.llm.client.get_settings",
             side_effect=Exception("No settings"),
-        ), patch(
-            "codestory.llm.client.DefaultAzureCredential"
-        ), patch(
+        ), patch("codestory.llm.client.DefaultAzureCredential"), patch(
             "codestory.llm.client.get_bearer_token_provider"
-        ), pytest.raises(AuthenticationError):
+        ), pytest.raises(
+            AuthenticationError
+        ):
             OpenAIClient()  # No endpoint provided
 
         # No need to test api_key since we're using Azure AD
@@ -278,9 +274,7 @@ class TestOpenAIClient:
             patch("codestory.llm.backoff.retry_on_openai_errors"),
             patch("codestory.llm.client.DefaultAzureCredential"),
             patch("codestory.llm.client.get_bearer_token_provider"),
-            patch(
-                "codestory.llm.client.instrument_request", lambda op: lambda f: f
-            ),
+            patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
         ):
             # Configure the mock OpenAI client
             mock_completions = MagicMock()
@@ -356,9 +350,16 @@ class TestCreateClient:
             patch("codestory.llm.client.get_bearer_token_provider"),
             # Also patch metric decorators to avoid conflicts
             patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
-            patch("codestory.llm.client.instrument_async_request", lambda op: lambda f: f),
-            patch("codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f),
-            patch("codestory.llm.client.retry_on_openai_errors_async", lambda **kw: lambda f: f),
+            patch(
+                "codestory.llm.client.instrument_async_request", lambda op: lambda f: f
+            ),
+            patch(
+                "codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f
+            ),
+            patch(
+                "codestory.llm.client.retry_on_openai_errors_async",
+                lambda **kw: lambda f: f,
+            ),
         ):
             client = create_client()
 

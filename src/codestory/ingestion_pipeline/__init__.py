@@ -10,13 +10,16 @@ from .step import PipelineStep, StepStatus
 
 __all__ = ["PipelineManager", "PipelineStep", "StepStatus"]
 
+
 def __main__():
     """Entry point for running the module.
-    
+
     This allows running with 'python -m codestory.ingestion_pipeline'
     """
     from .run_worker import main
+
     main()
+
 
 # Make the module directly executable
 if __name__ == "__main__":

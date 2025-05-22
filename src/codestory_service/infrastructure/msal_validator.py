@@ -37,12 +37,12 @@ class MSALValidator:
         # Determine if we're in development mode with simplified auth
         self.dev_mode = self.settings.dev_mode
         self.auth_enabled = self.settings.auth_enabled
-        
+
         # For better compatibility, consider auth disabled in dev mode
         if self.dev_mode:
             self.auth_enabled = False
             logger.info("Development mode enabled - authentication will be bypassed")
-            
+
         if not self.auth_enabled:
             logger.warning(
                 "Running with authentication DISABLED. "
@@ -215,16 +215,18 @@ async def get_current_user(
         "roles": ["admin", "user"],
         "exp": int(time.time() + 3600),
     }
-    
+
     # Case 1: Authentication is disabled
     if not validator.auth_enabled:
         logger.info("Using development user due to auth_enabled=False")
         return dev_user
-    
+
     # Case 2: No credentials provided
     if credentials is None:
         if validator.dev_mode:
-            logger.warning("No authentication credentials provided. Using development user in dev mode.")
+            logger.warning(
+                "No authentication credentials provided. Using development user in dev mode."
+            )
             return dev_user
         else:
             # In production mode, enforce authentication
@@ -233,7 +235,7 @@ async def get_current_user(
                 detail="Authentication credentials missing",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    
+
     # Case 3: Credentials provided, validate token
     try:
         token = credentials.credentials
@@ -242,7 +244,9 @@ async def get_current_user(
     except HTTPException as e:
         # If in dev mode, use dev user instead of failing
         if validator.dev_mode:
-            logger.warning(f"Auth error in dev mode: {e.detail}. Using development user instead.")
+            logger.warning(
+                f"Auth error in dev mode: {e.detail}. Using development user instead."
+            )
             return dev_user
         # In production, raise the original error
         raise
@@ -277,7 +281,7 @@ async def get_optional_user(
         }
         logger.debug("Using development user for optional authentication")
         return dev_user
-    
+
     # In production mode, try to authenticate or return None
     if not credentials or not credentials.credentials:
         return None
@@ -321,9 +325,7 @@ def require_role(required_roles: list[str]):
     return role_checker
 
 
-async def is_admin(
-    user: dict[str, Any] = Depends(get_current_user)
-) -> dict[str, Any]:
+async def is_admin(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     """Check if the current user has admin role.
 
     Args:
@@ -336,15 +338,15 @@ async def is_admin(
         HTTPException: If the user doesn't have admin role
     """
     user_roles = user.get("roles", [])
-    
+
     if "admin" in user_roles:
         return user
-        
+
     logger.warning(
         f"Admin access denied: User {user.get('name')} with roles {user_roles} "
         f"does not have the admin role"
     )
     raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN, 
-        detail="Administrative privileges required"
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Administrative privileges required",
     )

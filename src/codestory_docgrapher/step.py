@@ -67,7 +67,7 @@ class DocumentationGrapherStep(PipelineStep):
 
         # Start the Celery task using current_app.send_task with the fully qualified task name
         from celery import current_app
-        
+
         # Use the fully qualified task name to avoid task routing issues
         task = current_app.send_task(
             "codestory_docgrapher.step.run_docgrapher",
@@ -77,7 +77,7 @@ class DocumentationGrapherStep(PipelineStep):
                 "ignore_patterns": ignore_patterns,
                 "use_llm": use_llm,
                 "config": config,
-            }
+            },
         )
 
         # Store job information

@@ -11,7 +11,9 @@ from collections.abc import Generator
 import pytest
 
 # Set environment variables for tests
-os.environ["NEO4J_DATABASE"] = "testdb"  # Match the database name in docker-compose.test.yml
+os.environ[
+    "NEO4J_DATABASE"
+] = "testdb"  # Match the database name in docker-compose.test.yml
 os.environ["CODESTORY_TEST_ENV"] = "true"
 
 from codestory.graphdb.exceptions import (
@@ -32,13 +34,27 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     # Skip all these tests in CI environment since we're having port configuration issues
     if os.environ.get("CI") == "true":
         pytest.skip("Skipping Neo4j integration tests in CI environment")
-    
+
     # Use either NEO4J_URI or NEO4J__URI from environment (double underscore is for Settings)
     # CI environment uses 7687, local docker-compose.test.yml uses 7688
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or f"bolt://localhost:{neo4j_port}"
-    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
-    password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
-    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
+    uri = (
+        os.environ.get("NEO4J__URI")
+        or os.environ.get("NEO4J_URI")
+        or f"bolt://localhost:{neo4j_port}"
+    )
+    username = (
+        os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
+    )
+    password = (
+        os.environ.get("NEO4J__PASSWORD")
+        or os.environ.get("NEO4J_PASSWORD")
+        or "password"
+    )
+    database = (
+        os.environ.get("NEO4J__DATABASE")
+        or os.environ.get("NEO4J_DATABASE")
+        or "testdb"
+    )
 
     print(f"Using Neo4j connection: {uri}, database: {database}")
 
@@ -243,7 +259,9 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         result = neo4j_connector.execute_query(check_query)
         print(f"Using GDS version: {result[0]['version']}")
     except Exception as e:
-        pytest.skip(f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin.")
+        pytest.skip(
+            f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin."
+        )
 
     # Create test nodes with embeddings
     embedding1 = [0.1, 0.2, 0.3, 0.4]

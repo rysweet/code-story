@@ -73,7 +73,7 @@ class SummarizerStep(PipelineStep):
 
         # Start the Celery task using current_app.send_task with the fully qualified task name
         from celery import current_app
-        
+
         # Use the fully qualified task name to avoid task routing issues
         task = current_app.send_task(
             "codestory_summarizer.step.run_summarizer",
@@ -83,7 +83,7 @@ class SummarizerStep(PipelineStep):
                 "max_concurrency": max_concurrency,
                 "max_tokens_per_file": max_tokens_per_file,
                 "config": config,
-            }
+            },
         )
 
         # Store job information
@@ -384,7 +384,9 @@ def run_summarizer(
 
                 # Get summary text from response, handle empty response case
                 have_choices = response.choices and len(response.choices) > 0
-                summary_text = response.choices[0].message.content if have_choices else ""
+                summary_text = (
+                    response.choices[0].message.content if have_choices else ""
+                )
 
                 # Calculate token count safely
                 token_count = 0
@@ -527,7 +529,7 @@ def store_summary(
             "summary": summary,
             "timestamp": time.time(),
             "source_type": node_type,
-        }
+        },
     )
 
     # Link the summary to the original node

@@ -5,7 +5,6 @@ high-quality summaries of directory nodes.
 """
 
 
-
 def get_directory_summary_prompt(
     content: str,
     context: list[str],

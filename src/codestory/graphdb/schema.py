@@ -151,8 +151,11 @@ def create_custom_vector_index(
     except Exception as e:
         # GDS plugin is not available, this is an error
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.error(f"Graph Data Science plugin not available: {e!s}. Vector indices require GDS plugin.")
+        logger.error(
+            f"Graph Data Science plugin not available: {e!s}. Vector indices require GDS plugin."
+        )
         raise SchemaError(
             f"Graph Data Science plugin required for vector indices: {e!s}",
             operation="create_vector_index",
@@ -167,6 +170,7 @@ def create_custom_vector_index(
         connector.execute_query(query, write=True)
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to create vector index on {label}.{property_name}: {e!s}")
         raise SchemaError(

@@ -123,7 +123,7 @@ class ServiceSettings(BaseSettings):
         try:
             # Get core settings to check environment
             core_settings = get_core_settings()
-            
+
             # Check for wildcard origins in production environment
             if core_settings.environment == "production" and "*" in v:
                 logger.warning(
@@ -133,13 +133,13 @@ class ServiceSettings(BaseSettings):
         except Exception as e:
             # Log warning but don't fail validation
             logger.debug(f"Error during CORS origins validation: {e}")
-            
+
         return v
 
 
 def get_core_settings():
     """Get core settings from the main settings module.
-    
+
     Returns:
         Settings instance from the main config module
     """

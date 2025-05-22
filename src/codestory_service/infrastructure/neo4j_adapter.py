@@ -68,6 +68,7 @@ class Neo4jAdapter:
             # Use an executor to run the synchronous method in a thread pool
             # to avoid blocking the async event loop
             import asyncio
+
             loop = asyncio.get_event_loop()
             connection_info = await loop.run_in_executor(
                 None, self.connector.check_connection
@@ -442,25 +443,27 @@ class Neo4jAdapter:
 
 class DummyNeo4jConnector:
     """Dummy Neo4j connector for use when connection to Neo4j fails.
-    
+
     This allows basic service functionality without Neo4j available.
     """
-    
+
     def __init__(self):
         """Initialize the dummy connector."""
-        logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
-    
+        logger.warning(
+            "Using DummyNeo4jConnector - Neo4j functionality will be limited"
+        )
+
     def check_connection(self) -> dict[str, Any]:
         """Return dummy connection info."""
         return {
             "database": "dummy",
             "components": ["Dummy Neo4j Connector"],
         }
-    
+
     def close(self) -> None:
         """Dummy close method."""
         pass
-    
+
     def execute_query(
         self, query: str, params: dict[str, Any] | None = None, write: bool = False
     ) -> list[dict[str, Any]]:
@@ -472,10 +475,10 @@ class DummyNeo4jConnector:
 
 class DummyNeo4jAdapter(Neo4jAdapter):
     """Neo4j adapter that uses a dummy connector.
-    
+
     This allows basic service functionality without Neo4j being available.
     """
-    
+
     def __init__(self):
         """Initialize with a dummy connector."""
         self.connector = DummyNeo4jConnector()
@@ -499,6 +502,6 @@ async def get_neo4j_adapter() -> Neo4jAdapter:
         # Log the error but don't fail
         logger.warning(f"Failed to create real Neo4j adapter: {e!s}")
         logger.warning("Falling back to dummy Neo4j adapter for demo purposes")
-        
+
         # Return a dummy adapter instead
         return DummyNeo4jAdapter()

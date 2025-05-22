@@ -15,10 +15,13 @@ from openai import AsyncAzureOpenAI, AzureOpenAI
 # Try to import azure.identity, but don't fail if it's not available
 try:
     from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
     AZURE_IDENTITY_AVAILABLE = True
 except ImportError:
     logger = logging.getLogger(__name__)
-    logger.warning("azure.identity not found. Azure AD authentication will not be available.")
+    logger.warning(
+        "azure.identity not found. Azure AD authentication will not be available."
+    )
     AZURE_IDENTITY_AVAILABLE = False
 
 from ..config.settings import get_settings
@@ -150,60 +153,105 @@ class OpenAIClient:
                             f"Currently logged into tenant '{current_tenant}', but need tenant '{tenant_id}'. "
                             f"Attempting to run 'az login --tenant {tenant_id}' automatically"
                         )
-                        
+
                         # Try to automatically log in to the required tenant
                         try:
-                            logger.info(f"Attempting automatic Azure login to tenant {tenant_id}")
-                            login_cmd = ["az", "login", "--tenant", tenant_id, "--use-device-code"]
+                            logger.info(
+                                f"Attempting automatic Azure login to tenant {tenant_id}"
+                            )
+                            login_cmd = [
+                                "az",
+                                "login",
+                                "--tenant",
+                                tenant_id,
+                                "--use-device-code",
+                            ]
                             if "CODESTORY_AUTH_SCOPE" in os.environ:
-                                login_cmd.extend(["--scope", os.environ["CODESTORY_AUTH_SCOPE"]])
+                                login_cmd.extend(
+                                    ["--scope", os.environ["CODESTORY_AUTH_SCOPE"]]
+                                )
                             else:
-                                login_cmd.extend(["--scope", "https://cognitiveservices.azure.com/.default"])
-                                
+                                login_cmd.extend(
+                                    [
+                                        "--scope",
+                                        "https://cognitiveservices.azure.com/.default",
+                                    ]
+                                )
+
                             login_result = subprocess.run(
                                 login_cmd,
                                 check=False,  # Don't raise error if login fails
                                 capture_output=True,
                                 text=True,
                             )
-                            
+
                             if login_result.returncode == 0:
-                                logger.info(f"Automatic Azure login to tenant {tenant_id} successful")
+                                logger.info(
+                                    f"Automatic Azure login to tenant {tenant_id} successful"
+                                )
                             else:
                                 # Extract and display device code info if present
                                 if "devicelogin" in login_result.stdout:
                                     try:
                                         # Look for auth URL and code in the output
                                         import re
-                                        url_match = re.search(r'(https://microsoft\.com/devicelogin)', login_result.stdout)
-                                        code_match = re.search(r'Enter the code ([A-Z0-9]+) to authenticate', login_result.stdout)
-                                        
+
+                                        url_match = re.search(
+                                            r"(https://microsoft\.com/devicelogin)",
+                                            login_result.stdout,
+                                        )
+                                        code_match = re.search(
+                                            r"Enter the code ([A-Z0-9]+) to authenticate",
+                                            login_result.stdout,
+                                        )
+
                                         if url_match and code_match:
                                             auth_url = url_match.group(1)
                                             auth_code = code_match.group(1)
-                                            
+
                                             # Display the auth info prominently in logs
                                             logger.warning("=" * 80)
-                                            logger.warning("AZURE AUTHENTICATION REQUIRED")
+                                            logger.warning(
+                                                "AZURE AUTHENTICATION REQUIRED"
+                                            )
                                             logger.warning("-" * 80)
                                             logger.warning(f"Visit: {auth_url}")
                                             logger.warning(f"Enter code: {auth_code}")
                                             logger.warning("=" * 80)
                                     except Exception as parse_err:
-                                        logger.warning(f"Failed to parse device login info: {parse_err}")
-                                        
+                                        logger.warning(
+                                            f"Failed to parse device login info: {parse_err}"
+                                        )
+
                                 # Check for known CLI errors
-                                if "Can't get attribute 'NormalizedResponse'" in login_result.stderr:
-                                    logger.warning("Azure CLI appears to have an installation issue")
-                                    logger.warning("You may need to reinstall or update the Azure CLI with 'brew update && brew upgrade azure-cli'")
-                                    logger.warning(f"Then run 'az login --tenant {tenant_id}' manually in a terminal")
+                                if (
+                                    "Can't get attribute 'NormalizedResponse'"
+                                    in login_result.stderr
+                                ):
+                                    logger.warning(
+                                        "Azure CLI appears to have an installation issue"
+                                    )
+                                    logger.warning(
+                                        "You may need to reinstall or update the Azure CLI with 'brew update && brew upgrade azure-cli'"
+                                    )
+                                    logger.warning(
+                                        f"Then run 'az login --tenant {tenant_id}' manually in a terminal"
+                                    )
                                 else:
-                                    logger.warning(f"Automatic Azure login failed: {login_result.stderr}")
-                                    logger.warning("You may need to run 'az login' manually in a terminal")
+                                    logger.warning(
+                                        f"Automatic Azure login failed: {login_result.stderr}"
+                                    )
+                                    logger.warning(
+                                        "You may need to run 'az login' manually in a terminal"
+                                    )
                         except Exception as login_err:
-                            logger.warning(f"Automatic Azure login attempt failed: {login_err}")
-                            logger.warning("You may need to run 'az login' manually in a terminal")
-                        
+                            logger.warning(
+                                f"Automatic Azure login attempt failed: {login_err}"
+                            )
+                            logger.warning(
+                                "You may need to run 'az login' manually in a terminal"
+                            )
+
                 except Exception as e:
                     logger.warning(f"Failed to check Azure tenant: {e}")
         except Exception as e:
@@ -216,7 +264,7 @@ class OpenAIClient:
             "timeout": self.timeout,
             "max_retries": 0,  # We handle retries ourselves
         }
-        
+
         # Add Azure AD authentication if available
         if AZURE_IDENTITY_AVAILABLE:
             try:
@@ -236,7 +284,9 @@ class OpenAIClient:
                 api_key = getattr(settings.openai, "api_key", None)
                 if api_key:
                     # Convert SecretStr to string if needed
-                    if hasattr(api_key, "get_secret_value") and callable(api_key.get_secret_value):
+                    if hasattr(api_key, "get_secret_value") and callable(
+                        api_key.get_secret_value
+                    ):
                         client_params["api_key"] = api_key.get_secret_value()
                     else:
                         client_params["api_key"] = api_key
@@ -343,9 +393,7 @@ class OpenAIClient:
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
                 logger.error(f"Unexpected error in completion: {e!s}")
-                raise OpenAIError(
-                    f"Error generating completion: {e!s}", cause=e
-                ) from e
+                raise OpenAIError(f"Error generating completion: {e!s}", cause=e) from e
             raise
 
     @instrument_request(operation=OperationType.CHAT)
@@ -498,9 +546,7 @@ class OpenAIClient:
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
                 logger.error(f"Unexpected error in embedding: {e!s}")
-                raise OpenAIError(
-                    f"Error generating embeddings: {e!s}", cause=e
-                ) from e
+                raise OpenAIError(f"Error generating embeddings: {e!s}", cause=e) from e
             raise
 
     @instrument_async_request(operation=OperationType.COMPLETION)
@@ -580,9 +626,7 @@ class OpenAIClient:
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
                 logger.error(f"Unexpected error in async completion: {e!s}")
-                raise OpenAIError(
-                    f"Error generating completion: {e!s}", cause=e
-                ) from e
+                raise OpenAIError(f"Error generating completion: {e!s}", cause=e) from e
             raise
 
     @instrument_async_request(operation=OperationType.CHAT)
@@ -735,9 +779,7 @@ class OpenAIClient:
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
                 logger.error(f"Unexpected error in async embedding: {e!s}")
-                raise OpenAIError(
-                    f"Error generating embeddings: {e!s}", cause=e
-                ) from e
+                raise OpenAIError(f"Error generating embeddings: {e!s}", cause=e) from e
             raise
 
 

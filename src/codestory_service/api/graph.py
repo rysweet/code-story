@@ -26,7 +26,11 @@ from ..domain.graph import (
     VisualizationTheme,
     VisualizationType,
 )
-from ..infrastructure.msal_validator import get_current_user, get_optional_user, is_admin
+from ..infrastructure.msal_validator import (
+    get_current_user,
+    get_optional_user,
+    is_admin,
+)
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -218,21 +222,16 @@ async def generate_visualization(
     theme: VisualizationTheme = Query(
         VisualizationTheme.AUTO, description="Color theme"
     ),
-    focus_node_id: str | None = Query(
-        None, description="Node ID to focus on"
-    ),
+    focus_node_id: str | None = Query(None, description="Node ID to focus on"),
     depth: int = Query(
         2, description="Depth of relationships to include from focus node", ge=1, le=5
     ),
     max_nodes: int = Query(
         100, description="Maximum number of nodes to display initially", ge=10, le=500
     ),
-    node_types: str | None = Query(
-        None, description="Comma-separated list of node types to include"
-    ),
-    search_query: str | None = Query(
-        None, description="Text search to filter nodes"
-    ),
+    node_types: str
+    | None = Query(None, description="Comma-separated list of node types to include"),
+    search_query: str | None = Query(None, description="Text search to filter nodes"),
     include_orphans: bool = Query(
         False, description="Whether to include nodes with no connections"
     ),
@@ -261,20 +260,20 @@ async def generate_visualization(
     """
     try:
         logger.info(f"Generating graph visualization of type: {type}, theme: {theme}")
-        
+
         # Parse node_types if provided
         parsed_node_types = None
         if node_types:
             parsed_node_types = [nt.strip() for nt in node_types.split(",")]
-        
+
         # Create visualization request
         has_custom_filter = (
-            parsed_node_types or 
-            search_query is not None or 
-            max_nodes != 100 or 
-            include_orphans
+            parsed_node_types
+            or search_query is not None
+            or max_nodes != 100
+            or include_orphans
         )
-        
+
         request = VisualizationRequest(
             type=type,
             theme=theme,
@@ -285,9 +284,11 @@ async def generate_visualization(
                 "search_query": search_query,
                 "max_nodes": max_nodes,
                 "include_orphans": include_orphans,
-            } if has_custom_filter else None
+            }
+            if has_custom_filter
+            else None,
         )
-        
+
         # Generate HTML
         html_content = await graph_service.generate_visualization(request)
         return HTMLResponse(content=html_content, media_type="text/html")
@@ -308,7 +309,7 @@ async def generate_visualization(
     response_class=HTMLResponse,
     summary="Generate graph visualization (legacy endpoint)",
     description="Legacy endpoint for generating an interactive HTML visualization.",
-    include_in_schema=False  # Hide from API docs
+    include_in_schema=False,  # Hide from API docs
 )
 async def generate_visualization_legacy(
     type: str = Query("force", description="Type of visualization"),
@@ -335,19 +336,19 @@ async def generate_visualization_legacy(
         viz_type = VisualizationType(type)
     except ValueError:
         logger.warning(f"Invalid visualization type: {type}, using default: force")
-    
+
     viz_theme = VisualizationTheme.AUTO
     try:
         viz_theme = VisualizationTheme(theme)
     except ValueError:
         logger.warning(f"Invalid visualization theme: {theme}, using default: auto")
-    
+
     # Create visualization request with limited parameters for backward compatibility
     request = VisualizationRequest(
         type=viz_type,
         theme=viz_theme,
     )
-    
+
     # Generate HTML
     try:
         html_content = await graph_service.generate_visualization(request)
@@ -360,8 +361,8 @@ async def generate_visualization_legacy(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating visualization: {e!s}",
         ) from e
-            
-            
+
+
 @db_router.post(
     "/clear",
     response_model=DatabaseClearResponse,
@@ -374,23 +375,25 @@ async def clear_database(
     user: dict = Depends(is_admin),  # Require admin privileges
 ) -> DatabaseClearResponse:
     """Clear all data from the database.
-    
+
     This is a destructive operation that will delete all nodes and relationships.
     Schema constraints and indexes can be preserved.
-    
+
     Args:
         request: Clear request parameters, includes confirmation
         graph_service: Graph service instance
         user: Current admin user
-        
+
     Returns:
         DatabaseClearResponse with operation status
-        
+
     Raises:
         HTTPException: If the operation fails or user lacks permissions
     """
     try:
-        logger.warning(f"Database clear requested by user: {user.get('name', 'unknown')}")
+        logger.warning(
+            f"Database clear requested by user: {user.get('name', 'unknown')}"
+        )
         return await graph_service.clear_database(request)
     except Exception as e:
         logger.error(f"Error clearing database: {e!s}")

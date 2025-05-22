@@ -32,12 +32,17 @@ def _get_or_create_counter(name, description, labels=None):
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
-            if isinstance(collector, Counter) and hasattr(collector, "_name") and collector._name == name:
+            if (
+                isinstance(collector, Counter)
+                and hasattr(collector, "_name")
+                and collector._name == name
+            ):
                 return collector
-                
+
         # If we can't find it or it's not a Counter, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
         from prometheus_client import CollectorRegistry
+
         private_registry = CollectorRegistry()
         return Counter(name, description, labels, registry=private_registry)
 
@@ -48,12 +53,17 @@ def _get_or_create_gauge(name, description, labels=None):
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
-            if isinstance(collector, Gauge) and hasattr(collector, "_name") and collector._name == name:
+            if (
+                isinstance(collector, Gauge)
+                and hasattr(collector, "_name")
+                and collector._name == name
+            ):
                 return collector
-                
+
         # If we can't find it or it's not a Gauge, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
         from prometheus_client import CollectorRegistry
+
         private_registry = CollectorRegistry()
         return Gauge(name, description, labels, registry=private_registry)
 
@@ -64,14 +74,21 @@ def _get_or_create_histogram(name, description, labels=None, buckets=None):
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
-            if isinstance(collector, Histogram) and hasattr(collector, "_name") and collector._name == name:
+            if (
+                isinstance(collector, Histogram)
+                and hasattr(collector, "_name")
+                and collector._name == name
+            ):
                 return collector
-                
+
         # If we can't find it or it's not a Histogram, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
         from prometheus_client import CollectorRegistry
+
         private_registry = CollectorRegistry()
-        return Histogram(name, description, labels, buckets=buckets, registry=private_registry)
+        return Histogram(
+            name, description, labels, buckets=buckets, registry=private_registry
+        )
 
 
 # Prometheus metrics

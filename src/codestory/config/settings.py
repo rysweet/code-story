@@ -250,10 +250,10 @@ class Settings(BaseSettings):
         """Initialize settings with layered configuration."""
         # Check if we're in a test environment
         in_test_env = (
-            os.environ.get("CODESTORY_TEST_ENV") == "true" or
-            os.environ.get("NEO4J_DATABASE") == "testdb" or
-            "pytest" in sys.modules or
-            os.environ.get("GITHUB_ACTIONS") == "true"
+            os.environ.get("CODESTORY_TEST_ENV") == "true"
+            or os.environ.get("NEO4J_DATABASE") == "testdb"
+            or "pytest" in sys.modules
+            or os.environ.get("GITHUB_ACTIONS") == "true"
         )
 
         # Print debug info in test environments
@@ -263,7 +263,7 @@ class Settings(BaseSettings):
 
         # Check for custom config file specified in environment variable
         custom_config_file = os.environ.get("CODESTORY_CONFIG_FILE")
-        
+
         # Load settings from config files with the following precedence:
         # 1. Custom config file specified via CODESTORY_CONFIG_FILE env var
         # 2. .env file for bootstrap settings
@@ -272,7 +272,7 @@ class Settings(BaseSettings):
         toml_settings = {}
         config_file = self._CONFIG_FILE
         config_files_to_try = []
-        
+
         # For tests, use the test configuration
         if in_test_env:
             # Look for test_config.toml in various locations
@@ -296,14 +296,16 @@ class Settings(BaseSettings):
             # Normal operation - try configs in order of precedence
             if custom_config_file:
                 config_files_to_try.append(custom_config_file)
-            
+
             config_files_to_try.append(self._CONFIG_FILE)
-            
+
             # Add default config as a fallback
-            default_config_path = os.path.join(get_project_root(), self._DEFAULT_CONFIG_FILE)
+            default_config_path = os.path.join(
+                get_project_root(), self._DEFAULT_CONFIG_FILE
+            )
             if os.path.exists(default_config_path):
                 config_files_to_try.append(default_config_path)
-                
+
         # Try to load the first available TOML config file
         config_loaded = False
         for cf in config_files_to_try:
@@ -318,16 +320,19 @@ class Settings(BaseSettings):
                             print(f"Config loaded, keys: {', '.join(toml_data.keys())}")
                         toml_settings = flatten_dict(toml_data)
                         if in_test_env:
-                            print(f"Flattened settings created, length: {len(toml_settings)}")
+                            print(
+                                f"Flattened settings created, length: {len(toml_settings)}"
+                            )
                         config_loaded = True
                         break
                 except Exception as e:
                     if in_test_env:
                         print(f"Error loading {cf}: {e}")
                         import traceback
+
                         traceback.print_exc()
                     # Try the next config file
-        
+
         # If no config files were loaded successfully
         if not config_loaded and in_test_env:
             pass
@@ -343,10 +348,8 @@ class Settings(BaseSettings):
                 "neo4j__connection_timeout": 30,
                 "neo4j__max_connection_pool_size": 50,
                 "neo4j__connection_acquisition_timeout": 60,
-
                 # Redis settings
                 "redis__uri": "redis://localhost:6379/0",
-
                 # OpenAI settings
                 "openai__api_key": "sk-test-key-openai",
                 "openai__endpoint": "https://api.openai.com/v1",
@@ -359,7 +362,6 @@ class Settings(BaseSettings):
                 "openai__temperature": 0.1,
                 "openai__max_tokens": 4096,
                 "openai__timeout": 60.0,
-
                 # Azure OpenAI settings
                 "azure_openai__api_key": "sk-test-key-azure",
                 "azure_openai__endpoint": "<your-endpoint>",
@@ -368,7 +370,6 @@ class Settings(BaseSettings):
                 "azure_openai__embedding_model": "text-embedding-3-small",
                 "azure_openai__chat_model": "gpt-4o",
                 "azure_openai__reasoning_model": "gpt-4o",
-
                 # Service settings
                 "service__host": "0.0.0.0",
                 "service__port": 8000,
@@ -376,7 +377,6 @@ class Settings(BaseSettings):
                 "service__log_level": "INFO",
                 "service__enable_telemetry": True,
                 "service__worker_concurrency": 4,
-
                 # Ingestion settings
                 "ingestion__config_path": "pipeline_config.yml",
                 "ingestion__chunk_size": 1024,
@@ -387,22 +387,29 @@ class Settings(BaseSettings):
                 "ingestion__retry_backoff_factor": 2.0,
                 "ingestion__concurrency": 5,
                 "ingestion__steps": {
-                    "blarify": {"timeout": 300, "docker_image": "codestory/blarify:latest"},
-                    "filesystem": {"ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]},
+                    "blarify": {
+                        "timeout": 300,
+                        "docker_image": "codestory/blarify:latest",
+                    },
+                    "filesystem": {
+                        "ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]
+                    },
                     "summarizer": {"max_concurrency": 5, "max_tokens_per_file": 8000},
                     "docgrapher": {"enabled": True},
                 },
-
                 # Plugin settings
-                "plugins__enabled": ["blarify", "filesystem", "summarizer", "docgrapher"],
+                "plugins__enabled": [
+                    "blarify",
+                    "filesystem",
+                    "summarizer",
+                    "docgrapher",
+                ],
                 "plugins__plugin_directory": "plugins",
-
                 # Telemetry settings
                 "telemetry__metrics_port": 9090,
                 "telemetry__metrics_endpoint": "/metrics",
                 "telemetry__trace_sample_rate": 1.0,
                 "telemetry__log_format": "json",
-
                 # Interface settings
                 "interface__theme": "dark",
                 "interface__default_view": "graph",
@@ -411,12 +418,11 @@ class Settings(BaseSettings):
                 "interface__max_edges": 5000,
                 "interface__auto_refresh": True,
                 "interface__refresh_interval": 30,
-
                 # Azure settings
                 "azure__keyvault_name": "",
                 "azure__tenant_id": "",
                 "azure__client_id": "",
-                "azure__client_secret": ""
+                "azure__client_secret": "",
             }
 
         # Merge settings, with environment variables taking precedence
@@ -436,11 +442,23 @@ class Settings(BaseSettings):
             # Convert flattened settings to nested structure
             nested_settings = unflatten_dict(merged_settings)
             if in_test_env:
-                print(f"Nested settings top-level keys: {', '.join(nested_settings.keys())}")
+                print(
+                    f"Nested settings top-level keys: {', '.join(nested_settings.keys())}"
+                )
 
             # Ensure all required fields exist
-            required_fields = ["neo4j", "redis", "openai", "azure_openai", "service",
-                           "ingestion", "plugins", "telemetry", "interface", "azure"]
+            required_fields = [
+                "neo4j",
+                "redis",
+                "openai",
+                "azure_openai",
+                "service",
+                "ingestion",
+                "plugins",
+                "telemetry",
+                "interface",
+                "azure",
+            ]
             for field in required_fields:
                 if field not in nested_settings:
                     if in_test_env:
@@ -455,11 +473,23 @@ class Settings(BaseSettings):
 
         # If not using nested settings, create empty settings directly for required fields
         if in_test_env:
-            required_fields = ["neo4j", "redis", "openai", "azure_openai", "service",
-                           "ingestion", "plugins", "telemetry", "interface", "azure"]
+            required_fields = [
+                "neo4j",
+                "redis",
+                "openai",
+                "azure_openai",
+                "service",
+                "ingestion",
+                "plugins",
+                "telemetry",
+                "interface",
+                "azure",
+            ]
             for field in required_fields:
                 # Check if the field exists in any form (flat or nested)
-                if not any(k.startswith(f"{field}__") or k == field for k in merged_settings):
+                if not any(
+                    k.startswith(f"{field}__") or k == field for k in merged_settings
+                ):
                     if in_test_env:
                         print(f"Adding missing required field: {field}")
                     merged_settings[field] = {}
@@ -546,9 +576,8 @@ def flatten_dict(
             items.append((new_key, v))
     return dict(items)
 
-def unflatten_dict(
-    d: dict[str, Any], sep: str = "__"
-) -> dict[str, Any]:
+
+def unflatten_dict(d: dict[str, Any], sep: str = "__") -> dict[str, Any]:
     """Unflatten a dictionary with separator in keys into nested dictionaries.
 
     Example:

@@ -22,9 +22,7 @@ class ContentExtractor:
     relevant context for summarization of different node types.
     """
 
-    def __init__(
-        self, connector: Neo4jConnector, repository_path: str | None = None
-    ):
+    def __init__(self, connector: Neo4jConnector, repository_path: str | None = None):
         """Initialize the content extractor.
 
         Args:
@@ -60,9 +58,7 @@ class ContentExtractor:
             logger.warning(f"Unsupported node type: {node_type}")
             return {"content": "", "context": []}
 
-    def _extract_repository_content(
-        self, node: NodeData
-    ) -> dict[str, str | list[str]]:
+    def _extract_repository_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a repository node.
 
         Args:
@@ -130,9 +126,7 @@ class ContentExtractor:
 
         return {"content": f"Repository: {repo_name}", "context": context}
 
-    def _extract_directory_content(
-        self, node: NodeData
-    ) -> dict[str, str | list[str]]:
+    def _extract_directory_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a directory node.
 
         Args:
@@ -292,9 +286,7 @@ class ContentExtractor:
 
         return {"content": content, "context": context}
 
-    def _extract_class_content(
-        self, node: NodeData
-    ) -> dict[str, str | list[str]]:
+    def _extract_class_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a class node.
 
         Args:
@@ -316,7 +308,9 @@ class ContentExtractor:
         file_results = self.connector.execute_query(
             file_query, params={"class_id": int(node.id)}
         )
-        file_result = file_results[0] if file_results and len(file_results) > 0 else None
+        file_result = (
+            file_results[0] if file_results and len(file_results) > 0 else None
+        )
 
         file_path = file_result.get("file_path") if file_result else None
 
@@ -413,9 +407,7 @@ class ContentExtractor:
             "context": context,
         }
 
-    def _extract_function_content(
-        self, node: NodeData
-    ) -> dict[str, str | list[str]]:
+    def _extract_function_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a function or method node.
 
         Args:
@@ -460,7 +452,9 @@ class ContentExtractor:
             file_results = self.connector.execute_query(
                 file_query, params={"func_id": int(node.id)}
             )
-            file_result = file_results[0] if file_results and len(file_results) > 0 else None
+            file_result = (
+                file_results[0] if file_results and len(file_results) > 0 else None
+            )
 
             if file_result:
                 file_path = file_result.get("file_path")
@@ -478,7 +472,9 @@ class ContentExtractor:
             file_results = self.connector.execute_query(
                 file_query, params={"func_id": int(node.id)}
             )
-            file_result = file_results[0] if file_results and len(file_results) > 0 else None
+            file_result = (
+                file_results[0] if file_results and len(file_results) > 0 else None
+            )
 
             if file_result:
                 file_path = file_result.get("file_path")
@@ -521,8 +517,12 @@ class ContentExtractor:
                             break
 
                         # For Python, empty line followed by no indentation might end function
-                        if (i > func_start and line.strip() == "" and
-                            i + 1 < len(lines) and not lines[i + 1].startswith(" ")):
+                        if (
+                            i > func_start
+                            and line.strip() == ""
+                            and i + 1 < len(lines)
+                            and not lines[i + 1].startswith(" ")
+                        ):
                             func_end = i
                             break
 

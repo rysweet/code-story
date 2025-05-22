@@ -185,8 +185,6 @@ def edit_config(ctx: click.Context) -> None:
             os.unlink(temp_file_path)
 
 
-
-
 def _display_config_table(
     console: Console, config_data: dict[str, Any], sensitive: bool = False
 ) -> None:

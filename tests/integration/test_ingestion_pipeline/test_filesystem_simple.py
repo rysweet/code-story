@@ -16,13 +16,13 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 @pytest.fixture
 def neo4j_connector(neo4j_env):
     """Return a Neo4j connector for tests.
-    
+
     This uses the neo4j_env fixture defined in conftest.py to ensure
     proper environment configuration.
     """
-    
+
     settings = get_settings()
-    
+
     # Create a Neo4j connector using settings from the test environment
     connector = Neo4jConnector(
         uri=settings.neo4j.uri,
@@ -30,9 +30,9 @@ def neo4j_connector(neo4j_env):
         password=settings.neo4j.password.get_secret_value(),
         database=settings.neo4j.database,
     )
-    
+
     yield connector
-    
+
     # Clean up the connector
     connector.close()
 
@@ -54,7 +54,7 @@ def test_direct_neo4j_filesystem(neo4j_connector):
 
         # Instead of using the filesystem step with Celery, we'll directly
         # create the graph structure in Neo4j, which is what the step would do
-        
+
         # Create repository node
         repo_name = os.path.basename(repo_dir)
         repo_query = """
@@ -62,11 +62,9 @@ def test_direct_neo4j_filesystem(neo4j_connector):
         RETURN r
         """
         neo4j_connector.execute_query(
-            repo_query, 
-            params={"name": repo_name, "path": repo_dir},
-            write=True
+            repo_query, params={"name": repo_name, "path": repo_dir}, write=True
         )
-        
+
         # Create the README.md file node linked to repository
         file_query = """
         MATCH (r:Repository {path: $repo_path})
@@ -81,9 +79,9 @@ def test_direct_neo4j_filesystem(neo4j_connector):
                 "name": "README.md",
                 "path": "README.md",
             },
-            write=True
+            write=True,
         )
-        
+
         # Create directory nodes
         dir_query = """
         MATCH (r:Repository {path: $repo_path})
@@ -98,9 +96,9 @@ def test_direct_neo4j_filesystem(neo4j_connector):
                 "name": "src",
                 "path": "src",
             },
-            write=True
+            write=True,
         )
-        
+
         # Create subdirectory linked to parent directory
         subdir_query = """
         MATCH (parent:Directory {path: $parent_path})
@@ -115,9 +113,9 @@ def test_direct_neo4j_filesystem(neo4j_connector):
                 "name": "package",
                 "path": "src/package",
             },
-            write=True
+            write=True,
         )
-        
+
         # Create file linked to subdirectory
         nested_file_query = """
         MATCH (d:Directory {path: $dir_path})
@@ -132,24 +130,24 @@ def test_direct_neo4j_filesystem(neo4j_connector):
                 "name": "__init__.py",
                 "path": "src/package/__init__.py",
             },
-            write=True
+            write=True,
         )
-        
+
         # Verify nodes in Neo4j
         repo_query = "MATCH (r:Repository) RETURN count(r) as count"
         repo_result = neo4j_connector.execute_query(repo_query)
         assert repo_result[0]["count"] > 0, "No Repository node found"
-        
+
         # Check for README.md
         file_query = "MATCH (f:File {name: 'README.md'}) RETURN count(f) as count"
         file_result = neo4j_connector.execute_query(file_query)
         assert file_result[0]["count"] > 0, "README.md not found in graph"
-        
+
         # Check for directory nodes
         dir_query = "MATCH (d:Directory) RETURN count(d) as count"
         dir_result = neo4j_connector.execute_query(dir_query)
         assert dir_result[0]["count"] >= 2, "Directory nodes not created"
-        
+
         # Verify the relationships
         rel_query = "MATCH ()-[r:CONTAINS]->() RETURN count(r) as count"
         rel_result = neo4j_connector.execute_query(rel_query)
@@ -157,5 +155,6 @@ def test_direct_neo4j_filesystem(neo4j_connector):
     finally:
         # Clean up
         import shutil
+
         if os.path.exists(repo_dir):
             shutil.rmtree(repo_dir)

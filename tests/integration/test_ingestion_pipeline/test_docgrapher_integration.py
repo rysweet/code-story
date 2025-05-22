@@ -153,9 +153,9 @@ def neo4j_connector():
 def initialized_repo(sample_repo, neo4j_connector):
     """Initialize the repository in Neo4j using the FileSystemStep."""
     # Create a mocked FileSystemStep that doesn't rely on Celery
-    with patch.object(FileSystemStep, 'run') as mock_run, \
-         patch.object(FileSystemStep, 'status') as mock_status:
-
+    with patch.object(FileSystemStep, "run") as mock_run, patch.object(
+        FileSystemStep, "status"
+    ) as mock_status:
         # Generate a mock job ID
         job_id = f"test-fs-job-{int(time.time())}"
         mock_run.return_value = job_id
@@ -193,9 +193,9 @@ def initialized_repo(sample_repo, neo4j_connector):
                 "repo_path": sample_repo,
                 "repo_name": repo_name,
                 "src_path": src_path,
-                "docs_path": docs_path
+                "docs_path": docs_path,
             },
-            write=True
+            write=True,
         )
 
         # Create file nodes - one by one to avoid syntax issues
@@ -208,9 +208,9 @@ def initialized_repo(sample_repo, neo4j_connector):
             create_readme_query,
             params={
                 "repo_path": sample_repo,
-                "readme_path": str(Path(sample_repo) / "README.md")
+                "readme_path": str(Path(sample_repo) / "README.md"),
             },
-            write=True
+            write=True,
         )
 
         # Create sample.py file
@@ -223,9 +223,9 @@ def initialized_repo(sample_repo, neo4j_connector):
             create_sample_query,
             params={
                 "src_path": src_path,
-                "sample_path": str(Path(sample_repo) / "src" / "sample.py")
+                "sample_path": str(Path(sample_repo) / "src" / "sample.py"),
             },
-            write=True
+            write=True,
         )
 
         # Create api.md file
@@ -238,9 +238,9 @@ def initialized_repo(sample_repo, neo4j_connector):
             create_api_query,
             params={
                 "docs_path": docs_path,
-                "api_path": str(Path(sample_repo) / "docs" / "api.md")
+                "api_path": str(Path(sample_repo) / "docs" / "api.md"),
             },
-            write=True
+            write=True,
         )
 
         # Paths already used in individual queries above
@@ -252,7 +252,7 @@ def initialized_repo(sample_repo, neo4j_connector):
     sample_file_result = neo4j_connector.execute_query(
         "MATCH (f:File WHERE f.path CONTAINS 'sample.py') RETURN ID(f) as id"
     )
-    
+
     if sample_file_result:
         sample_file_id = sample_file_result[0]["id"]
 
@@ -272,7 +272,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         class_result = neo4j_connector.execute_query(
             class_query, params={"file_id": sample_file_id}, write=True
         )
-        
+
         class_id = class_result[0]["id"]
 
         # Add Method nodes for SampleClass
@@ -300,7 +300,9 @@ def initialized_repo(sample_repo, neo4j_connector):
         ]
 
         for query in method_queries:
-            neo4j_connector.execute_query(query, params={"class_id": class_id}, write=True)
+            neo4j_connector.execute_query(
+                query, params={"class_id": class_id}, write=True
+            )
 
         # Add a Function node for main
         main_query = """
@@ -314,7 +316,9 @@ def initialized_repo(sample_repo, neo4j_connector):
         CREATE (file)-[:CONTAINS]->(f)
         """
 
-        neo4j_connector.execute_query(main_query, params={"file_id": sample_file_id}, write=True)
+        neo4j_connector.execute_query(
+            main_query, params={"file_id": sample_file_id}, write=True
+        )
 
     # Return the sample repository path
     return sample_repo
@@ -357,9 +361,11 @@ def mock_llm_client():
 def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_llm_client):
     """Test that the Documentation Grapher step can process a repository."""
     # Create the step with mocked methods to avoid Celery dependencies
-    with patch.object(DocumentationGrapherStep, 'run', autospec=True) as mock_run, \
-         patch.object(DocumentationGrapherStep, 'status', autospec=True) as mock_status:
-
+    with patch.object(
+        DocumentationGrapherStep, "run", autospec=True
+    ) as mock_run, patch.object(
+        DocumentationGrapherStep, "status", autospec=True
+    ) as mock_status:
         # Generate a mock job ID
         job_id = f"test-docgrapher-job-{int(time.time())}"
         mock_run.return_value = job_id
@@ -508,9 +514,11 @@ def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 def test_docgrapher_step_with_no_llm(initialized_repo, neo4j_connector):
     """Test that the Documentation Grapher step works without LLM analysis."""
     # Create the step with mocked methods to avoid Celery dependencies
-    with patch.object(DocumentationGrapherStep, 'run', autospec=True) as mock_run, \
-         patch.object(DocumentationGrapherStep, 'status', autospec=True) as mock_status:
-
+    with patch.object(
+        DocumentationGrapherStep, "run", autospec=True
+    ) as mock_run, patch.object(
+        DocumentationGrapherStep, "status", autospec=True
+    ) as mock_status:
         # Generate a mock job ID
         job_id = f"test-docgrapher-nollm-job-{int(time.time())}"
         mock_run.return_value = job_id

@@ -41,12 +41,16 @@ def pytest_collection_modifyitems(config, items):
     For Azure tests, we first check if Azure credentials are available before skipping.
     """
     # Skip OpenAI tests if explicitly disabled
-    skip_openai = pytest.mark.skip(reason="Tests using OpenAI are disabled with --skip-openai")
+    skip_openai = pytest.mark.skip(
+        reason="Tests using OpenAI are disabled with --skip-openai"
+    )
 
     # We skip OpenAI tests in the following cases:
     # 1. If --skip-openai is specified
     # 2. If --run-openai is not specified (for backward compatibility)
-    should_skip_openai = config.getoption("--skip-openai") or not config.getoption("--run-openai")
+    should_skip_openai = config.getoption("--skip-openai") or not config.getoption(
+        "--run-openai"
+    )
 
     if should_skip_openai:
         for item in items:

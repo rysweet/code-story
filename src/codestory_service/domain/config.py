@@ -167,24 +167,16 @@ class ConfigSchemaProperty(BaseModel):
     enum: list[Any] | None = Field(
         default=None, description="Enum values if applicable"
     )
-    format: str | None = Field(
-        default=None, description="Format hint (e.g., password)"
-    )
-    minimum: float | None = Field(
-        default=None, description="Minimum value for numbers"
-    )
-    maximum: float | None = Field(
-        default=None, description="Maximum value for numbers"
-    )
+    format: str | None = Field(default=None, description="Format hint (e.g., password)")
+    minimum: float | None = Field(default=None, description="Minimum value for numbers")
+    maximum: float | None = Field(default=None, description="Maximum value for numbers")
     minLength: int | None = Field(
         default=None, description="Minimum length for strings"
     )
     maxLength: int | None = Field(
         default=None, description="Maximum length for strings"
     )
-    pattern: str | None = Field(
-        default=None, description="Regex pattern for strings"
-    )
+    pattern: str | None = Field(default=None, description="Regex pattern for strings")
     readOnly: bool | None = Field(
         default=None, description="If true, value is read-only"
     )

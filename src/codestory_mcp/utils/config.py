@@ -65,9 +65,7 @@ class MCPSettings(BaseSettings):
     api_token_issuer: str = Field(
         "https://sts.windows.net/", description="Issuer claim for JWT tokens"
     )
-    api_audience: str | None = Field(
-        None, description="Audience claim for JWT tokens"
-    )
+    api_audience: str | None = Field(None, description="Audience claim for JWT tokens")
     required_scopes: list[str] = Field(
         ["code-story.read", "code-story.query"],
         description="Required scopes for authorization",

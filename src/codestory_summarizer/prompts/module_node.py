@@ -5,7 +5,6 @@ high-quality summaries of module nodes.
 """
 
 
-
 def get_module_summary_prompt(
     content: str,
     context: list[str],

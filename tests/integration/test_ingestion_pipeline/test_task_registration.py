@@ -17,10 +17,12 @@ def test_filesystem_task_registration():
     """Test that the filesystem task is properly registered with Celery."""
     # Get the list of registered tasks
     registered_tasks = celery_app.tasks.keys()
-    
+
     # Check that the filesystem task is registered with the correct name
     task_name = "codestory_filesystem.step.process_filesystem"
-    assert task_name in registered_tasks, f"Task {task_name} not registered with Celery. Registered tasks: {registered_tasks}"
+    assert (
+        task_name in registered_tasks
+    ), f"Task {task_name} not registered with Celery. Registered tasks: {registered_tasks}"
 
 
 @pytest.mark.integration
@@ -30,15 +32,19 @@ def test_filesystem_task_routing():
     # Get the routing configuration for the task
     task_name = "codestory_filesystem.step.process_filesystem"
     routes = celery_app.conf.task_routes or {}
-    
+
     # Directly check if our pattern exists in the routes
     check_pattern = "codestory_*.step.*"
-    assert check_pattern in routes, f"Expected route pattern '{check_pattern}' not found in routes: {routes}"
-    
+    assert (
+        check_pattern in routes
+    ), f"Expected route pattern '{check_pattern}' not found in routes: {routes}"
+
     # Check that the pattern routes to the ingestion queue
     route = routes.get(check_pattern)
     assert route is not None, f"Route for pattern '{check_pattern}' is None"
-    assert route.get('queue') == 'ingestion', f"Pattern '{check_pattern}' should route to 'ingestion' queue, got: {route}"
+    assert (
+        route.get("queue") == "ingestion"
+    ), f"Pattern '{check_pattern}' should route to 'ingestion' queue, got: {route}"
 
 
 @pytest.mark.integration
@@ -50,12 +56,15 @@ def test_run_step_task_name_mapping():
     import inspect
 
     from codestory.ingestion_pipeline.tasks import run_step
+
     source = inspect.getsource(run_step)
-    
+
     # Check if the mapping contains the filesystem task with the new naming pattern
     assert "task_name_map" in source, "task_name_map not found in run_step function"
-    assert "filesystem" in source and "codestory_filesystem.step.process_filesystem" in source, \
-        "Filesystem task mapping not found in run_step function"
+    assert (
+        "filesystem" in source
+        and "codestory_filesystem.step.process_filesystem" in source
+    ), "Filesystem task mapping not found in run_step function"
 
 
 @pytest.mark.integration
@@ -64,9 +73,13 @@ def test_step_class_task_delegation():
     """Test that the FileSystemStep.run method properly delegates to the Celery task."""
     # Check the FileSystemStep.run source code
     import inspect
+
     source = inspect.getsource(FileSystemStep.run)
-    
+
     # Verify it uses the current_app.send_task with the correct task name
-    assert "current_app.send_task" in source, "current_app.send_task not found in FileSystemStep.run method"
-    assert "codestory_filesystem.step.process_filesystem" in source, \
-        "Task name 'codestory_filesystem.step.process_filesystem' not found in FileSystemStep.run method"
+    assert (
+        "current_app.send_task" in source
+    ), "current_app.send_task not found in FileSystemStep.run method"
+    assert (
+        "codestory_filesystem.step.process_filesystem" in source
+    ), "Task name 'codestory_filesystem.step.process_filesystem' not found in FileSystemStep.run method"

@@ -232,9 +232,7 @@ class IngestionJob(BaseModel):
     started_at: datetime | None = Field(None, description="Start time")
     completed_at: datetime | None = Field(None, description="Completion time")
     duration: float | None = Field(None, description="Duration in seconds")
-    steps: dict[str, StepProgress] | None = Field(
-        None, description="Progress by step"
-    )
+    steps: dict[str, StepProgress] | None = Field(None, description="Progress by step")
     current_step: str | None = Field(None, description="Current step name")
     message: str | None = Field(None, description="Status message")
     error: str | None = Field(None, description="Error message if applicable")

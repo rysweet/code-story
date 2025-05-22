@@ -15,7 +15,7 @@ from codestory.cli.client import ServiceClient
 def cli_runner() -> CliRunner:
     """
     Creates a Click CLI test runner.
-    
+
     Returns:
         Click CLI test runner.
     """
@@ -26,7 +26,7 @@ def cli_runner() -> CliRunner:
 def mock_console() -> MagicMock:
     """
     Creates a mock Rich console.
-    
+
     Returns:
         Mock Rich console.
     """
@@ -38,11 +38,13 @@ def mock_console() -> MagicMock:
 def mock_service_client() -> Generator[MagicMock, None, None]:
     """
     Creates a mock service client and patches the ServiceClient class.
-    
+
     Yields:
         Mock service client.
     """
-    with patch("codestory.cli.client.service_client.ServiceClient") as mock_client_class:
+    with patch(
+        "codestory.cli.client.service_client.ServiceClient"
+    ) as mock_client_class:
         mock_client = MagicMock(spec=ServiceClient)
         mock_client_class.return_value = mock_client
         yield mock_client
@@ -52,7 +54,7 @@ def mock_service_client() -> Generator[MagicMock, None, None]:
 def sample_health_data() -> dict[str, Any]:
     """
     Sample health check data.
-    
+
     Returns:
         Sample health check data.
     """
@@ -80,7 +82,7 @@ def sample_health_data() -> dict[str, Any]:
 def sample_ingestion_status() -> dict[str, Any]:
     """
     Sample ingestion status data.
-    
+
     Returns:
         Sample ingestion status data.
     """
@@ -118,7 +120,7 @@ def sample_ingestion_status() -> dict[str, Any]:
 def sample_query_result() -> dict[str, Any]:
     """
     Sample query result data.
-    
+
     Returns:
         Sample query result data.
     """
@@ -129,7 +131,11 @@ def sample_query_result() -> dict[str, Any]:
                 "count": 42,
             },
             {
-                "n": {"name": "AnotherExample", "type": "Function", "path": "/path/to/another.py"},
+                "n": {
+                    "name": "AnotherExample",
+                    "type": "Function",
+                    "path": "/path/to/another.py",
+                },
                 "count": 10,
             },
         ],
@@ -140,7 +146,7 @@ def sample_query_result() -> dict[str, Any]:
 def sample_config_data() -> dict[str, Any]:
     """
     Sample configuration data.
-    
+
     Returns:
         Sample configuration data.
     """

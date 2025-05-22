@@ -113,9 +113,7 @@ class ConfigService:
             await self.redis.ping()
             logger.info("Connected to Redis successfully for config notifications")
         except Exception as e:
-            logger.error(
-                f"Failed to connect to Redis for config notifications: {e!s}"
-            )
+            logger.error(f"Failed to connect to Redis for config notifications: {e!s}")
             self.redis = None
 
     async def notify_config_updated(self, changes: set[str]) -> None:

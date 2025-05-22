@@ -86,7 +86,9 @@ def load_env_vars():
 
     # Azure OpenAI settings
     os.environ["AZURE_OPENAI__API_KEY"] = "test-azure-key"
-    os.environ["AZURE_OPENAI__ENDPOINT"] = "https://test-azure-endpoint.openai.azure.com"
+    os.environ[
+        "AZURE_OPENAI__ENDPOINT"
+    ] = "https://test-azure-endpoint.openai.azure.com"
     os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "gpt-4o"
 
     # Service settings

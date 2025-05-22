@@ -19,13 +19,16 @@ from .settings import get_service_settings
 # Import and apply real adapter overrides
 try:
     from .use_real_adapters import apply_overrides
+
     # Apply the overrides to force real adapters
     apply_overrides()
     logging.info("Using real adapters for all components - mock/demo adapters disabled")
 except Exception as e:
     # In normal mode, we fail if any required adapter is not available
     logging.error(f"Failed to apply real adapter overrides: {e!s}")
-    logging.error("Service requires all components to be available for proper operation")
+    logging.error(
+        "Service requires all components to be available for proper operation"
+    )
     raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
 
 # Set up logging
@@ -52,11 +55,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             "Using '*' for CORS origins in non-development environment. "
             "This is a security risk!"
         )
-    
+
     # Log dev mode and auth status
-    logger.info(f"Service running in {'development' if settings.dev_mode else 'production'} mode")
-    logger.info(f"Authentication {'disabled' if not settings.auth_enabled else 'enabled'}")
-    
+    logger.info(
+        f"Service running in {'development' if settings.dev_mode else 'production'} mode"
+    )
+    logger.info(
+        f"Authentication {'disabled' if not settings.auth_enabled else 'enabled'}"
+    )
+
     # Initialize resources
     logger.info("Initializing application resources")
 
@@ -64,14 +71,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Use the environment variable for database name if available
     database = os.environ.get("CS_NEO4J_DATABASE", "neo4j")
     app.state.db = Neo4jConnector(database=database)
-    
+
     # Check connection synchronously for now (no async methods available)
     # We'll need to add these methods to Neo4jConnector later
     try:
         app.state.db.check_connection()
         logger.info("Neo4j connection established successfully")
     except Exception as e:
-        logger.warning(f"Neo4j connection check failed: {e}. Service may have limited functionality.")
+        logger.warning(
+            f"Neo4j connection check failed: {e}. Service may have limited functionality."
+        )
 
     yield
 
@@ -133,11 +142,11 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(health.router)
     app.include_router(websocket.router)
-    
+
     # Add legacy visualization endpoint at the root level (no /v1 prefix)
     # This is for backward compatibility with the CLI and GUI
     legacy_viz_router = APIRouter(tags=["visualization"])
-    
+
     @legacy_viz_router.get(
         "/visualize",
         response_class=HTMLResponse,
@@ -158,25 +167,29 @@ def create_app() -> FastAPI:
                 VisualizationTheme,
                 VisualizationType,
             )
-            
+
             viz_type = VisualizationType.FORCE
             try:
                 viz_type = VisualizationType(type)
             except ValueError:
-                logger.warning(f"Invalid visualization type: {type}, using default: force")
-            
+                logger.warning(
+                    f"Invalid visualization type: {type}, using default: force"
+                )
+
             viz_theme = VisualizationTheme.AUTO
             try:
                 viz_theme = VisualizationTheme(theme)
             except ValueError:
-                logger.warning(f"Invalid visualization theme: {theme}, using default: auto")
-            
+                logger.warning(
+                    f"Invalid visualization theme: {theme}, using default: auto"
+                )
+
             # Create visualization request with limited parameters for backward compatibility
             viz_request = VisualizationRequest(
                 type=viz_type,
                 theme=viz_theme,
             )
-            
+
             # Generate HTML content
             html_content = await graph_service.generate_visualization(viz_request)
             return HTMLResponse(content=html_content, media_type="text/html")
@@ -188,7 +201,7 @@ def create_app() -> FastAPI:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error generating visualization: {e!s}",
             )
-    
+
     app.include_router(legacy_viz_router)
 
     # Root endpoint
@@ -216,14 +229,9 @@ if __name__ == "__main__":
     import uvicorn
 
     from codestory.config.settings import get_settings
-    
+
     core_settings = get_settings()
     host = core_settings.service.host
     port = core_settings.service.port
     print(f"Starting service on {host}:{port}...")
-    uvicorn.run(
-        "src.codestory_service.main:app", 
-        host=host, 
-        port=port,
-        reload=False
-    )
+    uvicorn.run("src.codestory_service.main:app", host=host, port=port, reload=False)

@@ -85,30 +85,31 @@ class CeleryAdapter:
 
         Raises:
             HTTPException: If starting the ingestion job fails
-            
+
         Notes:
             This method applies parameter filtering to ensure each pipeline step only
             receives parameters it can handle. Different steps have different parameter
             requirements, and parameter filtering prevents "unexpected keyword argument"
             errors when passing configuration between steps.
-            
+
             Parameter filtering is applied as follows:
             - blarify: Excludes 'concurrency' parameter
-            - summarizer/docgrapher: Only includes safe parameters ('job_id', 'ignore_patterns', 
+            - summarizer/docgrapher: Only includes safe parameters ('job_id', 'ignore_patterns',
               'timeout', 'incremental') plus step-specific parameters
             - filesystem and other steps: Receives all parameters
         """
         try:
             # The orchestrate_pipeline task expects repository_path, step_configs, and job_id
             # We need to transform the IngestionRequest into these parameters
-            
+
             # Use the source as the repository path
             repository_path = request.source
-            
+
             # Generate a job_id
             import uuid
+
             job_id = str(uuid.uuid4())
-            
+
             # Create step configs
             step_configs = []
             if request.steps:
@@ -118,33 +119,48 @@ class CeleryAdapter:
                 # Default steps if none provided
                 for step_name in ["filesystem", "blarify", "summarizer", "docgrapher"]:
                     step_configs.append({"name": step_name})
-            
+
             # Add options to each step if provided, with parameter filtering
             if request.options:
                 for step_config in step_configs:
                     step_name = step_config["name"]
-                    
+
                     # Filter options based on step type to avoid parameter conflicts
                     if step_name == "blarify":
                         # Blarify step doesn't use certain parameters
-                        filtered_options = {k: v for k, v in request.options.items() 
-                                          if k not in ['concurrency']}
+                        filtered_options = {
+                            k: v
+                            for k, v in request.options.items()
+                            if k not in ["concurrency"]
+                        }
                         step_config.update(filtered_options)
-                        logger.debug(f"Applied filtered options for blarify step: {filtered_options}")
-                        
+                        logger.debug(
+                            f"Applied filtered options for blarify step: {filtered_options}"
+                        )
+
                     elif step_name in ["summarizer", "docgrapher"]:
                         # These steps have specific parameters
-                        safe_params = ['job_id', 'ignore_patterns', 'timeout', 'incremental']
-                        filtered_options = {k: v for k, v in request.options.items() 
-                                          if k in safe_params or k == step_name + "_specific"}
+                        safe_params = [
+                            "job_id",
+                            "ignore_patterns",
+                            "timeout",
+                            "incremental",
+                        ]
+                        filtered_options = {
+                            k: v
+                            for k, v in request.options.items()
+                            if k in safe_params or k == step_name + "_specific"
+                        }
                         step_config.update(filtered_options)
-                        logger.debug(f"Applied filtered options for {step_name} step: {filtered_options}")
-                        
+                        logger.debug(
+                            f"Applied filtered options for {step_name} step: {filtered_options}"
+                        )
+
                     else:
                         # For filesystem and other steps, include all options
                         step_config.update(request.options)
                         logger.debug(f"Applied all options for {step_name} step")
-            
+
             # Submit the Celery task with positional parameters
             # For testing, use a local reference that can be mocked
             task_func = getattr(self, "_run_ingestion_pipeline", run_ingestion_pipeline)
@@ -386,7 +402,7 @@ async def get_celery_adapter() -> CeleryAdapter:
 
     Returns:
         CeleryAdapter instance
-        
+
     Raises:
         RuntimeError: If Celery is not available or not healthy
     """
@@ -398,7 +414,9 @@ async def get_celery_adapter() -> CeleryAdapter:
         if celery_health["status"] == "healthy":
             return adapter
         # If not healthy, raise an exception
-        error_msg = celery_health["details"].get("error", "No active Celery workers found")
+        error_msg = celery_health["details"].get(
+            "error", "No active Celery workers found"
+        )
         logger.error(f"Celery adapter not healthy: {error_msg}")
         raise RuntimeError(f"Celery component unhealthy: {error_msg}")
     except Exception as e:

@@ -22,10 +22,12 @@ if docker_env:
     os.environ["NEO4J__URI"] = "bolt://neo4j:7687"  # Use container service name
 else:
     os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
-    
+
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "testdb"  # Use the test database name from docker-compose.test.yml
+os.environ[
+    "NEO4J__DATABASE"
+] = "testdb"  # Use the test database name from docker-compose.test.yml
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
@@ -104,18 +106,20 @@ def neo4j_connector():
     # Determine Neo4j port based on environment
     ci_env = os.environ.get("CI") == "true"
     docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
-    
+
     # Get the correct URI based on the environment
     if docker_env:
         # In Docker environment, use container service name
         uri = "bolt://neo4j:7687"
     else:
         # In local environment, use port mapping from docker-compose.test.yml for tests
-        neo4j_port = "7687" if ci_env else "7688"  # Port mapped in docker-compose.test.yml
+        neo4j_port = (
+            "7687" if ci_env else "7688"
+        )  # Port mapped in docker-compose.test.yml
         uri = f"bolt://localhost:{neo4j_port}"
-    
+
     print(f"Using Neo4j URI: {uri}")
-    
+
     # Create connector with explicit parameters, not relying on settings
     connector = Neo4jConnector(
         uri=uri,
@@ -123,15 +127,15 @@ def neo4j_connector():
         password="password",
         database="testdb",
     )
-    
+
     try:
         # Test the connection
         connector.execute_query("RETURN 1 as test")
         print("Successfully connected to Neo4j")
-        
+
         # Clear the database before each test
         connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
-        
+
         yield connector
     except Exception as e:
         print(f"Error connecting to Neo4j: {e}")
@@ -147,7 +151,7 @@ def neo4j_connector():
 @pytest.fixture
 def ensure_blarify_image():
     """Ensure the Blarify Docker image is available for testing.
-    
+
     This is a strict requirement as we want to test with real components.
     """
     try:
@@ -155,13 +159,10 @@ def ensure_blarify_image():
         print("Checking Docker availability...")
         client.ping()
         print("Docker is available")
-        
+
         # Preferred Blarify image names in order of preference
-        blarify_image_names = [
-            "blarapp/blarify:latest",
-            "codestory/blarify:latest"
-        ]
-        
+        blarify_image_names = ["blarapp/blarify:latest", "codestory/blarify:latest"]
+
         # Try to find existing Blarify image
         for img_name in blarify_image_names:
             try:
@@ -171,7 +172,7 @@ def ensure_blarify_image():
                     return img_name
             except Exception as e:
                 print(f"Error checking for {img_name}: {e}")
-        
+
         # No image found, try to pull one
         print("No Blarify image found locally, attempting to pull...")
         for img_name in blarify_image_names:
@@ -181,19 +182,20 @@ def ensure_blarify_image():
                 return img_name
             except Exception as e:
                 print(f"Failed to pull {img_name}: {e}")
-        
+
         # If we get here, we couldn't find or pull a Blarify image
         # Instead of skipping or using fallback, let's build a minimal one for testing
         print("Building minimal Blarify-compatible image for testing...")
-        
+
         # Create a temporary Dockerfile directory
         import os
         import tempfile
-        
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             dockerfile_path = os.path.join(tmp_dir, "Dockerfile")
             with open(dockerfile_path, "w") as f:
-                f.write('''FROM python:3.12-slim
+                f.write(
+                    """FROM python:3.12-slim
                 
 # Install basic dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \\
@@ -296,12 +298,13 @@ RUN chmod +x /usr/local/bin/blarify
 
 # Default command that does nothing
 CMD ["echo", "Ready to process code"]
-''')
-            
+"""
+                )
+
             # Build the image
             test_image_name = "codestory-blarify-test:latest"
             print(f"Building test image: {test_image_name}")
-            
+
             try:
                 client.images.build(path=tmp_dir, tag=test_image_name, rm=True)
                 print(f"Successfully built test Blarify image: {test_image_name}")
@@ -309,7 +312,7 @@ CMD ["echo", "Ready to process code"]
             except Exception as e:
                 print(f"Failed to build test image: {e}")
                 pytest.fail(f"Could not build test Blarify image: {e}")
-    
+
     except Exception as e:
         print(f"Docker not available: {e}")
         pytest.fail(f"Docker not available for testing: {e}")
@@ -318,46 +321,50 @@ CMD ["echo", "Ready to process code"]
 @pytest.fixture(scope="function")
 def blarify_celery_app(celery_app):
     """Provide a Celery app configured for BlarifyStep testing.
-    
+
     This fixture depends on the celery_app fixture from conftest.py
     which has already been properly configured for testing.
     """
     # Import BlarifyStep's task to ensure it's registered
-    
+
     # Verify that the task is registered
     assert "codestory_blarify.step.run_blarify" in celery_app.tasks
-    
+
     # Return the already configured app
     return celery_app
 
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app):
+def test_blarify_step_run(
+    sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app
+):
     """Test that the Blarify step can process a repository and create AST nodes in Neo4j."""
     # Get the Celery app from the fixture
     celery_app = blarify_celery_app
-    
+
     # Get the Blarify image from the fixture (either real or our mock)
     blarify_image = ensure_blarify_image
     print(f"Using Blarify image: {blarify_image}")
-    
+
     # Clear any existing AST nodes from previous test runs
     neo4j_connector.execute_query("MATCH (n:AST) DETACH DELETE n", write=True)
     neo4j_connector.execute_query("MATCH (n:Repository) DETACH DELETE n", write=True)
-    
+
     # Verify there are no AST nodes before we start
     initial_ast_count = neo4j_connector.execute_query(
         "MATCH (n:AST) RETURN count(n) as count"
     )[0].get("count", 0)
-    assert initial_ast_count == 0, f"Expected no AST nodes at start, found {initial_ast_count}"
-    
+    assert (
+        initial_ast_count == 0
+    ), f"Expected no AST nodes at start, found {initial_ast_count}"
+
     # Create test AST nodes directly in Neo4j to verify connectivity
     try:
         # Create manual AST nodes directly using the connector
         # This demonstrates Neo4j connectivity without Docker
         print("Creating test AST nodes directly in Neo4j...")
-        
+
         # Create Repository and AST nodes
         neo4j_connector.execute_query(
             """
@@ -369,170 +376,219 @@ def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, bl
             RETURN count(*)
             """,
             {"repo_path": sample_repo, "file_path": f"{sample_repo}/test.py"},
-            write=True
+            write=True,
         )
-        
+
         # Verify AST nodes were created
         ast_count = neo4j_connector.execute_query(
             "MATCH (n:AST) RETURN count(n) as count"
         )[0].get("count", 0)
-        
+
         print(f"Created {ast_count} AST nodes directly in Neo4j")
         assert ast_count > 0, "Expected AST nodes to be created during test setup"
-        
+
         # Also check for repository node
         repo_count = neo4j_connector.execute_query(
             "MATCH (r:Repository) RETURN count(r) as count"
         )[0].get("count", 0)
-        
+
         print(f"Created {repo_count} Repository nodes directly in Neo4j")
-        assert repo_count > 0, "Expected Repository nodes to be created during test setup"
-        
+        assert (
+            repo_count > 0
+        ), "Expected Repository nodes to be created during test setup"
+
         # Get sample of AST nodes for verification
         ast_nodes = neo4j_connector.execute_query(
             "MATCH (n:AST) RETURN n.name, n.type, n.path LIMIT 5"
         )
         print(f"Sample AST nodes created directly: {ast_nodes}")
-        
+
         # Validate node properties
         for node in ast_nodes:
-            assert 'n.name' in node, f"Expected AST node to have 'name' property, got: {node}"
-            assert 'n.type' in node, f"Expected AST node to have 'type' property, got: {node}"
-            assert 'n.path' in node, f"Expected AST node to have 'path' property, got: {node}"
-    
+            assert (
+                "n.name" in node
+            ), f"Expected AST node to have 'name' property, got: {node}"
+            assert (
+                "n.type" in node
+            ), f"Expected AST node to have 'type' property, got: {node}"
+            assert (
+                "n.path" in node
+            ), f"Expected AST node to have 'path' property, got: {node}"
+
         print("Direct Neo4j node creation successful - Neo4j is working correctly")
-        
-        # Now test if Docker daemon is accessible 
+
+        # Now test if Docker daemon is accessible
         try:
             import docker
+
             client = docker.from_env()
-            
+
             # Verify Docker daemon is accessible
             client.ping()
             print("Docker daemon is accessible")
         except Exception as e:
             print(f"Docker daemon not accessible: {e}")
             print("We'll continue testing with mocks since Neo4j is working correctly")
-            
+
     except Exception as e:
         print(f"Neo4j connectivity test failed: {e}")
         print("This indicates issues with Neo4j configuration")
-        
+
     # If direct Docker test fails, continue with BlarifyStep test
     # Create the step with the Blarify image
     step = BlarifyStep(docker_image=blarify_image)
-    
+
     # Run the step with the Blarify container
     job_id = None
     try:
         # Register the task before running it
-        
+
         # Run the step with proper task registration
         job_id = step.run(
-            repository_path=sample_repo, 
+            repository_path=sample_repo,
             ignore_patterns=[".git/", "__pycache__/"],
-            timeout=300  # 5 minute timeout for tests in CI environment
+            timeout=300,  # 5 minute timeout for tests in CI environment
         )
-        
+
         # Verify we get a job ID back
         assert job_id is not None
-        assert isinstance(job_id, str), f"Expected job_id to be a string, got {type(job_id)}"
-        
+        assert isinstance(
+            job_id, str
+        ), f"Expected job_id to be a string, got {type(job_id)}"
+
         # Verify job exists in active_jobs
-        assert job_id in step.active_jobs, f"Job ID {job_id} not found in active_jobs: {step.active_jobs.keys()}"
-        
+        assert (
+            job_id in step.active_jobs
+        ), f"Job ID {job_id} not found in active_jobs: {step.active_jobs.keys()}"
+
         # Wait for job to complete (polling status)
         print("Waiting for Blarify job to complete...")
         start_time = time.time()
-        
+
         # Use longer timeout in CI environment
-        timeout = 300 if os.environ.get("CI") == "true" else 120  # 5 minutes in CI, 2 minutes locally
+        timeout = (
+            300 if os.environ.get("CI") == "true" else 120
+        )  # 5 minutes in CI, 2 minutes locally
         last_status = None
         check_interval = 5  # Check every 5 seconds
-        
-        print(f"Using timeout of {timeout} seconds and check interval of {check_interval} seconds")
-        
+
+        print(
+            f"Using timeout of {timeout} seconds and check interval of {check_interval} seconds"
+        )
+
         while time.time() - start_time < timeout:
             job_status = step.status(job_id)
-            if last_status != job_status.get('status'):
+            if last_status != job_status.get("status"):
                 print(f"Job status: {job_status}")
-                last_status = job_status.get('status')
-            
-            if job_status.get('status') in [StepStatus.COMPLETED, StepStatus.FAILED, StepStatus.STOPPED]:
+                last_status = job_status.get("status")
+
+            if job_status.get("status") in [
+                StepStatus.COMPLETED,
+                StepStatus.FAILED,
+                StepStatus.STOPPED,
+            ]:
                 break
-            
+
             # Print progress periodically
-            progress = job_status.get('progress', 0)
+            progress = job_status.get("progress", 0)
             if progress and progress > 0:
                 print(f"Progress: {progress:.1f}%")
-            
+
             # Verify Docker container is still running in CI environment
-            if os.environ.get("CI") == "true" and step.docker_client and time.time() - start_time > 60:
+            if (
+                os.environ.get("CI") == "true"
+                and step.docker_client
+                and time.time() - start_time > 60
+            ):
                 container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
                 try:
-                    containers = step.docker_client.containers.list(filters={"name": container_name})
+                    containers = step.docker_client.containers.list(
+                        filters={"name": container_name}
+                    )
                     if not containers:
-                        print(f"Container {container_name} is not running, stopping test")
+                        print(
+                            f"Container {container_name} is not running, stopping test"
+                        )
                         break
                 except Exception as e:
                     print(f"Error checking container status: {e}")
-            
+
             time.sleep(check_interval)  # Use the configured check interval
-        
+
         # Get final status
         job_status = step.status(job_id)
         print(f"Final job status: {job_status}")
-        
+
         # Verify status response format
-        assert isinstance(job_status, dict), f"Expected status to be a dict, got {type(job_status)}"
-        assert "status" in job_status, f"Expected 'status' key in job_status, got keys: {job_status.keys()}"
-        
+        assert isinstance(
+            job_status, dict
+        ), f"Expected status to be a dict, got {type(job_status)}"
+        assert (
+            "status" in job_status
+        ), f"Expected 'status' key in job_status, got keys: {job_status.keys()}"
+
         # Check if there are AST nodes in Neo4j
         ast_count = neo4j_connector.execute_query(
             "MATCH (n:AST) RETURN count(n) as count"
         )[0].get("count", 0)
-        
+
         print(f"Found {ast_count} AST nodes in Neo4j")
-        
+
         # If the job completed successfully, there should be AST nodes
         if job_status["status"] == StepStatus.COMPLETED:
-            assert ast_count > 0, "Expected at least one AST node to be created in Neo4j"
-            
+            assert (
+                ast_count > 0
+            ), "Expected at least one AST node to be created in Neo4j"
+
             # Also test for repository node
             repo_count = neo4j_connector.execute_query(
                 "MATCH (r:Repository) RETURN count(r) as count"
             )[0].get("count", 0)
-            
+
             print(f"Found {repo_count} Repository nodes in Neo4j")
-            assert repo_count > 0, "Expected at least one Repository node to be created in Neo4j"
-            
+            assert (
+                repo_count > 0
+            ), "Expected at least one Repository node to be created in Neo4j"
+
             # Check that AST nodes have expected properties
             ast_nodes = neo4j_connector.execute_query(
                 "MATCH (n:AST) RETURN n.name, n.type, n.path LIMIT 5"
             )
             print(f"Sample AST nodes: {ast_nodes}")
-            
+
             # Validate that AST nodes have the expected properties
             for node in ast_nodes:
-                assert 'n.name' in node, f"Expected AST node to have 'name' property, got: {node}"
-                assert 'n.type' in node, f"Expected AST node to have 'type' property, got: {node}"
-                assert 'n.path' in node, f"Expected AST node to have 'path' property, got: {node}"
+                assert (
+                    "n.name" in node
+                ), f"Expected AST node to have 'name' property, got: {node}"
+                assert (
+                    "n.type" in node
+                ), f"Expected AST node to have 'type' property, got: {node}"
+                assert (
+                    "n.path" in node
+                ), f"Expected AST node to have 'path' property, got: {node}"
         else:
-            print(f"BlarifyStep execution failed, but this might be due to known Docker socket issue. Error: {job_status.get('error', '')}")
-            
+            print(
+                f"BlarifyStep execution failed, but this might be due to known Docker socket issue. Error: {job_status.get('error', '')}"
+            )
+
             # If we have AST nodes from the direct Docker test, we'll consider this test successful anyway
             if ast_count > 0:
-                print("Integration test passing on direct Docker connectivity test results")
+                print(
+                    "Integration test passing on direct Docker connectivity test results"
+                )
             else:
-                pytest.skip("Docker daemon socket issue detected, valid BlarifyStep test not possible")
-        
+                pytest.skip(
+                    "Docker daemon socket issue detected, valid BlarifyStep test not possible"
+                )
+
         # Clean up
         stop_result = step.stop(job_id)
         print(f"Stop result: {stop_result}")
         assert stop_result is not None
         assert isinstance(stop_result, dict)
         assert "status" in stop_result
-        
+
     finally:
         # Ensure we clean up even if assertions fail
         try:
@@ -544,24 +600,27 @@ def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, bl
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app):
+def test_blarify_step_stop(
+    sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app
+):
     """Test that the Blarify step can be stopped mid-process."""
     # Get the Celery app from the fixture
     celery_app = blarify_celery_app
-    
+
     # Get the Blarify image from the fixture
     blarify_image = ensure_blarify_image
     print(f"Using Blarify image: {blarify_image}")
-    
+
     # Clear any existing AST nodes from previous test runs
     neo4j_connector.execute_query("MATCH (n:AST) DETACH DELETE n", write=True)
     neo4j_connector.execute_query("MATCH (n:Repository) DETACH DELETE n", write=True)
-    
+
     # Check Docker daemon access
     try:
         import docker
+
         client = docker.from_env()
-        
+
         # Verify Docker daemon is accessible
         client.ping()
         print("Docker daemon is accessible")
@@ -570,53 +629,65 @@ def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, b
         print("Skipping test_blarify_step_stop test due to Docker daemon issues")
         pytest.skip(f"Docker daemon not accessible: {e}")
         return
-    
+
     # Create the step with the Blarify image
     step = BlarifyStep(docker_image=blarify_image)
-    
+
     # Start the Blarify job
     job_id = None
     try:
         # Register the task before running it
-        
+
         # Run the step with the container
         job_id = step.run(
-            repository_path=sample_repo, 
+            repository_path=sample_repo,
             ignore_patterns=[".git/", "__pycache__/"],
-            timeout=120  # 2 minute timeout
+            timeout=120,  # 2 minute timeout
         )
-        
+
         # Verify we get a job ID back
         assert job_id is not None
-        assert isinstance(job_id, str), f"Expected job_id to be a string, got {type(job_id)}"
-        
+        assert isinstance(
+            job_id, str
+        ), f"Expected job_id to be a string, got {type(job_id)}"
+
         # Verify job exists in active_jobs
-        assert job_id in step.active_jobs, f"Job ID {job_id} not found in active_jobs: {step.active_jobs.keys()}"
-        
+        assert (
+            job_id in step.active_jobs
+        ), f"Job ID {job_id} not found in active_jobs: {step.active_jobs.keys()}"
+
         # Wait a few seconds to ensure the job starts
         print("Waiting for job to start...")
         time.sleep(5)
-        
+
         # Check status before stopping
         status_before = step.status(job_id)
         print(f"Status before stopping: {status_before}")
-        assert "status" in status_before, f"Expected 'status' key in status_before, got keys: {status_before.keys()}"
-        
+        assert (
+            "status" in status_before
+        ), f"Expected 'status' key in status_before, got keys: {status_before.keys()}"
+
         # Stop the job and check Docker containers
         print("Stopping job...")
         stop_result = step.stop(job_id)
         print(f"Stop result: {stop_result}")
-        
+
         # Verify the job was stopped
         assert stop_result is not None, "Expected stop_result to be non-None"
-        assert isinstance(stop_result, dict), f"Expected stop_result to be a dict, got {type(stop_result)}"
-        assert "status" in stop_result, f"Expected 'status' key in stop_result, got keys: {stop_result.keys()}"
-        
+        assert isinstance(
+            stop_result, dict
+        ), f"Expected stop_result to be a dict, got {type(stop_result)}"
+        assert (
+            "status" in stop_result
+        ), f"Expected 'status' key in stop_result, got keys: {stop_result.keys()}"
+
         # The stop result should either indicate stopped or completed
         # (if the job completed quickly before we could stop it)
-        assert stop_result["status"] in [StepStatus.STOPPED, StepStatus.COMPLETED], \
-            f"Expected status STOPPED or COMPLETED, got {stop_result['status']}"
-        
+        assert stop_result["status"] in [
+            StepStatus.STOPPED,
+            StepStatus.COMPLETED,
+        ], f"Expected status STOPPED or COMPLETED, got {stop_result['status']}"
+
         # In CI environments, give extra time for status to update
         if os.environ.get("CI") == "true":
             print("In CI environment, waiting for status to settle...")
@@ -624,26 +695,30 @@ def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, b
             retry_count = 0
             max_retries = 5
             final_status = None
-            
+
             while retry_count < max_retries:
                 time.sleep(2)  # Give time for status to update
                 final_status = step.status(job_id)
                 print(f"Status check {retry_count + 1}: {final_status}")
-                
+
                 if final_status["status"] in [StepStatus.STOPPED, StepStatus.COMPLETED]:
                     print(f"Status is now {final_status['status']}, continuing test")
                     break
-                
+
                 retry_count += 1
-                
+
                 # On the last retry, force verify Docker container status
                 if retry_count == max_retries - 1 and step.docker_client:
                     container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
                     print(f"Checking Docker container status for {container_name}...")
                     try:
-                        containers = step.docker_client.containers.list(all=True, filters={"name": container_name})
+                        containers = step.docker_client.containers.list(
+                            all=True, filters={"name": container_name}
+                        )
                         if containers:
-                            print(f"Container still exists, forcing removal: {containers}")
+                            print(
+                                f"Container still exists, forcing removal: {containers}"
+                            )
                             for container in containers:
                                 try:
                                     container.stop(timeout=1)
@@ -659,19 +734,21 @@ def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, b
             # Not in CI, just check status once
             final_status = step.status(job_id)
             print(f"Final status: {final_status}")
-        
+
         # Verify status is correct
-        assert final_status["status"] in [StepStatus.STOPPED, StepStatus.COMPLETED], \
-            f"Expected status STOPPED or COMPLETED, got {final_status['status']}"
-        
+        assert final_status["status"] in [
+            StepStatus.STOPPED,
+            StepStatus.COMPLETED,
+        ], f"Expected status STOPPED or COMPLETED, got {final_status['status']}"
+
         # If the job completed before we could stop it, check if Neo4j has AST nodes
         if final_status["status"] == StepStatus.COMPLETED:
             ast_count = neo4j_connector.execute_query(
                 "MATCH (n:AST) RETURN count(n) as count"
             )[0].get("count", 0)
-            
+
             print(f"Job completed before stop. Found {ast_count} AST nodes in Neo4j")
-        
+
     finally:
         # Ensure we clean up even if assertions fail
         try:

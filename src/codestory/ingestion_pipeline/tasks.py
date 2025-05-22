@@ -50,14 +50,14 @@ def run_step(
             - end_time: When the step finished
             - duration: Duration in seconds
             - error: Optional error message if the step failed
-            
+
     Notes:
         This method includes two important mechanisms:
-        
+
         1. Task routing using fully qualified names:
            The task_name_map maps step names to fully qualified task names
            (e.g., "filesystem" -> "codestory_filesystem.step.process_filesystem")
-           
+
         2. Parameter filtering:
            Each step may have different parameter requirements. To prevent
            "unexpected keyword argument" errors, this method filters the parameters
@@ -90,46 +90,56 @@ def run_step(
             "summarizer": "codestory_summarizer.step.run_summarizer",
             "docgrapher": "codestory_docgrapher.step.run_docgrapher",
         }
-        
+
         # Get the task name from the map or fallback to legacy format
         task_name = task_name_map.get(step_name, f"{step_name}.run")
-        
+
         # Log what we're trying to do
         logger.debug(f"Dispatching to task: {task_name}")
-        logger.debug(f"Available tasks: {[t for t in app.tasks.keys() if step_name in t]}")
+        logger.debug(
+            f"Available tasks: {[t for t in app.tasks.keys() if step_name in t]}"
+        )
 
         # Prepare configuration for the step task - with parameter filtering
         step_config_copy = step_config.copy()
-        
+
         # Don't add repository_path to kwargs as it's already passed in the task signature
         # This avoids the "got multiple values for argument" error
-        if 'repository_path' in step_config_copy:
+        if "repository_path" in step_config_copy:
             # If it's already in the config, remove it to avoid conflicts
-            logger.warning("Removing duplicate repository_path from step config to avoid conflicts")
-            del step_config_copy['repository_path']
-        
+            logger.warning(
+                "Removing duplicate repository_path from step config to avoid conflicts"
+            )
+            del step_config_copy["repository_path"]
+
         # Include job_id in kwargs if present
-        if 'job_id' not in step_config_copy and job_id:
-            step_config_copy['job_id'] = job_id
-        
+        if "job_id" not in step_config_copy and job_id:
+            step_config_copy["job_id"] = job_id
+
         # Filter out step-specific parameters that are not common to all steps
         # This prevents "unexpected keyword argument" errors when passing step configs
         if step_name == "blarify":
             # Blarify step doesn't use concurrency parameter
-            if 'concurrency' in step_config_copy:
-                logger.debug("Removing 'concurrency' from blarify step config to avoid parameter mismatch")
-                del step_config_copy['concurrency']
-                
+            if "concurrency" in step_config_copy:
+                logger.debug(
+                    "Removing 'concurrency' from blarify step config to avoid parameter mismatch"
+                )
+                del step_config_copy["concurrency"]
+
         elif step_name == "summarizer" or step_name == "docgrapher":
             # These steps might have specific parameters that other steps don't accept
-            safe_params = ['job_id', 'ignore_patterns', 'timeout', 'incremental'] 
+            safe_params = ["job_id", "ignore_patterns", "timeout", "incremental"]
             for param in list(step_config_copy.keys()):
                 if param not in safe_params and param != step_name + "_specific":
-                    logger.debug(f"Removing '{param}' from {step_name} step config to avoid parameter mismatch")
+                    logger.debug(
+                        f"Removing '{param}' from {step_name} step config to avoid parameter mismatch"
+                    )
                     del step_config_copy[param]
-            
-        logger.debug(f"Sending task {task_name} with args=[repository_path={repository_path}] and kwargs={step_config_copy}")
-        
+
+        logger.debug(
+            f"Sending task {task_name} with args=[repository_path={repository_path}] and kwargs={step_config_copy}"
+        )
+
         try:
             # Pass repository_path as the first positional argument
             step_task = app.send_task(
@@ -150,20 +160,24 @@ def run_step(
         timeout = step_config.get("timeout", 1800)  # 30 minutes default timeout
         start_poll = time.time()
         step_result = None
-        
-        logger.info(f"Waiting for task {task_name} (id: {step_task.id}) with timeout {timeout}s")
+
+        logger.info(
+            f"Waiting for task {task_name} (id: {step_task.id}) with timeout {timeout}s"
+        )
         last_log_time = start_poll
         poll_counter = 0
 
         while time.time() - start_poll < timeout:
             poll_counter += 1
             current_time = time.time()
-            
+
             # Log status every 30 seconds
             if current_time - last_log_time > 30 or poll_counter % 30 == 0:
-                logger.info(f"[{poll_counter}] Still waiting for task {task_name} (id: {step_task.id}) - elapsed: {current_time - start_poll:.1f}s")
+                logger.info(
+                    f"[{poll_counter}] Still waiting for task {task_name} (id: {step_task.id}) - elapsed: {current_time - start_poll:.1f}s"
+                )
                 last_log_time = current_time
-                
+
                 # Check if task exists
                 task_state = None
                 try:
@@ -171,9 +185,11 @@ def run_step(
                     logger.info(f"Task state: {task_state}")
                 except Exception as e:
                     logger.error(f"Error getting task state: {e}")
-            
+
             if async_result.ready():
-                logger.info(f"Task {task_name} is ready after {time.time() - start_poll:.1f}s")
+                logger.info(
+                    f"Task {task_name} is ready after {time.time() - start_poll:.1f}s"
+                )
                 if async_result.successful():
                     try:
                         step_result = async_result.result
@@ -193,7 +209,9 @@ def run_step(
             time.sleep(1)  # Wait before checking again
 
         if step_result is None:
-            logger.error(f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s")
+            logger.error(
+                f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s"
+            )
             raise Exception(f"Step task timed out after {timeout} seconds")
 
         # Update result with step's result
@@ -294,8 +312,8 @@ def orchestrate_pipeline(
             # Create a copy of step_config and explicitly set the job_id
             step_config_copy = step_config.copy()
             # Make sure job_id is included in every step
-            step_config_copy['job_id'] = job_id
-            
+            step_config_copy["job_id"] = job_id
+
             workflow.append(
                 run_step.s(
                     step_name=step_name,
@@ -308,17 +326,20 @@ def orchestrate_pipeline(
         # Run the workflow as a chain (sequential execution)
         # Prepare arguments for the chain
         try:
-            logger.info(f"Sending args=[{repository_path}] to chain with {len(workflow)} steps")
-            
+            logger.info(
+                f"Sending args=[{repository_path}] to chain with {len(workflow)} steps"
+            )
+
             # The first argument to the chain is the repository_path
             # This will be passed to the first task in the chain
             chain_result = chain(*workflow).apply_async(args=[repository_path])
-            
+
             logger.info(f"Chain started with ID: {chain_result.id}")
         except Exception as e:
             logger.error(f"Error starting chain: {e}")
             # Try to get more detailed error message
             from celery.exceptions import CeleryError
+
             if isinstance(e, CeleryError):
                 logger.error(f"Celery error details: {e.args}")
             raise
@@ -329,33 +350,39 @@ def orchestrate_pipeline(
         timeout = 1800  # 30 minutes default timeout for the entire pipeline
         start_poll = time.time()
         all_results = None
-        
-        logger.info(f"Waiting for chain (id: {chain_result.id}) with timeout {timeout}s")
+
+        logger.info(
+            f"Waiting for chain (id: {chain_result.id}) with timeout {timeout}s"
+        )
         last_log_time = start_poll
         poll_counter = 0
 
         while time.time() - start_poll < timeout:
             poll_counter += 1
             current_time = time.time()
-            
+
             # Log status every 30 seconds or each 15 polls
             if current_time - last_log_time > 30 or poll_counter % 15 == 0:
-                logger.info(f"[{poll_counter}] Still waiting for chain (id: {chain_result.id}) - elapsed: {current_time - start_poll:.1f}s")
+                logger.info(
+                    f"[{poll_counter}] Still waiting for chain (id: {chain_result.id}) - elapsed: {current_time - start_poll:.1f}s"
+                )
                 last_log_time = current_time
-                
+
                 # Check current state
                 try:
                     chain_state = async_result.state
                     logger.info(f"Chain state: {chain_state}")
                 except Exception as e:
                     logger.error(f"Error getting chain state: {e}")
-            
+
             if async_result.ready():
                 logger.info(f"Chain is ready after {time.time() - start_poll:.1f}s")
                 if async_result.successful():
                     try:
                         all_results = async_result.result
-                        logger.info(f"Chain completed successfully: {type(all_results)}")
+                        logger.info(
+                            f"Chain completed successfully: {type(all_results)}"
+                        )
                         break
                     except Exception as e:
                         logger.error(f"Error getting chain result: {e}")
@@ -368,7 +395,7 @@ def orchestrate_pipeline(
                         error_info = f"Could not retrieve error info: {e}"
                     logger.error(f"Chain failed: {error_info}")
                     raise Exception(f"Chain execution failed: {error_info}")
-            
+
             time.sleep(2)  # Check less frequently for longer-running pipeline
 
         if all_results is None:

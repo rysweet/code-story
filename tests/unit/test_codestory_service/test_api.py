@@ -379,14 +379,16 @@ class TestVisualizationAPI:
         assert request_arg.type == graph.VisualizationType.FORCE
         assert request_arg.theme == graph.VisualizationTheme.DARK
         assert request_arg.filter is None  # Default filter
-        
+
         # Check the result
         assert result.status_code == 200
         assert result.media_type == "text/html"
         assert result.body == b"<html>Test Visualization</html>"
 
     @pytest.mark.asyncio
-    async def test_generate_visualization_with_filters(self, mock_request, mock_graph_service):
+    async def test_generate_visualization_with_filters(
+        self, mock_request, mock_graph_service
+    ):
         """Test generate visualization endpoint with filters."""
         # Call the endpoint with filters
         result = await graph.generate_visualization(
@@ -413,7 +415,7 @@ class TestVisualizationAPI:
         assert request_arg.filter.node_types == ["File", "Class", "Function"]
         assert request_arg.filter.search_query == "test"
         assert request_arg.filter.include_orphans is True
-        
+
         # Check the result
         assert result.status_code == 200
         assert result.media_type == "text/html"
@@ -474,25 +476,25 @@ class TestHealthAPI:
     async def test_health_check_all_healthy(self, mock_adapters, monkeypatch):
         """Test health check when all components are healthy."""
         neo4j, celery, openai = mock_adapters
-        
+
         # Create a custom class to mock Redis more accurately
         class MockRedisClient:
             async def ping(self):
                 return True
-                
+
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
-                
+
             async def close(self):
                 pass
-        
+
         # Replace the Redis class with our mock
         monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
-        
+
         # Mock asyncio.wait_for to avoid timeout issues
         async def mock_wait_for(coro, timeout):
             return await coro
-            
+
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for)
 
         # Call the endpoint
@@ -515,25 +517,25 @@ class TestHealthAPI:
     async def test_health_check_one_unhealthy(self, mock_adapters, monkeypatch):
         """Test health check when one component is unhealthy."""
         neo4j, celery, openai = mock_adapters
-        
+
         # Create a custom class to mock Redis more accurately
         class MockRedisClient:
             async def ping(self):
                 return True
-                
+
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
-                
+
             async def close(self):
                 pass
-        
+
         # Replace the Redis class with our mock
         monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
 
         # Mock asyncio.wait_for to avoid timeout issues
         async def mock_wait_for(coro, timeout):
             return await coro
-            
+
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for)
 
         # Make one component unhealthy
@@ -546,7 +548,9 @@ class TestHealthAPI:
         result = await health.health_check(neo4j, celery, openai)
 
         # Check the result
-        assert result.status == "degraded"  # Updated expectation to match implementation
+        assert (
+            result.status == "degraded"
+        )  # Updated expectation to match implementation
         assert result.components["neo4j"].status == "unhealthy"
         assert result.components["celery"].status == "healthy"
         assert result.components["openai"].status == "healthy"
@@ -556,25 +560,25 @@ class TestHealthAPI:
     async def test_health_check_one_degraded(self, mock_adapters, monkeypatch):
         """Test health check when one component is degraded."""
         neo4j, celery, openai = mock_adapters
-        
+
         # Create a custom class to mock Redis more accurately
         class MockRedisClient:
             async def ping(self):
                 return True
-                
+
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
-                
+
             async def close(self):
                 pass
-        
+
         # Replace the Redis class with our mock
         monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
 
         # Mock asyncio.wait_for to avoid timeout issues
         async def mock_wait_for(coro, timeout):
             return await coro
-            
+
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for)
 
         # Make one component degraded
@@ -597,27 +601,27 @@ class TestHealthAPI:
     async def test_health_check_with_auto_fix(self, mock_adapters, monkeypatch):
         """Test health check with auto_fix parameter when there's an Azure auth issue."""
         neo4j, celery, openai = mock_adapters
-        
+
         # Create a custom class to mock Redis more accurately
         class MockRedisClient:
             async def ping(self):
                 return True
-                
+
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
-                
+
             async def close(self):
                 pass
-        
+
         # Replace the Redis class with our mock
         monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
-        
+
         # Mock asyncio.wait_for to avoid timeout issues
         async def mock_wait_for(coro, timeout):
             return await coro
-            
+
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for)
-        
+
         # Set up OpenAI component to first have an auth issue, then be fixed on second call
         openai.check_health.side_effect = [
             # First call returns unhealthy (initial health check)
@@ -626,14 +630,14 @@ class TestHealthAPI:
                 "details": {
                     "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
                     "type": "AuthenticationError",
-                    "solution": "az login --tenant abcd1234 --scope https://cognitiveservices.azure.com/.default"
+                    "solution": "az login --tenant abcd1234 --scope https://cognitiveservices.azure.com/.default",
                 },
             },
             # Second call returns healthy (after auto-fix attempt)
             {
                 "status": "healthy",
                 "details": {"models": "text-embedding-ada-002"},
-            }
+            },
         ]
 
         # Call the endpoint with auto_fix=True
@@ -642,35 +646,35 @@ class TestHealthAPI:
         # Check the result
         assert result.status == "healthy"
         assert result.components["openai"].status == "healthy"
-        
+
         # Verify the OpenAI health check was called twice (once for initial check, once for renewal)
         assert openai.check_health.call_count == 2
-        
+
     @pytest.mark.asyncio
     async def test_health_check_with_auto_fix_failure(self, mock_adapters, monkeypatch):
         """Test health check when auto_fix attempt fails."""
         neo4j, celery, openai = mock_adapters
-        
+
         # Create a custom class to mock Redis more accurately
         class MockRedisClient:
             async def ping(self):
                 return True
-                
+
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
-                
+
             async def close(self):
                 pass
-        
+
         # Replace the Redis class with our mock
         monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
-        
+
         # Mock asyncio.wait_for to avoid timeout issues
         async def mock_wait_for(coro, timeout):
             return await coro
-            
+
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for)
-        
+
         # Set up OpenAI component to raise an exception on second call
         openai.check_health.side_effect = [
             # First call returns unhealthy (initial health check)
@@ -683,7 +687,7 @@ class TestHealthAPI:
                 },
             },
             # Second call raises an exception (failed fix attempt)
-            Exception("Could not authenticate with Azure CLI")
+            Exception("Could not authenticate with Azure CLI"),
         ]
 
         # Call the endpoint with auto_fix=True
@@ -692,56 +696,56 @@ class TestHealthAPI:
         # Check the result
         assert result.status == "degraded"
         assert result.components["openai"].status == "unhealthy"
-        
+
         # Verify that the OpenAI health check was called twice
         assert openai.check_health.call_count == 2
-        
+
         # Verify we have error information in the result
         assert result.components["openai"].details is not None
         assert "renewal_error" in result.components["openai"].details
         assert "renewal_attempted" in result.components["openai"].details
         assert result.components["openai"].details["renewal_attempted"] is True
-        
+
     @pytest.mark.asyncio
     async def test_health_check_with_auto_fix_timeout(self, mock_adapters, monkeypatch):
         """Test health check when auto_fix times out."""
         neo4j, celery, openai = mock_adapters
-        
+
         # Create a custom class to mock Redis more accurately
         class MockRedisClient:
             async def ping(self):
                 return True
-                
+
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
-                
+
             async def close(self):
                 pass
-        
+
         # Replace the Redis class with our mock
         monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
-        
+
         # Mock asyncio.wait_for to simulate a timeout on the second call only
         # This will simulate a timeout during the auto_fix attempt
         call_count = 0
-        
+
         async def mock_wait_for_with_timeout(coro, timeout):
             nonlocal call_count
             call_count += 1
-            
+
             if call_count > 1:  # Only time out on the second call (auto-fix attempt)
                 raise asyncio.TimeoutError("Operation timed out")
             return await coro
-            
+
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for_with_timeout)
-        
+
         # Make OpenAI component have an auth issue
         openai.check_health.return_value = {
             "status": "unhealthy",
             "details": {
                 "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
                 "type": "AuthenticationError",
-                "solution": "az login --scope https://cognitiveservices.azure.com/.default"
+                "solution": "az login --scope https://cognitiveservices.azure.com/.default",
             },
         }
 
@@ -749,9 +753,11 @@ class TestHealthAPI:
         result = await health.health_check(neo4j, celery, openai, auto_fix=True)
 
         # Check the result
-        assert result.status == "unhealthy"  # Changed expectation to match implementation
+        assert (
+            result.status == "unhealthy"
+        )  # Changed expectation to match implementation
         assert result.components["openai"].status == "unhealthy"
-        
+
         # Verify details about the timeout
         assert result.components["openai"].details is not None
         assert "error" in result.components["openai"].details

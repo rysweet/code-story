@@ -216,7 +216,7 @@ class GraphService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error answering question: {e!s}",
             )
-    
+
     async def generate_visualization(self, request: VisualizationRequest) -> str:
         """Generate an interactive HTML visualization of the code graph.
 
@@ -230,14 +230,16 @@ class GraphService:
             HTTPException: If visualization generation fails
         """
         try:
-            logger.info(f"Generating {request.type} visualization with {request.theme} theme")
+            logger.info(
+                f"Generating {request.type} visualization with {request.theme} theme"
+            )
 
             # Get graph data from Neo4j based on the request parameters
             graph_data = await self._get_graph_data_for_visualization(request)
-            
+
             # Generate HTML
             html_content = self._generate_visualization_html(graph_data, request)
-            
+
             logger.info("Visualization generated successfully")
             return html_content
         except Exception as e:
@@ -248,8 +250,10 @@ class GraphService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error generating visualization: {e!s}",
             )
-    
-    async def _get_graph_data_for_visualization(self, request: VisualizationRequest) -> dict[str, Any]:
+
+    async def _get_graph_data_for_visualization(
+        self, request: VisualizationRequest
+    ) -> dict[str, Any]:
         """Get graph data from Neo4j for visualization.
 
         Args:
@@ -279,9 +283,9 @@ class GraphService:
             properties: properties(r)
           }) AS relationships
         """
-        
+
         params = {"max_nodes": request.filter.max_nodes if request.filter else 100}
-        
+
         # Custom query if focus_node_id is provided
         if request.focus_node_id:
             cypher_query = """
@@ -319,33 +323,33 @@ class GraphService:
             """
             params["focus_node_id"] = request.focus_node_id
             params["depth"] = request.depth
-        
+
         # Apply node type filtering if specified
         if request.filter and request.filter.node_types:
             node_types = request.filter.node_types
             cypher_query = cypher_query.replace(
-                "WHERE n.name IS NOT NULL", 
-                "WHERE n.name IS NOT NULL AND labels(n)[0] IN $node_types"
+                "WHERE n.name IS NOT NULL",
+                "WHERE n.name IS NOT NULL AND labels(n)[0] IN $node_types",
             )
             params["node_types"] = node_types
-        
+
         # Apply search query filtering if specified
         if request.filter and request.filter.search_query:
             search_query = request.filter.search_query
             # Add text search condition
             cypher_query = cypher_query.replace(
-                "WHERE n.name IS NOT NULL", 
-                "WHERE n.name IS NOT NULL AND (n.name CONTAINS $search_query OR n.path CONTAINS $search_query)"
+                "WHERE n.name IS NOT NULL",
+                "WHERE n.name IS NOT NULL AND (n.name CONTAINS $search_query OR n.path CONTAINS $search_query)",
             )
             params["search_query"] = search_query
-        
+
         # Include/exclude orphan nodes (nodes with no relationships)
         if request.filter and not request.filter.include_orphans:
             cypher_query = cypher_query.replace(
                 "MATCH (n)",
-                "MATCH (n) WHERE EXISTS((n)--())"  # Only match nodes with connections
+                "MATCH (n) WHERE EXISTS((n)--())",  # Only match nodes with connections
             )
-        
+
         # Execute query
         query = CypherQuery(
             query=cypher_query,
@@ -353,25 +357,26 @@ class GraphService:
             query_type="read",
         )
         result = await self.neo4j.execute_cypher_query(query)
-        
+
         if not result.rows or len(result.rows) == 0:
             # Return empty graph data if no results
             return {"nodes": [], "links": []}
-        
+
         # Process result
         nodes = result.rows[0][0]  # First row, first column (nodes)
         relationships = result.rows[0][1]  # First row, second column (relationships)
-        
+
         # If we need to limit further due to max_nodes constraint
         if request.filter and request.filter.max_nodes < len(nodes):
-            nodes = nodes[:request.filter.max_nodes]
+            nodes = nodes[: request.filter.max_nodes]
             # Filter relationships to only include those between our nodes
             node_ids = set(node["id"] for node in nodes)
             relationships = [
-                rel for rel in relationships 
+                rel
+                for rel in relationships
                 if rel["source"] in node_ids and rel["target"] in node_ids
             ]
-        
+
         # Convert to standard graph data format
         graph_data = {
             "nodes": [
@@ -381,7 +386,7 @@ class GraphService:
                     "name": node["properties"].get("name", "Unnamed"),
                     "type": node["label"],
                     "properties": node["properties"],
-                    "is_focus": node.get("is_focus", False)
+                    "is_focus": node.get("is_focus", False),
                 }
                 for node in nodes
             ],
@@ -391,15 +396,17 @@ class GraphService:
                     "source": rel["source"],
                     "target": rel["target"],
                     "type": rel["type"],
-                    "properties": rel["properties"]
+                    "properties": rel["properties"],
                 }
                 for rel in relationships
-            ]
+            ],
         }
-        
+
         return graph_data
-    
-    def _generate_visualization_html(self, graph_data: dict[str, Any], request: VisualizationRequest) -> str:
+
+    def _generate_visualization_html(
+        self, graph_data: dict[str, Any], request: VisualizationRequest
+    ) -> str:
         """Generate HTML for graph visualization.
 
         Args:
@@ -411,13 +418,13 @@ class GraphService:
         """
         # Get visualization type
         viz_type = request.type.value
-        
+
         # Get theme
         theme = request.theme.value
         if theme == "auto":
             # Default to dark theme if auto
             theme = "dark"
-        
+
         # Set visualization title based on focus node if available
         title = "Code Story Graph Visualization"
         if request.focus_node_id:
@@ -425,7 +432,7 @@ class GraphService:
                 if node.get("is_focus", False):
                     title = f"Code Story Graph: {node.get('name', 'Unknown')}"
                     break
-        
+
         # Filter and format node properties for visualization
         for node in graph_data["nodes"]:
             # Only keep essential properties for visualization
@@ -441,17 +448,19 @@ class GraphService:
                     clean_props["summary"] = summary[:100] + "..."
                 else:
                     clean_props["summary"] = summary
-            
+
             # Add any other interesting properties, but limit to essentials
             for key, value in node["properties"].items():
-                if key not in ["name", "path", "summary", "embedding"] and isinstance(value, (str, int, float, bool)):
+                if key not in ["name", "path", "summary", "embedding"] and isinstance(
+                    value, (str, int, float, bool)
+                ):
                     if isinstance(value, str) and len(value) > 100:
                         clean_props[key] = value[:100] + "..."
                     else:
                         clean_props[key] = value
-            
+
             node["properties"] = clean_props
-        
+
         # Generate JavaScript data initialization
         js_data = f"""
         const graphData = {json.dumps(graph_data)};
@@ -461,7 +470,7 @@ class GraphService:
         const maxNodes = {request.filter.max_nodes if request.filter else 100};
         const focusNodeId = {json.dumps(request.focus_node_id)};
         """
-        
+
         # Basic template with D3.js for visualization
         html_template = """
         <!DOCTYPE html>
@@ -1077,7 +1086,7 @@ class GraphService:
         </body>
         </html>
         """
-        
+
         # Set color scheme based on theme
         color_scheme = {
             "light": {
@@ -1091,12 +1100,12 @@ class GraphService:
                 "text_color": "#e0e0e0",
                 "link_color": "#666666",
                 "border_color": "#444444",
-            }
+            },
         }
-        
+
         # Choose color scheme based on theme
         colors = color_scheme.get(theme, color_scheme["dark"])
-        
+
         # Format HTML with colors
         formatted_html = html_template.format(
             title=title,
@@ -1104,54 +1113,53 @@ class GraphService:
             text_color=colors["text_color"],
             link_color=colors["link_color"],
             border_color=colors["border_color"],
-            js_data=js_data
+            js_data=js_data,
         )
-        
+
         return formatted_html
-        
-    async def clear_database(self, request: DatabaseClearRequest) -> DatabaseClearResponse:
+
+    async def clear_database(
+        self, request: DatabaseClearRequest
+    ) -> DatabaseClearResponse:
         """Clear all data from the database.
-        
+
         This is a destructive operation that will delete all nodes and relationships
         in the database. Schema constraints and indexes will remain if preserve_schema
         is True.
-        
+
         Args:
             request: Database clear request parameters
-        
+
         Returns:
             DatabaseClearResponse with status of the operation
-            
+
         Raises:
             HTTPException: If clearing the database fails
         """
         try:
             logger.warning("Clearing all data from database")
-            
+
             # Create a delete query to remove all nodes and relationships
             delete_query = CypherQuery(
-                query="MATCH (n) DETACH DELETE n",
-                query_type="write"
+                query="MATCH (n) DETACH DELETE n", query_type="write"
             )
-            
+
             # Execute the query
             await self.execute_cypher_query(delete_query)
-            
+
             # If we need to reinitialize the schema
             if request.preserve_schema:
                 logger.info("Preserving schema - reinitializing")
                 schema_query = CypherQuery(
-                    query="CALL apoc.schema.assert({}, {})",
-                    query_type="write"
+                    query="CALL apoc.schema.assert({}, {})", query_type="write"
                 )
                 await self.execute_cypher_query(schema_query)
-            
+
             logger.info("Database successfully cleared")
             return DatabaseClearResponse(
-                status="success",
-                message="Database successfully cleared"
+                status="success", message="Database successfully cleared"
             )
-            
+
         except Exception as e:
             logger.error(f"Error clearing database: {e!s}")
             if isinstance(e, HTTPException):

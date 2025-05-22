@@ -121,7 +121,7 @@ def custom_process_filesystem(
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"repo_name": repo_name, "dir_path": dir_path},
-                        write=True
+                        write=True,
                     )
                 else:
                     # Parent is another directory
@@ -133,7 +133,7 @@ def custom_process_filesystem(
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"parent_path": parent_path, "dir_path": dir_path},
-                        write=True
+                        write=True,
                     )
 
                 dir_count += 1
@@ -178,7 +178,7 @@ def custom_process_filesystem(
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"repo_name": repo_name, "file_path": file_path},
-                        write=True
+                        write=True,
                     )
                 else:
                     # Parent is a directory
@@ -190,7 +190,7 @@ def custom_process_filesystem(
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"dir_path": dir_path, "file_path": file_path},
-                        write=True
+                        write=True,
                     )
 
                 file_count += 1
@@ -210,6 +210,7 @@ def custom_process_filesystem(
             "error": f"Error processing filesystem: {e!s}",
             "job_id": job_id,
         }
+
 
 # Mark these tests as integration tests
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j, pytest.mark.celery]
@@ -330,7 +331,7 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
         return test_job_id
 
     # Apply the patch
-    with patch.object(PipelineManager, 'start_job', mock_start_job):
+    with patch.object(PipelineManager, "start_job", mock_start_job):
         # Start a job with our patched method
         job_id = manager.start_job(sample_repo)
 
@@ -346,7 +347,7 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
     # Check that a Repository node was created
     repo_nodes = neo4j_connector.execute_query(
         "MATCH (r:Repository {name: $name}) RETURN r",
-        params={"name": os.path.basename(sample_repo)}
+        params={"name": os.path.basename(sample_repo)},
     )
     assert len(repo_nodes) > 0, "Repository node not found"
 
@@ -400,7 +401,7 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
         return self.active_jobs[job_id]
 
     # Apply the patches
-    with patch.object(PipelineManager, 'start_job', mock_start_job):
+    with patch.object(PipelineManager, "start_job", mock_start_job):
         # Start a job with our patched method
         job_id = manager.start_job(sample_repo)
 
@@ -408,18 +409,22 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
         assert job_id == test_job_id, "Job ID mismatch"
 
         # Apply the stop patch
-        with patch.object(PipelineManager, 'stop', mock_stop):
+        with patch.object(PipelineManager, "stop", mock_stop):
             # Stop the job
             status = manager.stop(job_id)
 
             # Verify that the job was stopped
-            assert status["status"] == StepStatus.STOPPED, f"Job was not stopped: {status}"
+            assert (
+                status["status"] == StepStatus.STOPPED
+            ), f"Job was not stopped: {status}"
 
             # Apply the status patch
-            with patch.object(PipelineManager, 'status', mock_status):
+            with patch.object(PipelineManager, "status", mock_status):
                 # Check the final status
                 final_status = manager.status(job_id)
-                assert final_status["status"] == StepStatus.STOPPED, f"Unexpected job status: {final_status}"
+                assert (
+                    final_status["status"] == StepStatus.STOPPED
+                ), f"Unexpected job status: {final_status}"
 
 
 @pytest.mark.integration
@@ -467,9 +472,9 @@ def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_con
         return self.active_jobs[job_id]
 
     # Ensure _get_step_class returns a non-None value
-    with patch.object(manager, '_get_step_class', return_value=MagicMock()):
+    with patch.object(manager, "_get_step_class", return_value=MagicMock()):
         # Apply the run_single_step patch
-        with patch.object(PipelineManager, 'run_single_step', mock_run_single_step):
+        with patch.object(PipelineManager, "run_single_step", mock_run_single_step):
             # Run the step with our patched method
             job_id = manager.run_single_step(
                 repository_path=sample_repo,
@@ -481,7 +486,7 @@ def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_con
             assert job_id == test_job_id, "Job ID mismatch"
 
             # Apply the status patch
-            with patch.object(PipelineManager, 'status', mock_status):
+            with patch.object(PipelineManager, "status", mock_status):
                 # Get the status directly since our implementation runs synchronously
                 status = manager.status(job_id)
 
@@ -494,6 +499,6 @@ def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_con
     # Check that a Repository node was created
     repo_nodes = neo4j_connector.execute_query(
         "MATCH (r:Repository {name: $name}) RETURN r",
-        params={"name": os.path.basename(sample_repo)}
+        params={"name": os.path.basename(sample_repo)},
     )
     assert len(repo_nodes) > 0, "Repository node not found"

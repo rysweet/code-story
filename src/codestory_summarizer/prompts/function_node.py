@@ -5,7 +5,6 @@ high-quality summaries of function and method nodes.
 """
 
 
-
 def get_function_summary_prompt(
     content: str, context: list[str], max_tokens: int = 8000
 ) -> str:

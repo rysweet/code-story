@@ -108,7 +108,8 @@ def set_setting(
 
 @app.command("list")
 def list_settings(
-    section: str | None = typer.Option(
+    section: str
+    | None = typer.Option(
         None, "--section", "-s", help="Section to list (e.g., 'neo4j')"
     ),
     format: str = typer.Option(
@@ -166,7 +167,8 @@ def export_config(
     format: str = typer.Option(
         "env", "--format", "-f", help="Output format (env, json, toml)"
     ),
-    output: str | None = typer.Option(
+    output: str
+    | None = typer.Option(
         None, "--output", "-o", help="Output file path (default: stdout)"
     ),
     include_secrets: bool = typer.Option(
