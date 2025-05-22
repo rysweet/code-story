@@ -127,13 +127,14 @@ class TestOpenAIClient:
         with patch(
             "codestory.llm.client.get_settings",
             side_effect=Exception("No settings"),
-        ):
-            with patch("codestory.llm.client.DefaultAzureCredential"), patch(
-                "codestory.llm.client.get_bearer_token_provider"
-            ), pytest.raises(AuthenticationError):
-                OpenAIClient()  # No endpoint provided
+        ), patch(
+            "codestory.llm.client.DefaultAzureCredential"
+        ), patch(
+            "codestory.llm.client.get_bearer_token_provider"
+        ), pytest.raises(AuthenticationError):
+            OpenAIClient()  # No endpoint provided
 
-            # No need to test api_key since we're using Azure AD
+        # No need to test api_key since we're using Azure AD
 
     def test_complete(self, client):
         """Test text completion."""

@@ -137,7 +137,7 @@ def test_execute_query_max_retries_exceeded(connector, mock_driver):
     with patch("time.sleep"):
         # The retry decorator is applied to execute_query
         # When called with non-retryable exception it should bubble up as QueryError
-        with pytest.raises(Exception):
+        with pytest.raises(QueryError):
             connector.execute_query("MATCH (n) RETURN n", retry_count=2)
 
 

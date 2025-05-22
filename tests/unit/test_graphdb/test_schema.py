@@ -3,6 +3,15 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from codestory.graphdb.exceptions import SchemaError
+from codestory.graphdb.schema import (
+    create_custom_vector_index,
+    get_all_schema_elements,
+    get_schema_initialization_queries,
+    get_vector_index_query,
+    initialize_schema,
+    verify_schema,
+)
 
 
 # Mock Prometheus metrics to prevent registration conflicts
@@ -23,17 +32,6 @@ def mock_prometheus_metrics():
         mock_histogram.return_value.labels.return_value.observe = MagicMock()
 
         yield
-
-
-from codestory.graphdb.exceptions import SchemaError
-from codestory.graphdb.schema import (
-    create_custom_vector_index,
-    get_all_schema_elements,
-    get_schema_initialization_queries,
-    get_vector_index_query,
-    initialize_schema,
-    verify_schema,
-)
 
 
 def test_get_vector_index_query():
