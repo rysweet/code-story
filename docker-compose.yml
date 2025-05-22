@@ -95,23 +95,23 @@ services:
       start_period: 180s
     environment:
       # Container network connection settings
-      - NEO4J__URI=bolt://neo4j:7687
-      - NEO4J__USERNAME=neo4j
-      - NEO4J__PASSWORD=password
-      - NEO4J__DATABASE=neo4j
+      - NEO4J__URI=${NEO4J__URI}
+      - NEO4J__USERNAME=${NEO4J__USERNAME}
+      - NEO4J__PASSWORD=${NEO4J__PASSWORD}
+      - NEO4J__DATABASE=${NEO4J__DATABASE}
       # Redis connection settings (Celery broker)
-      - REDIS__URI=redis://redis:6379
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS__URI=${REDIS__URI}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       # Azure OpenAI settings
-      - AZURE_OPENAI__ENDPOINT=https://ai-adapt-oai-eastus2.openai.azure.com
-      - AZURE_OPENAI__DEPLOYMENT_ID=o1
-      - AZURE_OPENAI__API_VERSION=2025-03-01-preview
-      - AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+      - AZURE_OPENAI__ENDPOINT=${AZURE_OPENAI__ENDPOINT}
+      - AZURE_OPENAI__DEPLOYMENT_ID=${AZURE_OPENAI__DEPLOYMENT_ID}
+      - AZURE_OPENAI__API_VERSION=${AZURE_OPENAI__API_VERSION}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
       # Worker settings
-      - WORKER_CONCURRENCY=4
-      - WORKER_LOGLEVEL=info
-      - C_FORCE_ROOT=true  # Allow running as root in container (for demo only)
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY}
+      - WORKER_LOGLEVEL=${WORKER_LOGLEVEL}
+      - C_FORCE_ROOT=${C_FORCE_ROOT}  # Allow running as root in container (for demo only)
       
   service:
     image: python:3.12-slim
@@ -162,32 +162,30 @@ services:
         condition: service_healthy
     environment:
       # Container network connection settings - use internal container names for networking
-      - NEO4J__URI=bolt://neo4j:7687
-      - NEO4J__USERNAME=neo4j
-      - NEO4J__PASSWORD=password
-      - NEO4J__DATABASE=neo4j
-      - CODESTORY_CONFIG_PATH=/app/.codestory.container.toml
+      - NEO4J__URI=${NEO4J__URI}
+      - NEO4J__USERNAME=${NEO4J__USERNAME}
+      - NEO4J__PASSWORD=${NEO4J__PASSWORD}
+      - NEO4J__DATABASE=${NEO4J__DATABASE}
+      - CODESTORY_CONFIG_PATH=${CODESTORY_CONFIG_PATH}
       # Redis connection settings
-      - REDIS__URI=redis://redis:6379
-      - REDIS__HOST=redis
-      - REDIS__PORT=6379
+      - REDIS__URI=${REDIS__URI}
+      - REDIS__HOST=${REDIS__HOST}
+      - REDIS__PORT=${REDIS__PORT}
       # Celery settings
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       # Service settings - using standardized CODESTORY_SERVICE_ prefix
-      - CODESTORY_SERVICE_HOST=0.0.0.0
-      - CODESTORY_SERVICE_PORT=8000
-      - CODESTORY_SERVICE_DEV_MODE=true
+      - CODESTORY_SERVICE_HOST=${CODESTORY_SERVICE_HOST}
+      - CODESTORY_SERVICE_PORT=${CODESTORY_SERVICE_PORT}
+      - CODESTORY_SERVICE_DEV_MODE=${CODESTORY_SERVICE_DEV_MODE}
       # Force use of real adapters
-      - USE_REAL_ADAPTERS=true
-      - CODESTORY_SERVICE_AUTH_ENABLED=false
-      # Set core environment to development using standardized CODESTORY_ prefix
-      - CODESTORY_ENVIRONMENT=development
+      - USE_REAL_ADAPTERS=${USE_REAL_ADAPTERS}
+      - CODESTORY_SERVICE_AUTH_ENABLED=${CODESTORY_SERVICE_AUTH_ENABLED}
       # Azure OpenAI settings
-      - AZURE_OPENAI__ENDPOINT=https://ai-adapt-oai-eastus2.openai.azure.com
-      - AZURE_OPENAI__DEPLOYMENT_ID=o1
-      - AZURE_OPENAI__API_VERSION=2025-03-01-preview
-      - AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+      - AZURE_OPENAI__ENDPOINT=${AZURE_OPENAI__ENDPOINT}
+      - AZURE_OPENAI__DEPLOYMENT_ID=${AZURE_OPENAI__DEPLOYMENT_ID}
+      - AZURE_OPENAI__API_VERSION=${AZURE_OPENAI__API_VERSION}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health"]
       interval: 10s

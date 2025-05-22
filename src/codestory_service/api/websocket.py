@@ -5,7 +5,6 @@ and notifications.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status
 
@@ -41,7 +40,7 @@ async def job_status_websocket(
             job = await ingestion_service.get_job_status(job_id)
             logger.info(f"Job {job_id} found with status: {job.status}")
         except Exception as e:
-            logger.error(f"Job {job_id} not found: {str(e)}")
+            logger.error(f"Job {job_id} not found: {e!s}")
             await websocket.close(
                 code=status.WS_1008_POLICY_VIOLATION, reason=f"Job not found: {job_id}"
             )
@@ -52,7 +51,7 @@ async def job_status_websocket(
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for job: {job_id}")
     except Exception as e:
-        logger.error(f"WebSocket error for job {job_id}: {str(e)}")
+        logger.error(f"WebSocket error for job {job_id}: {e!s}")
         try:
             await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason=str(e))
         except Exception:

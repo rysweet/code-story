@@ -4,15 +4,10 @@ These tests verify that tasks are properly registered with the Celery
 application and can be discovered by the worker.
 """
 
-import os
-import pytest
-import time
-from unittest.mock import patch
 
-from celery.result import AsyncResult
+import pytest
 
 from codestory.ingestion_pipeline.celery_app import app as celery_app
-from codestory.ingestion_pipeline.step import StepStatus, generate_job_id
 from codestory_filesystem.step import FileSystemStep
 
 
@@ -51,10 +46,10 @@ def test_filesystem_task_routing():
 def test_run_step_task_name_mapping():
     """Test that the run_step task uses the correct task name mapping."""
     # Import the task function
-    from codestory.ingestion_pipeline.tasks import run_step
-    
     # Check the task_name_map in the function source code
     import inspect
+
+    from codestory.ingestion_pipeline.tasks import run_step
     source = inspect.getsource(run_step)
     
     # Check if the mapping contains the filesystem task with the new naming pattern

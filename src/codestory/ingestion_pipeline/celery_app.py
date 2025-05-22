@@ -5,7 +5,9 @@ for task management and distributed processing.
 """
 
 import logging
+
 from celery import Celery
+
 from ..config.settings import get_settings
 
 # Set up logging

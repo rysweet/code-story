@@ -5,7 +5,8 @@ Progress client for tracking ingestion job progress.
 import json
 import threading
 import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 import redis
 from rich.console import Console
@@ -19,10 +20,10 @@ class ProgressClient:
     def __init__(
         self,
         job_id: str,
-        callback: Callable[[Dict[str, Any]], None],
-        redis_url: Optional[str] = None,
-        console: Optional[Console] = None,
-        settings: Optional[Settings] = None,
+        callback: Callable[[dict[str, Any]], None],
+        redis_url: str | None = None,
+        console: Console | None = None,
+        settings: Settings | None = None,
         poll_interval: float = 1.0,
     ):
         """
@@ -43,7 +44,7 @@ class ProgressClient:
         self.poll_interval = poll_interval
 
         # Set up Redis connection with smarter fallback options
-        self.console.print(f"[dim]Setting up Redis connection for progress tracking...[/]")
+        self.console.print("[dim]Setting up Redis connection for progress tracking...[/]")
         
         # List of possible Redis URLs to try
         redis_urls = []
@@ -89,7 +90,7 @@ class ProgressClient:
                             
                             self.console.print(f"[dim]Detected Docker port mapping: {internal_port} -> {mapped_port}[/]")
                     except Exception as e:
-                        self.console.print(f"[dim]Could not detect Docker port mapping: {str(e)}[/]")
+                        self.console.print(f"[dim]Could not detect Docker port mapping: {e!s}[/]")
                     
                     # Fallback to standard localhost variants if Docker command didn't work
                     localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
@@ -144,13 +145,13 @@ class ProgressClient:
                 connected = True
                 break
             except (redis.RedisError, Exception) as e:
-                self.console.print(f"[dim]Could not connect to Redis at {url}: {str(e)}[/]")
+                self.console.print(f"[dim]Could not connect to Redis at {url}: {e!s}[/]")
                 
         if not connected:
             self.use_redis = False
             self.redis = None
             self.console.print(
-                f"[yellow]Warning: Redis not available after trying multiple endpoints, falling back to polling[/]"
+                "[yellow]Warning: Redis not available after trying multiple endpoints, falling back to polling[/]"
             )
 
         self._stop_event = threading.Event()

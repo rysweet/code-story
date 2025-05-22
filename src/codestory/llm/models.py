@@ -4,10 +4,11 @@ This module defines Pydantic models for serializing and deserializing
 requests and responses for the Azure OpenAI API.
 """
 
-from enum import Enum
-from typing import Any, Dict, List, Optional, Union, TypeVar
-from pydantic import BaseModel, Field, ConfigDict
 import os
+from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatRole(str, Enum):
@@ -25,7 +26,7 @@ class ChatMessage(BaseModel):
 
     role: ChatRole
     content: str
-    name: Optional[str] = None
+    name: str | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -43,9 +44,9 @@ class ChatResponseMessage(BaseModel):
     """A message in a chat completion response."""
 
     role: ChatRole
-    content: Optional[str] = None
-    function_call: Optional[ChatFunctionCall] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
+    content: str | None = None
+    function_call: ChatFunctionCall | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -55,7 +56,7 @@ class ChatResponseChoice(BaseModel):
 
     index: int
     message: ChatResponseMessage
-    finish_reason: Optional[str] = None
+    finish_reason: str | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -69,8 +70,8 @@ class CompletionChoice(BaseModel):
 
     text: str
     index: int
-    finish_reason: Optional[str] = None
-    logprobs: Optional[Dict[str, Any]] = None
+    finish_reason: str | None = None
+    logprobs: dict[str, Any] | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -78,7 +79,7 @@ class CompletionChoice(BaseModel):
 class EmbeddingData(BaseModel):
     """Embedding data for a single input."""
 
-    embedding: List[float]
+    embedding: list[float]
     index: int
     object: str = "embedding"
 
@@ -89,7 +90,7 @@ class UsageInfo(BaseModel):
     """Token usage information."""
 
     prompt_tokens: int
-    completion_tokens: Optional[int] = None
+    completion_tokens: int | None = None
     total_tokens: int
 
     model_config = ConfigDict(extra="allow")
@@ -106,18 +107,18 @@ class CompletionRequest(BaseModel):
     """Parameters for a completion request."""
 
     model: str
-    prompt: Union[str, List[str], List[int], List[List[int]]]
-    max_tokens: Optional[int] = None
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    n: Optional[int] = None
-    stream: Optional[bool] = None
-    logprobs: Optional[int] = None
-    stop: Optional[Union[str, List[str]]] = None
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    best_of: Optional[int] = None
-    user: Optional[str] = None
+    prompt: str | list[str] | list[int] | list[list[int]]
+    max_tokens: int | None = None
+    temperature: float | None = None
+    top_p: float | None = None
+    n: int | None = None
+    stream: bool | None = None
+    logprobs: int | None = None
+    stop: str | list[str] | None = None
+    presence_penalty: float | None = None
+    frequency_penalty: float | None = None
+    best_of: int | None = None
+    user: str | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -126,22 +127,22 @@ class ChatCompletionRequest(BaseModel):
     """Parameters for a chat completion request."""
 
     model: str
-    messages: List[ChatMessage]
-    max_tokens: Optional[int] = None
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    n: Optional[int] = None
-    stream: Optional[bool] = None
-    stop: Optional[Union[str, List[str]]] = None
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    logit_bias: Optional[Dict[str, float]] = None
-    user: Optional[str] = None
-    functions: Optional[List[Dict[str, Any]]] = None
-    function_call: Optional[Union[str, Dict[str, Any]]] = None
-    tools: Optional[List[Dict[str, Any]]] = None
-    tool_choice: Optional[Union[str, Dict[str, Any]]] = None
-    response_format: Optional[Dict[str, str]] = None
+    messages: list[ChatMessage]
+    max_tokens: int | None = None
+    temperature: float | None = None
+    top_p: float | None = None
+    n: int | None = None
+    stream: bool | None = None
+    stop: str | list[str] | None = None
+    presence_penalty: float | None = None
+    frequency_penalty: float | None = None
+    logit_bias: dict[str, float] | None = None
+    user: str | None = None
+    functions: list[dict[str, Any]] | None = None
+    function_call: str | dict[str, Any] | None = None
+    tools: list[dict[str, Any]] | None = None
+    tool_choice: str | dict[str, Any] | None = None
+    response_format: dict[str, str] | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -150,9 +151,9 @@ class EmbeddingRequest(BaseModel):
     """Parameters for an embedding request."""
 
     model: str
-    input: Union[str, List[str], List[int], List[List[int]]]
-    user: Optional[str] = None
-    dimensions: Optional[int] = None
+    input: str | list[str] | list[int] | list[list[int]]
+    user: str | None = None
+    dimensions: int | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -167,8 +168,8 @@ class CompletionResponse(BaseModel):
     object: str
     created: int
     model: str
-    choices: List[CompletionChoice]
-    usage: Optional[UsageInfo] = None
+    choices: list[CompletionChoice]
+    usage: UsageInfo | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -180,8 +181,8 @@ class ChatCompletionResponse(BaseModel):
     object: str
     created: int
     model: str
-    choices: List[ChatResponseChoice]
-    usage: Optional[UsageInfo] = None
+    choices: list[ChatResponseChoice]
+    usage: UsageInfo | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -190,7 +191,7 @@ class EmbeddingResponse(BaseModel):
     """Response from an embedding request."""
 
     object: str
-    data: List[EmbeddingData]
+    data: list[EmbeddingData]
     model: str
     usage: UsageInfo
 
@@ -228,7 +229,7 @@ class LLMConfiguration(BaseModel):
         default=True, 
         description="Whether to allow automatic fallback to API key auth when Azure auth fails"
     )
-    fallback_api_key: Optional[str] = Field(
+    fallback_api_key: str | None = Field(
         default=None,
         description="Fallback API key to use when Azure auth fails"
     )
@@ -237,7 +238,6 @@ class LLMConfiguration(BaseModel):
     @classmethod
     def from_environment(cls) -> 'LLMConfiguration':
         """Create an LLMConfiguration instance from environment variables."""
-        
         # Check environment variables for mode setting
         mode_str = os.environ.get("CODESTORY_LLM_MODE", "normal").lower()
         provider_str = os.environ.get("CODESTORY_LLM_PROVIDER", "openai").lower()

@@ -1,7 +1,7 @@
 """Tests for OpenAI client implementation."""
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import openai
 import pytest
@@ -394,7 +394,7 @@ class TestCreateClient:
                 mock_get_settings.return_value = mock_settings
 
                 # This is what we're testing
-                client = create_client()
+                create_client()
 
                 # Verify client was created with the correct settings
                 mock_client_class.assert_called_once_with(

@@ -1,15 +1,13 @@
 """Unit tests for the ServiceClient class."""
 
-import os
 import tempfile
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 import httpx
+import pytest
 from rich.console import Console
 
 from codestory.cli.client.service_client import ServiceClient, ServiceError
-from codestory.config import Settings
 
 
 class TestServiceClient:

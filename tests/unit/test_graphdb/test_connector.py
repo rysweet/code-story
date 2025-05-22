@@ -1,14 +1,12 @@
 """Unit tests for the Neo4jConnector class."""
 
-import asyncio
-import pytest
-import time
-from unittest.mock import MagicMock, patch, AsyncMock
-from typing import Dict, Any, List
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from neo4j.exceptions import ServiceUnavailable
+
+from codestory.graphdb.exceptions import TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.graphdb.exceptions import ConnectionError, QueryError, TransactionError
 
 
 @pytest.fixture

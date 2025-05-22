@@ -4,11 +4,10 @@ This module provides prompt templates specifically designed for generating
 high-quality summaries of function and method nodes.
 """
 
-from typing import Dict, List, Union
 
 
 def get_function_summary_prompt(
-    content: str, context: List[str], max_tokens: int = 8000
+    content: str, context: list[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a function.
 
@@ -50,7 +49,7 @@ Summary:
 
 
 def get_method_summary_prompt(
-    content: str, context: List[str], max_tokens: int = 8000
+    content: str, context: list[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a method.
 
@@ -92,7 +91,7 @@ Summary:
 
 
 def get_summary_prompt(
-    content: str, context: List[str], is_method: bool = False, max_tokens: int = 8000
+    content: str, context: list[str], is_method: bool = False, max_tokens: int = 8000
 ) -> str:
     """Generate an appropriate prompt based on whether it's a function or method.
 

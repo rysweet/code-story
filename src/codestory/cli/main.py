@@ -1,7 +1,6 @@
 """Main CLI application for Code Story."""
 
 import sys
-from typing import Optional, Union
 
 import click
 from click_didyoumean import DYMGroup
@@ -104,7 +103,7 @@ class CodeStoryCommandGroup(DYMGroup):
 )
 @click.pass_context
 def app(
-    ctx: click.Context, service_url: Union[str, None] = None, api_key: Union[str, None] = None
+    ctx: click.Context, service_url: str | None = None, api_key: str | None = None
 ) -> None:
     """
     Code Story CLI application.

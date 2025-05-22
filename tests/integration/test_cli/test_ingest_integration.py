@@ -1,16 +1,15 @@
 """Integration tests for CLI ingestion commands."""
 
-import time
-import json
 import os
 import tempfile
-from typing import Dict, Any
+import time
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
 
-from codestory.cli.main import app
 from codestory.cli.commands.ingest import is_docker_running, is_repo_mounted
+from codestory.cli.main import app
 
 
 class TestIngestCommands:
@@ -18,7 +17,7 @@ class TestIngestCommands:
     
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_ingest_start_and_status(self, cli_runner: CliRunner, running_service: Dict[str, Any], 
+    def test_ingest_start_and_status(self, cli_runner: CliRunner, running_service: dict[str, Any], 
                                      test_repository: str) -> None:
         """Test 'ingest start' and 'ingest status' commands with real repository."""
         # Start ingestion
@@ -65,7 +64,7 @@ class TestIngestCommands:
     
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_ingest_jobs_list(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_ingest_jobs_list(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'ingest jobs' command with real service."""
         # List all jobs
         result = cli_runner.invoke(app, ["ingest", "jobs"])
@@ -78,7 +77,7 @@ class TestIngestCommands:
         
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_mount_command(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_mount_command(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test the 'ingest mount' command with a real repository."""
         # Only run this test if Docker is available
         if not is_docker_running():
@@ -108,7 +107,7 @@ class TestIngestCommands:
             
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_force_remount(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_force_remount(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test the '--force-remount' option with a real repository."""
         # Only run this test if Docker is available
         if not is_docker_running():

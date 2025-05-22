@@ -2,16 +2,14 @@
 Unit tests for repository mounting functionality in the ingest command.
 """
 
-import os
 import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
-from click.testing import CliRunner
 from rich.console import Console
 
-from codestory.cli.commands import ingest
 from codestory.cli.client.service_client import ServiceClient
+from codestory.cli.commands import ingest
 
 
 @pytest.fixture

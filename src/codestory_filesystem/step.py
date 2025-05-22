@@ -8,7 +8,7 @@ import logging
 import os
 import time
 import traceback
-from typing import Any, Dict, Optional
+from typing import Any
 
 from celery import shared_task
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Configure detailed logging
 DEBUG_ENABLED = True  # Set to False to disable detailed debug logs
 
-def log_debug(message: str, job_id: Optional[str] = None) -> None:
+def log_debug(message: str, job_id: str | None = None) -> None:
     """Log a debug message with consistent formatting.
     
     Args:
@@ -35,7 +35,7 @@ def log_debug(message: str, job_id: Optional[str] = None) -> None:
         logger.debug(formatted_message)
         print(formatted_message)  # Also print for console visibility
 
-def log_info(message: str, job_id: Optional[str] = None) -> None:
+def log_info(message: str, job_id: str | None = None) -> None:
     """Log an info message with consistent formatting.
     
     Args:
@@ -48,7 +48,7 @@ def log_info(message: str, job_id: Optional[str] = None) -> None:
     if DEBUG_ENABLED:
         print(formatted_message)
 
-def log_error(message: str, error: Optional[Exception] = None, job_id: Optional[str] = None) -> None:
+def log_error(message: str, error: Exception | None = None, job_id: str | None = None) -> None:
     """Log an error message with consistent formatting and optional exception details.
     
     Args:
@@ -60,7 +60,7 @@ def log_error(message: str, error: Optional[Exception] = None, job_id: Optional[
     formatted_message = f"FILESYSTEM_STEP ERROR: {job_context}{message}"
     
     if error:
-        formatted_message += f": {str(error)}"
+        formatted_message += f": {error!s}"
         logger.error(formatted_message, exc_info=error)
     else:
         logger.error(formatted_message)
@@ -72,7 +72,7 @@ def log_error(message: str, error: Optional[Exception] = None, job_id: Optional[
         stack_trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         print(f"FILESYSTEM_STEP STACK TRACE: {job_context}\n{stack_trace}")
 
-def log_progress(progress: Dict[str, Any], job_id: Optional[str] = None) -> None:
+def log_progress(progress: dict[str, Any], job_id: str | None = None) -> None:
     """Log progress information with consistent formatting.
     
     Args:
@@ -216,6 +216,7 @@ class FileSystemStep(PipelineStep):
 
         try:
             from celery.result import AsyncResult
+
             from codestory.ingestion_pipeline.celery_app import app
 
             # Get status from Celery
@@ -296,7 +297,7 @@ class FileSystemStep(PipelineStep):
             # Update job info with error status
             job_info.update({
                 "status": StepStatus.FAILED,
-                "error": f"Status check failed: {str(e)}",
+                "error": f"Status check failed: {e!s}",
             })
             
             return job_info
@@ -347,7 +348,7 @@ class FileSystemStep(PipelineStep):
             # Update job info with error status but still mark as stopped
             job_info.update({
                 "status": StepStatus.STOPPED,
-                "message": f"Job {job_id} marked as stopped, but encountered error: {str(e)}",
+                "message": f"Job {job_id} marked as stopped, but encountered error: {e!s}",
                 "error": str(e),
             })
             
@@ -382,7 +383,7 @@ class FileSystemStep(PipelineStep):
                 job_info = self.active_jobs[job_id]
                 job_info.update({
                     "status": StepStatus.CANCELLED,
-                    "message": f"Job {job_id} marked as cancelled, but encountered error: {str(e)}",
+                    "message": f"Job {job_id} marked as cancelled, but encountered error: {e!s}",
                     "error": str(e),
                 })
                 
@@ -484,7 +485,7 @@ def process_filesystem(
         repo_contents = os.listdir(repository_path)[:10]
         log_debug(f"Repository sample contents (first 10): {repo_contents}", job_id)
     except Exception as e:
-        log_error(f"Error listing repository contents", error=e, job_id=job_id)
+        log_error("Error listing repository contents", error=e, job_id=job_id)
 
     # Default ignore patterns if not provided
     if ignore_patterns is None:
@@ -508,7 +509,7 @@ def process_filesystem(
     
     # Get settings for the default configuration
     settings = get_settings()
-    log_info(f"Attempting to connect to Neo4j database", job_id)
+    log_info("Attempting to connect to Neo4j database", job_id)
     log_debug(f"Neo4j settings from config: uri={settings.neo4j.uri}, database={settings.neo4j.database}", job_id)
     
     # Different ways to connect to Neo4j
@@ -551,7 +552,7 @@ def process_filesystem(
             neo4j = Neo4jConnector(**params)
             
             # Test the connection with a simple query
-            log_debug(f"Testing Neo4j connection with simple query", job_id)
+            log_debug("Testing Neo4j connection with simple query", job_id)
             test_result = neo4j.execute_query("MATCH (n) RETURN count(n) as count LIMIT 1")
             log_info(f"Neo4j connection successful to {connection_uri}", job_id)
             log_debug(f"Connection test result: {test_result}", job_id)
@@ -571,7 +572,7 @@ def process_filesystem(
     # Check if a working connection was found
     if not neo4j:
         error_details = "\n".join(errors)
-        error_msg = f"All Neo4j connection attempts failed. Cannot proceed without database connection."
+        error_msg = "All Neo4j connection attempts failed. Cannot proceed without database connection."
         log_error(error_msg, job_id=job_id)
         log_debug(f"Detailed connection errors:\n{error_details}", job_id)
         
@@ -617,7 +618,7 @@ def process_filesystem(
                 test_result = neo4j.execute_query(test_query)
                 f.write(f"Neo4j connection test result: {test_result}\n")
             except Exception as e:
-                f.write(f"Neo4j test query failed: {str(e)}\n")
+                f.write(f"Neo4j test query failed: {e!s}\n")
 
         # Create repository node with MERGE to handle existing nodes
         repo_name = os.path.basename(repository_path)
@@ -642,9 +643,9 @@ def process_filesystem(
             
             log_debug(f"Repository node created or updated: {repo_node}", job_id)
             if not repo_node:
-                log_error(f"Failed to create repository node - query returned no results", job_id=job_id)
+                log_error("Failed to create repository node - query returned no results", job_id=job_id)
         except Exception as e:
-            log_error(f"Error creating repository node", error=e, job_id=job_id)
+            log_error("Error creating repository node", error=e, job_id=job_id)
             raise
 
         # Process the repository
@@ -655,7 +656,7 @@ def process_filesystem(
             contents = os.listdir(repository_path)
             log_debug(f"Top-level repository contents: {contents[:10]}...", job_id)
         except Exception as e:
-            log_error(f"Error listing repository contents", error=e, job_id=job_id)
+            log_error("Error listing repository contents", error=e, job_id=job_id)
 
         # Track overall directory processing performance
         dir_timing_stats = {
@@ -704,7 +705,7 @@ def process_filesystem(
             if rel_dir_path == ".":
                 # This is the repository root
                 dir_node = repo_node
-                log_info(f"Using repository node as root directory node", job_id)
+                log_info("Using repository node as root directory node", job_id)
             else:
                 log_info(f"Creating directory node: {rel_dir_path}", job_id)
                 try:
@@ -812,7 +813,7 @@ def process_filesystem(
                             },
                         )
                     except Exception as e:
-                        log_error(f"Error updating directory progress state", error=e, job_id=job_id)
+                        log_error("Error updating directory progress state", error=e, job_id=job_id)
                     
                 except Exception as e:
                     log_error(f"Error creating directory node for {rel_dir_path}", error=e, job_id=job_id)
@@ -984,7 +985,7 @@ def process_filesystem(
                                 },
                             )
                         except Exception as e:
-                            log_error(f"Error updating progress state", error=e, job_id=job_id)
+                            log_error("Error updating progress state", error=e, job_id=job_id)
                 
                 except Exception as e:
                     log_error(f"Error creating file node for {file_path}", error=e, job_id=job_id)
@@ -1060,7 +1061,7 @@ def process_filesystem(
 
         # Store processing record in database with detailed timing
         try:
-            log_info(f"Creating processing record for completed job", job_id)
+            log_info("Creating processing record for completed job", job_id)
             
             # Create a processing record with MERGE
             record_query = """
@@ -1095,9 +1096,9 @@ def process_filesystem(
                 write=True
             )
             
-            log_debug(f"Successfully created processing record with performance data", job_id)
+            log_debug("Successfully created processing record with performance data", job_id)
         except Exception as e:
-            log_error(f"Error creating processing record", error=e, job_id=job_id)
+            log_error("Error creating processing record", error=e, job_id=job_id)
             # Continue despite record creation failure
 
         # Log completion
@@ -1125,7 +1126,7 @@ def process_filesystem(
                 }
             )
         except Exception as e:
-            log_error(f"Error updating final task state", error=e, job_id=job_id)
+            log_error("Error updating final task state", error=e, job_id=job_id)
 
         # Return final result with detailed timing info
         return {
@@ -1154,7 +1155,7 @@ def process_filesystem(
                 }
             )
         except Exception as state_error:
-            log_error(f"Error updating failure state", error=state_error, job_id=job_id)
+            log_error("Error updating failure state", error=state_error, job_id=job_id)
         
         return {
             "status": StepStatus.FAILED,
@@ -1166,7 +1167,7 @@ def process_filesystem(
         # Always close Neo4j connection
         if neo4j:
             try:
-                log_debug(f"Closing Neo4j connection", job_id)
+                log_debug("Closing Neo4j connection", job_id)
                 neo4j.close()
             except Exception as close_error:
-                log_error(f"Error closing Neo4j connection", error=close_error, job_id=job_id)
+                log_error("Error closing Neo4j connection", error=close_error, job_id=job_id)

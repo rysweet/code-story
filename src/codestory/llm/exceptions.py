@@ -4,7 +4,7 @@ This module defines custom exception types for various error conditions
 that can occur when interacting with the Azure OpenAI API.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class OpenAIError(Exception):
@@ -13,8 +13,8 @@ class OpenAIError(Exception):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        cause: Optional[Exception] = None,
+        details: dict[str, Any] | None = None,
+        cause: Exception | None = None,
     ) -> None:
         """Initialize OpenAIError.
 
@@ -28,7 +28,7 @@ class OpenAIError(Exception):
         self.cause = cause
 
         if cause:
-            super().__init__(f"{message} - caused by: {str(cause)}")
+            super().__init__(f"{message} - caused by: {cause!s}")
         else:
             super().__init__(message)
 
@@ -45,7 +45,7 @@ class RateLimitError(OpenAIError):
     def __init__(
         self,
         message: str,
-        retry_after: Optional[int] = None,
+        retry_after: int | None = None,
         **kwargs,
     ) -> None:
         """Initialize RateLimitError.
@@ -83,8 +83,8 @@ class ContextLengthError(InvalidRequestError):
     def __init__(
         self,
         message: str,
-        max_tokens: Optional[int] = None,
-        input_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
+        input_tokens: int | None = None,
         **kwargs,
     ) -> None:
         """Initialize ContextLengthError.

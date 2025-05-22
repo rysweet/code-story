@@ -6,11 +6,15 @@ from ReStructuredText documentation files.
 
 import logging
 import re
-import uuid
-from typing import Dict, List, Optional, Tuple
 
-from ..models import DocumentationEntity, DocumentationFile, DocumentationRelationship
-from ..models import DocumentType, EntityType, RelationType
+from ..models import (
+    DocumentationEntity,
+    DocumentationFile,
+    DocumentationRelationship,
+    DocumentType,
+    EntityType,
+    RelationType,
+)
 from .parser_factory import Parser, ParserFactory
 
 logger = logging.getLogger(__name__)
@@ -73,7 +77,7 @@ class RstParser(Parser):
             re.compile(r":file:`([^`]+)`"),
         ]
 
-    def parse(self, document: DocumentationFile) -> Dict:
+    def parse(self, document: DocumentationFile) -> dict:
         """Parse a ReStructuredText documentation file.
 
         Args:
@@ -138,7 +142,7 @@ class RstParser(Parser):
 
     def _extract_headings_style1(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract headings with over/underlines from ReStructuredText content.
 
         Args:
@@ -180,7 +184,7 @@ class RstParser(Parser):
 
     def _extract_headings_style2(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract headings with underlines from ReStructuredText content.
 
         Args:
@@ -240,8 +244,8 @@ class RstParser(Parser):
         return min(level, 6)  # Cap at level 6
 
     def _create_heading_hierarchy(
-        self, headings: List[DocumentationEntity]
-    ) -> List[DocumentationRelationship]:
+        self, headings: list[DocumentationEntity]
+    ) -> list[DocumentationRelationship]:
         """Create hierarchy relationships between headings.
 
         Args:
@@ -285,7 +289,7 @@ class RstParser(Parser):
 
     def _extract_code_blocks(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract code blocks from ReStructuredText content.
 
         Args:
@@ -321,7 +325,7 @@ class RstParser(Parser):
 
         return entities
 
-    def _extract_links(self, content: str, file_path: str) -> List[DocumentationEntity]:
+    def _extract_links(self, content: str, file_path: str) -> list[DocumentationEntity]:
         """Extract links from ReStructuredText content.
 
         Args:
@@ -401,7 +405,7 @@ class RstParser(Parser):
 
     def _extract_images(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract images from ReStructuredText content.
 
         Args:
@@ -436,7 +440,7 @@ class RstParser(Parser):
 
         return entities
 
-    def _extract_lists(self, content: str, file_path: str) -> List[DocumentationEntity]:
+    def _extract_lists(self, content: str, file_path: str) -> list[DocumentationEntity]:
         """Extract lists from ReStructuredText content.
 
         Args:
@@ -473,7 +477,7 @@ class RstParser(Parser):
 
     def _extract_code_references(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract code references from ReStructuredText content.
 
         Args:
@@ -521,9 +525,9 @@ class RstParser(Parser):
 
     def _create_entity_relationships(
         self,
-        containers: List[DocumentationEntity],
-        contained: List[DocumentationEntity],
-    ) -> List[DocumentationRelationship]:
+        containers: list[DocumentationEntity],
+        contained: list[DocumentationEntity],
+    ) -> list[DocumentationRelationship]:
         """Create relationships between container entities and contained entities.
 
         Args:

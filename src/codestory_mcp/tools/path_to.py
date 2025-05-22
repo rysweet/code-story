@@ -3,8 +3,7 @@
 This module implements the pathTo tool for the MCP Adapter.
 """
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import structlog
 from fastapi import status
@@ -49,7 +48,7 @@ class PathToTool(BaseTool):
         self.openai_service = get_openai_service()
         self.metrics = get_metrics()
 
-    async def __call__(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def __call__(self, params: dict[str, Any]) -> dict[str, Any]:
         """Execute the tool with the given parameters.
 
         Args:
@@ -172,6 +171,6 @@ class PathToTool(BaseTool):
                 raise
 
             raise ToolError(
-                f"Path finding failed: {str(e)}",
+                f"Path finding failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

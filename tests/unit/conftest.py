@@ -1,35 +1,20 @@
 """Pytest configuration for unit tests."""
 
 import os
-import pytest
 import sys
-from unittest.mock import patch
-from typing import Dict, Any
 
+import pytest
 from dotenv import load_dotenv
-from codestory.config.settings import (
-    Settings,
-    Neo4jSettings,
-    RedisSettings,
-    OpenAISettings,
-    AzureOpenAISettings,
-    ServiceSettings,
-    IngestionSettings,
-    PluginSettings,
-    TelemetrySettings,
-    InterfaceSettings,
-    AzureSettings,
-)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_settings():
     """Mock the settings module to use test settings for all unit tests."""
     # Import the test settings module to setup test settings
-    from tests.unit.test_settings import setup_test_settings, test_settings
-
     # Override required methods for correct behavior in tests
     from unittest.mock import MagicMock
+
+    from tests.unit.test_settings import setup_test_settings, test_settings
 
     # Ensure any attribute lookup returns a mock object
     def getattr_mock(instance, name):
@@ -44,8 +29,8 @@ def mock_settings():
     patches = setup_test_settings()
 
     # Patch at every level to make sure it's used everywhere
-    import sys
     import importlib
+
     from codestory.config import settings as settings_module
 
     # Force reload the module to ensure patches take effect

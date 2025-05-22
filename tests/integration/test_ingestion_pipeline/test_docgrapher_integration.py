@@ -11,7 +11,7 @@ neo4j_port = "7688"
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -22,7 +22,6 @@ os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "testdb"
 os.environ["REDIS__URI"] = "redis://localhost:6380"
 
-from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.llm.models import (
     ChatCompletionResponse,
@@ -251,7 +250,7 @@ def initialized_repo(sample_repo, neo4j_connector):
 
     # Find the sample.py file
     sample_file_result = neo4j_connector.execute_query(
-        f"MATCH (f:File WHERE f.path CONTAINS 'sample.py') RETURN ID(f) as id"
+        "MATCH (f:File WHERE f.path CONTAINS 'sample.py') RETURN ID(f) as id"
     )
     
     if sample_file_result:

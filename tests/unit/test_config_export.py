@@ -3,16 +3,15 @@
 import json
 import os
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import SecretStr
 
 from codestory.config import (
     Settings,
-    export_to_json,
-    export_to_toml,
     create_env_template,
+    export_to_json,
     settings_to_dict,
 )
 from codestory.config.export import _redact_secrets
@@ -26,7 +25,6 @@ def mock_settings():
     # Create mock nested settings
     settings.app_name = "code-story"
     settings.version = "0.1.0"
-    settings.environment = "development"
     settings.log_level = "INFO"
     settings.auth_enabled = False
 
@@ -87,7 +85,6 @@ def mock_settings():
     settings.model_dump.return_value = {
         "app_name": "code-story",
         "version": "0.1.0",
-        "environment": "development",
         "log_level": "INFO",
         "auth_enabled": False,
         "neo4j": {
@@ -270,7 +267,7 @@ def test_export_to_json(mock_settings):
                 export_to_json(output_path=tmp_path, redact_secrets=False)
 
             # Read and parse the file
-            with open(tmp_path, "r") as f:
+            with open(tmp_path) as f:
                 data = json.load(f)
 
             # Assert structure is preserved
@@ -315,7 +312,7 @@ def test_create_env_template(mock_settings):
             create_env_template(output_path=tmp_path, include_comments=False)
 
             # Read the file
-            with open(tmp_path, "r") as f:
+            with open(tmp_path) as f:
                 content = f.read()
 
             # Assert content is correct

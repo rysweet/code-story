@@ -6,7 +6,6 @@ to extract entities, relationships, and other information.
 
 import logging
 import re
-from typing import Dict, List, Optional, Set, Tuple
 
 from codestory.llm.client import create_client
 from codestory.llm.models import ChatMessage, ChatRole
@@ -40,7 +39,7 @@ class ContentAnalyzer:
         self.api_class_pattern = re.compile(r"`([A-Z][a-zA-Z0-9_]*)`")
         self.api_module_pattern = re.compile(r"`([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)`")
 
-    def analyze_entity_content(self, entity: DocumentationEntity) -> Dict:
+    def analyze_entity_content(self, entity: DocumentationEntity) -> dict:
         """Analyze the content of a documentation entity.
 
         Args:
@@ -68,7 +67,7 @@ class ContentAnalyzer:
             # Generic analysis for other entity types
             return self._analyze_generic(content)
 
-    def _analyze_heading(self, content: str) -> Dict:
+    def _analyze_heading(self, content: str) -> dict:
         """Analyze a heading.
 
         Args:
@@ -95,7 +94,7 @@ class ContentAnalyzer:
 
         return {"keywords": keywords, "section_type": section_type}
 
-    def _analyze_code_block(self, content: str, language: str) -> Dict:
+    def _analyze_code_block(self, content: str, language: str) -> dict:
         """Analyze a code block.
 
         Args:
@@ -147,7 +146,7 @@ class ContentAnalyzer:
             "definitions": definitions,
         }
 
-    def _analyze_function_desc(self, content: str) -> Dict:
+    def _analyze_function_desc(self, content: str) -> dict:
         """Analyze a function description.
 
         Args:
@@ -189,7 +188,7 @@ class ContentAnalyzer:
             "purpose": purpose,
         }
 
-    def _analyze_class_desc(self, content: str) -> Dict:
+    def _analyze_class_desc(self, content: str) -> dict:
         """Analyze a class description.
 
         Args:
@@ -219,7 +218,7 @@ class ContentAnalyzer:
 
         return {"methods": methods, "attributes": attributes, "purpose": purpose}
 
-    def _analyze_module_desc(self, content: str) -> Dict:
+    def _analyze_module_desc(self, content: str) -> dict:
         """Analyze a module description.
 
         Args:
@@ -249,7 +248,7 @@ class ContentAnalyzer:
 
         return {"classes": classes, "functions": functions, "purpose": purpose}
 
-    def _analyze_generic(self, content: str) -> Dict:
+    def _analyze_generic(self, content: str) -> dict:
         """Analyze generic content.
 
         Args:
@@ -268,7 +267,7 @@ class ContentAnalyzer:
 
         return {"api_references": api_refs, "keywords": keywords}
 
-    def _extract_keywords(self, content: str) -> List[str]:
+    def _extract_keywords(self, content: str) -> list[str]:
         """Extract keywords from content.
 
         Args:

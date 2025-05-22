@@ -4,11 +4,10 @@ This module provides prompt templates specifically designed for generating
 high-quality summaries of file nodes.
 """
 
-from typing import Dict, List, Union
 
 
 def get_file_summary_prompt(
-    content: str, context: List[str], max_tokens: int = 8000
+    content: str, context: list[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a file.
 
@@ -50,7 +49,7 @@ Summary:
 
 
 def get_config_file_summary_prompt(
-    content: str, context: List[str], max_tokens: int = 8000
+    content: str, context: list[str], max_tokens: int = 8000
 ) -> str:
     """Generate a prompt for summarizing a configuration file.
 
@@ -160,7 +159,7 @@ def is_config_file(file_path: str, content: str) -> bool:
 
 
 def get_summary_prompt(
-    content: str, context: List[str], file_path: str = "", max_tokens: int = 8000
+    content: str, context: list[str], file_path: str = "", max_tokens: int = 8000
 ) -> str:
     """Generate an appropriate prompt based on the file type.
 

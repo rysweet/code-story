@@ -5,8 +5,7 @@ including token validation, user management, and role-based access control.
 """
 
 import logging
-import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 
@@ -93,13 +92,13 @@ class AuthService:
             if isinstance(e, HTTPException):
                 raise e
 
-            logger.error(f"Login failed: {str(e)}")
+            logger.error(f"Login failed: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Login failed: {str(e)}",
+                detail=f"Login failed: {e!s}",
             )
 
-    async def get_user_info(self, claims: Dict[str, Any]) -> UserInfo:
+    async def get_user_info(self, claims: dict[str, Any]) -> UserInfo:
         """Get information about the current user.
 
         Args:
@@ -117,7 +116,7 @@ class AuthService:
         )
 
     def check_permission(
-        self, claims: Dict[str, Any], required_roles: List[str]
+        self, claims: dict[str, Any], required_roles: list[str]
     ) -> bool:
         """Check if the user has the required permissions.
 

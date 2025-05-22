@@ -4,9 +4,7 @@ import json
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
-from typing import Dict, Any, List
 
-import pytest
 from click.testing import CliRunner
 
 from codestory.cli.main import app
@@ -210,7 +208,7 @@ class TestQueryCommands:
                     mock_service_client.execute_query.assert_called_once()
                     
                     # Check file content
-                    with open(temp_file.name, "r") as f:
+                    with open(temp_file.name) as f:
                         content = json.load(f)
                         assert "records" in content
                         assert content["records"][0]["name"] == "test_node"
@@ -256,7 +254,7 @@ class TestQueryCommands:
                     mock_service_client.execute_query.assert_called_once()
                     
                     # Check file content
-                    with open(temp_file.name, "r") as f:
+                    with open(temp_file.name) as f:
                         content = f.read()
                         assert "name,type" in content
                         assert "test_node,class" in content.replace(" ", "")

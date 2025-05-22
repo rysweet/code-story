@@ -5,35 +5,30 @@ building on the core Neo4jConnector with additional functionality required
 by the service layer.
 """
 
-import asyncio
 import logging
 import time
-from functools import wraps
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.graphdb.exceptions import (
-    ConnectionError,
-    Neo4jError,
     QueryError,
-    SchemaError,
     TransactionError,
 )
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 from ..domain.graph import (
     CypherQuery,
-    QueryResult,
-    QueryResultFormat,
-    VectorQuery,
-    VectorResult,
-    SearchResult,
-    PathRequest,
-    PathResult,
     Path,
     PathNode,
     PathRelationship,
+    PathRequest,
+    PathResult,
+    QueryResult,
+    QueryResultFormat,
+    SearchResult,
+    VectorQuery,
+    VectorResult,
 )
 
 # Set up logging
@@ -48,7 +43,7 @@ class Neo4jAdapter:
     domain models and Neo4j data structures.
     """
 
-    def __init__(self, connector: Optional[Neo4jConnector] = None) -> None:
+    def __init__(self, connector: Neo4jConnector | None = None) -> None:
         """Initialize the Neo4j adapter.
 
         Args:
@@ -60,7 +55,7 @@ class Neo4jAdapter:
         """
         self.connector = connector or Neo4jConnector()
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         """Check Neo4j database health.
 
         Returns:
@@ -86,7 +81,7 @@ class Neo4jAdapter:
                 },
             }
         except Exception as e:
-            logger.error(f"Neo4j health check failed: {str(e)}")
+            logger.error(f"Neo4j health check failed: {e!s}")
             return {
                 "status": "unhealthy",
                 "details": {
@@ -146,20 +141,20 @@ class Neo4jAdapter:
             )
 
         except (QueryError, TransactionError) as e:
-            logger.error(f"Query execution failed: {str(e)}")
+            logger.error(f"Query execution failed: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Query execution failed: {str(e)}",
+                detail=f"Query execution failed: {e!s}",
             )
         except Exception as e:
-            logger.error(f"Unexpected error in query execution: {str(e)}")
+            logger.error(f"Unexpected error in query execution: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error: {str(e)}",
+                detail=f"Unexpected error: {e!s}",
             )
 
     async def execute_vector_search(
-        self, query_model: VectorQuery, embedding: List[float]
+        self, query_model: VectorQuery, embedding: list[float]
     ) -> VectorResult:
         """Execute a vector similarity search.
 
@@ -276,16 +271,16 @@ class Neo4jAdapter:
             )
 
         except QueryError as e:
-            logger.error(f"Vector search failed: {str(e)}")
+            logger.error(f"Vector search failed: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Vector search failed: {str(e)}",
+                detail=f"Vector search failed: {e!s}",
             )
         except Exception as e:
-            logger.error(f"Unexpected error in vector search: {str(e)}")
+            logger.error(f"Unexpected error in vector search: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error: {str(e)}",
+                detail=f"Unexpected error: {e!s}",
             )
 
     async def find_path(self, path_request: PathRequest) -> PathResult:
@@ -432,16 +427,16 @@ class Neo4jAdapter:
             )
 
         except QueryError as e:
-            logger.error(f"Path finding failed: {str(e)}")
+            logger.error(f"Path finding failed: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Path finding failed: {str(e)}",
+                detail=f"Path finding failed: {e!s}",
             )
         except Exception as e:
-            logger.error(f"Unexpected error in path finding: {str(e)}")
+            logger.error(f"Unexpected error in path finding: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error: {str(e)}",
+                detail=f"Unexpected error: {e!s}",
             )
 
 
@@ -455,7 +450,7 @@ class DummyNeo4jConnector:
         """Initialize the dummy connector."""
         logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
     
-    def check_connection(self) -> Dict[str, Any]:
+    def check_connection(self) -> dict[str, Any]:
         """Return dummy connection info."""
         return {
             "database": "dummy",
@@ -467,8 +462,8 @@ class DummyNeo4jConnector:
         pass
     
     def execute_query(
-        self, query: str, params: Optional[Dict[str, Any]] = None, write: bool = False
-    ) -> List[Dict[str, Any]]:
+        self, query: str, params: dict[str, Any] | None = None, write: bool = False
+    ) -> list[dict[str, Any]]:
         """Return dummy query results."""
         logger.info(f"DummyNeo4jConnector.execute_query called with: {query[:100]}...")
         # Return empty result
@@ -502,7 +497,7 @@ async def get_neo4j_adapter() -> Neo4jAdapter:
         return adapter
     except Exception as e:
         # Log the error but don't fail
-        logger.warning(f"Failed to create real Neo4j adapter: {str(e)}")
+        logger.warning(f"Failed to create real Neo4j adapter: {e!s}")
         logger.warning("Falling back to dummy Neo4j adapter for demo purposes")
         
         # Return a dummy adapter instead

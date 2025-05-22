@@ -7,17 +7,14 @@ including starting, stopping, and monitoring ingestion jobs.
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union
-import uuid
 
-from fastapi import Depends, HTTPException, WebSocket, status
 import redis.asyncio as redis
+from fastapi import Depends, HTTPException, WebSocket, status
 
 from ..domain.ingestion import (
+    IngestionJob,
     IngestionRequest,
     IngestionStarted,
-    StepProgress,
-    IngestionJob,
     JobProgressEvent,
     JobStatus,
     PaginatedIngestionJobs,
@@ -71,7 +68,7 @@ class IngestionService:
             await self.redis.ping()
             logger.info("Connected to Redis successfully")
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {str(e)}")
+            logger.error(f"Failed to connect to Redis: {e!s}")
             self.redis = None
 
     async def publish_progress(self, job_id: str, event: JobProgressEvent) -> None:
@@ -102,7 +99,7 @@ class IngestionService:
             key = f"codestory:ingestion:latest:{job_id}"
             await self.redis.set(key, event_json, ex=3600 * 24)  # Expire after 24 hours
         except Exception as e:
-            logger.error(f"Failed to publish progress event: {str(e)}")
+            logger.error(f"Failed to publish progress event: {e!s}")
 
     async def subscribe_to_progress(self, websocket: WebSocket, job_id: str) -> None:
         """Subscribe to progress events for a job via WebSocket.
@@ -150,11 +147,11 @@ class IngestionService:
                     else:
                         # Send heartbeat
                         await websocket.send_json({"type": "heartbeat"})
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send heartbeat on timeout
                     await websocket.send_json({"type": "heartbeat"})
                 except Exception as e:
-                    logger.error(f"Error in WebSocket communication: {str(e)}")
+                    logger.error(f"Error in WebSocket communication: {e!s}")
                     break
 
             # Unsubscribe and close
@@ -162,7 +159,7 @@ class IngestionService:
             await pubsub.close()
 
         except Exception as e:
-            logger.error(f"WebSocket error: {str(e)}")
+            logger.error(f"WebSocket error: {e!s}")
             if websocket.client_state.CONNECTED:
                 await websocket.close(code=1011, reason=str(e))
 
@@ -201,12 +198,12 @@ class IngestionService:
 
             return ingestion_started
         except Exception as e:
-            logger.error(f"Failed to start ingestion: {str(e)}")
+            logger.error(f"Failed to start ingestion: {e!s}")
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to start ingestion: {str(e)}",
+                detail=f"Failed to start ingestion: {e!s}",
             )
 
     async def get_job_status(self, job_id: str) -> IngestionJob:
@@ -229,12 +226,12 @@ class IngestionService:
 
             return job
         except Exception as e:
-            logger.error(f"Failed to get job status: {str(e)}")
+            logger.error(f"Failed to get job status: {e!s}")
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get job status: {str(e)}",
+                detail=f"Failed to get job status: {e!s}",
             )
 
     async def cancel_job(self, job_id: str) -> IngestionJob:
@@ -272,17 +269,17 @@ class IngestionService:
 
             return job
         except Exception as e:
-            logger.error(f"Failed to cancel job: {str(e)}")
+            logger.error(f"Failed to cancel job: {e!s}")
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to cancel job: {str(e)}",
+                detail=f"Failed to cancel job: {e!s}",
             )
 
     async def list_jobs(
         self,
-        status: Optional[List[JobStatus]] = None,
+        status: list[JobStatus] | None = None,
         limit: int = 10,
         offset: int = 0,
         sort_by: str = "created_at",
@@ -321,12 +318,12 @@ class IngestionService:
                 has_more=False,  # Placeholder
             )
         except Exception as e:
-            logger.error(f"Failed to list jobs: {str(e)}")
+            logger.error(f"Failed to list jobs: {e!s}")
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to list jobs: {str(e)}",
+                detail=f"Failed to list jobs: {e!s}",
             )
 
 

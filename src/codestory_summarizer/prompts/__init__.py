@@ -7,7 +7,6 @@ high-quality summaries of different types of code elements.
 from typing import Any
 
 from ..models import NodeData, NodeType
-
 from .class_node import get_summary_prompt as get_class_summary_prompt
 from .directory_node import get_summary_prompt as get_directory_summary_prompt
 from .file_node import get_summary_prompt as get_file_summary_prompt

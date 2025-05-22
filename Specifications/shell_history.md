@@ -151,3 +151,8 @@
 - `cd /Users/ryan/src/msec/code-story && git add src/codestory/cli/__init__.py src/codestory/cli/client/service_client.py src/codestory/config/settings.py src/codestory/llm/client.py src/codestory_service/application/graph_service.py src/codestory_service/infrastructure/msal_validator.py src/codestory_service/infrastructure/openai_adapter.py src/codestory_service/main.py` - Adding remaining changes
 - `cd /Users/ryan/src/msec/code-story && git commit -m "Fix service client, visualization endpoints, and adapt service components for robust operation"` - Committing remaining changes
 - `cd /Users/ryan/src/msec/code-story && git push origin cli-implementation` - Pushing all changes to remote repository
+
+## May 21, 2025 (CLI Demo Verification)
+
+- `pip install -e .` - Install the Code Story CLI in editable mode as specified in cli_demo.md
+- `codestory --version` - Verify that the Code Story CLI is installed and available on the PATH as specified in the CLI demo step 2

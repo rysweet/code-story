@@ -6,11 +6,15 @@ from docstrings in code files (Python, JavaScript, Java, etc.).
 
 import logging
 import re
-import uuid
-from typing import Dict, List, Optional, Tuple
 
-from ..models import DocumentationEntity, DocumentationFile, DocumentationRelationship
-from ..models import DocumentType, EntityType, RelationType
+from ..models import (
+    DocumentationEntity,
+    DocumentationFile,
+    DocumentationRelationship,
+    DocumentType,
+    EntityType,
+    RelationType,
+)
 from .parser_factory import Parser, ParserFactory
 
 logger = logging.getLogger(__name__)
@@ -57,7 +61,7 @@ class DocstringParser(Parser):
         self.raises_pattern = re.compile(r"@raises|:raises|Raises:|Exceptions:|:except")
         self.example_pattern = re.compile(r"@example|Examples:|Example:")
 
-    def parse(self, document: DocumentationFile) -> Dict:
+    def parse(self, document: DocumentationFile) -> dict:
         """Parse docstrings from a code file.
 
         Args:
@@ -108,7 +112,7 @@ class DocstringParser(Parser):
 
     def _extract_python_docstrings(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract Python docstrings from code content.
 
         Args:
@@ -188,7 +192,7 @@ class DocstringParser(Parser):
 
     def _extract_js_docstrings(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract JavaScript/TypeScript docstrings (JSDoc) from code content.
 
         Args:
@@ -234,7 +238,7 @@ class DocstringParser(Parser):
 
     def _extract_javadoc_docstrings(
         self, content: str, file_path: str
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract Java/C++/C# docstrings (Javadoc/Doxygen) from code content.
 
         Args:
@@ -278,7 +282,7 @@ class DocstringParser(Parser):
 
         return entities
 
-    def _find_python_docstring_owner(self, content: str, pos: int) -> Tuple[str, str]:
+    def _find_python_docstring_owner(self, content: str, pos: int) -> tuple[str, str]:
         """Find the owner (function, class, module) of a Python docstring.
 
         Args:
@@ -306,7 +310,7 @@ class DocstringParser(Parser):
         # If no function or class is found, assume it's a module docstring
         return "module", "module"
 
-    def _find_js_docstring_owner(self, content: str, pos: int) -> Tuple[str, str]:
+    def _find_js_docstring_owner(self, content: str, pos: int) -> tuple[str, str]:
         """Find the owner (function, class, method) of a JavaScript/TypeScript docstring.
 
         Args:
@@ -337,7 +341,7 @@ class DocstringParser(Parser):
         # If no function, method, or class is found, assume it's a module docstring
         return "module", "module"
 
-    def _find_java_docstring_owner(self, content: str, pos: int) -> Tuple[str, str]:
+    def _find_java_docstring_owner(self, content: str, pos: int) -> tuple[str, str]:
         """Find the owner (method, class) of a Java/C++/C# docstring.
 
         Args:
@@ -372,9 +376,7 @@ class DocstringParser(Parser):
         Returns:
             EntityType for the docstring
         """
-        if owner_type == "function":
-            return EntityType.FUNCTION_DESC
-        elif owner_type == "method":
+        if owner_type == "function" or owner_type == "method":
             return EntityType.FUNCTION_DESC
         elif owner_type == "class":
             return EntityType.CLASS_DESC
@@ -385,7 +387,7 @@ class DocstringParser(Parser):
 
     def _extract_docstring_sections(
         self, docstring: DocumentationEntity
-    ) -> List[DocumentationEntity]:
+    ) -> list[DocumentationEntity]:
         """Extract sections (parameters, returns, etc.) from a docstring.
 
         Args:
@@ -424,8 +426,8 @@ class DocstringParser(Parser):
         return sections
 
     def _extract_parameter_sections(
-        self, lines: List[str], file_path: str, parent_id: str
-    ) -> List[DocumentationEntity]:
+        self, lines: list[str], file_path: str, parent_id: str
+    ) -> list[DocumentationEntity]:
         """Extract parameter descriptions from docstring lines.
 
         Args:
@@ -502,8 +504,8 @@ class DocstringParser(Parser):
         return sections
 
     def _extract_return_sections(
-        self, lines: List[str], file_path: str, parent_id: str
-    ) -> List[DocumentationEntity]:
+        self, lines: list[str], file_path: str, parent_id: str
+    ) -> list[DocumentationEntity]:
         """Extract return descriptions from docstring lines.
 
         Args:
@@ -580,8 +582,8 @@ class DocstringParser(Parser):
         return sections
 
     def _extract_raises_sections(
-        self, lines: List[str], file_path: str, parent_id: str
-    ) -> List[DocumentationEntity]:
+        self, lines: list[str], file_path: str, parent_id: str
+    ) -> list[DocumentationEntity]:
         """Extract exception/raises descriptions from docstring lines.
 
         Args:
@@ -658,8 +660,8 @@ class DocstringParser(Parser):
         return sections
 
     def _extract_example_sections(
-        self, lines: List[str], file_path: str, parent_id: str
-    ) -> List[DocumentationEntity]:
+        self, lines: list[str], file_path: str, parent_id: str
+    ) -> list[DocumentationEntity]:
         """Extract example sections from docstring lines.
 
         Args:

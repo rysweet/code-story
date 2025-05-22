@@ -6,14 +6,15 @@ This script applies patches to test files to handle port differences
 between local development and CI environments.
 """
 
-import os
 import glob
+import os
 import re
 import sys
 
+
 def fix_neo4j_port_in_file(file_path):
     """Replace hardcoded Neo4j port with environment-aware code in a file."""
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         content = f.read()
     
     # Only modify files that have the bolt://localhost:7688 string
@@ -55,7 +56,7 @@ def update_conftest():
         print(f"Error: {conftest_path} not found")
         return False
     
-    with open(conftest_path, 'r') as f:
+    with open(conftest_path) as f:
         content = f.read()
     
     # Add CI environment detection and port selection
@@ -77,7 +78,8 @@ def neo4j_env():
     
     # Replace the existing function with our fixed version
     content = re.sub(
-        r'@pytest\.fixture\(scope="session"\)\ndef neo4j_env\(\):.*?os\.environ\["NEO4J_URI"\] = "bolt://localhost:7688"\s+os\.environ\["NEO4J__URI"\] = "bolt://localhost:7688"',
+        (r'@pytest\.fixture\(scope="session"\)\ndef neo4j_env\(\):.*?os\.environ\["NEO4J_URI"\] = '
+        r'"bolt://localhost:7688"\s+os\.environ\["NEO4J__URI"\] = "bolt://localhost:7688"'),
         neo4j_env_fix,
         content,
         flags=re.DOTALL

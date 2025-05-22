@@ -66,10 +66,10 @@ def get_config(
 
         return config
     except Exception as e:
-        logger.error(f"Error getting configuration: {str(e)}")
+        logger.error(f"Error getting configuration: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error getting configuration: {str(e)}",
+            detail=f"Error getting configuration: {e!s}",
         )
 
 
@@ -101,12 +101,12 @@ async def update_config(
         logger.info(f"Updating configuration with {len(patch.items)} changes")
         return await config_service.update_config(patch)
     except Exception as e:
-        logger.error(f"Error updating configuration: {str(e)}")
+        logger.error(f"Error updating configuration: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating configuration: {str(e)}",
+            detail=f"Error updating configuration: {e!s}",
         )
 
 
@@ -136,8 +136,8 @@ def get_config_schema(
         logger.info("Getting configuration schema")
         return config_service.get_config_schema()
     except Exception as e:
-        logger.error(f"Error getting configuration schema: {str(e)}")
+        logger.error(f"Error getting configuration schema: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error getting configuration schema: {str(e)}",
+            detail=f"Error getting configuration schema: {e!s}",
         )

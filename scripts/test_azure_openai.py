@@ -7,6 +7,7 @@ ggshield:ignore
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the src directory to the Python path
@@ -43,9 +44,9 @@ def main():
         subscription_id_masked = "[Not set]"
 
     print(
-        f"Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script"
+        "Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script"
     )
-    print(f"Note: The script will attempt to set subscription if configured")
+    print("Note: The script will attempt to set subscription if configured")
     print(f"Endpoint: {os.environ.get('OPENAI__ENDPOINT')}")
     print(f"Tenant ID: {tenant_id_masked}")
     print(f"Subscription ID: {subscription_id_masked}")
@@ -77,7 +78,7 @@ def main():
         print("\nClient test completed successfully!")
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
         import traceback
 
         traceback.print_exc()

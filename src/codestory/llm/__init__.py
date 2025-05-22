@@ -7,23 +7,23 @@ chat, and embeddings.
 
 from .client import OpenAIClient, create_client
 from .exceptions import (
-    OpenAIError,
     AuthenticationError,
-    RateLimitError,
+    ContextLengthError,
     InvalidRequestError,
+    OpenAIError,
+    RateLimitError,
     ServiceUnavailableError,
     TimeoutError,
-    ContextLengthError,
 )
 from .models import (
-    CompletionRequest,
-    CompletionResponse,
     ChatCompletionRequest,
     ChatCompletionResponse,
-    EmbeddingRequest,
-    EmbeddingResponse,
     ChatMessage,
     ChatRole,
+    CompletionRequest,
+    CompletionResponse,
+    EmbeddingRequest,
+    EmbeddingResponse,
 )
 
 __all__ = [

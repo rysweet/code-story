@@ -1,14 +1,10 @@
 """Unit tests for the ProgressClient class."""
 
-import os
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 import redis
-from rich.console import Console
 
 from codestory.cli.client.progress_client import ProgressClient
-from codestory.config import Settings
 
 
 class TestProgressClient:

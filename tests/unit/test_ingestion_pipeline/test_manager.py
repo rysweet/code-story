@@ -28,7 +28,6 @@ def mock_prometheus_metrics():
 
 # Mock the Celery app to avoid requiring an actual Celery instance
 import sys
-from unittest.mock import MagicMock
 
 # Create mock modules
 mock_celery = MagicMock()
@@ -38,8 +37,8 @@ sys.modules["celery"] = mock_celery
 sys.modules["celery.result"] = MagicMock()
 
 # Now we can import our modules
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 from codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
 
 class TestPipelineManager:

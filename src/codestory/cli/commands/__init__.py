@@ -5,7 +5,7 @@ Command modules for the Code Story CLI.
 import os
 import sys
 from importlib import import_module
-from typing import Dict, Any, Type
+from typing import Any, Dict, Type
 
 # List of command modules to import
 _COMMANDS = [

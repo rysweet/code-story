@@ -1,6 +1,5 @@
 """Celery worker configuration for code ingestion tasks."""
 
-import os
 
 from celery import Celery
 

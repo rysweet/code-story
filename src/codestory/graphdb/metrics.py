@@ -10,8 +10,9 @@ Metrics are exposed through the Prometheus client library.
 """
 
 import time
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 # Use lazy import for prometheus_client to avoid hard dependency
 try:
@@ -181,7 +182,7 @@ def instrument_query(
                 status = "success" if success else "error"
                 QUERY_COUNT.labels(query_type=query_type.value, status=status).inc()
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator
 

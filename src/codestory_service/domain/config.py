@@ -1,8 +1,7 @@
 """Domain models for configuration management."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
-from uuid import uuid4
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -60,16 +59,16 @@ class ConfigMetadata(BaseModel):
     key: str = Field(..., description="Configuration key name")
     type: ConfigValueType = Field(..., description="Type of configuration value")
     description: str = Field(..., description="Description of the configuration key")
-    default_value: Optional[Any] = Field(default=None, description="Default value")
+    default_value: Any | None = Field(default=None, description="Default value")
     source: ConfigSource = Field(..., description="Source of the current value")
     permission: ConfigPermission = Field(
         ..., description="Permission level for the key"
     )
-    env_var: Optional[str] = Field(
+    env_var: str | None = Field(
         default=None, description="Name of the environment variable"
     )
     required: bool = Field(default=False, description="Whether the value is required")
-    json_schema: Optional[Dict[str, Any]] = Field(
+    json_schema: dict[str, Any] | None = Field(
         default=None, description="JSON Schema for validation"
     )
 
@@ -100,7 +99,7 @@ class ConfigGroup(BaseModel):
     """Group of configuration items in a section."""
 
     section: ConfigSection = Field(..., description="Configuration section")
-    items: Dict[str, ConfigItem] = Field(
+    items: dict[str, ConfigItem] = Field(
         ..., description="Configuration items in this section"
     )
 
@@ -108,7 +107,7 @@ class ConfigGroup(BaseModel):
 class ConfigDump(BaseModel):
     """Full configuration dump with all values and metadata."""
 
-    groups: Dict[ConfigSection, ConfigGroup] = Field(
+    groups: dict[ConfigSection, ConfigGroup] = Field(
         ..., description="Configuration groups by section"
     )
     version: str = Field(..., description="Configuration schema version")
@@ -142,16 +141,16 @@ class ConfigPatchItem(BaseModel):
 class ConfigPatch(BaseModel):
     """Patch with configuration updates."""
 
-    items: List[ConfigPatchItem] = Field(
+    items: list[ConfigPatchItem] = Field(
         ..., description="Configuration items to update"
     )
-    comment: Optional[str] = Field(
+    comment: str | None = Field(
         default=None, description="Comment describing the changes"
     )
 
     @field_validator("items")
     @classmethod
-    def validate_items(cls, v: List[ConfigPatchItem]) -> List[ConfigPatchItem]:
+    def validate_items(cls, v: list[ConfigPatchItem]) -> list[ConfigPatchItem]:
         """Validate that there are items to update."""
         if not v:
             raise ValueError("Config patch must contain at least one item")
@@ -164,32 +163,32 @@ class ConfigSchemaProperty(BaseModel):
     type: str = Field(..., description="JSON Schema type")
     title: str = Field(..., description="Display title")
     description: str = Field(..., description="Property description")
-    default: Optional[Any] = Field(default=None, description="Default value")
-    enum: Optional[List[Any]] = Field(
+    default: Any | None = Field(default=None, description="Default value")
+    enum: list[Any] | None = Field(
         default=None, description="Enum values if applicable"
     )
-    format: Optional[str] = Field(
+    format: str | None = Field(
         default=None, description="Format hint (e.g., password)"
     )
-    minimum: Optional[float] = Field(
+    minimum: float | None = Field(
         default=None, description="Minimum value for numbers"
     )
-    maximum: Optional[float] = Field(
+    maximum: float | None = Field(
         default=None, description="Maximum value for numbers"
     )
-    minLength: Optional[int] = Field(
+    minLength: int | None = Field(
         default=None, description="Minimum length for strings"
     )
-    maxLength: Optional[int] = Field(
+    maxLength: int | None = Field(
         default=None, description="Maximum length for strings"
     )
-    pattern: Optional[str] = Field(
+    pattern: str | None = Field(
         default=None, description="Regex pattern for strings"
     )
-    readOnly: Optional[bool] = Field(
+    readOnly: bool | None = Field(
         default=None, description="If true, value is read-only"
     )
-    writeOnly: Optional[bool] = Field(
+    writeOnly: bool | None = Field(
         default=None, description="If true, value is write-only"
     )
 
@@ -200,10 +199,10 @@ class ConfigSchemaSection(BaseModel):
     type: str = Field(default="object", description="Always object for sections")
     title: str = Field(..., description="Display title for the section")
     description: str = Field(..., description="Section description")
-    properties: Dict[str, ConfigSchemaProperty] = Field(
+    properties: dict[str, ConfigSchemaProperty] = Field(
         ..., description="Properties in this section"
     )
-    required: List[str] = Field(
+    required: list[str] = Field(
         default_factory=list, description="Required properties in this section"
     )
 
@@ -211,8 +210,8 @@ class ConfigSchemaSection(BaseModel):
 class ConfigSchema(BaseModel):
     """Full JSON Schema for configuration, used by GUI form generation."""
 
-    json_schema: Dict[str, Any] = Field(..., description="JSON Schema")
-    ui_schema: Dict[str, Any] = Field(
+    json_schema: dict[str, Any] = Field(..., description="JSON Schema")
+    ui_schema: dict[str, Any] = Field(
         default_factory=dict, description="UI Schema with layout hints"
     )
 
@@ -287,13 +286,13 @@ class ConfigValidationError(BaseModel):
 
     path: str = Field(..., description="JSON path to the invalid value")
     message: str = Field(..., description="Error message")
-    value: Optional[Any] = Field(default=None, description="Invalid value")
+    value: Any | None = Field(default=None, description="Invalid value")
 
 
 class ConfigValidationResult(BaseModel):
     """Result of configuration validation."""
 
     valid: bool = Field(..., description="Whether the configuration is valid")
-    errors: List[ConfigValidationError] = Field(
+    errors: list[ConfigValidationError] = Field(
         default_factory=list, description="Validation errors if any"
     )

@@ -8,8 +8,9 @@ import os
 import tempfile
 import time
 from pathlib import Path
-import pytest
+
 import docker
+import pytest
 
 # Determine Neo4j port based on environment
 ci_env = os.environ.get("CI") == "true"
@@ -26,10 +27,9 @@ os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "testdb"  # Use the test database name from docker-compose.test.yml
 
-from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory_blarify.step import BlarifyStep
 from codestory.ingestion_pipeline.step import StepStatus
+from codestory_blarify.step import BlarifyStep
 
 # Mark these tests as integration tests
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
@@ -187,9 +187,8 @@ def ensure_blarify_image():
         print("Building minimal Blarify-compatible image for testing...")
         
         # Create a temporary Dockerfile directory
-        import tempfile
         import os
-        import shutil
+        import tempfile
         
         with tempfile.TemporaryDirectory() as tmp_dir:
             dockerfile_path = os.path.join(tmp_dir, "Dockerfile")
@@ -324,7 +323,6 @@ def blarify_celery_app(celery_app):
     which has already been properly configured for testing.
     """
     # Import BlarifyStep's task to ensure it's registered
-    from codestory_blarify.step import run_blarify
     
     # Verify that the task is registered
     assert "codestory_blarify.step.run_blarify" in celery_app.tasks
@@ -428,7 +426,6 @@ def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, bl
     job_id = None
     try:
         # Register the task before running it
-        from codestory_blarify.step import run_blarify
         
         # Run the step with proper task registration
         job_id = step.run(
@@ -581,7 +578,6 @@ def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, b
     job_id = None
     try:
         # Register the task before running it
-        from codestory_blarify.step import run_blarify
         
         # Run the step with the container
         job_id = step.run(

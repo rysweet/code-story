@@ -8,10 +8,11 @@ import click
 try:
     import rich_click
 except ImportError:
-    import click as rich_click
+    pass
 from rich.console import Console
 
 from ..client import ServiceClient, ServiceError
+from ..require_service_available import require_service_available
 
 
 @click.command(help="Open the Code Story GUI in a browser.")
@@ -20,6 +21,8 @@ def ui(ctx: click.Context) -> None:
     """
     Open the Code Story GUI in a browser.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -34,6 +37,6 @@ def ui(ctx: click.Context) -> None:
         console.print("[green]GUI opened in browser.[/]")
 
     except ServiceError as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         console.print("[yellow]Is the Code Story service running?[/]")
         console.print("Try starting it with: [cyan]codestory service start[/]")

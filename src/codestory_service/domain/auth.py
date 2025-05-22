@@ -4,9 +4,8 @@ This module defines the domain models for authentication-related entities,
 including login requests, token responses, and user information.
 """
 
-from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, SecretStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class LoginRequest(BaseModel):
@@ -46,8 +45,8 @@ class UserInfo(BaseModel):
 
     id: str = Field(..., description="User ID")
     name: str = Field(..., description="Display name")
-    email: Optional[EmailStr] = Field(None, description="Email address")
-    roles: List[str] = Field(default_factory=list, description="User roles")
+    email: EmailStr | None = Field(None, description="Email address")
+    roles: list[str] = Field(default_factory=list, description="User roles")
     is_authenticated: bool = Field(
         True, description="Whether the user is authenticated"
     )
@@ -58,8 +57,8 @@ class RoleInfo(BaseModel):
 
     id: str = Field(..., description="Role ID")
     name: str = Field(..., description="Role name")
-    description: Optional[str] = Field(None, description="Role description")
-    permissions: List[str] = Field(
+    description: str | None = Field(None, description="Role description")
+    permissions: list[str] = Field(
         default_factory=list, description="Permissions granted by this role"
     )
 
@@ -69,10 +68,10 @@ class AuthResponse(BaseModel):
 
     success: bool = Field(..., description="Whether authentication was successful")
     message: str = Field(..., description="Authentication message")
-    token: Optional[TokenResponse] = Field(
+    token: TokenResponse | None = Field(
         None, description="Token, if authentication was successful"
     )
-    user: Optional[UserInfo] = Field(
+    user: UserInfo | None = Field(
         None, description="User information, if authentication was successful"
     )
 
@@ -82,4 +81,4 @@ class AuthError(BaseModel):
 
     code: str = Field(..., description="Error code")
     message: str = Field(..., description="Error message")
-    details: Optional[str] = Field(None, description="Error details")
+    details: str | None = Field(None, description="Error details")

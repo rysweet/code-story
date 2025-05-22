@@ -9,8 +9,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..application.auth_service import AuthService, get_auth_service
-from ..domain.auth import LoginRequest, TokenResponse, UserInfo, AuthResponse
-from ..infrastructure.msal_validator import get_current_user, get_optional_user
+from ..domain.auth import LoginRequest, TokenResponse, UserInfo
+from ..infrastructure.msal_validator import get_optional_user
 from ..settings import get_service_settings
 
 # Set up logging
@@ -56,12 +56,12 @@ async def login(
         logger.info(f"Login attempt for user: {request.username}")
         return await auth_service.login(request)
     except Exception as e:
-        logger.error(f"Login failed: {str(e)}")
+        logger.error(f"Login failed: {e!s}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Login failed: {str(e)}",
+            detail=f"Login failed: {e!s}",
         )
 
 
@@ -93,8 +93,8 @@ async def get_user_info(
         logger.info(f"Getting info for user: {user.get('name', 'unknown')}")
         return await auth_service.get_user_info(user)
     except Exception as e:
-        logger.error(f"Error getting user info: {str(e)}")
+        logger.error(f"Error getting user info: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error getting user info: {str(e)}",
+            detail=f"Error getting user info: {e!s}",
         )

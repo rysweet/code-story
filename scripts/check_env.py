@@ -5,7 +5,6 @@ This script checks that all required environment variables are present in
 the .env file and provides guidance for setting up the environment correctly.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -13,7 +12,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from codestory.config.settings import get_settings, refresh_settings
-
 
 required_env_vars = {
     "OPENAI__ENDPOINT": "Azure OpenAI API endpoint (e.g., https://your-resource.openai.azure.com)",
@@ -79,7 +77,7 @@ def check_env_vars():
         return True
 
     except Exception as e:
-        print(f"\n❌ ERROR: Failed to load settings: {str(e)}")
+        print(f"\n❌ ERROR: Failed to load settings: {e!s}")
         return False
 
 
@@ -105,7 +103,7 @@ def check_azure_login():
 
         if result.returncode != 0:
             print("\n⚠️ WARNING: Not logged in to Azure CLI")
-            print(f"Run the following command to login:")
+            print("Run the following command to login:")
             print(f"az login --tenant {tenant_id}\n")
             return False
 
@@ -114,7 +112,7 @@ def check_azure_login():
         if current_tenant != tenant_id:
             print(f"\n⚠️ WARNING: Logged in to wrong tenant: {current_tenant}")
             print(f"Expected tenant: {tenant_id}")
-            print(f"Run the following command to login to the correct tenant:")
+            print("Run the following command to login to the correct tenant:")
             print(f"az login --tenant {tenant_id}\n")
             return False
 
@@ -133,7 +131,7 @@ def check_azure_login():
             if current_subscription != subscription_id:
                 print(f"\n⚠️ WARNING: Using wrong subscription: {current_subscription}")
                 print(f"Expected subscription: {subscription_id}")
-                print(f"Run the following command to set the correct subscription:")
+                print("Run the following command to set the correct subscription:")
                 print(f"az account set --subscription {subscription_id}\n")
                 return False
 
@@ -143,7 +141,7 @@ def check_azure_login():
         print("\n⚠️ WARNING: Azure CLI not installed, skipping Azure login check")
         return True
     except Exception as e:
-        print(f"\n⚠️ WARNING: Failed to check Azure login: {str(e)}")
+        print(f"\n⚠️ WARNING: Failed to check Azure login: {e!s}")
         return True
 
 

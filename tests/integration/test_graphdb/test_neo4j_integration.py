@@ -5,23 +5,21 @@ import os
 # Determine Neo4j port based on CI environment
 ci_env = os.environ.get("CI") == "true"
 neo4j_port = "7687" if ci_env else "7688"
-import pytest
 import time
-from typing import Dict, List, Any, Generator
+from collections.abc import Generator
+
+import pytest
 
 # Set environment variables for tests
 os.environ["NEO4J_DATABASE"] = "testdb"  # Match the database name in docker-compose.test.yml
 os.environ["CODESTORY_TEST_ENV"] = "true"
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.graphdb.exceptions import (
-    ConnectionError,
-    QueryError,
-    SchemaError,
     TransactionError,
 )
-from codestory.graphdb.schema import initialize_schema, verify_schema
-from codestory.graphdb.models import FileNode, DirectoryNode, RelationshipType
+from codestory.graphdb.models import DirectoryNode, FileNode
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.schema import initialize_schema
 
 # We don't skip these tests anymore as conftest.py ensures environment variables are set
 # If the test container is not running, the tests will fail with connection error
@@ -245,7 +243,7 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         result = neo4j_connector.execute_query(check_query)
         print(f"Using GDS version: {result[0]['version']}")
     except Exception as e:
-        pytest.skip(f"Graph Data Science plugin not available: {str(e)}. This test requires GDS plugin.")
+        pytest.skip(f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin.")
 
     # Create test nodes with embeddings
     embedding1 = [0.1, 0.2, 0.3, 0.4]
@@ -291,7 +289,7 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         )
     except Exception as e:
         # Ignore errors when dropping index
-        print(f"Warning: Failed to drop existing index: {str(e)}")
+        print(f"Warning: Failed to drop existing index: {e!s}")
 
     # Create the vector index
     neo4j_connector.execute_query(

@@ -5,16 +5,17 @@ containers in the Docker network, ensuring that services can correctly
 communicate with each other using the service names as hostnames.
 """
 
-import os
-import pytest
+import json
 import subprocess
 import time
-from typing import Generator, List, Dict, Any
-import json
+from collections.abc import Generator
+from typing import Any
+
+import pytest
 
 
 @pytest.fixture(scope="module")
-def docker_compose_project() -> Generator[Dict[str, Any], None, None]:
+def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     """Spin up the Docker Compose project for testing.
     
     This fixture starts the Docker Compose services, runs the tests,
@@ -67,7 +68,7 @@ def docker_compose_project() -> Generator[Dict[str, Any], None, None]:
         )
 
 
-def exec_in_container(container_name: str, command: List[str]) -> Dict[str, Any]:
+def exec_in_container(container_name: str, command: list[str]) -> dict[str, Any]:
     """Execute a command in a container and return stdout/stderr.
     
     Args:

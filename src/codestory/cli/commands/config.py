@@ -6,7 +6,7 @@ import json
 import os
 import sys
 import tempfile
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 import click
 
@@ -14,11 +14,9 @@ import click
 try:
     import rich_click
 except ImportError:
-    import click as rich_click
+    pass
 from rich.console import Console
-from rich.panel import Panel
 from rich.prompt import Confirm
-from rich.syntax import Syntax
 from rich.table import Table
 from rich.tree import Tree
 
@@ -67,7 +65,7 @@ def show_config(
             _display_config_table(console, config_data, sensitive)
 
     except ServiceError as e:
-        console.print(f"[bold red]Failed to get configuration:[/] {str(e)}")
+        console.print(f"[bold red]Failed to get configuration:[/] {e!s}")
         sys.exit(1)
 
 
@@ -76,7 +74,7 @@ def show_config(
 @click.option("--no-confirm", is_flag=True, help="Don't ask for confirmation.")
 @click.pass_context
 def set_config(
-    ctx: click.Context, key_value_pairs: List[str], no_confirm: bool = False
+    ctx: click.Context, key_value_pairs: list[str], no_confirm: bool = False
 ) -> None:
     """
     Update configuration values.
@@ -126,7 +124,7 @@ def set_config(
         _display_config_table(console, result, sensitive=False)
 
     except ServiceError as e:
-        console.print(f"[bold red]Failed to update configuration:[/] {str(e)}")
+        console.print(f"[bold red]Failed to update configuration:[/] {e!s}")
         sys.exit(1)
 
 
@@ -143,7 +141,7 @@ def edit_config(ctx: click.Context) -> None:
     try:
         config_data = client.get_config(include_sensitive=True)
     except ServiceError as e:
-        console.print(f"[bold red]Failed to get configuration:[/] {str(e)}")
+        console.print(f"[bold red]Failed to get configuration:[/] {e!s}")
         sys.exit(1)
 
     # Create temporary file with configuration
@@ -161,11 +159,11 @@ def edit_config(ctx: click.Context) -> None:
         click.edit(filename=temp_file_path, editor=editor)
 
         # Read updated configuration
-        with open(temp_file_path, "r") as f:
+        with open(temp_file_path) as f:
             try:
                 updated_config = json.load(f)
             except json.JSONDecodeError as e:
-                console.print(f"[bold red]Error parsing JSON:[/] {str(e)}")
+                console.print(f"[bold red]Error parsing JSON:[/] {e!s}")
                 console.print("Configuration not updated.")
                 return
 
@@ -179,7 +177,7 @@ def edit_config(ctx: click.Context) -> None:
         os.unlink(temp_file_path)
 
     except Exception as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        console.print(f"[bold red]Error:[/] {e!s}")
         console.print("Configuration not updated.")
 
         # Clean up
@@ -190,7 +188,7 @@ def edit_config(ctx: click.Context) -> None:
 
 
 def _display_config_table(
-    console: Console, config_data: Dict[str, Any], sensitive: bool = False
+    console: Console, config_data: dict[str, Any], sensitive: bool = False
 ) -> None:
     """
     Display configuration as a table.
@@ -230,8 +228,8 @@ def _display_config_table(
 
 
 def _flatten_dict(
-    d: Dict[str, Any], parent_key: str = "", sep: str = "."
-) -> Dict[str, Any]:
+    d: dict[str, Any], parent_key: str = "", sep: str = "."
+) -> dict[str, Any]:
     """
     Flatten a nested dictionary.
 
@@ -256,7 +254,7 @@ def _flatten_dict(
 
 
 def _build_config_tree(
-    tree: Tree, config_data: Dict[str, Any], sensitive: bool = False
+    tree: Tree, config_data: dict[str, Any], sensitive: bool = False
 ) -> None:
     """
     Build a tree representation of configuration data.

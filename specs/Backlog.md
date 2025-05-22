@@ -2,10 +2,10 @@
 
 ## Next Steps
 
-- [ ] Have a review of the whole spec
-- [ ] Use Claude to implement a first draft of the code
-- [ ] Use Agent mode to implement a first draft of the code - gpt4.1
-- [ ] Use Agent mode to implement a first draft of the code - o1 preview
+- [ ] Finsih CLI Demo with Visualization
+- [ ] MCP demo
+- [ ] UI demo
+- [ ] Code review and backlog building
 
 
 ## Ideas (Un-prioritized)

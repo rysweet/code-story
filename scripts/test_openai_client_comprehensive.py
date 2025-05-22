@@ -12,9 +12,10 @@ ggshield:ignore
 """
 # ggignore:start
 
+import asyncio
 import os
 import sys
-import asyncio
+
 from dotenv import load_dotenv
 
 # Add the src directory to the Python path
@@ -22,9 +23,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 load_dotenv()
 
-from codestory.llm.client import create_client, OpenAIClient
-from codestory.llm.models import ChatMessage, ChatRole
+from codestory.llm.client import OpenAIClient, create_client
 from codestory.llm.exceptions import InvalidRequestError
+from codestory.llm.models import ChatMessage, ChatRole
 
 
 def test_chat_completion(client: OpenAIClient) -> None:
@@ -227,7 +228,7 @@ def main() -> None:
         subscription_id_masked = "[Not set]"
 
     print(
-        f"Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script"
+        "Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script"
     )
     print(f"Endpoint: {os.environ.get('OPENAI__ENDPOINT')}")
     print(f"Tenant ID: {tenant_id_masked}")
@@ -252,7 +253,7 @@ def main() -> None:
         print("\n✅ All tests completed successfully!")
 
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ Error: {e!s}")
         import traceback
 
         traceback.print_exc()

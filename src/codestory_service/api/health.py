@@ -5,17 +5,16 @@ and its dependencies.
 """
 
 import logging
-import re
-import subprocess
+import os
 import time
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal, cast
 
+import redis.asyncio as redis
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
-import redis.asyncio as redis
 
-from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.celery_adapter import CeleryAdapter, get_celery_adapter
+from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.openai_adapter import OpenAIAdapter, get_openai_adapter
 from ..settings import get_service_settings
 
@@ -32,7 +31,7 @@ class ComponentHealth(BaseModel):
     status: Literal["healthy", "degraded", "unhealthy"] = Field(
         ..., description="Health status of the component"
     )
-    details: Optional[Dict[str, Any]] = Field(
+    details: dict[str, Any] | None = Field(
         None, description="Additional details about the component health"
     )
 
@@ -48,7 +47,7 @@ class HealthReport(BaseModel):
     )
     version: str = Field(..., description="Service version")
     uptime: int = Field(..., description="Service uptime in seconds")
-    components: Dict[str, ComponentHealth] = Field(
+    components: dict[str, ComponentHealth] = Field(
         ..., description="Health status of individual components"
     )
 
@@ -145,7 +144,7 @@ async def health_check(
         
         return health_report
         
-    except asyncio.TimeoutError:
+    except TimeoutError:
         # Return a degraded status if health check times out
         logger.error("Health check timed out after 30 seconds")
         return HealthReport(
@@ -154,7 +153,7 @@ async def health_check(
             version=SERVICE_VERSION,
             uptime=int(time.time() - SERVICE_START_TIME),
             components={
-                "service": ComponentHealth(status="healthy"),
+                "service": ComponentHealth(status="healthy", details={}),
                 "neo4j": ComponentHealth(
                     status="degraded", 
                     details={"error": "Health check timed out after 30 seconds"}
@@ -192,17 +191,17 @@ async def health_check(
 
 @router.get(
     "/auth-renew",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Renew Azure authentication",
     description="Attempt to renew Azure authentication tokens.",
     tags=["health"]
 )
 async def auth_renew(
     openai: OpenAIAdapter = Depends(get_openai_adapter),
-    tenant_id: Optional[str] = Query(None, description="Optional Azure tenant ID for authentication"),
+    tenant_id: str | None = Query(None, description="Optional Azure tenant ID for authentication"),
     inject_into_containers: bool = Query(True, description="Inject tokens into containers after authentication"),
     restart_containers: bool = Query(False, description="Restart containers after token injection"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Renew Azure authentication tokens.
     
     This endpoint will attempt to renew the Azure authentication tokens used by the service.
@@ -223,7 +222,7 @@ async def auth_renew(
         Dictionary with auth renewal status
     """
     import asyncio
-    from codestory.llm.client import OpenAIClient
+
     
     logger.info("Azure authentication renewal requested")
     
@@ -241,7 +240,7 @@ async def auth_renew(
             ]
             
             for env_var in env_vars:
-                if env_var in os.environ and os.environ[env_var]:
+                if os.environ.get(env_var):
                     tenant_id = os.environ[env_var]
                     logger.info(f"Using tenant ID from environment variable {env_var}: {tenant_id}")
                     break
@@ -306,16 +305,15 @@ async def auth_renew(
                 try:
                     import subprocess
                     # Try to get tenant ID from current Azure account
-                    result = subprocess.run(
+                    az_result = subprocess.run(
                         ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
                         timeout=5
                     )
-                    
-                    if result.returncode == 0 and result.stdout.strip():
-                        tenant_id = result.stdout.strip()
+                    if az_result.returncode == 0 and az_result.stdout.strip():
+                        tenant_id = az_result.stdout.strip()
                         logger.info(f"Using tenant ID from Azure CLI: {tenant_id}")
                 except Exception as e:
                     logger.debug(f"Failed to get tenant ID from Azure CLI: {e}")
@@ -328,31 +326,28 @@ async def auth_renew(
         login_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
     else:
         login_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
-    
-    # Return guidance with login command
-    result = {
+
+    # Build the response dict (do not reuse 'result' for subprocess results)
+    response = {
         "status": "pending",
         "message": "Azure authentication renewal requires manual login",
         "login_command": login_cmd,
         "instructions": f"Please run '{login_cmd}' in your terminal to authenticate with Azure",
     }
-    
-    # If tenant ID is available, add it to the result with clear explanations
+
     if tenant_id:
-        result["tenant_id"] = tenant_id
-        result["tenant_source"] = "Found in environment configuration or settings"
-        result["auth_message"] = f"Using tenant ID: {tenant_id} from configuration"
-        
-        # Add more helpful context
-        result["auth_details"] = {
+        response["tenant_id"] = tenant_id
+        response["tenant_source"] = "Found in environment configuration or settings"
+        response["auth_message"] = f"Using tenant ID: {tenant_id} from configuration"
+        response["auth_details"] = {
             "tenant_id": tenant_id,
             "scope": "https://cognitiveservices.azure.com/.default",
             "browser_login": True,
             "auto_inject": inject_into_containers
         }
     else:
-        result["auth_message"] = "No tenant ID found in configuration, using default login"
-    
+        response["auth_message"] = "No tenant ID found in configuration, using default login"
+
     # Check if tokens need to be injected into containers
     if inject_into_containers:
         try:
@@ -366,97 +361,80 @@ async def auth_renew(
             
             if not script_path.exists():
                 logger.warning(f"Token injection script not found at {script_path}")
-                result["token_injection"] = {
+                response["token_injection"] = {
                     "status": "failed",
                     "message": "Token injection script not found"
-                }
+                }  # type: ignore
             else:
                 # Build the command
                 cmd = [sys.executable, str(script_path)]
-                
                 # Add tenant ID if available
                 if tenant_id:
                     cmd.extend(["--tenant-id", tenant_id])
-                
                 # Add restart flag if requested
                 if restart_containers:
                     cmd.append("--restart-containers")
-                
                 # Add verbose flag for debugging
                 cmd.append("--verbose")
-                
                 logger.info(f"Running token injection command: {' '.join(cmd)}")
-                
                 # Run the script and capture output
+                import asyncio
+                # Create a subprocess with asyncio
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                # Wait for process to complete with timeout
+                class AsyncSubprocessResult:
+                    def __init__(self, returncode, stdout, stderr):
+                        self.returncode = returncode
+                        self.stdout = stdout
+                        self.stderr = stderr
                 try:
-                    import asyncio
-                    import shlex
-                    
-                    # Create a subprocess with asyncio
-                    proc = await asyncio.create_subprocess_exec(
-                        *cmd,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE,
-                    )
-                    
-                    # Wait for process to complete with timeout
-                    # Create a result object class with the same structure as subprocess.run
-                    class AsyncSubprocessResult:
-                        def __init__(self, returncode, stdout, stderr):
-                            self.returncode = returncode
-                            self.stdout = stdout
-                            self.stderr = stderr
-                    
-                    try:
-                        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
-                        injection_result_code = proc.returncode
-                        injection_stdout = stdout.decode('utf-8') if stdout else ""
-                        injection_stderr = stderr.decode('utf-8') if stderr else ""
-                        
-                        # Create a result object
-                        injection_result = AsyncSubprocessResult(injection_result_code, injection_stdout, injection_stderr)
-                        
-                        if injection_result.returncode == 0:
-                            result["token_injection"] = {
-                                "status": "success",
-                                "message": "Azure tokens successfully injected into containers"
-                            }
-                            if restart_containers:
-                                result["token_injection"]["restart"] = "Containers restarted successfully"
-                        else:
-                            result["token_injection"] = {
-                                "status": "failed",
-                                "message": "Failed to inject Azure tokens into containers",
-                                "error": injection_stderr
-                            }
-                    except asyncio.TimeoutError:
-                        # Try to terminate if still running
-                        if proc.returncode is None:
-                            try:
-                                proc.terminate()
-                            except:
-                                pass
-                        logger.error("Token injection process timed out after 30 seconds")
-                        # Create a result object with timeout information
-                        result["token_injection"] = {
-                            "status": "timeout",
-                            "message": "Token injection process timed out after 30 seconds"
+                    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+                    injection_result_code = proc.returncode
+                    injection_stdout = stdout.decode('utf-8') if stdout else ""
+                    injection_stderr = stderr.decode('utf-8') if stderr else ""
+                    injection_result = AsyncSubprocessResult(injection_result_code, injection_stdout, injection_stderr)
+                    if injection_result.returncode == 0:
+                        response["token_injection"] = {
+                            "status": "success",
+                            "message": "Azure tokens successfully injected into containers",
+                            "restart": "Containers restarted successfully" if restart_containers else None
                         }
+                    else:
+                        response["token_injection"] = {
+                            "status": "failed",
+                            "message": "Failed to inject Azure tokens into containers",
+                            "error": injection_stderr
+                        }
+                except TimeoutError:
+                    if proc.returncode is None:
+                        try:
+                            proc.terminate()
+                        except Exception:
+                            pass
+                    logger.error("Token injection process timed out after 30 seconds")
+                    response["token_injection"] = {
+                        "status": "timeout",
+                        "message": "Token injection process timed out after 30 seconds"
+                    }
                 except Exception as e:
                     logger.error(f"Error running token injection process: {e}")
-                    result["token_injection"] = {
+                    response["token_injection"] = {
                         "status": "error",
-                        "message": f"Error running token injection process: {str(e)}"
+                        "message": f"Error running token injection process: {e!s}"
                     }
         except Exception as e:
             logger.error(f"Failed to inject tokens into containers: {e}")
-            result["token_injection"] = {
+            response["token_injection"] = {
                 "status": "error",
-                "message": f"Failed to inject tokens into containers: {str(e)}"
-            }
-    
-    # Return result
-    return result
+                "message": f"Failed to inject tokens into containers: {e!s}"
+            }  # type: ignore
+
+    # Return response dict
+    return response
 
 
 async def _health_check_impl(
@@ -483,7 +461,7 @@ async def _health_check_impl(
             # Use asyncio.wait_for to apply timeout to each health check
             result = await asyncio.wait_for(check_func(), timeout=timeout_seconds)
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"{component_name} health check timed out after {timeout_seconds} seconds")
             return {
                 "status": "unhealthy", 
@@ -525,8 +503,7 @@ async def _health_check_impl(
             port=redis_port,
             db=redis_db,
             decode_responses=True,
-            socket_timeout=2.0,  # 2 second socket timeout
-            socket_connect_timeout=2.0  # 2 second connection timeout
+            socket_timeout=2.0  # 2 second socket timeout
         )
         
         try:
@@ -562,7 +539,7 @@ async def _health_check_impl(
     # Run Redis health check with timeout
     try:
         redis_health = await asyncio.wait_for(check_redis_health(), timeout=5)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Redis health check timed out")
         redis_health = {
             "status": "unhealthy",
@@ -605,8 +582,11 @@ async def _health_check_impl(
         # All components are healthy
         overall_status = "healthy"
 
+    # Ensure overall_status is a valid literal
+    overall_status_literal = cast("Literal['healthy', 'degraded', 'unhealthy']", overall_status)
+
     return HealthReport(
-        status=overall_status,
+        status=overall_status_literal,
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         version=SERVICE_VERSION,
         uptime=uptime,

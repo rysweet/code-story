@@ -8,11 +8,9 @@ import os
 import shutil
 import tempfile
 import time
-import pytest
 from pathlib import Path
 
-from codestory.ingestion_pipeline.step import StepStatus
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+import pytest
 
 
 class BasePipelineTest:
@@ -38,10 +36,10 @@ class BasePipelineTest:
         
         # Import step tasks to ensure they're registered
         try:
-            from codestory_filesystem.step import process_filesystem
             from codestory_blarify.step import run_blarify
-            from codestory_summarizer.step import run_summarizer
             from codestory_docgrapher.step import run_docgrapher
+            from codestory_filesystem.step import process_filesystem
+            from codestory_summarizer.step import run_summarizer
             
             # Verify that key tasks are registered
             task_names = [

@@ -3,7 +3,7 @@
 This module defines custom exception classes for the graph database module.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class Neo4jError(Exception):
@@ -12,7 +12,7 @@ class Neo4jError(Exception):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """Initialize Neo4jError.
 
@@ -31,9 +31,9 @@ class ExportError(Neo4jError):
     def __init__(
         self,
         message: str,
-        format: Optional[str] = None,
-        path: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        format: str | None = None,
+        path: str | None = None,
+        cause: Exception | None = None,
         **kwargs
     ) -> None:
         """Initialize ExportError.
@@ -61,8 +61,8 @@ class ConnectionError(Neo4jError):
     def __init__(
         self,
         message: str,
-        uri: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        uri: str | None = None,
+        cause: Exception | None = None,
         **kwargs
     ) -> None:
         """Initialize ConnectionError.
@@ -84,9 +84,9 @@ class QueryError(Neo4jError):
     def __init__(
         self,
         message: str,
-        query: Optional[str] = None,
-        parameters: Optional[Dict[str, Any]] = None,
-        cause: Optional[Exception] = None,
+        query: str | None = None,
+        parameters: dict[str, Any] | None = None,
+        cause: Exception | None = None,
         **kwargs
     ) -> None:
         """Initialize QueryError.
@@ -127,8 +127,8 @@ class SchemaError(Neo4jError):
     def __init__(
         self,
         message: str,
-        operation: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        operation: str | None = None,
+        cause: Exception | None = None,
         **kwargs
     ) -> None:
         """Initialize SchemaError.
@@ -154,8 +154,8 @@ class TransactionError(Neo4jError):
     def __init__(
         self,
         message: str,
-        operation: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        operation: str | None = None,
+        cause: Exception | None = None,
         **kwargs
     ) -> None:
         """Initialize TransactionError.

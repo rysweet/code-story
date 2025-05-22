@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
 Script to patch adapter factory functions to use real adapters without fallbacks.
+
 This is used to ensure that integration tests use real components.
 """
 
 import os
 import sys
-import importlib
-import inspect
 
 # Add the project to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import adapter modules
-from src.codestory_service.infrastructure import neo4j_adapter, celery_adapter, openai_adapter
+from src.codestory_service.infrastructure import celery_adapter, neo4j_adapter, openai_adapter
 
 
 def patch_neo4j_adapter():
@@ -39,14 +38,14 @@ def patch_celery_adapter():
         # Throw an error if it tries to use dummy adapter
         if health["status"] == "degraded" and "dummy" in str(health["details"].get("message", "")):
             print("[-] ERROR: Celery adapter is returning a dummy adapter response")
-            raise RuntimeError("Celery adapter is returning a dummy status. Real Celery worker is required.")
+            raise RuntimeError(
+                "Celery adapter is returning a dummy status. Real Celery worker is required"
+            )
             
         print("[+] Created real Celery adapter: " + str(health))
         return adapter
     
     # Also patch the CeleryAdapter.check_health method to never return degraded for demo
-    original_check_health = celery_adapter.CeleryAdapter.check_health
-    
     async def real_check_health(self):
         """Real health check that doesn't default to degraded."""
         try:
@@ -68,7 +67,7 @@ def patch_celery_adapter():
             
             # If no workers found, throw an error to force fix
             raise RuntimeError("No active Celery workers found.")
-        except Exception as e:
+        except Exception:
             # Re-raise all errors instead of returning degraded
             raise
             
@@ -80,10 +79,7 @@ def patch_celery_adapter():
 
 def patch_openai_adapter():
     """Patch OpenAI adapter factory to only use real adapters."""
-    
     # First fix the health check method in the real class
-    original_check_health = openai_adapter.OpenAIAdapter.check_health
-    
     async def real_check_health(self):
         """Real health check that doesn't default to degraded."""
         try:

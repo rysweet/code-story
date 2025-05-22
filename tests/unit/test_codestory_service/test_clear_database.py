@@ -1,13 +1,13 @@
 """Unit tests for database clear functionality."""
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from codestory_service.domain.graph import DatabaseClearRequest
 from codestory_service.application.graph_service import GraphService
+from codestory_service.domain.graph import DatabaseClearRequest
 from codestory_service.main import app
 
 
@@ -41,8 +41,8 @@ def test_client(mock_graph_service):
         return mock_graph_service
     
     # Set up the dependency overrides
-    from codestory_service.infrastructure.msal_validator import is_admin
     from codestory_service.application.graph_service import get_graph_service
+    from codestory_service.infrastructure.msal_validator import is_admin
     app.dependency_overrides[is_admin] = mock_is_admin
     app.dependency_overrides[get_graph_service] = mock_get_graph_service
     

@@ -6,9 +6,9 @@ entities in the Neo4j database.
 
 import logging
 import re
-from typing import Dict, List, Optional, Set, Tuple
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 from .models import DocumentationEntity, DocumentationRelationship, RelationType
 from .utils.path_matcher import PathMatcher
 
@@ -43,8 +43,8 @@ class EntityLinker:
         self.entity_cache = {}
 
     def link_entities(
-        self, entities: List[DocumentationEntity]
-    ) -> List[DocumentationRelationship]:
+        self, entities: list[DocumentationEntity]
+    ) -> list[DocumentationRelationship]:
         """Link documentation entities to code entities.
 
         Args:
@@ -67,7 +67,7 @@ class EntityLinker:
 
     def _link_entity(
         self, entity: DocumentationEntity
-    ) -> List[DocumentationRelationship]:
+    ) -> list[DocumentationRelationship]:
         """Link a documentation entity to code entities.
 
         Args:
@@ -110,7 +110,7 @@ class EntityLinker:
 
         return relationships
 
-    def _extract_code_references(self, content: str) -> List[Tuple[str, str]]:
+    def _extract_code_references(self, content: str) -> list[tuple[str, str]]:
         """Extract references to code entities from text content.
 
         Args:
@@ -167,7 +167,7 @@ class EntityLinker:
             True if the name is likely a class reference, False otherwise
         """
         # Classes typically start with an uppercase letter and don't contain dots
-        return name[0].isupper() and not "." in name and len(name) > 1
+        return name[0].isupper() and "." not in name and len(name) > 1
 
     def _is_likely_module(self, name: str) -> bool:
         """Check if a name is likely to be a module reference.
@@ -179,9 +179,9 @@ class EntityLinker:
             True if the name is likely a module reference, False otherwise
         """
         # Modules typically contain dots and don't have spaces
-        return "." in name and not " " in name
+        return "." in name and " " not in name
 
-    def _find_code_entities(self, entity_type: str, entity_name: str) -> List[str]:
+    def _find_code_entities(self, entity_type: str, entity_name: str) -> list[str]:
         """Find code entities matching a reference.
 
         Args:
@@ -262,7 +262,7 @@ class EntityLinker:
 
     def _link_by_location(
         self, entity: DocumentationEntity
-    ) -> List[DocumentationRelationship]:
+    ) -> list[DocumentationRelationship]:
         """Link a documentation entity to code entities based on its location.
 
         This is used for docstrings to link them to their containing entities.

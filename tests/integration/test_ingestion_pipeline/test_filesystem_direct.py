@@ -13,13 +13,9 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from unittest.mock import patch, MagicMock
 
+from codestory.config.settings import Neo4jSettings
 from codestory.ingestion_pipeline.step import StepStatus, generate_job_id
-from codestory_filesystem.step import process_filesystem, FileSystemStep
-from codestory.config.settings import Settings, Neo4jSettings
-from codestory.graphdb.neo4j_connector import Neo4jConnector
-from ..test_config import get_test_settings
 
 # Override environment variables to ensure we use the test instance
 os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"

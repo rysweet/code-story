@@ -3,10 +3,8 @@
 import json
 import threading
 import time
-from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
-import pytest
 import redis
 from rich.console import Console
 
@@ -40,7 +38,7 @@ class TestProgressClient:
             assert client.channel == "codestory:ingestion:progress:test-123"
             
             # Check Redis initialization
-            mock_redis.assert_called_once_with("redis://localhost:6379")
+            mock_redis.assert_called_once_with("redis://localhost:6379", socket_timeout=2.0)
     
     def test_init_without_redis(self) -> None:
         """Test initialization with Redis unavailable."""
@@ -70,10 +68,15 @@ class TestProgressClient:
             assert client.use_redis is False
             assert client.redis is None
             
-            # Check console output - now we print both connecting message and warning
-            assert console.print.call_count == 2
-            assert "Connecting to Redis" in console.print.call_args_list[0][0][0]
-            assert "Warning" in console.print.call_args_list[1][0][0]
+            # Check that console.print was called multiple times
+            assert console.print.call_count > 0
+            
+            # Check that the first message is about setting up Redis
+            assert "Setting up Redis connection" in console.print.call_args_list[0][0][0]
+            
+            # Check that the last message is a warning about falling back to polling
+            last_call = console.print.call_args_list[-1][0][0]
+            assert "Warning" in last_call and "falling back to polling" in last_call
     
     def test_start_and_stop_redis_mode(self) -> None:
         """Test starting and stopping in Redis mode."""

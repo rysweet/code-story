@@ -1,15 +1,16 @@
 """Pytest configuration for integration tests."""
 
-import os
-import pytest
-import sys
-import re
 import glob
+import os
+import re
+import sys
 from unittest.mock import patch
-from typing import Dict, Any
 
+import pytest
 from dotenv import load_dotenv
+
 from .test_config import get_test_settings
+
 
 # Auto-fix Neo4j port configuration in test files
 def fix_neo4j_port_config():
@@ -20,7 +21,7 @@ def fix_neo4j_port_config():
     
     for file_path in test_files:
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
             
             # Fix syntax error with port configuration
@@ -129,7 +130,6 @@ def mock_settings():
     for all integration tests.
     """
     # We need to mock get_settings() to return test settings for integration tests
-    from codestory.config.settings import get_settings as original_get_settings
 
     # Create a patch for the get_settings function
     with patch(
@@ -335,8 +335,9 @@ def celery_app(redis_client):
     This fixture depends on redis_client to ensure Redis is properly set up
     and cleaned up for tests.
     """
-    from codestory.ingestion_pipeline.celery_app import app
     import importlib
+
+    from codestory.ingestion_pipeline.celery_app import app
     
     # Get the Redis URI from environment
     redis_uri = os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"

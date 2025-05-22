@@ -5,14 +5,13 @@ This module provides an adapter for interacting with the OpenAI client.
 
 import time
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import httpx
 import structlog
 from fastapi import status
 
 from codestory.llm.client import OpenAIClient
-from codestory.llm.models import ChatMessage, ChatCompletionRequest
+from codestory.llm.models import ChatCompletionRequest, ChatMessage
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.metrics import get_metrics
 
@@ -22,7 +21,7 @@ logger = structlog.get_logger(__name__)
 class OpenAIServiceAdapter:
     """Adapter for the OpenAI client."""
 
-    def __init__(self, client: Optional[OpenAIClient] = None) -> None:
+    def __init__(self, client: OpenAIClient | None = None) -> None:
         """Initialize the adapter.
 
         Args:
@@ -32,7 +31,7 @@ class OpenAIServiceAdapter:
         self.metrics = get_metrics()
 
     async def generate_code_summary(
-        self, code: str, context: Optional[str] = None, max_tokens: int = 500
+        self, code: str, context: str | None = None, max_tokens: int = 500
     ) -> str:
         """Generate a summary of a code snippet.
 
@@ -120,12 +119,12 @@ class OpenAIServiceAdapter:
 
             # Raise tool error
             raise ToolError(
-                f"Code summarization failed: {str(e)}",
+                f"Code summarization failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
             )
 
     async def generate_path_explanation(
-        self, path_elements: List[Dict[str, Any]], max_tokens: int = 300
+        self, path_elements: list[dict[str, Any]], max_tokens: int = 300
     ) -> str:
         """Generate an explanation of a path between nodes.
 
@@ -211,13 +210,13 @@ class OpenAIServiceAdapter:
 
             # Raise tool error
             raise ToolError(
-                f"Path explanation failed: {str(e)}",
+                f"Path explanation failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
             )
 
     async def find_similar_code(
         self, code: str, limit: int = 5
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Find semantically similar code.
 
         Args:
@@ -281,12 +280,12 @@ class OpenAIServiceAdapter:
 
             # Raise tool error
             raise ToolError(
-                f"Similar code search failed: {str(e)}",
+                f"Similar code search failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
             )
 
 
-@lru_cache()
+@lru_cache
 def get_openai_service() -> OpenAIServiceAdapter:
     """Get the OpenAI service adapter singleton.
 

@@ -6,9 +6,8 @@ summarization process and generating progress reports.
 
 import logging
 import time
-from typing import Dict, List, Optional, Tuple
 
-from ..models import DependencyGraph, NodeType, ProcessingStatus
+from ..models import DependencyGraph, NodeType
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -31,9 +30,7 @@ class ProgressTracker:
         self.start_time = time.time()
         self.last_update_time = self.start_time
         self.update_interval = 5.0  # seconds
-        self.node_type_counts: Dict[NodeType, int] = {
-            node_type: 0 for node_type in NodeType
-        }
+        self.node_type_counts: dict[NodeType, int] = dict.fromkeys(NodeType, 0)
         self._count_node_types()
 
     def _count_node_types(self) -> None:
@@ -43,7 +40,7 @@ class ProgressTracker:
                 self.node_type_counts.get(node_data.type, 0) + 1
             )
 
-    def get_progress_stats(self) -> Dict[str, int]:
+    def get_progress_stats(self) -> dict[str, int]:
         """Get progress statistics.
 
         Returns:
@@ -80,7 +77,7 @@ class ProgressTracker:
         """
         return time.time() - self.start_time
 
-    def get_estimated_remaining_time(self) -> Optional[float]:
+    def get_estimated_remaining_time(self) -> float | None:
         """Get the estimated remaining time in seconds.
 
         Returns:

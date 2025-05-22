@@ -6,10 +6,9 @@ including step orchestration and status tracking.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
-from pathlib import Path
+from typing import Any
 
-from celery import chain, group
+from celery import chain
 from celery.result import AsyncResult
 
 from .celery_app import app
@@ -25,9 +24,9 @@ def run_step(
     self,
     repository_path: str,
     step_name: str,
-    step_config: Dict[str, Any],
-    job_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    step_config: dict[str, Any],
+    job_id: str | None = None,
+) -> dict[str, Any]:
     """Run a single pipeline step.
 
     This task calls the appropriate plugin to execute a specific pipeline step.
@@ -106,7 +105,7 @@ def run_step(
         # This avoids the "got multiple values for argument" error
         if 'repository_path' in step_config_copy:
             # If it's already in the config, remove it to avoid conflicts
-            logger.warning(f"Removing duplicate repository_path from step config to avoid conflicts")
+            logger.warning("Removing duplicate repository_path from step config to avoid conflicts")
             del step_config_copy['repository_path']
         
         # Include job_id in kwargs if present
@@ -118,7 +117,7 @@ def run_step(
         if step_name == "blarify":
             # Blarify step doesn't use concurrency parameter
             if 'concurrency' in step_config_copy:
-                logger.debug(f"Removing 'concurrency' from blarify step config to avoid parameter mismatch")
+                logger.debug("Removing 'concurrency' from blarify step config to avoid parameter mismatch")
                 del step_config_copy['concurrency']
                 
         elif step_name == "summarizer" or step_name == "docgrapher":
@@ -242,8 +241,8 @@ def run_step(
 
 @app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)
 def orchestrate_pipeline(
-    self, repository_path: str, step_configs: List[Dict[str, Any]], job_id: str
-) -> Dict[str, Any]:
+    self, repository_path: str, step_configs: list[dict[str, Any]], job_id: str
+) -> dict[str, Any]:
     """Orchestrate the execution of the entire pipeline.
 
     This task creates a chain of steps to be executed in order,
@@ -422,7 +421,7 @@ def orchestrate_pipeline(
 
 
 @app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)
-def get_job_status(self, task_id: str) -> Dict[str, Any]:
+def get_job_status(self, task_id: str) -> dict[str, Any]:
     """Get the status of a running job.
 
     Args:
@@ -456,12 +455,12 @@ def get_job_status(self, task_id: str) -> Dict[str, Any]:
         logger.exception(f"Error checking job status: {e}")
         return {
             "status": StepStatus.FAILED,
-            "error": f"Error checking status: {str(e)}",
+            "error": f"Error checking status: {e!s}",
         }
 
 
 @app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)
-def stop_job(self, task_id: str) -> Dict[str, Any]:
+def stop_job(self, task_id: str) -> dict[str, Any]:
     """Stop a running job.
 
     Args:
@@ -496,5 +495,5 @@ def stop_job(self, task_id: str) -> Dict[str, Any]:
         logger.exception(f"Error stopping job: {e}")
         return {
             "status": StepStatus.FAILED,
-            "error": f"Error stopping job: {str(e)}",
+            "error": f"Error stopping job: {e!s}",
         }

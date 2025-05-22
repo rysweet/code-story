@@ -17,10 +17,9 @@ import json
 import logging
 import os
 import subprocess
-import time
 import sys
+import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 # Configure logging
 logging.basicConfig(
@@ -62,7 +61,7 @@ def check_docker_available() -> bool:
         logger.error(f"Docker is not available: {e}")
         return False
 
-def get_running_containers() -> List[str]:
+def get_running_containers() -> list[str]:
     """Get list of running Code Story containers."""
     try:
         result = subprocess.run(
@@ -86,7 +85,7 @@ def get_running_containers() -> List[str]:
         logger.error(f"stderr: {e.stderr}")
         return []
 
-def extract_tenant_id_from_settings() -> Optional[str]:
+def extract_tenant_id_from_settings() -> str | None:
     """Extract tenant ID from environment variables or settings files."""
     # Check environment variables first
     tenant_id = os.environ.get("AZURE_TENANT_ID") or os.environ.get("AZURE_OPENAI__TENANT_ID")
@@ -113,7 +112,7 @@ def extract_tenant_id_from_settings() -> Optional[str]:
     azure_config_path = Path(get_azure_token_location()) / "config"
     if azure_config_path.exists():
         try:
-            with open(azure_config_path, "r") as f:
+            with open(azure_config_path) as f:
                 for line in f:
                     if line.strip().startswith("tenant ="):
                         tenant_id = line.split("=")[1].strip()
@@ -125,7 +124,7 @@ def extract_tenant_id_from_settings() -> Optional[str]:
     logger.warning("Could not find tenant ID in environment or config files")
     return None
 
-def extract_tenant_id_from_error(error_message: str) -> Optional[str]:
+def extract_tenant_id_from_error(error_message: str) -> str | None:
     """Extract tenant ID from an Azure authentication error message."""
     import re
     
@@ -144,10 +143,10 @@ def extract_tenant_id_from_error(error_message: str) -> Optional[str]:
             logger.info(f"Extracted tenant ID from error message: {tenant_id}")
             return tenant_id
     
-    logger.warning(f"Could not extract tenant ID from error message")
+    logger.warning("Could not extract tenant ID from error message")
     return None
 
-def check_token_validity() -> Tuple[bool, Optional[str]]:
+def check_token_validity() -> tuple[bool, str | None]:
     """Check if Azure tokens are valid and return error message if not."""
     try:
         result = subprocess.run(
@@ -264,7 +263,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         )
         
         if verify_result.returncode != 0 or not verify_result.stdout.strip():
-            logger.error(f"Token injection failed: No files found in container after copy")
+            logger.error("Token injection failed: No files found in container after copy")
             return False
         
         logger.info(f"Files in /root/.azure/: {verify_result.stdout}")
@@ -363,7 +362,7 @@ def restart_container(container_name: str) -> bool:
         logger.error(f"Error restarting container {container_name}: {e}")
         return False
 
-def authenticate_with_azure(tenant_id: Optional[str] = None) -> bool:
+def authenticate_with_azure(tenant_id: str | None = None) -> bool:
     """Perform Azure authentication with the given tenant ID."""
     try:
         # First check if Azure CLI is available
@@ -553,7 +552,7 @@ def main():
         print("\n" + "=" * 60)
         print("AZURE AUTHENTICATION REQUIRED")
         print("-" * 60)
-        print(f"Please run the following command in a terminal:")
+        print("Please run the following command in a terminal:")
         print(f"  {login_cmd}")
         print("=" * 60 + "\n")
         

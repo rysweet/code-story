@@ -4,11 +4,11 @@ This ensures we're never using dummy/mock adapters in demo or integration mode.
 """
 
 import logging
-import os
-from typing import Callable, Any, TypeVar, cast
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
-from .infrastructure.neo4j_adapter import Neo4jAdapter
 from .infrastructure.celery_adapter import CeleryAdapter
+from .infrastructure.neo4j_adapter import Neo4jAdapter
 from .infrastructure.openai_adapter import OpenAIAdapter
 
 # Set up logging
@@ -42,10 +42,10 @@ def force_real_adapter(create_fn: Callable[..., T]) -> Callable[..., T]:
         except Exception as e:
             # Instead of falling back to a dummy adapter, raise the exception
             # This forces the service to fail if it can't connect to real services
-            logger.error(f"Failed to create real adapter and fallbacks are disabled: {str(e)}")
+            logger.error(f"Failed to create real adapter and fallbacks are disabled: {e!s}")
             raise
             
-    return cast(Callable[..., T], wrapper)
+    return cast('Callable[..., T]', wrapper)
 
 # Functions to override the factory functions in their respective modules
 # These must be imported and used to override the originals
@@ -94,7 +94,7 @@ def apply_overrides() -> None:
     This function should be called during application startup.
     """
     # Import the modules that define the factory functions
-    from .infrastructure import neo4j_adapter, celery_adapter, openai_adapter
+    from .infrastructure import celery_adapter, neo4j_adapter, openai_adapter
     
     # Override the factory functions
     neo4j_adapter.get_neo4j_adapter = get_real_neo4j_adapter

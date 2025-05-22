@@ -1,10 +1,9 @@
 """Tests for graph database exceptions."""
 
-import pytest
 
 from codestory.graphdb.exceptions import (
-    Neo4jError,
     ConnectionError,
+    Neo4jError,
     QueryError,
     SchemaError,
     TransactionError,

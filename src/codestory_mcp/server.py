@@ -4,13 +4,12 @@ This module implements the Model Context Protocol (MCP) server
 for the Code Story knowledge graph.
 """
 
-import asyncio
-import json
 import logging
 import time
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any
 
 import structlog
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -21,7 +20,7 @@ from prometheus_client import make_asgi_app
 
 from codestory_mcp.auth.entra_validator import EntraValidator
 from codestory_mcp.tools import get_all_tools, get_tool
-from codestory_mcp.tools.base import BaseTool, ToolError
+from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.config import get_mcp_settings
 from codestory_mcp.utils.metrics import get_metrics
 
@@ -30,7 +29,7 @@ logger = structlog.get_logger(__name__)
 
 
 # Authentication dependency
-async def get_current_user(request: Request) -> Dict[str, Any]:
+async def get_current_user(request: Request) -> dict[str, Any]:
     """Get the current authenticated user.
 
     Args:
@@ -72,7 +71,7 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         metrics.record_auth_attempt("error")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication token: {str(e)}",
+            detail=f"Invalid authentication token: {e!s}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -94,9 +93,9 @@ def tool_executor(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(
         tool_name: str,
-        params: Dict[str, Any],
-        user: Dict[str, Any] = Depends(get_current_user),
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        user: dict[str, Any] = Depends(get_current_user),
+    ) -> dict[str, Any]:
         metrics = get_metrics()
         start_time = time.time()
 
@@ -136,7 +135,7 @@ def tool_executor(func: Callable) -> Callable:
             logger.exception("Tool execution error", tool_name=tool_name, error=str(e))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Tool execution error: {str(e)}",
+                detail=f"Tool execution error: {e!s}",
             )
 
     return wrapper
@@ -204,14 +203,14 @@ def create_app() -> FastAPI:
         "/tools/{tool_name}",
         summary="Execute a tool",
         description="Execute a tool with the given parameters",
-        response_model=Dict[str, Any],
+        response_model=dict[str, Any],
     )
     @tool_executor
     async def execute_tool(
         tool_name: str,
-        params: Dict[str, Any],
-        user: Dict[str, Any] = Depends(get_current_user),
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        user: dict[str, Any] = Depends(get_current_user),
+    ) -> dict[str, Any]:
         """Execute a tool with the given parameters.
 
         Args:
@@ -232,8 +231,8 @@ def create_app() -> FastAPI:
         description="Get a list of available tools and their schemas",
     )
     async def get_tools(
-        user: Dict[str, Any] = Depends(get_current_user)
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        user: dict[str, Any] = Depends(get_current_user)
+    ) -> dict[str, list[dict[str, Any]]]:
         """Get a list of available tools and their schemas.
 
         Args:
@@ -261,7 +260,7 @@ def create_app() -> FastAPI:
         summary="Health check",
         description="Check if the MCP server is healthy",
     )
-    async def health_check() -> Dict[str, str]:
+    async def health_check() -> dict[str, str]:
         """Health check.
 
         Returns:

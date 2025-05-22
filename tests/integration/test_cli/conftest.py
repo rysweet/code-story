@@ -1,14 +1,15 @@
 """Test fixtures for CLI integration tests."""
 
 import os
+import subprocess
 import tempfile
 import time
-import subprocess
-from typing import Generator, Tuple, Dict, Any
+from collections.abc import Generator
+from typing import Any
 
+import httpx
 import pytest
 from click.testing import CliRunner
-import httpx
 
 from codestory.config import get_settings
 
@@ -32,7 +33,7 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session")
-def running_service(request) -> Generator[Dict[str, Any], None, None]:
+def running_service(request) -> Generator[dict[str, Any], None, None]:
     """
     Ensures the Code Story service is running for integration tests.
 
@@ -42,8 +43,6 @@ def running_service(request) -> Generator[Dict[str, Any], None, None]:
     Yields:
         Dictionary with service information (url, port, etc.)
     """
-    import subprocess
-    import time
     import os
     import signal
     

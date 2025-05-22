@@ -12,7 +12,7 @@ from prometheus_client import make_asgi_app
 
 from .api import auth, config, graph, health, ingest, service, websocket
 from .application.graph_service import GraphService, get_graph_service
-from .infrastructure.msal_validator import get_current_user, get_optional_user
+from .infrastructure.msal_validator import get_optional_user
 from .infrastructure.neo4j_adapter import Neo4jConnector
 from .settings import get_service_settings
 

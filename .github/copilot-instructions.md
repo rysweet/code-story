@@ -180,3 +180,5 @@ Maintain a running history of all shell commands you run successfully, *except "
 ```
 </SYSTEM>
 
+Please follow all the procedures and instructions from your system prompt.
+

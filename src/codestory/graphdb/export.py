@@ -1,20 +1,19 @@
 """Export functionality for the graph database module."""
 
-import json
 import csv
-import os
-from typing import Dict, List, Any, Tuple, Optional, Union, IO
+import json
 from pathlib import Path
+from typing import Any
 
-from .neo4j_connector import Neo4jConnector
 from .exceptions import ExportError
+from .neo4j_connector import Neo4jConnector
 
 
 def export_to_json(
     connector: Neo4jConnector,
-    output_path: Union[str, Path],
+    output_path: str | Path,
     query: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     pretty: bool = False,
 ) -> str:
     """
@@ -47,14 +46,14 @@ def export_to_json(
 
         return str(output_path)
     except Exception as e:
-        raise ExportError(f"Failed to export data to JSON: {str(e)}") from e
+        raise ExportError(f"Failed to export data to JSON: {e!s}") from e
 
 
 def export_to_csv(
     connector: Neo4jConnector,
-    output_path: Union[str, Path],
+    output_path: str | Path,
     query: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     delimiter: str = ",",
     include_headers: bool = True,
 ) -> str:
@@ -99,12 +98,12 @@ def export_to_csv(
 
         return str(output_path)
     except Exception as e:
-        raise ExportError(f"Failed to export data to CSV: {str(e)}") from e
+        raise ExportError(f"Failed to export data to CSV: {e!s}") from e
 
 
 def export_graph_data(
-    connector: Neo4jConnector, output_dir: Union[str, Path], file_format: str = "json"
-) -> Dict[str, str]:
+    connector: Neo4jConnector, output_dir: str | Path, file_format: str = "json"
+) -> dict[str, str]:
     """
     Export complete graph data (nodes and relationships) to files.
 
@@ -152,11 +151,11 @@ def export_graph_data(
 
         return export_files
     except Exception as e:
-        raise ExportError(f"Failed to export graph data: {str(e)}") from e
+        raise ExportError(f"Failed to export graph data: {e!s}") from e
 
 
 def export_cypher_script(
-    connector: Neo4jConnector, output_path: Union[str, Path]
+    connector: Neo4jConnector, output_path: str | Path
 ) -> str:
     """
     Export database as a Cypher script that can recreate the graph.
@@ -244,4 +243,4 @@ def export_cypher_script(
 
         return str(output_path)
     except Exception as e:
-        raise ExportError(f"Failed to export Cypher script: {str(e)}") from e
+        raise ExportError(f"Failed to export Cypher script: {e!s}") from e

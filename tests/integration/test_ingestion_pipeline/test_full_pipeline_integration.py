@@ -4,16 +4,16 @@ These tests verify that the complete ingestion pipeline can process a
 repository through all workflow steps correctly using real services.
 """
 
+import logging
 import os
 import tempfile
 import time
-import logging
+
 import pytest
 
-from pathlib import Path
-
-from codestory.ingestion_pipeline.step import StepStatus
 from codestory.ingestion_pipeline.manager import PipelineManager
+from codestory.ingestion_pipeline.step import StepStatus
+
 from .base_pipeline_test import BasePipelineTest
 
 # Configure logging for debugging

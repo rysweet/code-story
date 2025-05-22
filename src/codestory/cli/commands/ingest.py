@@ -20,6 +20,7 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
 from rich.table import Table
 
 from ..client import ProgressClient, ServiceClient
+from ..require_service_available import require_service_available
 
 
 @click.group(help="Ingest a repository into Code Story.")
@@ -367,6 +368,8 @@ def start_ingestion(
       Local path:     /Users/name/projects/my-repo
       Container path: /repositories/my-repo
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -540,6 +543,8 @@ def job_status(ctx: click.Context, job_id: str) -> None:
 
     JOB_ID is the ID of the ingestion job.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -559,6 +564,8 @@ def stop_job(ctx: click.Context, job_id: str) -> None:
 
     JOB_ID is the ID of the ingestion job to stop.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -580,6 +587,8 @@ def list_jobs(ctx: click.Context) -> None:
     """
     List all ingestion jobs.
     """
+    require_service_available()
+
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -669,6 +678,8 @@ def mount_repository(
     2. Recreates the necessary containers with the mount
     3. Verifies that the mount was successful
     """
+    require_service_available()
+
     console: Console = ctx.obj["console"]
     
     # Get absolute local path

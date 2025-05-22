@@ -1,6 +1,5 @@
 """Unit tests for the ServiceClient class."""
 
-import json
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -101,8 +100,8 @@ class TestServiceClient:
         
         # Verify result
         assert result["status"] == "healthy"
-        # First call to /health
-        client.client.get.assert_called_with("/health")
+        # First call to /health with empty params dict
+        client.client.get.assert_called_with("/health", params={})
     
     def test_check_service_health_error(self) -> None:
         """Test health check with error."""
@@ -136,7 +135,11 @@ class TestServiceClient:
         assert result == {"job_id": "test-123"}
         client.client.post.assert_called_once_with(
             "/ingest",
-            json={"repository_path": "/path/to/repo"}
+            json={
+                "source_type": "local_path",
+                "source": "/path/to/repo",
+                "description": "CLI ingestion of repository: /path/to/repo"
+            }
         )
     
     def test_execute_query(self) -> None:
@@ -159,8 +162,8 @@ class TestServiceClient:
         # Verify result
         assert result == {"records": []}
         client.client.post.assert_called_once_with(
-            "/query",
-            json={"query": query, "parameters": parameters}
+            "/query/cypher",
+            json={"query": query, "parameters": parameters, "query_type": "read"}
         )
     
     def test_ask_question(self) -> None:
@@ -242,15 +245,20 @@ class TestServiceClient:
         client.client = MagicMock()
         client.client.get.return_value = mock_response
         
+        # Set up mock client to return the same response for all the endpoints it tries
+        client.console = MagicMock()  # Mock the console to suppress output
+        
         # Generate visualization
         result = client.generate_visualization()
         
         # Verify result
         assert result == "<html>Visualization</html>"
-        client.client.get.assert_called_once_with(
-            "/visualize",
-            headers={"Accept": "text/html"}
-        )
+        
+        # Since the implementation tries multiple endpoints, we only verify that get was called at least once
+        client.client.get.assert_called_with("/visualize")
+        
+        # Verify it was called only once (the first attempt succeeds)
+        assert client.client.get.call_count == 1
     
     def test_open_ui(self) -> None:
         """Test opening the UI."""

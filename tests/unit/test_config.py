@@ -2,20 +2,16 @@
 
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import SecretStr
 
 from codestory.config import (
     Settings,
+    export_to_json,
     get_settings,
     refresh_settings,
-    update_config,
-    get_config_value,
-    export_to_json,
-    create_env_template,
 )
 from codestory.config.exceptions import SettingNotFoundError
 
@@ -27,7 +23,6 @@ def mock_env():
         # Core settings
         "APP_NAME": "code-story",
         "VERSION": "0.1.0",
-        "ENVIRONMENT": "development",
         "LOG_LEVEL": "INFO",
         "AUTH_ENABLED": "False",
         # Neo4j settings
@@ -207,8 +202,8 @@ def test_get_config_value(mock_env):
     """Test getting a config value by path."""
     # Rather than mocking, use the actual get_settings function
     # but temporarily modify the lru_cache to use our controlled values
-    from codestory.config.writer import get_config_value
     from codestory.config.settings import get_settings
+    from codestory.config.writer import get_config_value
 
     # Clear cache to ensure clean test
     get_settings.cache_clear()

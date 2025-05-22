@@ -21,7 +21,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Dict, List, Optional, Tuple, Union
 
 # Configure logging
 logging.basicConfig(
@@ -42,7 +41,7 @@ SERVICE_CONTAINER = "code-story-service"
 WORKER_CONTAINER = "code-story-worker"
 MCP_CONTAINER = "code-story-mcp"
 
-def check_logs_for_auth_failures() -> Tuple[bool, Optional[str]]:
+def check_logs_for_auth_failures() -> tuple[bool, str | None]:
     """
     Check Docker logs for Azure authentication failures.
     
@@ -84,7 +83,7 @@ def check_logs_for_auth_failures() -> Tuple[bool, Optional[str]]:
         logger.error(f"Error checking logs: {e}")
         return False, None
 
-def check_health_api_for_auth_issues() -> Tuple[bool, Optional[str]]:
+def check_health_api_for_auth_issues() -> tuple[bool, str | None]:
     """
     Check service health API for authentication issues.
     
@@ -125,7 +124,7 @@ def check_health_api_for_auth_issues() -> Tuple[bool, Optional[str]]:
         logger.error(f"Error checking health API: {e}")
         return False, None
 
-def extract_tenant_id_from_config() -> Optional[str]:
+def extract_tenant_id_from_config() -> str | None:
     """
     Extract tenant ID from config files.
     
@@ -135,7 +134,7 @@ def extract_tenant_id_from_config() -> Optional[str]:
     try:
         # First try to get from Azure profile
         if os.path.exists(AZURE_PROFILE):
-            with open(AZURE_PROFILE, "r") as f:
+            with open(AZURE_PROFILE) as f:
                 profile_data = json.load(f)
                 if "subscriptions" in profile_data:
                     for sub in profile_data["subscriptions"]:
@@ -162,7 +161,7 @@ def extract_tenant_id_from_config() -> Optional[str]:
         logger.error(f"Error extracting tenant ID from config: {e}")
         return None
 
-def get_running_containers() -> List[str]:
+def get_running_containers() -> list[str]:
     """
     Get list of running Code Story containers.
     
@@ -192,7 +191,7 @@ def get_running_containers() -> List[str]:
         logger.error(f"Error getting running containers: {e}")
         return []
 
-def login_to_azure(tenant_id: Optional[str] = None) -> bool:
+def login_to_azure(tenant_id: str | None = None) -> bool:
     """
     Run az login with the specified tenant ID.
     
@@ -272,7 +271,7 @@ def inject_azure_tokens_into_container(container_name: str) -> bool:
         logger.error(f"Error injecting tokens into container {container_name}: {e}")
         return False
 
-def detect_auth_issues() -> Tuple[bool, Optional[str]]:
+def detect_auth_issues() -> tuple[bool, str | None]:
     """
     Detect Azure authentication issues.
     
@@ -291,7 +290,7 @@ def detect_auth_issues() -> Tuple[bool, Optional[str]]:
     
     return False, None
 
-def renew_authentication(tenant_id: Optional[str] = None, container_filter: Optional[str] = None) -> bool:
+def renew_authentication(tenant_id: str | None = None, container_filter: str | None = None) -> bool:
     """
     Renew Azure authentication tokens and inject into containers.
     

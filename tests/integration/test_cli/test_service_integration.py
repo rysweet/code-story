@@ -3,10 +3,9 @@
 import os
 import subprocess
 import time
-from typing import Dict, Any
+from typing import Any
 
 import pytest
-import httpx
 from click.testing import CliRunner
 
 from codestory.cli.main import app
@@ -19,7 +18,7 @@ class TestServiceCommands:
     """Integration tests for service-related CLI commands."""
     
     @pytest.mark.require_service
-    def test_service_status(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_service_status(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'service status' command with a running service."""
         # Run the command
         result = cli_runner.invoke(app, ["service", "status"])
@@ -31,7 +30,7 @@ class TestServiceCommands:
         assert "Service is running" in result.output
     
     @pytest.mark.require_service
-    def test_service_info(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_service_info(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'service info' command with a running service."""
         # Run the command
         result = cli_runner.invoke(app, ["service", "info"])
@@ -43,7 +42,7 @@ class TestServiceCommands:
         
     @pytest.mark.skipif(os.environ.get("CI") == "true", reason="Skip in CI environment")
     @pytest.mark.require_service
-    def test_service_ui_open(self, cli_runner: CliRunner, running_service: Dict[str, Any]) -> None:
+    def test_service_ui_open(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'ui open' command with a running service."""
         # This test is a bit tricky because it actually tries to open a browser
         # We'll just check that the command runs without errors

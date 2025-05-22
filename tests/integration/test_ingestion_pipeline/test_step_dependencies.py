@@ -10,11 +10,10 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from codestory.config.settings import get_settings
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_blarify.step import BlarifyStep

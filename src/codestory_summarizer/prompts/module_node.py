@@ -4,7 +4,6 @@ This module provides prompt templates specifically designed for generating
 high-quality summaries of module nodes.
 """
 
-from typing import Dict, List, Union
 
 
 def get_module_summary_prompt(

@@ -11,9 +11,9 @@ import uuid
 from typing import Any
 
 import docker
-from celery import shared_task, current_app
-from celery.result import AsyncResult  
+from celery import current_app, shared_task
 from celery.app.control import Control
+from celery.result import AsyncResult
 from docker.errors import DockerException
 
 from codestory.config.settings import get_settings

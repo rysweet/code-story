@@ -7,11 +7,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from codestory_mcp.server import create_app
-from codestory_mcp.tools.search_graph import SearchGraphTool
-from codestory_mcp.tools.summarize_node import SummarizeNodeTool
-from codestory_mcp.tools.path_to import PathToTool
-from codestory_mcp.tools.similar_code import SimilarCodeTool
 from codestory_mcp.tools import register_tool
+from codestory_mcp.tools.path_to import PathToTool
+from codestory_mcp.tools.search_graph import SearchGraphTool
+from codestory_mcp.tools.similar_code import SimilarCodeTool
+from codestory_mcp.tools.summarize_node import SummarizeNodeTool
 
 
 @pytest.fixture

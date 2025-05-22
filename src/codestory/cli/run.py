@@ -8,7 +8,9 @@ is run directly.
 """
 
 import sys
+
 from codestory.cli.main import main
+
 
 def run():
     """Run the CLI application with proper exit code."""

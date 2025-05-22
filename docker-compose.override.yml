@@ -1,15 +1,7 @@
 services:
   service:
-    environment:
-      - AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
-      - USE_REAL_ADAPTERS=true
     volumes:
-      - /tmp/test-repo-small:/repositories/test-repo-small:ro
-      - ~/.azure:/root/.azure
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpaw_6iub0:/repositories/tmpaw_6iub0:ro
   worker:
-    environment:
-      - CELERY_TASK_ALWAYS_EAGER=true  # Run Celery tasks synchronously for easier testing
-      - AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
     volumes:
-      - /tmp/test-repo-small:/repositories/test-repo-small:ro
-      - ~/.azure:/root/.azure
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpaw_6iub0:/repositories/tmpaw_6iub0:ro

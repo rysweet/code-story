@@ -12,9 +12,9 @@ neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus, generate_job_id

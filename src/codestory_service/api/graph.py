@@ -8,7 +8,7 @@ It also provides visualization endpoints for generating graph visualizations.
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 
 from ..application.graph_service import GraphService, get_graph_service
 from ..domain.graph import (

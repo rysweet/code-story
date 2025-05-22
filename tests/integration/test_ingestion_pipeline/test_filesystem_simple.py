@@ -5,13 +5,12 @@ This test directly interacts with the Neo4j database to create a filesystem stru
 
 import os
 import tempfile
-import time
 from pathlib import Path
+
 import pytest
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.ingestion_pipeline.step import StepStatus
 from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
 @pytest.fixture
@@ -21,8 +20,6 @@ def neo4j_connector(neo4j_env):
     This uses the neo4j_env fixture defined in conftest.py to ensure
     proper environment configuration.
     """
-    from codestory.graphdb.neo4j_connector import Neo4jConnector
-    from codestory.config.settings import get_settings
     
     settings = get_settings()
     

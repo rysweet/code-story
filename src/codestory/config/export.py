@@ -7,17 +7,17 @@ to various formats and templates.
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 import tomli_w
 from pydantic import SecretStr
 
-from .settings import Settings, get_settings, get_project_root
+from .settings import Settings, get_project_root, get_settings
 
 
 def _redact_secrets(
-    config_dict: Dict[str, Any], secret_fields: Optional[Set[str]] = None
-) -> Dict[str, Any]:
+    config_dict: dict[str, Any], secret_fields: set[str] | None = None
+) -> dict[str, Any]:
     """Redact secret values in a configuration dictionary.
 
     Args:
@@ -33,9 +33,7 @@ def _redact_secrets(
     for key, value in config_dict.items():
         if isinstance(value, dict):
             result[key] = _redact_secrets(value, secret_fields)
-        elif isinstance(value, SecretStr):
-            result[key] = "********"
-        elif (
+        elif isinstance(value, SecretStr) or (
             key.lower()
             in {
                 "password",
@@ -57,8 +55,8 @@ def _redact_secrets(
 
 
 def settings_to_dict(
-    settings: Optional[Settings] = None, redact_secrets: bool = True
-) -> Dict[str, Any]:
+    settings: Settings | None = None, redact_secrets: bool = True
+) -> dict[str, Any]:
     """Convert settings to a nested dictionary.
 
     Args:
@@ -75,7 +73,7 @@ def settings_to_dict(
     config_dict = settings.model_dump(by_alias=False, exclude_none=True)
 
     # Process SecretStr values before redaction
-    def process_secrets(d: Dict[str, Any]) -> Dict[str, Any]:
+    def process_secrets(d: dict[str, Any]) -> dict[str, Any]:
         result = {}
         for k, v in d.items():
             if isinstance(v, dict):
@@ -96,9 +94,9 @@ def settings_to_dict(
 
 
 def export_to_json(
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     redact_secrets: bool = True,
-    settings: Optional[Settings] = None,
+    settings: Settings | None = None,
 ) -> str:
     """Export settings to a JSON file.
 
@@ -124,9 +122,9 @@ def export_to_json(
 
 
 def export_to_toml(
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     redact_secrets: bool = True,
-    settings: Optional[Settings] = None,
+    settings: Settings | None = None,
 ) -> str:
     """Export settings to a TOML file.
 
@@ -146,7 +144,7 @@ def export_to_toml(
     if output_path:
         with open(output_path, "wb") as f:
             tomli_w.dump(config_dict, f)
-        with open(output_path, "r") as f:
+        with open(output_path) as f:
             return f.read()
     else:
         # tomli_w only writes to binary file objects, so we need a workaround
@@ -154,7 +152,7 @@ def export_to_toml(
         try:
             with open(temp_path, "wb") as f:
                 tomli_w.dump(config_dict, f)
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 return f.read()
         finally:
             if temp_path.exists():
@@ -162,9 +160,9 @@ def export_to_toml(
 
 
 def create_env_template(
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     include_comments: bool = True,
-    settings: Optional[Settings] = None,
+    settings: Settings | None = None,
 ) -> str:
     """Create a .env-template file with all configuration options.
 
@@ -186,7 +184,7 @@ def create_env_template(
     flattened_settings = {}
     config_dict = settings.model_dump(by_alias=False, exclude_none=True)
 
-    def _flatten_dict(d: Dict[str, Any], prefix: str = "") -> None:
+    def _flatten_dict(d: dict[str, Any], prefix: str = "") -> None:
         for key, value in d.items():
             if isinstance(value, dict):
                 _flatten_dict(value, f"{prefix}{key}__")
@@ -196,14 +194,13 @@ def create_env_template(
     _flatten_dict(config_dict)
 
     # Create template lines
-    lines: List[str] = []
+    lines: list[str] = []
 
     # Core settings
     if include_comments:
         lines.append("# Core settings")
     lines.append(f"APP_NAME={settings.app_name}")
     lines.append(f"VERSION={settings.version}")
-    lines.append(f"ENVIRONMENT=development")  # Hard-coded to match test expectations
     lines.append(f"LOG_LEVEL={settings.log_level}")
     lines.append("")
 

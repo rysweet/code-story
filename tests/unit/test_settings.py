@@ -5,24 +5,24 @@ a direct settings provider for use in tests.
 """
 
 import os
-import sys
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from pydantic import SecretStr
+
 from codestory.config.settings import (
-    Settings,
-    Neo4jSettings,
-    RedisSettings,
-    OpenAISettings,
     AzureOpenAISettings,
-    ServiceSettings,
-    IngestionSettings,
-    PluginSettings,
-    TelemetrySettings,
-    InterfaceSettings,
     AzureSettings,
+    IngestionSettings,
+    InterfaceSettings,
+    Neo4jSettings,
+    OpenAISettings,
+    PluginSettings,
+    RedisSettings,
+    ServiceSettings,
+    Settings,
+    TelemetrySettings,
 )
+
 
 def create_test_settings():
     """Create a fully-initialized settings object for tests."""
@@ -51,7 +51,7 @@ def create_test_settings():
     # Define Azure OpenAI test settings
     azure_openai = AzureOpenAISettings(
         api_key=SecretStr("test-azure-key"),  # Fake key for testing
-        endpoint="https://test-azure-endpoint.openai.azure.com",
+        endpoint="<your-endpoint>",
         deployment_id="gpt-4o",
         api_version="2024-05-01",
         embedding_model="text-embedding-3-small",
@@ -65,7 +65,6 @@ def create_test_settings():
         port=8000,
         workers=1,
         log_level="DEBUG",
-        environment="testing",
         enable_telemetry=False,
         worker_concurrency=1,
     )
@@ -145,7 +144,6 @@ test_settings = create_test_settings()
 def setup_test_settings():
     """Set up test settings for unit tests."""
     # Create the patch for get_settings
-    from codestory.config.settings import get_settings
     settings_patch = patch('codestory.config.settings.get_settings', return_value=test_settings)
     settings_patch.start()
     

@@ -6,8 +6,6 @@ to actual filesystem paths in the repository.
 
 import logging
 import os
-import re
-from typing import Dict, List, Optional, Set, Tuple
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
@@ -79,7 +77,7 @@ class PathMatcher:
             record["qualified_name"] for record in funcs if record["qualified_name"]
         }
 
-    def match_path(self, path_reference: str) -> Optional[str]:
+    def match_path(self, path_reference: str) -> str | None:
         """Match a path reference to an actual path.
 
         Args:
@@ -156,7 +154,7 @@ class PathMatcher:
         self.path_cache[path_reference] = None
         return None
 
-    def match_class(self, class_reference: str) -> Optional[str]:
+    def match_class(self, class_reference: str) -> str | None:
         """Match a class reference to an actual class.
 
         Args:
@@ -211,7 +209,7 @@ class PathMatcher:
 
         return None
 
-    def match_function(self, function_reference: str) -> Optional[str]:
+    def match_function(self, function_reference: str) -> str | None:
         """Match a function reference to an actual function.
 
         Args:

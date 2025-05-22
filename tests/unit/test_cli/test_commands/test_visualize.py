@@ -4,7 +4,6 @@ import os
 import tempfile
 from unittest.mock import MagicMock, patch
 
-import pytest
 from click.testing import CliRunner
 
 from codestory.cli.main import app
@@ -55,7 +54,7 @@ class TestVisualizeCommands:
                     
                     # Check that file was created
                     assert os.path.exists(output_path)
-                    with open(output_path, "r") as f:
+                    with open(output_path) as f:
                         content = f.read()
                         assert "Test visualization" in content
     

@@ -4,7 +4,6 @@ This module provides configuration management for the MCP Adapter.
 """
 
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -49,10 +48,10 @@ class MCPSettings(BaseSettings):
     workers: int = Field(4, description="Number of worker processes")
 
     # Authentication
-    azure_tenant_id: Optional[str] = Field(
+    azure_tenant_id: str | None = Field(
         None, description="Microsoft Entra ID tenant ID"
     )
-    azure_client_id: Optional[str] = Field(
+    azure_client_id: str | None = Field(
         None, description="Client ID for the MCP adapter"
     )
     auth_enabled: bool = Field(False, description="Enable/disable authentication")
@@ -66,7 +65,7 @@ class MCPSettings(BaseSettings):
     api_token_issuer: str = Field(
         "https://sts.windows.net/", description="Issuer claim for JWT tokens"
     )
-    api_audience: Optional[str] = Field(
+    api_audience: str | None = Field(
         None, description="Audience claim for JWT tokens"
     )
     required_scopes: list[str] = Field(
@@ -100,7 +99,7 @@ class MCPSettings(BaseSettings):
 
     @field_validator("api_audience", mode="before")
     @classmethod
-    def set_audience(cls, v: Optional[str], info) -> str:
+    def set_audience(cls, v: str | None, info) -> str:
         """Set default audience based on client ID.
 
         Args:
@@ -122,7 +121,7 @@ class MCPSettings(BaseSettings):
         return "api://code-story"
 
 
-@lru_cache()
+@lru_cache
 def get_mcp_settings() -> MCPSettings:
     """Get MCP settings singleton.
 

@@ -5,16 +5,17 @@ import os
 ci_env = os.environ.get("CI") == "true"
 neo4j_port = "7687" if ci_env else "7688"
 import time
-from contextlib import asynccontextmanager
 import unittest.mock as mock
+from contextlib import asynccontextmanager
 
 import pytest
 from fastapi.testclient import TestClient
 
-from codestory_service.main import create_app, app as global_app
-from codestory_service.api.auth import get_current_user
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.graphdb.schema import initialize_schema
+from codestory_service.infrastructure.msal_validator import get_current_user
+from codestory_service.main import app as global_app
+from codestory_service.main import create_app
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +40,7 @@ def neo4j_connector():
 
         yield connector
     except Exception as e:
-        pytest.fail(f"Failed to connect to Neo4j test database: {str(e)}")
+        pytest.fail(f"Failed to connect to Neo4j test database: {e!s}")
     finally:
         # Clean up after test
         connector.close()
