@@ -7,18 +7,16 @@ from unittest import mock
 
 import pytest
 from fastapi import HTTPException
-from neo4j import GraphDatabase
 
 from codestory.graphdb.exceptions import ConnectionError, QueryError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.llm.client import OpenAIClient
 from codestory.llm.exceptions import AuthenticationError
 from codestory_service.domain.graph import CypherQuery, QueryType
 from codestory_service.domain.ingestion import IngestionRequest, IngestionSourceType
-from codestory_service.infrastructure.neo4j_adapter import Neo4jAdapter
-from codestory_service.infrastructure.openai_adapter import OpenAIAdapter
 from codestory_service.infrastructure.celery_adapter import CeleryAdapter
 from codestory_service.infrastructure.msal_validator import MSALValidator
+from codestory_service.infrastructure.neo4j_adapter import Neo4jAdapter
+from codestory_service.infrastructure.openai_adapter import OpenAIAdapter
 
 
 class TestNeo4jAdapter:
@@ -106,14 +104,17 @@ class TestOpenAIAdapter:
         client.chat_model = "gpt-4"
         client.reasoning_model = "gpt-3.5-turbo"
 
-        # Setup the response for create_embeddings_async
-        mock_response = mock.MagicMock()
-        mock_response.model_dump.return_value = {
-            "object": "list",
-            "data": [{"embedding": [0.1, 0.2, 0.3], "index": 0, "object": "embedding"}],
-            "model": "text-embedding-ada-002",
-            "usage": {"prompt_tokens": 8, "total_tokens": 8},
-        }
+        # Setup the embedding response
+        from codestory.llm.models import EmbeddingData, EmbeddingResponse
+        
+        # Create a mock embedding response with the necessary structure
+        embedding_data = [EmbeddingData(embedding=[0.1, 0.2, 0.3], index=0, object="embedding")]
+        embedding_response = EmbeddingResponse(
+            object="list",
+            data=embedding_data,
+            model="text-embedding-ada-002",
+            usage={"prompt_tokens": 8, "total_tokens": 8}
+        )
 
         # Create an awaitable mock for model list
         models_response = mock.MagicMock()
@@ -126,8 +127,14 @@ class TestOpenAIAdapter:
         
         async def mock_list():
             return models_response
+        
+        # Set up the async mocks for the client
+        client.embed_async = mock.AsyncMock(return_value=embedding_response)
             
         # Create an awaitable mock for embeddings create
+        mock_response = mock.MagicMock()
+        mock_response.model_dump.return_value = embedding_response.model_dump()
+        
         async def mock_create(**kwargs):
             return mock_response
 
@@ -287,8 +294,9 @@ class TestOpenAIAdapter:
         assert "deployment_id" in result["details"]["current_config"]
         assert "required_config" in result["details"]
         assert "AZURE_OPENAI__DEPLOYMENT_ID" in result["details"]["required_config"]
-        assert result["details"]["required_config"]["AZURE_OPENAI__DEPLOYMENT_ID"] == "o1"
-        assert result["details"]["required_config"]["AZURE_OPENAI__ENDPOINT"] == "https://ai-adapt-oai-eastus2.openai.azure.com"
+        assert "AZURE_OPENAI__ENDPOINT" in result["details"]["required_config"]
+        assert result["details"]["required_config"]["AZURE_OPENAI__DEPLOYMENT_ID"] == "<your-deployment-id>"
+        assert result["details"]["required_config"]["AZURE_OPENAI__ENDPOINT"] == "<your-endpoint>"
 
     @pytest.mark.asyncio
     async def test_create_embeddings_success(self, adapter, mock_client):
@@ -303,19 +311,14 @@ class TestOpenAIAdapter:
     async def test_create_embeddings_error(self, adapter, mock_client):
         """Test error handling when creating embeddings fails."""
 
-        # Replace the mock create function with one that raises an error
-        async def mock_create_error(**kwargs):
-            # Match the exception import used in the adapter
-            from codestory.llm.exceptions import AuthenticationError
-
-            raise AuthenticationError("Invalid API key")
-
-        mock_client._async_client.embeddings.create = mock_create_error
+        # Configure the mock to raise an AuthenticationError
+        from codestory.llm.exceptions import AuthenticationError
+        mock_client.embed_async.side_effect = AuthenticationError("Invalid API key")
 
         with pytest.raises(HTTPException) as exc_info:
             await adapter.create_embeddings(["Test text"])
 
-        # According to the adapter implementation, it maps AuthenticationError to 401
+        # According to the adapter implementation, it maps AuthenticationError to 502
         assert exc_info.value.status_code == 502  # Maps to BAD_GATEWAY in our adapter
         assert "Invalid API key" in exc_info.value.detail
 
@@ -352,9 +355,6 @@ class TestCeleryAdapter:
         adapter = CeleryAdapter()
         adapter.app = mock_app
         # Make the run_ingestion_pipeline task available
-        from codestory_service.infrastructure.celery_adapter import (
-            run_ingestion_pipeline,
-        )
 
         # Replace the actual run_ingestion_pipeline with the mock task
         adapter._run_ingestion_pipeline = mock_app.tasks["run_ingestion_pipeline"]
