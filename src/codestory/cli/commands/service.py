@@ -197,19 +197,10 @@ def stop_service(ctx: click.Context) -> None:
     """
     Stop the Code Story service.
     """
-    require_service_available()
-
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
     console.print("Stopping Code Story service...")
-
-    # Check if service is running
-    try:
-        health = client.check_service_health()
-    except ServiceError:
-        console.print("[yellow]Service is not running.[/]")
-        return
 
     # Stop the service with Docker Compose
     try:
@@ -1466,92 +1457,41 @@ def show_unhealthy_container_logs(
             try:
                 container_info = json.loads(line)
                 if "Name" in container_info:
-                    # Check for health status in the 'Status' field if available
+                    container_name = container_info["Name"]
+                    # Check if the container is unhealthy
                     if (
-                        "Status" in container_info
-                        and "unhealthy" in container_info["Status"].lower()
+                        "State" in container_info
+                        and "Health" in container_info["State"]
                     ):
-                        unhealthy_containers.append(container_info["Name"])
-            except json.JSONDecodeError:
-                # Older Docker versions might not support JSON format
-                # Fallback to checking for 'unhealthy' in the line
-                if "unhealthy" in line.lower():
-                    # Extract container name from line
-                    parts = line.split()
-                    if parts:
-                        unhealthy_containers.append(
-                            parts[0]
-                        )  # First column is usually name
+                        health_status = container_info["State"]["Health"].get("Status")
+                        if health_status == "unhealthy":
+                            unhealthy_containers.append(container_name)
+                            console.print(
+                                f"[red]Container {container_name} is unhealthy.[/]"
+                            )
 
-        # If no unhealthy containers found by parsing, try a direct approach with docker ps
+                            # Show the last few lines of the container logs
+                            if "LogPath" in container_info["GraphDriver"]:
+                                log_path = container_info["GraphDriver"]["LogPath"]
+                                console.print(f"  Log file: {log_path}")
+                                try:
+                                    # Show last 10 lines of the log file
+                                    with open(log_path, "r") as log_file:
+                                        # Seek to the end of the file
+                                        log_file.seek(0, os.SEEK_END)
+                                        # Read the last 10 lines
+                                        for _ in range(10):
+                                            line = log_file.readline()
+                                            if not line:
+                                                break  # EOF
+                                            console.print(f"  {line.strip()}")
+                                except Exception as e:
+                                    console.print(f"  [red]Error reading log file: {e!s}[/]")
+            except Exception as e:
+                console.print(f"[red]Error parsing container info: {e!s}[/]")
+                continue
+
         if not unhealthy_containers:
-            process = subprocess.run(
-                [
-                    "docker",
-                    "ps",
-                    "--filter",
-                    "health=unhealthy",
-                    "--format",
-                    "{{.Names}}",
-                ],
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if process.returncode == 0:
-                unhealthy_containers = [
-                    c for c in process.stdout.strip().split("\n") if c
-                ]
-
-        # Specifically check worker container if no unhealthy containers found
-        if not unhealthy_containers:
-            worker_containers = ["codestory-worker", "worker"]
-            for worker in worker_containers:
-                process = subprocess.run(
-                    ["docker", "logs", worker],
-                    check=False,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                if process.returncode == 0:
-                    unhealthy_containers.append(worker)
-
-        # Show logs for unhealthy containers
-        if unhealthy_containers:
-            console.print(
-                f"\n[bold]Found potentially unhealthy containers:[/] {', '.join(unhealthy_containers)}"
-            )
-            for container in unhealthy_containers:
-                console.print(f"\n[bold cyan]Logs for {container}:[/]")
-                logs_cmd = ["docker", "logs", container]
-                try:
-                    logs = subprocess.run(
-                        logs_cmd,
-                        check=False,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        capture_output=True,
-                    )
-                    if logs.stdout:
-                        # Limit output to last 20 lines to avoid overwhelming the console
-                        last_lines = logs.stdout.strip().split("\n")[-20:]
-                        for line in last_lines:
-                            console.print(f"  {line}")
-                    if logs.stderr and logs.stderr.strip():
-                        console.print("[bold red]Error output:[/]")
-                        # Limit error output too
-                        last_error_lines = logs.stderr.strip().split("\n")[-10:]
-                        for line in last_error_lines:
-                            console.print(f"  {line}")
-                except Exception as e:
-                    console.print(f"[red]Could not get logs for {container}: {e!s}[/]")
-        else:
-            console.print(
-                "[yellow]No specific unhealthy containers identified. Check all container logs for more details.[/]"
-            )
-
+            console.print("[green]All containers are healthy.[/]")
     except Exception as e:
-        console.print(f"[yellow]Error checking unhealthy containers: {e!s}[/]")
+        console.print(f"[red]Error showing unhealthy container logs: {e!s}[/]")

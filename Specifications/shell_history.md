@@ -1,5 +1,9 @@
 # Shell Command History
 
+## May 22, 2025 (Comprehensive Logging for Azure OpenAI Diagnostics)
+- `codestory stop` - Stop all Code Story services using docker compose down
+- `docker compose build` - Rebuild Docker images with updated code
+
 ## May 20, 2025 (Ingestion Pipeline Parameter Filtering)
 - `cd /Users/ryan/src/msec/code-story && find tests -name "test_*.py" | grep -i ingestion` - Find ingestion-related test files
 - `cd /Users/ryan/src/msec/code-story && git status` - Check git status

@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 
 from ..infrastructure.celery_adapter import CeleryAdapter, get_celery_adapter
+from ..infrastructure.error_log import get_and_clear_errors
 from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.openai_adapter import OpenAIAdapter, get_openai_adapter
 from ..settings import get_service_settings
@@ -49,6 +50,9 @@ class HealthReport(BaseModel):
     uptime: int = Field(..., description="Service uptime in seconds")
     components: dict[str, ComponentHealth] = Field(
         ..., description="Health status of individual components"
+    )
+    error_package: dict[str, Any] | None = Field(
+        None, description="Package of errors from the service"
     )
 
 
@@ -94,15 +98,29 @@ async def health_check(
     """
     import asyncio
 
-    logger.info("Performing health check")
+    logger.info("=== Health Check Started ===")
+    # Check for new service errors
+    errors = get_and_clear_errors()
+    error_package = errors if errors else None
+
+    logger.info(f"Error package: {error_package}")
 
     # Use a global timeout to prevent the health check from hanging
     try:
-        # Run the full health check with a reasonable timeout
+        logger.info("Starting health check implementation with 30s timeout...")
+        # Run the full health check
         health_report = await asyncio.wait_for(
             _health_check_impl(neo4j, celery, openai),
             timeout=30,  # 30 second timeout for entire health check
         )
+
+        logger.info(f"Health check completed. Overall status: {health_report.status}")
+        logger.info(f"Component statuses: {[(name, comp.status) for name, comp in health_report.components.items()]}")
+
+        # Attach any errors to the report
+        if error_package:
+            health_report.error_package = error_package
+            health_report.status = "unhealthy"
 
         # Handle Azure auth renewal if requested
         if (
@@ -110,9 +128,14 @@ async def health_check(
             and health_report.components.get("openai")
             and health_report.components["openai"].status == "unhealthy"
         ):
+            logger.info("Auto-fix requested and OpenAI is unhealthy - checking for Azure auth issues...")
             openai_details = health_report.components["openai"].details or {}
             error_str = str(openai_details.get("error", ""))
             error_type = str(openai_details.get("type", ""))
+            
+            logger.info(f"OpenAI error details: {openai_details}")
+            logger.info(f"Error string: {error_str}")
+            logger.info(f"Error type: {error_type}")
 
             # Check if this is an Azure auth issue
             if (

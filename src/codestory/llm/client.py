@@ -258,26 +258,77 @@ class OpenAIClient:
             logger.warning(f"Error setting up Azure authentication: {e}")
 
         # Create the client with or without Azure AD authentication
+        logger.info("=== OpenAI Client Initialization ===")
+        logger.info(f"Endpoint: {self.endpoint}")
+        logger.info(f"API Version: {self.api_version}")
+        logger.info(f"Chat Model: {self.chat_model}")
+        logger.info(f"Embedding Model: {self.embedding_model}")
+        logger.info(f"Reasoning Model: {self.reasoning_model}")
+        logger.info(f"Timeout: {self.timeout}")
+        logger.info(f"Max Retries: {self.max_retries}")
+
+        # Prepare client parameters for Azure OpenAI
+        deployment_id_env = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID")
         client_params = {
             "azure_endpoint": self.endpoint,
             "api_version": self.api_version,
             "timeout": self.timeout,
             "max_retries": 0,  # We handle retries ourselves
         }
+        # Use deployment_id from environment
+        if deployment_id_env:
+            client_params["engine"] = deployment_id_env
+            logger.info(f"Using deployment_id for Azure OpenAI engine: {deployment_id_env}")
+        else:
+            logger.warning("No AZURE_OPENAI__DEPLOYMENT_ID set; Azure requests may fail.")
+
+        logger.info(f"Client parameters: {client_params}")
 
         # Add Azure AD authentication if available
         if AZURE_IDENTITY_AVAILABLE:
+            logger.info("Azure identity available - attempting DefaultAzureCredential authentication")
             try:
+                logger.info("Creating DefaultAzureCredential...")
                 # Create the credential - DefaultAzureCredential doesn't accept tenant_id directly
                 credential = DefaultAzureCredential()
+                logger.info("DefaultAzureCredential created successfully")
+                
+                # Test the credential by getting a token
+                logger.info("Testing credential by requesting token...")
                 token_provider = get_bearer_token_provider(
                     credential, "https://cognitiveservices.azure.com/.default"
                 )
+                logger.info("Token provider created successfully")
+                
                 client_params["azure_ad_token_provider"] = token_provider
+                logger.info("Added token provider to client parameters")
+                
             except Exception as e:
                 logger.warning(f"Failed to initialize Azure AD authentication: {e}")
-                # Continue without Azure AD authentication
+                logger.warning(f"Error type: {type(e).__name__}")
+                logger.warning("Falling back to API key authentication...")
+                
+                # Continue without Azure AD authentication - try API key fallback
+                logger.info("Attempting to get API key from settings...")
+                try:
+                    settings = get_settings()
+                    api_key = getattr(settings.openai, "api_key", None)
+                    if api_key:
+                        # Convert SecretStr to string if needed
+                        if hasattr(api_key, "get_secret_value") and callable(
+                            api_key.get_secret_value
+                        ):
+                            client_params["api_key"] = api_key.get_secret_value()
+                            logger.info("Using API key from settings (SecretStr)")
+                        else:
+                            client_params["api_key"] = api_key
+                            logger.info("Using API key from settings (string)")
+                    else:
+                        logger.warning("No API key found in settings")
+                except Exception as settings_e:
+                    logger.error(f"Failed to get API key from settings: {settings_e}")
         else:
+            logger.warning("Azure identity not available - using API key authentication only")
             # Look for API key in the settings
             try:
                 settings = get_settings()
@@ -288,15 +339,42 @@ class OpenAIClient:
                         api_key.get_secret_value
                     ):
                         client_params["api_key"] = api_key.get_secret_value()
+                        logger.info("Using API key authentication")
                     else:
                         client_params["api_key"] = api_key
-                    logger.info("Using API key authentication")
+                        logger.info("Using API key authentication")
+                else:
+                    logger.error("No API key found - authentication will likely fail")
             except Exception as e:
-                logger.warning(f"Failed to get API key from settings: {e}")
+                logger.error(f"Failed to get API key from settings: {e}")
+
+        # Log final client parameters (without sensitive data)
+        safe_params = {k: v for k, v in client_params.items() if k not in ["api_key", "azure_ad_token_provider"]}
+        logger.info(f"Final client parameters (sanitized): {safe_params}")
+        logger.info(f"Authentication method: {'Azure AD' if 'azure_ad_token_provider' in client_params else 'API Key'}")
 
         # Create the clients
-        self._sync_client = AzureOpenAI(**client_params)
-        self._async_client = AsyncAzureOpenAI(**client_params)
+        logger.info("Creating Azure OpenAI clients...")
+        try:
+            self._sync_client = AzureOpenAI(**client_params)
+            logger.info("Sync client created successfully")
+            
+            self._async_client = AsyncAzureOpenAI(**client_params)
+            logger.info("Async client created successfully")
+            
+            logger.info("=== OpenAI Client Initialization Complete ===")
+            
+        except Exception as e:
+            logger.error(f"Failed to create OpenAI clients: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            
+            # Log additional context for debugging
+            if "404" in str(e):
+                logger.error("404 error during client creation - check endpoint configuration")
+            elif "401" in str(e) or "403" in str(e):
+                logger.error("Authentication error during client creation - check credentials")
+            
+            raise
 
     def _prepare_request_data(self, request):
         """Extract model name and prepare request data, removing internal parameters.

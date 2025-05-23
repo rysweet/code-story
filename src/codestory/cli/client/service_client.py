@@ -311,6 +311,23 @@ class ServiceClient:
                 f"[dim]Error checking for Azure auth issues: {e!s}[/dim]", style="dim"
             )
 
+    def _handle_error_package(self, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Detects service-side errors in response and handles them:
+        - Prints errors
+        - Runs a health status check
+        """
+        errors = data.get("error_package")
+        if errors:
+            self.console.print("[bold red]Service Errors:[/]")
+            for err in errors:
+                self.console.print(f"- {err}")
+            # Run status and show
+            status_data = self.check_service_health(auto_fix=False)
+            self.console.print("[bold blue]Service Status:[/]")
+            self.console.print(json.dumps(status_data, indent=2))
+        return data
+
     def start_ingestion(self, repository_path: str) -> dict[str, Any]:
         """
         Start an ingestion job for the given repository path.
@@ -366,7 +383,8 @@ class ServiceClient:
         try:
             response = self.client.post("/ingest", json=data)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            return self._handle_error_package(data)
         except httpx.HTTPError as e:
             # Try to extract more detailed error information from the response if available
             error_detail = str(e)
@@ -413,7 +431,8 @@ class ServiceClient:
         try:
             response = self.client.get(f"/ingest/{job_id}")
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            return self._handle_error_package(data)
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to get ingestion status: {e!s}")
 
@@ -428,9 +447,10 @@ class ServiceClient:
             Response data indicating success or failure.
         """
         try:
-            response = self.client.post(f"/ingest/{job_id}/stop")
+            response = self.client.post(f"/ingest/{job_id}/cancel")
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            return self._handle_error_package(data)
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to stop ingestion: {e!s}")
 
@@ -442,36 +462,13 @@ class ServiceClient:
             List of ingestion job data.
         """
         try:
-            response = self.client.get("/ingest/jobs")
+            response = self.client.get("/ingest")
             response.raise_for_status()
-            response_data = response.json()
-
-            # Handle different response formats
-            if "items" in response_data:
-                # Standard paginated response format
-                return response_data["items"]
-            elif "jobs" in response_data:
-                # Legacy format with 'jobs' field
-                return response_data["jobs"]
-            elif isinstance(response_data, list):
-                # Direct array of jobs
-                return response_data
-            elif "job_id" in response_data and response_data.get("job_id") == "jobs":
-                # Special case: API returns a single job with ID "jobs" instead of a list
-                # This appears to be a mock implementation behavior
-                self.console.print(
-                    "[yellow]Warning: API returned unusual format. This might be a mock or development service.[/]"
-                )
-                # Return as a list with the single job
-                return [response_data]
-            elif isinstance(response_data, dict) and "job_id" in response_data:
-                # Single job object (not a list)
-                return [response_data]
-            else:
-                # If no recognizable format is found, raise an error with the response structure
-                raise KeyError(
-                    f"Response does not contain expected job data structure: {list(response_data.keys()) if isinstance(response_data, dict) else type(response_data)}"
-                )
+            data = response.json()
+            # handle list wrapper
+            if isinstance(data, dict) and "error_package" in data:
+                data = self._handle_error_package(data)
+            return data
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to list ingestion jobs: {e!s}")
         except (KeyError, json.JSONDecodeError) as e:
