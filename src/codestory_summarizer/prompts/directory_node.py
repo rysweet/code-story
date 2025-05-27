@@ -8,7 +8,7 @@ high-quality summaries of directory nodes.
 def get_directory_summary_prompt(
     content: str,
     context: list[str],
-    child_summaries: list[str] = [],  # Use empty list instead of None
+    child_summaries: list[str] | None = None,  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
@@ -22,6 +22,8 @@ def get_directory_summary_prompt(
     Returns:
         Prompt for generating a directory summary
     """
+    if child_summaries is None:
+        child_summaries = []
     prompt = f"""You are an expert software architect. Analyze the following directory and write a comprehensive summary.
 
 Directory information:
@@ -53,7 +55,7 @@ Summary:
 def get_summary_prompt(
     content: str,
     context: list[str],
-    child_summaries: list[str] = [],  # Use empty list instead of None
+    child_summaries: list[str] | None = None,  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
@@ -70,4 +72,6 @@ def get_summary_prompt(
     Returns:
         Prompt for generating a directory summary
     """
+    if child_summaries is None:
+        child_summaries = []
     return get_directory_summary_prompt(content, context, child_summaries, max_tokens)

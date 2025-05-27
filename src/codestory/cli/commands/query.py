@@ -1,16 +1,13 @@
-"""
-Query commands for the Code Story CLI.
-"""
+"""Query commands for the Code Story CLI."""
 
+import contextlib
 import json
 from typing import Any
 
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
 from rich.console import Console
 from rich.panel import Panel
@@ -166,9 +163,7 @@ def run_query(
 @click.option("--limit", "-n", type=int, default=10, help="Default limit for queries.")
 @click.pass_context
 def explore_query(ctx: click.Context, limit: int = 10) -> None:
-    """
-    Launch an interactive query explorer.
-    """
+    """Launch an interactive query explorer."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -542,7 +537,7 @@ def _results_to_csv(result: dict[str, Any]) -> str:
             row = []
             for column in columns:
                 value = record.get(column)
-                if isinstance(value, (dict, list)):
+                if isinstance(value, dict | list):
                     # Serialize complex values
                     row.append(json.dumps(value))
                 elif value is None:
@@ -574,7 +569,7 @@ def _results_to_csv(result: dict[str, Any]) -> str:
                     row = []
                     for column in columns:
                         value = item.get(column)
-                        if isinstance(value, (dict, list)):
+                        if isinstance(value, dict | list):
                             row.append(json.dumps(value))
                         elif value is None:
                             row.append("")
@@ -606,7 +601,7 @@ def _format_value(value: Any, color: bool = True) -> str:
     Returns:
         Formatted string representation
     """
-    if isinstance(value, (dict, list)):
+    if isinstance(value, dict | list):
         return json.dumps(value, indent=2)
     elif value is None:
         return "[dim]NULL[/]" if color else "NULL"

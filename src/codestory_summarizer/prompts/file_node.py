@@ -150,11 +150,7 @@ def is_config_file(file_path: str, content: str) -> bool:
     # Check filename
     filename = file_path.lower().split("/")[-1]
 
-    for pattern in config_patterns:
-        if pattern in filename:
-            return True
-
-    return False
+    return any(pattern in filename for pattern in config_patterns)
 
 
 def get_summary_prompt(

@@ -97,7 +97,7 @@ def run_step(
         # Log what we're trying to do
         logger.debug(f"Dispatching to task: {task_name}")
         logger.debug(
-            f"Available tasks: {[t for t in app.tasks.keys() if step_name in t]}"
+            f"Available tasks: {[t for t in app.tasks if step_name in t]}"
         )
 
         # Prepare configuration for the step task - with parameter filtering

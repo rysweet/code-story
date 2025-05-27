@@ -137,11 +137,11 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
                 except Exception as e:
                     print(f"Failed to start service with alternative approach: {e}")
 
-            # Wait for service to start (up to 15 seconds)
+            # Wait for service to start (up to 45 seconds)
             started = False
-            for i in range(15):
+            for i in range(45):
                 time.sleep(1)
-                print(f"Waiting for service to start (attempt {i+1}/15)...")
+                print(f"Waiting for service to start (attempt {i+1}/45)...")
                 try:
                     response = httpx.get(f"{health_url}", timeout=2.0)
                     if response.status_code == 200:
@@ -153,19 +153,24 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
 
             if not started:
                 print("Service failed to start in time")
+                # Print container logs for debugging
+                try:
+                    print("--- Neo4j logs ---")
+                    subprocess.run(["docker", "logs", "codestory-neo4j-test"], check=False)
+                except Exception as e:
+                    print(f"Could not get Neo4j logs: {e}")
+                try:
+                    print("--- Service logs ---")
+                    subprocess.run(["docker", "logs", "codestory-service"], check=False)
+                except Exception as e:
+                    print(f"Could not get service logs: {e}")
                 if service_process:
                     print("Terminating service process...")
                     try:
-                        # Safely terminate the process
-                        if (
-                            service_process.poll() is None
-                        ):  # Check if process is still running
+                        if service_process.poll() is None:
                             os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
                     except (ProcessLookupError, OSError) as e:
                         print(f"Process already terminated: {e}")
-
-                # Even if service didn't start through our process, it might be running through docker-compose
-                # Let's check again
                 try:
                     response = httpx.get(f"{health_url}", timeout=2.0)
                     if response.status_code == 200:
@@ -174,10 +179,31 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
                         return
                 except httpx.RequestError:
                     pass
-
                 raise Exception(
                     "Failed to start Code Story service after multiple attempts"
                 )
+
+            # Wait for Redis to be healthy before starting the service
+            redis_healthy = False
+            for i in range(30):
+                try:
+                    result = subprocess.run(
+                        ["docker", "inspect", "-f", "{{.State.Health.Status}}", "codestory-redis-test"],
+                        capture_output=True,
+                        text=True,
+                        timeout=3,
+                    )
+                    if result.stdout.strip() == "healthy":
+                        redis_healthy = True
+                        print("Redis container is healthy.")
+                        break
+                    else:
+                        print(f"Waiting for Redis to be healthy (attempt {i+1}/30)... Status: {result.stdout.strip()}")
+                except Exception as e:
+                    print(f"Error checking Redis health: {e}")
+                time.sleep(1)
+            if not redis_healthy:
+                print("Redis container did not become healthy in time.")
 
     # Service is now running
     print(f"Service available at {service_url}")

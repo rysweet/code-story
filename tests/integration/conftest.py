@@ -153,26 +153,33 @@ def neo4j_env():
 
     # Set the environment variables based on environment
     if docker_env:
-        # In Docker environment, use container networking
-        neo4j_uri = "bolt://neo4j:7687"  # Direct container service name
+        # In Docker environment, use container networking and service names
+        neo4j_uri = "bolt://neo4j:7687"
+        redis_uri = "redis://redis:6379/0"
+        redis_host = "redis"
+        redis_port = "6379"
     else:
         # Otherwise use localhost with mapped port
         neo4j_uri = f"bolt://localhost:{neo4j_port}"
+        redis_host = "localhost"
+        redis_port = "6380"  # Port mapped in docker-compose.test.yml
+        redis_uri = f"redis://{redis_host}:{redis_port}/0"
 
     os.environ["NEO4J_URI"] = neo4j_uri
     os.environ["NEO4J__URI"] = neo4j_uri
-
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ[
-        "NEO4J_DATABASE"
-    ] = "testdb"  # Match test DB name in docker-compose.test.yml
-
+    os.environ["NEO4J_DATABASE"] = "testdb"
     os.environ["NEO4J__USERNAME"] = "neo4j"
     os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ[
-        "NEO4J__DATABASE"
-    ] = "testdb"  # Match test DB name in docker-compose.test.yml
+    os.environ["NEO4J__DATABASE"] = "testdb"
+
+    os.environ["REDIS_URI"] = redis_uri
+    os.environ["REDIS__URI"] = redis_uri
+    os.environ["REDIS_HOST"] = redis_host
+    os.environ["REDIS_PORT"] = redis_port
+    os.environ["CELERY_BROKER_URL"] = redis_uri
+    os.environ["CELERY_RESULT_BACKEND"] = redis_uri
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -200,38 +207,26 @@ def load_env_vars():
 
     # Set the environment variables based on environment
     if docker_env:
-        # In Docker environment, use container networking
-        neo4j_uri = "bolt://neo4j:7687"  # Direct container service name
+        # In Docker environment, use container networking and service names
+        neo4j_uri = "bolt://neo4j:7687"
+        redis_uri = "redis://redis:6379/0"
+        redis_host = "redis"
+        redis_port = "6379"
     else:
         # Otherwise use localhost with mapped port
         neo4j_uri = f"bolt://localhost:{neo4j_port}"
-
-    os.environ["NEO4J_URI"] = neo4j_uri
-    os.environ["NEO4J__URI"] = neo4j_uri
-
-    os.environ["NEO4J_USERNAME"] = "neo4j"
-    os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ[
-        "NEO4J_DATABASE"
-    ] = "testdb"  # Match test DB name in docker-compose.test.yml
-
-    os.environ["NEO4J__USERNAME"] = "neo4j"
-    os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ[
-        "NEO4J__DATABASE"
-    ] = "testdb"  # Match test DB name in docker-compose.test.yml
-
-    # Set Redis environment variables based on environment
-    if docker_env:
-        # In Docker environment, use container networking
-        redis_host = "redis"
-        redis_port = "6379"
-        redis_uri = f"redis://{redis_host}:{redis_port}/0"
-    else:
-        # Otherwise use localhost with mapped port
         redis_host = "localhost"
         redis_port = "6380"  # Port mapped in docker-compose.test.yml
         redis_uri = f"redis://{redis_host}:{redis_port}/0"
+
+    os.environ["NEO4J_URI"] = neo4j_uri
+    os.environ["NEO4J__URI"] = neo4j_uri
+    os.environ["NEO4J_USERNAME"] = "neo4j"
+    os.environ["NEO4J_PASSWORD"] = "password"
+    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J__USERNAME"] = "neo4j"
+    os.environ["NEO4J__PASSWORD"] = "password"
+    os.environ["NEO4J__DATABASE"] = "testdb"
 
     os.environ["REDIS_URI"] = redis_uri
     os.environ["REDIS__URI"] = redis_uri

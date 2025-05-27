@@ -202,7 +202,7 @@ class EmbeddingResponse(BaseModel):
 
 
 class LLMProvider(str, Enum):
-    """LLM provider type"""
+    """LLM provider type."""
 
     OPENAI = "openai"  # OpenAI direct API
     AZURE_OPENAI = "azure_openai"  # Azure-hosted OpenAI
@@ -210,7 +210,7 @@ class LLMProvider(str, Enum):
 
 
 class LLMMode(str, Enum):
-    """LLM operating mode"""
+    """LLM operating mode."""
 
     NORMAL = "normal"  # Normal operation mode using Azure credentials
     FALLBACK = "fallback"  # Fallback mode using direct API key
@@ -219,7 +219,7 @@ class LLMMode(str, Enum):
 
 
 class LLMConfiguration(BaseModel):
-    """Configuration for resilient LLM operations"""
+    """Configuration for resilient LLM operations."""
 
     # Primary configuration
     mode: LLMMode = Field(

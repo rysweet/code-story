@@ -1,6 +1,4 @@
-"""
-Service client for interacting with the Code Story service API.
-"""
+"""Service client for interacting with the Code Story service API."""
 
 import json
 import os
@@ -315,7 +313,7 @@ class ServiceClient:
         """
         Detects service-side errors in response and handles them:
         - Prints errors
-        - Runs a health status check
+        - Runs a health status check.
         """
         errors = data.get("error_package")
         if errors:
@@ -631,9 +629,7 @@ class ServiceClient:
             raise ServiceError(f"Failed to stop service: {e!s}")
 
     def get_service_status(self, renew_auth: bool = False) -> dict[str, Any]:
-        """
-        Query the health endpoint and return the status of the Code Story service and its dependencies.
-        """
+        """Query the health endpoint and return the status of the Code Story service and its dependencies."""
         import traceback
 
         import rich
@@ -758,9 +754,7 @@ class ServiceClient:
             raise ServiceError(f"Failed to generate visualization: {e!s}")
 
     def open_ui(self) -> None:
-        """
-        Open the GUI in the default web browser.
-        """
+        """Open the GUI in the default web browser."""
         # Get UI URL with fallback
         try:
             ui_url = getattr(self.settings.service, "ui_url", None)

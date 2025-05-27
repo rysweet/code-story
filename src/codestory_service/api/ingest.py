@@ -4,6 +4,7 @@ This module provides endpoints for starting, monitoring, and managing
 ingestion pipeline jobs.
 """
 
+import contextlib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
@@ -214,7 +215,5 @@ async def job_status_websocket(
         logger.error(f"WebSocket error: {e!s}")
         # WebSocket connection is likely already closed
         # but try to close it explicitly just in case
-        try:
+        with contextlib.suppress(Exception):
             await websocket.close(code=1011, reason=str(e))
-        except Exception:
-            pass

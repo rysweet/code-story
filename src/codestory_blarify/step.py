@@ -669,7 +669,7 @@ def run_blarify(
             except Exception as e:
                 logger.warning(f"Error processing log line: {e}")
                 # Don't break the loop for parsing errors
-                if not isinstance(e, (ValueError, IndexError)):
+                if not isinstance(e, ValueError | IndexError):
                     # Break if it's a more serious error like a timeout
                     break
 

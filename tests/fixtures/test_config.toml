@@ -1,13 +1,15 @@
 # Test configuration file for CI environments
 
 [neo4j]
-uri = "bolt://localhost:7688"
+# Use Docker service name and default port when running in Docker Compose
+uri = "bolt://neo4j:7687"  # Use this for Docker Compose; fallback to localhost:7688 for local
 username = "neo4j"
 password = "password"
 database = "testdb"
 
 [redis]
-uri = "redis://localhost:6379/0"
+# Use Docker service name and default port when running in Docker Compose
+uri = "redis://redis:6379/0"  # Use this for Docker Compose; fallback to localhost:6380 for local
 
 [openai]
 api_key = "sk-test-key-openai"

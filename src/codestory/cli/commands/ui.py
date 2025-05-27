@@ -1,26 +1,26 @@
-"""
-UI commands for the Code Story CLI.
-"""
+"""UI commands for the Code Story CLI."""
+
+import contextlib
 
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
-from rich.console import Console
+
+from typing import TYPE_CHECKING
 
 from ..client import ServiceClient, ServiceError
 from ..require_service_available import require_service_available
+
+if TYPE_CHECKING:
+    from rich.console import Console
 
 
 @click.command(help="Open the Code Story GUI in a browser.")
 @click.pass_context
 def ui(ctx: click.Context) -> None:
-    """
-    Open the Code Story GUI in a browser.
-    """
+    """Open the Code Story GUI in a browser."""
     require_service_available()
 
     client: ServiceClient = ctx.obj["client"]

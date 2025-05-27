@@ -171,7 +171,7 @@ class KnowledgeGraph:
             # Convert metadata to a format compatible with Neo4j
             metadata = {}
             for key, value in entity.metadata.items():
-                if isinstance(value, (str, int, float, bool)):
+                if isinstance(value, str | int | float | bool):
                     metadata[key] = value
 
             result = self.connector.run_query(
@@ -207,14 +207,13 @@ class KnowledgeGraph:
             ]:
                 # These relationships are between documentation entities
                 query = (
-                    """
-                MATCH (s:DocumentationEntity {id: $source_id})
-                MATCH (t:DocumentationEntity {id: $target_id})
-                MERGE (s)-[r:%s]->(t)
+                    f"""
+                MATCH (s:DocumentationEntity {{id: $source_id}})
+                MATCH (t:DocumentationEntity {{id: $target_id}})
+                MERGE (s)-[r:{rel.type.value}]->(t)
                 SET r += $properties
                 RETURN ID(r) as id
                 """
-                    % rel.type.value
                 )
 
                 result = self.connector.run_query(
@@ -239,14 +238,13 @@ class KnowledgeGraph:
             elif rel.type in [RelationType.DESCRIBES, RelationType.REFERENCES]:
                 # These relationships are between documentation entities and code entities
                 query = (
-                    """
-                MATCH (s:DocumentationEntity {id: $source_id})
+                    f"""
+                MATCH (s:DocumentationEntity {{id: $source_id}})
                 MATCH (c) WHERE ID(c) = $target_id
-                MERGE (s)-[r:%s]->(c)
+                MERGE (s)-[r:{rel.type.value}]->(c)
                 SET r += $properties
                 RETURN ID(r) as id
                 """
-                    % rel.type.value
                 )
 
                 result = self.connector.run_query(

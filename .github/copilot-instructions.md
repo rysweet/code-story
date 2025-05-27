@@ -140,8 +140,8 @@ You should also use the following resources to help you implement the software -
 You should not be using the autogen package, use autogen-core. 
 Do not use autogen-agentchat, only autogen-core. 
 Any modules that are using pyautogen should be corrected/rewritten to use autogen-core. 
-For the implementation, you will need to use my az credentials to access the Azure OpenAI API using Tenant: Microsoft
-Subscription: adapt-appsci1 (be51a72b-4d76-4627-9a17-7dd26245da7b). You will need to use my Github credentials using the gh cli. You will need to do a commit after each step of the implementation. If a step of the implementation is not clear, please ask me for clarification.
+For the implementation, you will need to use my az credentials to access the Azure OpenAI API using Tenant: 3cd87a41-1f61-4aef-a212-cefdecd9a2d1, Subscripotion: 9b00bc5e-9abc-45de-9958-02a9d9277b16
+You will need to use my Github credentials using the gh cli. You will need to do a commit after each step of the implementation. If a step of the implementation is not clear, please ask me for clarification.
 Do not move on to the next milestone until the current milestone is complete with all tests for all milestones passing.
 Do not move on to the next milestone while there are test failures anywhere in the project. 
 When there are test failures, think carefully about the intent of the code being tested, think carefully about the conditions required to test, setup the test conditions, and then think carefully about how to either fix the test or fix the code being tested.

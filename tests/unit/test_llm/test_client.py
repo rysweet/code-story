@@ -24,14 +24,9 @@ from codestory.llm.models import (
 @pytest.fixture(autouse=True)
 def patch_prometheus_metrics():
     """Patch prometheus metrics to avoid registration conflicts during tests."""
-    with patch("prometheus_client.Counter") as mock_counter, patch(
-        "prometheus_client.Gauge"
-    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram:
-        # Configure the mocks to behave like the real counter
-        mock_labels = MagicMock()
-        mock_counter.return_value.labels = mock_labels
-        mock_gauge.return_value.labels = mock_labels
-        mock_histogram.return_value.labels = mock_labels
+    with patch("prometheus_client.Counter"), patch("prometheus_client.Gauge"), patch(
+        "prometheus_client.Histogram"
+    ):
         yield
 
 

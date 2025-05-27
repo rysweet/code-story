@@ -92,7 +92,7 @@ class ServiceSettings(BaseModel):
     worker_concurrency: int = Field(4, description="Celery worker concurrency")
 
     @field_validator("log_level")
-    def validate_log_level(cls, v: str) -> str:
+    def validate_log_level(self, v: str) -> str:
         """Validate log level is a valid logging level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
@@ -161,7 +161,7 @@ class TelemetrySettings(BaseModel):
     log_format: str = Field("json", description="Log format")
 
     @field_validator("log_format")
-    def validate_log_format(cls, v: str) -> str:
+    def validate_log_format(self, v: str) -> str:
         """Validate that log format is either 'json' or 'text'."""
         if v not in ["json", "text"]:
             raise ValueError("log_format must be either 'json' or 'text'")
@@ -270,7 +270,6 @@ class Settings(BaseSettings):
         # 3. .codestory.toml in the current directory
         # 4. .codestory.default.toml in the project root
         toml_settings = {}
-        config_file = self._CONFIG_FILE
         config_files_to_try = []
 
         # For tests, use the test configuration
@@ -286,7 +285,6 @@ class Settings(BaseSettings):
 
             for test_path in test_config_paths:
                 if os.path.exists(test_path):
-                    config_file = test_path
                     config_files_to_try = [test_path]
                     print(f"Found test config at: {test_path}")
                     break
@@ -349,7 +347,7 @@ class Settings(BaseSettings):
                 "neo4j__max_connection_pool_size": 50,
                 "neo4j__connection_acquisition_timeout": 60,
                 # Redis settings
-                "redis__uri": "redis://localhost:6379/0",
+                "redis__uri": os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0",
                 # OpenAI settings
                 "openai__api_key": "sk-test-key-openai",
                 "openai__endpoint": "https://api.openai.com/v1",

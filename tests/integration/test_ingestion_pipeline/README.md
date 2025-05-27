@@ -40,7 +40,7 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 Set the Redis URI environment variable:
 
 ```bash
-export REDIS_URI=redis://localhost:6379/0
+export REDIS_URI=redis://localhost:6380/0
 ```
 
 ### Celery Workers

@@ -73,5 +73,6 @@ def test_command_help_shows_command_help(cli_runner):
     # Check that command-specific help is shown
     assert result.exit_code == 0
     assert "service" in result.output.lower()
-    assert "Commands:" in result.output
+    # Accept both plain and rich-click box-drawing output
+    assert ("Commands:" in result.output) or ("╭─ Commands" in result.output)
     assert "Usage:" in result.output

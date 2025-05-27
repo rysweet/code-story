@@ -57,8 +57,7 @@ def get_azure_tenant_id_from_environment() -> str | None:
 
         result = subprocess.run(
             ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
             timeout=5,  # Timeout after 5 seconds
         )
@@ -143,8 +142,7 @@ class OpenAIAdapter:
             import subprocess
             result = subprocess.run(
                 ["az", "account", "show", "--query", "user.name", "-o", "tsv"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 timeout=5,
             )
@@ -306,7 +304,7 @@ class OpenAIAdapter:
             
         except Exception as e:
             error_message = str(e)
-            logger.error(f"=== OpenAI Health Check Failed ===")
+            logger.error("=== OpenAI Health Check Failed ===")
             logger.error(f"Error type: {type(e).__name__}")
             logger.error(f"Error message: {error_message}")
             

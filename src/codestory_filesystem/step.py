@@ -468,7 +468,7 @@ def process_filesystem(
     ignore_patterns: list[str] | None = None,
     max_depth: int | None = None,
     include_extensions: list[str] | None = None,
-    job_id: str = None,  # Optional - will be generated if not provided
+    job_id: str | None = None,  # Optional - will be generated if not provided
     **config: Any,
 ) -> dict[str, Any]:
     """Process the filesystem of a repository.

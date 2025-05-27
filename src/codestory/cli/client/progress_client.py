@@ -1,6 +1,4 @@
-"""
-Progress client for tracking ingestion job progress.
-"""
+"""Progress client for tracking ingestion job progress."""
 
 import json
 import threading
@@ -128,6 +126,8 @@ class ProgressClient:
                 "redis://127.0.0.1:6379",
                 "redis://localhost:6389",  # Used in our docker-compose.yml
                 "redis://127.0.0.1:6389",
+                "redis://localhost:6380",  # Used in test docker-compose
+                "redis://127.0.0.1:6380",  # Used in test docker-compose
             ]
         )
 
@@ -177,9 +177,7 @@ class ProgressClient:
         self._thread = None
 
     def start(self) -> None:
-        """
-        Start tracking progress.
-        """
+        """Start tracking progress."""
         if self._thread and self._thread.is_alive():
             return
 
@@ -194,17 +192,13 @@ class ProgressClient:
         self._thread.start()
 
     def stop(self) -> None:
-        """
-        Stop tracking progress.
-        """
+        """Stop tracking progress."""
         if self._thread and self._thread.is_alive():
             self._stop_event.set()
             self._thread.join(timeout=2.0)
 
     def _subscribe_redis(self) -> None:
-        """
-        Subscribe to Redis channel for progress updates.
-        """
+        """Subscribe to Redis channel for progress updates."""
         pubsub = self.redis.pubsub()
         pubsub.subscribe(self.channel)
 
@@ -251,9 +245,7 @@ class ProgressClient:
             pubsub.close()
 
     def _poll_http(self) -> None:
-        """
-        Poll service API for progress updates when Redis is unavailable.
-        """
+        """Poll service API for progress updates when Redis is unavailable."""
         # Import here to avoid circular imports
         from codestory.cli.client.service_client import ServiceClient, ServiceError
 

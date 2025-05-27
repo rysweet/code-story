@@ -4,6 +4,7 @@ This module provides endpoints for checking the health of the service
 and its dependencies.
 """
 
+import contextlib
 import logging
 import os
 import time
@@ -368,8 +369,7 @@ async def auth_renew(
                     # Try to get tenant ID from current Azure account
                     az_result = subprocess.run(
                         ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        capture_output=True,
                         text=True,
                         timeout=5,
                     )
@@ -487,10 +487,8 @@ async def auth_renew(
                         }
                 except TimeoutError:
                     if proc.returncode is None:
-                        try:
+                        with contextlib.suppress(Exception):
                             proc.terminate()
-                        except Exception:
-                            pass
                     logger.error("Token injection process timed out after 30 seconds")
                     response["token_injection"] = {
                         "status": "timeout",
@@ -610,10 +608,8 @@ async def _health_check_impl(
         except Exception as e:
             logger.error(f"Redis health check failed with exception: {e}")
             # Make sure to close the Redis connection on error
-            try:
+            with contextlib.suppress(Exception):
                 await redis_client.close()
-            except:
-                pass
             return {
                 "status": "unhealthy",
                 "details": {"error": str(e), "type": type(e).__name__},

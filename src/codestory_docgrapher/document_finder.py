@@ -109,10 +109,7 @@ class DocumentFinder:
         Returns:
             True if the path should be ignored, False otherwise
         """
-        for pattern in ignore_patterns:
-            if pattern.search(path):
-                return True
-        return False
+        return any(pattern.search(path) for pattern in ignore_patterns)
 
     def _find_standalone_docs(
         self, ignore_patterns: list[re.Pattern]

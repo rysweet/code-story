@@ -275,13 +275,9 @@ class OpenAIClient:
             "timeout": self.timeout,
             "max_retries": 0,  # We handle retries ourselves
         }
-        # Use deployment_id from environment
-        if deployment_id_env:
-            client_params["engine"] = deployment_id_env
-            logger.info(f"Using deployment_id for Azure OpenAI engine: {deployment_id_env}")
-        else:
+        # Do NOT add 'engine' or 'deployment_id' to client_params; pass per-request only
+        if not deployment_id_env:
             logger.warning("No AZURE_OPENAI__DEPLOYMENT_ID set; Azure requests may fail.")
-
         logger.info(f"Client parameters: {client_params}")
 
         # Add Azure AD authentication if available
@@ -353,27 +349,36 @@ class OpenAIClient:
         logger.info(f"Final client parameters (sanitized): {safe_params}")
         logger.info(f"Authentication method: {'Azure AD' if 'azure_ad_token_provider' in client_params else 'API Key'}")
 
-        # Create the clients
+        # Create the Azure OpenAI clients (sync and async)
         logger.info("Creating Azure OpenAI clients...")
+        
+        # Get deployment ID from environment or settings
+        deployment_id = deployment_id_env or self.chat_model
+        logger.info(f"Using deployment ID: {deployment_id}")
+        
+        azure_openai_kwargs = {
+            "azure_endpoint": client_params.get("azure_endpoint"),
+            "azure_deployment": deployment_id,  # This is the key fix - use azure_deployment
+            "api_version": client_params.get("api_version"),
+            "api_key": client_params.get("api_key"),
+            "azure_ad_token_provider": client_params.get("azure_ad_token_provider"),
+        }
+        # Remove None values
+        azure_openai_kwargs = {k: v for k, v in azure_openai_kwargs.items() if v is not None}
+        logger.info(f"AzureOpenAI instantiation kwargs: {azure_openai_kwargs}")
         try:
-            self._sync_client = AzureOpenAI(**client_params)
+            self._sync_client = AzureOpenAI(**azure_openai_kwargs)
             logger.info("Sync client created successfully")
-            
-            self._async_client = AsyncAzureOpenAI(**client_params)
+            self._async_client = AsyncAzureOpenAI(**azure_openai_kwargs)
             logger.info("Async client created successfully")
-            
             logger.info("=== OpenAI Client Initialization Complete ===")
-            
         except Exception as e:
-            logger.error(f"Failed to create OpenAI clients: {e}")
+            logger.error(f"Failed to create AzureOpenAI clients: {e}")
             logger.error(f"Error type: {type(e).__name__}")
-            
-            # Log additional context for debugging
             if "404" in str(e):
                 logger.error("404 error during client creation - check endpoint configuration")
             elif "401" in str(e) or "403" in str(e):
                 logger.error("Authentication error during client creation - check credentials")
-            
             raise
 
     def _prepare_request_data(self, request):
@@ -392,7 +397,57 @@ class OpenAIClient:
         if "_operation_type" in request_data:
             request_data.pop("_operation_type")
 
+        # Remove keys that will be passed explicitly to the API call
+        for key in ("prompt", "messages", "input"):
+            if key in request_data:
+                request_data.pop(key)
+
         return model_name, request_data
+    
+    def _is_reasoning_model(self, model: str) -> bool:
+        """Check if the model is a reasoning model that requires special parameter handling.
+        
+        Args:
+            model: Model name to check
+            
+        Returns:
+            True if this is a reasoning model, False otherwise
+        """
+        reasoning_models = ["o1", "o1-preview", "o1-mini"]
+        return any(reasoning_model in model.lower() for reasoning_model in reasoning_models)
+    
+    def _adjust_params_for_reasoning_model(self, params: dict[str, Any], model: str) -> dict[str, Any]:
+        """Adjust parameters for reasoning models.
+        
+        Reasoning models like o1 require different parameters:
+        - Use max_completion_tokens instead of max_tokens
+        - Do not support temperature parameter
+        
+        Args:
+            params: Original parameters
+            model: Model name
+            
+        Returns:
+            Adjusted parameters for reasoning models
+        """
+        if not self._is_reasoning_model(model):
+            return params
+            
+        adjusted_params = params.copy()
+        
+        # Convert max_tokens to max_completion_tokens for reasoning models
+        if "max_tokens" in adjusted_params:
+            max_tokens_value = adjusted_params.pop("max_tokens")
+            if max_tokens_value is not None:
+                adjusted_params["max_completion_tokens"] = max_tokens_value
+                logger.info(f"Converted max_tokens to max_completion_tokens for reasoning model: {model}")
+        
+        # Remove temperature parameter for reasoning models
+        if "temperature" in adjusted_params:
+            adjusted_params.pop("temperature")
+            logger.info(f"Removed temperature parameter for reasoning model: {model}")
+            
+        return adjusted_params
 
     @instrument_request(operation=OperationType.COMPLETION)
     @retry_on_openai_errors(operation_type=OperationType.COMPLETION)
@@ -438,27 +493,13 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-
-            # Try to use the Azure OpenAI specific parameters, fall back to standard if not supported
-            try:
-                # First try with Azure-specific parameters
-                response = self._sync_client.completions.create(
-                    deployment_name=model_name, model=model_name, **request_data
-                )
-            except TypeError as e:
-                if "unexpected keyword argument 'deployment_name'" in str(e):
-                    # Fall back to standard parameters for non-Azure clients
-                    logger.debug(
-                        "Falling back to standard OpenAI parameters (not using deployment_name)"
-                    )
-                    response = self._sync_client.completions.create(
-                        model=model_name, **request_data
-                    )
-                else:
-                    # Re-raise other TypeError issues
-                    raise
-
-            # Convert to our response model
+            response = self._sync_client.completions.create(
+                model=model_name,  # Use model instead of deployment_name
+                prompt=prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                **request_data
+            )
             return CompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
@@ -518,27 +559,18 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-
-            # Try to use the Azure OpenAI specific parameters, fall back to standard if not supported
-            try:
-                # First try with Azure-specific parameters
-                response = self._sync_client.chat.completions.create(
-                    deployment_name=model_name, model=model_name, **request_data
-                )
-            except TypeError as e:
-                if "unexpected keyword argument 'deployment_name'" in str(e):
-                    # Fall back to standard parameters for non-Azure clients
-                    logger.debug(
-                        "Falling back to standard OpenAI parameters (not using deployment_name)"
-                    )
-                    response = self._sync_client.chat.completions.create(
-                        model=model_name, **request_data
-                    )
-                else:
-                    # Re-raise other TypeError issues
-                    raise
-
-            # Convert to our response model
+            
+            # Adjust parameters for reasoning models
+            request_data = self._adjust_params_for_reasoning_model(request_data, model_name)
+            
+            # Prepare the API call parameters - model_name should be the deployment name for Azure
+            api_call_params = {
+                "model": model_name,
+                "messages": [m.model_dump() for m in messages],
+                **request_data  # This contains adjusted parameters for the model type
+            }
+            
+            response = self._sync_client.chat.completions.create(**api_call_params)
             return ChatCompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
@@ -591,27 +623,11 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-
-            # Try to use the Azure OpenAI specific parameters, fall back to standard if not supported
-            try:
-                # First try with Azure-specific parameters
-                response = self._sync_client.embeddings.create(
-                    deployment_name=model_name, model=model_name, **request_data
-                )
-            except TypeError as e:
-                if "unexpected keyword argument 'deployment_name'" in str(e):
-                    # Fall back to standard parameters for non-Azure clients
-                    logger.debug(
-                        "Falling back to standard OpenAI parameters (not using deployment_name)"
-                    )
-                    response = self._sync_client.embeddings.create(
-                        model=model_name, **request_data
-                    )
-                else:
-                    # Re-raise other TypeError issues
-                    raise
-
-            # Convert to our response model
+            response = self._sync_client.embeddings.create(
+                model=model_name,  # Use model instead of deployment_name
+                input=texts,
+                **request_data
+            )
             return EmbeddingResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
@@ -671,27 +687,13 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-
-            # Try to use the Azure OpenAI specific parameters, fall back to standard if not supported
-            try:
-                # First try with Azure-specific parameters
-                response = await self._async_client.completions.create(
-                    deployment_name=model_name, model=model_name, **request_data
-                )
-            except TypeError as e:
-                if "unexpected keyword argument 'deployment_name'" in str(e):
-                    # Fall back to standard parameters for non-Azure clients
-                    logger.debug(
-                        "Falling back to standard OpenAI parameters (not using deployment_name)"
-                    )
-                    response = await self._async_client.completions.create(
-                        model=model_name, **request_data
-                    )
-                else:
-                    # Re-raise other TypeError issues
-                    raise
-
-            # Convert to our response model
+            response = await self._async_client.completions.create(
+                model=model_name,  # Use model instead of deployment_name
+                prompt=prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                **request_data
+            )
             return CompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
@@ -751,27 +753,18 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-
-            # Try to use the Azure OpenAI specific parameters, fall back to standard if not supported
-            try:
-                # First try with Azure-specific parameters
-                response = await self._async_client.chat.completions.create(
-                    deployment_name=model_name, model=model_name, **request_data
-                )
-            except TypeError as e:
-                if "unexpected keyword argument 'deployment_name'" in str(e):
-                    # Fall back to standard parameters for non-Azure clients
-                    logger.debug(
-                        "Falling back to standard OpenAI parameters (not using deployment_name)"
-                    )
-                    response = await self._async_client.chat.completions.create(
-                        model=model_name, **request_data
-                    )
-                else:
-                    # Re-raise other TypeError issues
-                    raise
-
-            # Convert to our response model
+            
+            # Adjust parameters for reasoning models
+            request_data = self._adjust_params_for_reasoning_model(request_data, model_name)
+            
+            # Prepare the API call parameters - model_name should be the deployment name for Azure
+            api_call_params = {
+                "model": model_name,
+                "messages": [m.model_dump() for m in messages],
+                **request_data  # This contains adjusted parameters for the model type
+            }
+            
+            response = await self._async_client.chat.completions.create(**api_call_params)
             return ChatCompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
@@ -824,27 +817,11 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-
-            # Try to use the Azure OpenAI specific parameters, fall back to standard if not supported
-            try:
-                # First try with Azure-specific parameters
-                response = await self._async_client.embeddings.create(
-                    deployment_name=model_name, model=model_name, **request_data
-                )
-            except TypeError as e:
-                if "unexpected keyword argument 'deployment_name'" in str(e):
-                    # Fall back to standard parameters for non-Azure clients
-                    logger.debug(
-                        "Falling back to standard OpenAI parameters (not using deployment_name)"
-                    )
-                    response = await self._async_client.embeddings.create(
-                        model=model_name, **request_data
-                    )
-                else:
-                    # Re-raise other TypeError issues
-                    raise
-
-            # Convert to our response model
+            response = await self._async_client.embeddings.create(
+                model=model_name,  # Use model instead of deployment_name
+                input=texts,
+                **request_data
+            )
             return EmbeddingResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)

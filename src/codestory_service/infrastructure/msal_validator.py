@@ -123,7 +123,7 @@ class MSALValidator:
             detail="Full MSAL validation not implemented",
         )
 
-    async def create_dev_token(self, username: str, roles: list[str] = ["user"]) -> str:
+    async def create_dev_token(self, username: str, roles: list[str] | None = None) -> str:
         """Create a development JWT token.
 
         This is only available in development mode and should not be used in production.
@@ -138,6 +138,8 @@ class MSALValidator:
         Raises:
             HTTPException: If token creation fails or is not available
         """
+        if roles is None:
+            roles = ["user"]
         if not self.dev_mode:
             logger.error("Token creation only available in development mode")
             raise HTTPException(

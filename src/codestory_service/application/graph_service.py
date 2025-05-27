@@ -370,7 +370,7 @@ class GraphService:
         if request.filter and request.filter.max_nodes < len(nodes):
             nodes = nodes[: request.filter.max_nodes]
             # Filter relationships to only include those between our nodes
-            node_ids = set(node["id"] for node in nodes)
+            node_ids = {node["id"] for node in nodes}
             relationships = [
                 rel
                 for rel in relationships
@@ -452,7 +452,7 @@ class GraphService:
             # Add any other interesting properties, but limit to essentials
             for key, value in node["properties"].items():
                 if key not in ["name", "path", "summary", "embedding"] and isinstance(
-                    value, (str, int, float, bool)
+                    value, str | int | float | bool
                 ):
                     if isinstance(value, str) and len(value) > 100:
                         clean_props[key] = value[:100] + "..."

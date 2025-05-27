@@ -1,27 +1,27 @@
-"""
-Visualization commands for the Code Story CLI.
-"""
+"""Visualization commands for the Code Story CLI."""
 
+import contextlib
 import os
 import webbrowser
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
-from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ..client import ServiceClient
 from ..require_service_available import require_service_available
+
+if TYPE_CHECKING:
+    from rich.console import Console
+
+    from ..client import ServiceClient
 
 
 @click.group(help="Generate and manage visualizations of the Code Story graph.")
@@ -68,9 +68,7 @@ def generate(
     theme: str = "auto",
     title: str | None = None,
 ) -> None:
-    """
-    Generate a visualization of the Code Story graph.
-    """
+    """Generate a visualization of the Code Story graph."""
     require_service_available()
 
     client: ServiceClient = ctx.obj["client"]
@@ -206,9 +204,7 @@ def generate(
 )
 @click.pass_context
 def list_visualizations(ctx: click.Context, limit: int = 10) -> None:
-    """
-    List previously generated visualizations.
-    """
+    """List previously generated visualizations."""
     console: Console = ctx.obj["console"]
 
     # Find HTML files in the current directory that match the pattern
@@ -237,9 +233,7 @@ def list_visualizations(ctx: click.Context, limit: int = 10) -> None:
 @click.argument("path", type=click.Path(exists=True))
 @click.pass_context
 def open_visualization(ctx: click.Context, path: str) -> None:
-    """
-    Open a previously generated visualization.
-    """
+    """Open a previously generated visualization."""
     console: Console = ctx.obj["console"]
 
     # Verify it's an HTML file
@@ -258,9 +252,7 @@ def open_visualization(ctx: click.Context, path: str) -> None:
 @visualize.command(name="help", help="Show information about visualization features.")
 @click.pass_context
 def viz_help(ctx: click.Context) -> None:
-    """
-    Show information about visualization features.
-    """
+    """Show information about visualization features."""
     console: Console = ctx.obj["console"]
 
     help_text = """

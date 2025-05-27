@@ -118,7 +118,7 @@ def get_schema_initialization_queries() -> list[str]:
 
     # Flatten all queries into a single list
     initialization_queries = []
-    for element_type, queries in schema_elements.items():
+    for _element_type, queries in schema_elements.items():
         initialization_queries.extend(queries)
 
     return initialization_queries

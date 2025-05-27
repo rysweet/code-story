@@ -158,7 +158,7 @@ class RstParser(Parser):
         for match in self.heading_pattern1.finditer(content):
             overline_char = match.group(1)
             heading_text = match.group(2).strip()
-            underline_char = match.group(3)
+            match.group(3)
             start_pos = match.start()
             end_pos = match.end()
 

@@ -442,7 +442,7 @@ class DocstringParser(Parser):
         in_params = False
         param_section = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.param_pattern.search(line):
                 # Start of parameters section
                 if param_section:
@@ -520,7 +520,7 @@ class DocstringParser(Parser):
         in_returns = False
         return_section = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.return_pattern.search(line):
                 # Start of returns section
                 if return_section:
@@ -598,7 +598,7 @@ class DocstringParser(Parser):
         in_raises = False
         raises_section = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.raises_pattern.search(line):
                 # Start of raises section
                 if raises_section:
@@ -676,7 +676,7 @@ class DocstringParser(Parser):
         in_example = False
         example_section = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.example_pattern.search(line):
                 # Start of example section
                 if example_section:

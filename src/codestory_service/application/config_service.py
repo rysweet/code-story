@@ -413,7 +413,7 @@ class ConfigService:
                             )
                         )
                     elif isinstance(current_value, float) and not (
-                        isinstance(item.value, float) or isinstance(item.value, int)
+                        isinstance(item.value, float | int)
                     ):
                         errors.append(
                             ConfigValidationError(

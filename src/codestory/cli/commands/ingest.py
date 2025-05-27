@@ -1,7 +1,6 @@
-"""
-Ingestion commands for the Code Story CLI.
-"""
+"""Ingestion commands for the Code Story CLI."""
 
+import contextlib
 import os
 import subprocess
 import time
@@ -10,9 +9,7 @@ from typing import Any
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
 from rich.console import Console
 from rich.live import Live
@@ -773,9 +770,7 @@ def stop_job(ctx: click.Context, job_id: str) -> None:
 @ingest.command(name="jobs", help="List all ingestion jobs.")
 @click.pass_context
 def list_jobs(ctx: click.Context) -> None:
-    """
-    List all ingestion jobs.
-    """
+    """List all ingestion jobs."""
     require_service_available()
 
     client: ServiceClient = ctx.obj["client"]
@@ -802,14 +797,11 @@ def list_jobs(ctx: click.Context) -> None:
 
         # Extract repository path from either source or repository_path
         repo_path = job.get("repository_path", job.get("source", ""))
-        if repo_path is None:
-            repo_path = ""
-        else:
-            repo_path = str(repo_path)
+        repo_path = "" if repo_path is None else str(repo_path)
 
         # Format created_at timestamp
         created_at = job.get("created_at", "")
-        if isinstance(created_at, (int, float)):
+        if isinstance(created_at, int | float):
             from datetime import datetime
 
             try:
@@ -1095,14 +1087,14 @@ def _display_job_status(console: Console, status: dict[str, Any]) -> None:
 
     # Format timestamps if they're numeric
     created_at = status.get("created_at", "Unknown")
-    if isinstance(created_at, (int, float)):
+    if isinstance(created_at, int | float):
         from datetime import datetime
 
         created_at = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
     table.add_row("Created", created_at)
 
     updated_at = status.get("updated_at", "Unknown")
-    if isinstance(updated_at, (int, float)):
+    if isinstance(updated_at, int | float):
         from datetime import datetime
 
         updated_at = datetime.fromtimestamp(updated_at).strftime("%Y-%m-%d %H:%M:%S")

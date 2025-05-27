@@ -48,9 +48,8 @@ class NodeSerializer:
         # Add content if available and not explicitly excluded
         if "content" in node and (
             not exclude_properties or "content" not in exclude_properties
-        ):
-            if not include_properties or "content" in include_properties:
-                result["content"] = node["content"]
+        ) and (not include_properties or "content" in include_properties):
+            result["content"] = node["content"]
 
         # Add score if provided
         if score is not None:

@@ -310,7 +310,7 @@ class Neo4jAdapter:
 
             # Map direction to Cypher syntax
             direction_map = {"outgoing": ">", "incoming": "<", "both": ""}
-            dir_symbol = direction_map.get(path_request.direction.value, "")
+            direction_map.get(path_request.direction.value, "")
 
             # Handle relationship types
             rel_types = ""

@@ -587,7 +587,7 @@ class Neo4jConnector:
         start_node: dict[str, Any],
         end_node: dict[str, Any],
         rel_type: str,
-        properties: dict[str, Any] = None,
+        properties: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Create a relationship between two nodes.
 
@@ -741,7 +741,7 @@ class Neo4jConnector:
             QueryError: If the query execution fails
         """
         # Special handling for mock driver in tests
-        if isinstance(self.driver, MagicMock) or isinstance(self.driver, AsyncMock):
+        if isinstance(self.driver, MagicMock | AsyncMock):
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
@@ -773,7 +773,7 @@ class Neo4jConnector:
             TransactionError: If any query execution fails
         """
         # Special handling for mock driver in tests
-        if isinstance(self.driver, MagicMock) or isinstance(self.driver, AsyncMock):
+        if isinstance(self.driver, MagicMock | AsyncMock):
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:

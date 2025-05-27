@@ -1,6 +1,4 @@
-"""
-Service commands for the Code Story CLI.
-"""
+"""Service commands for the Code Story CLI."""
 
 import hashlib
 import os
@@ -68,24 +66,20 @@ def start_service(
     wait: bool = False,
     skip_healthchecks: bool = False,
 ) -> None:
-    """
-    Start the Code Story service.
-    """
+    """Start the Code Story service."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
     console.print("Starting Code Story service...")
 
-    # Check if service is already running
+    # Check current service status without raising exception
     try:
-        health = client.check_service_health()
-        console.print("[yellow]Service is already running.[/]")
-        # Show status if already running
-        ctx.invoke(status)
-        return
+        client.check_service_health()
+        console.print("[yellow]Checking if service is currently running... Yes[/]")
+        console.print("[yellow]Found Code Story service running, restarting it now[/]")
+        ctx.invoke(stop_service)
     except ServiceError:
-        # Service is not running, continue
-        pass
+        console.print("[yellow]Checking if service is currently running... No[/]")
 
     # Start the service with Docker Compose
     try:
@@ -128,7 +122,7 @@ def start_service(
                 ctx.invoke(status)
             else:
                 # If not detached, run in a separate process and wait
-                process = subprocess.Popen(cmd)
+                subprocess.Popen(cmd)
 
                 if wait:
                     console.print("Waiting for service to start...")
@@ -194,10 +188,8 @@ def start_service(
 @service.command(name="stop", help="Stop the Code Story service.")
 @click.pass_context
 def stop_service(ctx: click.Context) -> None:
-    """
-    Stop the Code Story service.
-    """
-    client: ServiceClient = ctx.obj["client"]
+    """Stop the Code Story service."""
+    ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
     console.print("Stopping Code Story service...")
@@ -250,9 +242,7 @@ def restart_service(
     wait: bool = False,
     skip_healthchecks: bool = False,
 ) -> None:
-    """
-    Restart the Code Story service.
-    """
+    """Restart the Code Story service."""
     require_service_available()
 
     client: ServiceClient = ctx.obj["client"]
@@ -264,7 +254,7 @@ def restart_service(
     try:
         # Check if service is running first
         try:
-            health = client.check_service_health()
+            client.check_service_health()
         except ServiceError:
             console.print("[yellow]Service is not running, starting fresh.[/]")
             start_service(ctx, detach, wait, skip_healthchecks)
@@ -320,7 +310,7 @@ def restart_service(
                 ctx.invoke(status)
             else:
                 # If not detached, run in a separate process
-                process = subprocess.Popen(cmd)
+                subprocess.Popen(cmd)
 
             if wait:
                 console.print("Waiting for service to start...")
@@ -537,7 +527,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
     existing_components = (
         set()
         if "components" not in health
-        else set(c.lower() for c in health["components"].keys())
+        else {c.lower() for c in health["components"]}
     )
 
     for component in important_components - existing_components:
@@ -561,8 +551,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
         process = subprocess.run(
             ["docker", "ps"],
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
         docker_available = process.returncode == 0
     except Exception:
@@ -595,8 +584,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                             container,
                         ],
                         check=False,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        capture_output=True,
                         text=True,
                     )
 
@@ -610,8 +598,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                             container,
                         ],
                         check=False,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        capture_output=True,
                         text=True,
                     )
 
@@ -665,8 +652,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                         "{{.Names}}",
                     ],
                     check=False,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    capture_output=True,
                     text=True,
                 )
                 if process.returncode == 0:
@@ -760,8 +746,7 @@ def get_docker_compose_command() -> list[str]:
         process = subprocess.run(
             ["docker", "compose", "version"],
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
         if process.returncode == 0:
             return ["docker", "compose"]
@@ -773,8 +758,7 @@ def get_docker_compose_command() -> list[str]:
         process = subprocess.run(
             ["docker-compose", "version"],
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
         if process.returncode == 0:
             return ["docker-compose"]
@@ -883,8 +867,7 @@ def renew_azure_auth(
                 process = subprocess.run(
                     cmd,
                     check=False,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    capture_output=True,
                     text=True,
                 )
                 success = process.returncode == 0
@@ -1018,7 +1001,6 @@ def renew_azure_auth(
                                 console.print(
                                     "Falling back to direct script execution..."
                                 )
-                                run_script_directly = True
 
                     console.print(
                         "[green]Authentication renewal process completed via API.[/]"
@@ -1068,8 +1050,7 @@ def renew_azure_auth(
                 process = subprocess.run(
                     cmd,
                     check=False,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    capture_output=True,
                     text=True,
                 )
                 success = process.returncode == 0
@@ -1171,8 +1152,7 @@ def recover_service(
         process = subprocess.run(
             ["docker", "ps", "--filter", "health=unhealthy", "--format", "{{.Names}}"],
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
         if process.returncode == 0:
@@ -1203,8 +1183,7 @@ def recover_service(
                     worker_container,
                 ],
                 check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
             )
             if process.returncode == 0:
@@ -1330,8 +1309,7 @@ def recover_service(
                         container,
                     ],
                     check=False,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    capture_output=True,
                     text=True,
                 )
                 if process.returncode == 0:
@@ -1358,7 +1336,7 @@ def recover_service(
 
         # Check if service is running properly
         try:
-            health = client.check_service_health()
+            client.check_service_health()
             console.print("[green]Service is running correctly.[/]")
         except ServiceError:
             console.print(
@@ -1395,8 +1373,7 @@ def get_running_containers() -> list[str]:
         process = subprocess.run(
             ["docker", "ps", "--format", "{{.Names}}"],
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
 
@@ -1437,8 +1414,7 @@ def show_unhealthy_container_logs(
         process = subprocess.run(
             ps_cmd,
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
 
@@ -1476,7 +1452,7 @@ def show_unhealthy_container_logs(
                                 console.print(f"  Log file: {log_path}")
                                 try:
                                     # Show last 10 lines of the log file
-                                    with open(log_path, "r") as log_file:
+                                    with open(log_path) as log_file:
                                         # Seek to the end of the file
                                         log_file.seek(0, os.SEEK_END)
                                         # Read the last 10 lines

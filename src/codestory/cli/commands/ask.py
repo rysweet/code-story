@@ -1,22 +1,23 @@
-"""
-Natural language query commands for the Code Story CLI.
-"""
+"""Natural language query commands for the Code Story CLI."""
 
+import contextlib
 import json
 
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
-from rich.console import Console
+from typing import TYPE_CHECKING
+
 from rich.markdown import Markdown
 from rich.panel import Panel
 
 from ..client import ServiceClient, ServiceError
 from ..require_service_available import require_service_available
+
+if TYPE_CHECKING:
+    from rich.console import Console
 
 
 @click.command(help="Ask a natural language question about the codebase.")

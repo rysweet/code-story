@@ -42,7 +42,7 @@ def main():
 
         # Run the worker
         logger.info("Starting worker with arguments: %s", " ".join(args))
-        sys.argv = ["celery"] + args
+        sys.argv = ["celery", *args]
         app.start()
 
     except Exception as e:

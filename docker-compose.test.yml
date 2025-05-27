@@ -38,6 +38,101 @@ services:
       start_period: 5s
     restart: on-failure
 
+  service:
+    image: python:3.12-slim
+    container_name: codestory-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ~/.azure:/root/.azure
+    working_dir: /app
+    command: >
+      bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && \
+      curl -sL https://aka.ms/InstallAzureCLIDeb | bash && \
+      adduser --disabled-password --gecos '' appuser && \
+      chown -R appuser:appuser /app && \
+      mkdir -p /home/appuser/.local/bin && \
+      mkdir -p /home/appuser/.azure && \
+      cp -r /root/.azure/* /home/appuser/.azure/ || true && \
+      chown -R appuser:appuser /home/appuser && \
+      cd /app && bash /app/scripts/setup_container_config.sh && \
+      su appuser -c '
+        python -m venv /app/.venv &&
+        . /app/.venv/bin/activate &&
+        pip install --upgrade pip &&
+        pip install -e . &&
+        pip install azure-identity azure-keyvault-secrets &&
+        cp /app/.codestory.container.toml /app/.codestory.toml &&
+        python /app/patch_adapters.py &&
+        python -m codestory_service.main
+      '"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    environment:
+      - NEO4J__URI=bolt://neo4j:7687
+      - NEO4J__USERNAME=neo4j
+      - NEO4J__PASSWORD=password
+      - NEO4J__DATABASE=testdb
+      - REDIS__URI=redis://redis:6379/0
+      - REDIS__HOST=redis
+      - REDIS__PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CODESTORY_SERVICE_HOST=0.0.0.0
+      - CODESTORY_SERVICE_PORT=8000
+      - USE_REAL_ADAPTERS=1
+
+  worker:
+    image: python:3.12-slim
+    container_name: codestory-worker
+    volumes:
+      - .:/app
+      - ~/.azure:/root/.azure
+    working_dir: /app
+    command: >
+      bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && \
+      curl -sL https://aka.ms/InstallAzureCLIDeb | bash && \
+      adduser --disabled-password --gecos '' appuser && \
+      chown -R appuser:appuser /app && \
+      mkdir -p /home/appuser/.local/bin && \
+      mkdir -p /home/appuser/.azure && \
+      cp -r /root/.azure/* /home/appuser/.azure/ || true && \
+      chown -R appuser:appuser /home/appuser && \
+      cd /app && bash /app/scripts/setup_container_config.sh && \
+      su appuser -c '
+        python -m venv /app/.venv &&
+        . /app/.venv/bin/activate &&
+        pip install --upgrade pip &&
+        pip install -e . &&
+        pip install docker azure-identity &&
+        cp /app/.codestory.container.toml /app/.codestory.toml &&
+        cd /app && PYTHONPATH=/app python -m celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=INFO --concurrency=4 -Q ingestion
+      '"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NEO4J__URI=bolt://neo4j:7687
+      - NEO4J__USERNAME=neo4j
+      - NEO4J__PASSWORD=password
+      - NEO4J__DATABASE=testdb
+      - REDIS__URI=redis://redis:6379/0
+      - REDIS__HOST=redis
+      - REDIS__PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - WORKER_CONCURRENCY=4
+      - WORKER_LOGLEVEL=INFO
+      - C_FORCE_ROOT=1
+
 volumes:
   neo4j_test_data:
     name: codestory-neo4j-test-data

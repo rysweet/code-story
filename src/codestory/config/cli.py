@@ -76,10 +76,7 @@ def set_setting(
             parsed_value = value
 
         # Determine persistence
-        if persist.lower() == "none":
-            persist_to = None
-        else:
-            persist_to = persist.lower()
+        persist_to = None if persist.lower() == "none" else persist.lower()
 
         # Update the configuration
         update_config(setting_path, parsed_value, persist_to=persist_to)

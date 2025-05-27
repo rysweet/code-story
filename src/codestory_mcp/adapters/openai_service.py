@@ -233,7 +233,7 @@ class OpenAIServiceAdapter:
 
         try:
             # Get embeddings for the code snippet
-            embedding = await self.client.create_embedding(code)
+            await self.client.create_embedding(code)
 
             # Record metrics for embedding creation
             embedding_duration = time.time() - start_time

@@ -1,7 +1,6 @@
-"""
-Configuration commands for the Code Story CLI.
-"""
+"""Configuration commands for the Code Story CLI."""
 
+import contextlib
 import json
 import os
 import sys
@@ -11,9 +10,7 @@ from typing import Any
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
 from rich.console import Console
 from rich.prompt import Confirm
@@ -41,9 +38,7 @@ def config():
 def show_config(
     ctx: click.Context, sensitive: bool = False, format: str = "table"
 ) -> None:
-    """
-    Show current configuration.
-    """
+    """Show current configuration."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -131,9 +126,7 @@ def set_config(
 @config.command(name="edit", help="Edit configuration in an editor.")
 @click.pass_context
 def edit_config(ctx: click.Context) -> None:
-    """
-    Edit configuration in an editor.
-    """
+    """Edit configuration in an editor."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -169,7 +162,7 @@ def edit_config(ctx: click.Context) -> None:
 
         # Apply updates
         console.print("Updating configuration...")
-        result = client.update_config(updated_config)
+        client.update_config(updated_config)
 
         console.print("[green]Configuration updated successfully.[/]")
 
@@ -295,7 +288,7 @@ def _format_value_for_table(value: Any) -> str:
     Returns:
         Formatted string representation
     """
-    if isinstance(value, (dict, list)):
+    if isinstance(value, dict | list):
         return json.dumps(value)
     elif value is None:
         return "[dim]null[/]"
@@ -315,13 +308,13 @@ def _format_value_for_tree(value: Any) -> str:
     Returns:
         Formatted string representation
     """
-    if isinstance(value, (dict, list)):
+    if isinstance(value, dict | list):
         return f"[yellow]{json.dumps(value)}[/]"
     elif value is None:
         return "[dim]null[/]"
     elif isinstance(value, bool):
         return f"[green]{str(value).lower()}[/]"
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, int | float):
         return f"[green]{value}[/]"
     else:
         return f'[green]"{value}"[/]'
