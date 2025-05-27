@@ -163,4 +163,12 @@
 
 ## May 22, 2025 (Prompt 62)
 
-- No shell commands executed for this prompt
+- No shell commands executed for this prompt## Shell History
+
+### azd auth login --scope https://cognitiveservices.azure.com/.default
+# Refreshed Azure authentication token to fix expired credentials for Azure OpenAI access
+
+### python test_azure_openai_config.py  
+# Created and ran integration test to verify Azure OpenAI configuration without Docker overhead
+# Identified that Azure authentication works but deployment 'o1' returns 404 nginx error
+# This confirms the issue is with the Azure OpenAI deployment configuration, not the client code
