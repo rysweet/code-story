@@ -17,7 +17,7 @@ from pydantic import (
     model_validator,
 )
 
-from codestory.ingestion_pipeline.step import StepStatus  # type: ignore[import-untyped]
+from codestory.ingestion_pipeline.step import StepStatus
 
 
 class JobStatus(str, Enum):

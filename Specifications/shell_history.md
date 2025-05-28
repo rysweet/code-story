@@ -181,3 +181,39 @@
 - `grep -c "^## Prompt" /Users/ryan/src/msec/code-story/Specifications/prompt-history.md` - Count total prompts to determine next prompt number
 - `find /Users/ryan/src/msec/code-story -name "*.md" -path "*/docs/*" | head -10` - List documentation files
 - `grep -rn "TODO\|FIXME\|HACK\|BUG" /Users/ryan/src/msec/code-story/src --include="*.py" | head -20` - Find TODO/FIXME comments using grep
+
+## May 28, 2025 (GitHub Issues Creation for Backlog Items)
+
+- `gh label list` - Check available GitHub labels in repository before creating issues
+- `gh issue create --title "Fix Type Safety Issues - Remove type ignore comments" --body "Priority: High..." --label "bug,enhancement"` - Create GitHub issue #16 for type safety fixes
+- `gh issue create --title "Implement Comprehensive Azure Authentication Resilience" --body "Priority: High..." --label "enhancement,bug"` - Create GitHub issue #17 for Azure auth resilience
+- `gh issue create --title "Add Input Validation and Sanitization for API Endpoints" --body "Priority: High..." --label "enhancement,bug"` - Create GitHub issue #18 for API input validation
+- `gh issue create --title "Implement Progress Tracking for Long-Running Operations" --body "Priority: High..." --label "enhancement"` - Create GitHub issue #19 for progress tracking
+- `gh issue create --title "Add Retry Logic and Circuit Breakers for External Services" --body "Priority: High..." --label "enhancement,bug"` - Create GitHub issue #20 for retry logic
+- `gh label create "auto-backlog" --description "Issues automatically created from backlog analysis" --color "0052cc"` - Create new label for backlog-generated issues
+- `gh issue edit 16 --add-label "auto-backlog"` - Add auto-backlog label to issue 16
+- `gh issue edit 17 --add-label "auto-backlog" && gh issue edit 18 --add-label "auto-backlog" && gh issue edit 19 --add-label "auto-backlog" && gh issue edit 20 --add-label "auto-backlog"` - Add auto-backlog label to issues 17-20
+- `gh issue create --title "Improve CLI Error Messages and User Guidance" --body "Priority: High..." --label "enhancement,auto-backlog"` - Create GitHub issue #21 for CLI error messages
+- `gh issue create --title "Implement Configuration Management and Environment-Specific Settings" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #22 for configuration management
+- `gh issue create --title "Add Comprehensive Logging and Structured Log Management" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #23 for logging improvements
+- `gh issue create --title "Optimize Database Queries and Add Connection Pooling" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #24 for database optimization
+- `gh issue create --title "Implement API Rate Limiting and Request Throttling" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #25 for API rate limiting
+- `gh issue create --title "Add File Type Detection and Improved Content Processing" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #26 for file type detection
+- `gh issue create --title "Implement Comprehensive Testing Strategy and CI/CD Pipeline" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #27 for testing strategy
+- `gh issue create --title "Add Caching Layer for Expensive Operations" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #28 for caching layer
+- `gh issue create --title "Implement Backup and Disaster Recovery Procedures" --body "Priority: Low..." --label "enhancement,auto-backlog"` - Create GitHub issue #29 for backup procedures
+- `gh issue create --title "Add Comprehensive API Documentation with OpenAPI/Swagger" --body "Priority: Low..." --label "documentation,auto-backlog"` - Create GitHub issue #30 for API documentation
+- `gh issue create --title "Implement Health Checks and System Monitoring" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #31 for health checks and monitoring
+- `gh issue create --title "Add Search and Filtering Capabilities for Graph Data" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #32 for search and filtering
+- `gh issue create --title "Implement User Management and Role-Based Access Control" --body "Priority: Low..." --label "enhancement,auto-backlog"` - Create GitHub issue #33 for user management
+- `gh issue create --title "Add Export and Import Functionality for Graph Data" --body "Priority: Low..." --label "enhancement,auto-backlog"` - Create GitHub issue #34 for export/import functionality
+- `gh issue create --title "Implement Memory Management for Large Codebase Processing" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #35 for memory management
+- `gh issue list --label "auto-backlog" --limit 25 --state open --json title` - List all auto-backlog issues to identify missing items
+- `gh issue create --title "Implement Multi-Repository Support and Workspace Management" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #36 for multi-repository support
+- `gh issue create --title "Implement Incremental Updates and Smart Processing" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #37 for incremental updates
+- `gh issue create --title "Implement Custom Analysis Rules and Plugin System" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #38 for custom analysis rules
+- `gh issue create --title "Improve Interactive Graph Navigation and Visualization" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #39 for graph navigation
+- `gh issue create --title "Create Dashboard and Analytics for Codebase Metrics" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #40 for dashboard analytics
+- `gh issue create --title "Implement IDE Plugin Support and Development Tool Integration" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #41 for IDE integration
+- `gh issue create --title "Implement Async Operation Management and Task Control" --body "Priority: High..." --label "enhancement,auto-backlog"` - Create GitHub issue #42 for async operation management
+- `gh issue create --title "Enhance Ingestion Pipeline Robustness and Recovery" --body "Priority: High..." --label "enhancement,auto-backlog"` - Create GitHub issue #43 for pipeline robustness

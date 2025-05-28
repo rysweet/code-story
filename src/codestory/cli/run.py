@@ -10,7 +10,7 @@ is run directly.
 import sys
 from typing import Any
 
-from codestory.cli.main import main  # type: ignore[import-untyped]
+from codestory.cli.main import main
 
 
 def run() -> Any:

@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from codestory.config.settings import get_settings  # type: ignore[import-untyped]
+from codestory.config.settings import get_settings
 
 settings = get_settings()
 

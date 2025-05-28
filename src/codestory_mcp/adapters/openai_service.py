@@ -10,10 +10,10 @@ from typing import Any
 import structlog
 from fastapi import status
 
-from codestory.llm.client import OpenAIClient  # type: ignore[import-untyped]
-from codestory.llm.models import ChatCompletionRequest, ChatMessage  # type: ignore[import-untyped]
-from codestory_mcp.tools.base import ToolError  # type: ignore[import-untyped]
-from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
+from codestory.llm.client import OpenAIClient
+from codestory.llm.models import ChatCompletionRequest, ChatMessage
+from codestory_mcp.tools.base import ToolError
+from codestory_mcp.utils.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 

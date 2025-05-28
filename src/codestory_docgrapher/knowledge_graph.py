@@ -9,7 +9,7 @@ documentation entities and relationships, and storing it in Neo4j.
 import logging
 import time
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 from .entity_linker import EntityLinker
 from .models import (

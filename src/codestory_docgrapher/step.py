@@ -10,11 +10,11 @@ import time
 from typing import Any
 from uuid import uuid4
 
-from celery import shared_task  # type: ignore[import-untyped]
+from celery import shared_task
 
-from codestory.config.settings import get_settings  # type: ignore[import-untyped]
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus  # type: ignore[import-untyped]
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
 from .document_finder import DocumentFinder
 from .knowledge_graph import KnowledgeGraph
@@ -109,7 +109,7 @@ class DocumentationGrapherStep(PipelineStep):
         """
         if job_id not in self.active_jobs:
             # Check if this is a task ID
-            from celery.result import AsyncResult  # type: ignore[import-untyped]
+            from celery.result import AsyncResult
 
             try:
                 result = AsyncResult(job_id)
@@ -198,7 +198,7 @@ class DocumentationGrapherStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke  # type: ignore[import-untyped]
+        from celery.task.control import revoke
 
         revoke(task_id, terminate=True)
 

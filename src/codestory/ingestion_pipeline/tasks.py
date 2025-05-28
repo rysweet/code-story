@@ -8,8 +8,8 @@ import logging
 import time
 from typing import Any
 
-from celery import chain  # type: ignore[import-untyped]
-from celery.result import AsyncResult  # type: ignore[import-untyped]
+from celery import chain
+from celery.result import AsyncResult
 
 from .celery_app import app
 from .step import StepStatus
@@ -328,7 +328,7 @@ def orchestrate_pipeline(
         except Exception as e:
             logger.error(f"Error starting chain: {e}")
             # Try to get more detailed error message
-            from celery.exceptions import CeleryError  # type: ignore[import-untyped]
+            from celery.exceptions import CeleryError
 
             if isinstance(e, CeleryError):
                 logger.error(f"Celery error details: {e.args}")

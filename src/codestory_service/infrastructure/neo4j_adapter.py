@@ -11,11 +11,11 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.graphdb.exceptions import (  # type: ignore[import-untyped]
+from codestory.graphdb.exceptions import (
     QueryError,
     TransactionError,
 )
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 from ..domain.graph import (
     CypherQuery,

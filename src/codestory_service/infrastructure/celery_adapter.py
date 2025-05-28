@@ -10,8 +10,8 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.ingestion_pipeline.celery_app import app as celery_app  # type: ignore[import-untyped]
-from codestory.ingestion_pipeline.tasks import (  # type: ignore[import-untyped]
+from codestory.ingestion_pipeline.celery_app import app as celery_app
+from codestory.ingestion_pipeline.tasks import (
     orchestrate_pipeline as run_ingestion_pipeline,
 )
 

@@ -9,7 +9,7 @@ import jwt
 import structlog
 from jwt.jwks_client import PyJWKClient
 
-from codestory_mcp.auth.scope_manager import ScopeManager  # type: ignore[import-untyped]
+from codestory_mcp.auth.scope_manager import ScopeManager
 
 logger = structlog.get_logger(__name__)
 

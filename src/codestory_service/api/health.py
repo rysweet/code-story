@@ -296,7 +296,7 @@ async def auth_renew(
                 # If still not found, try to get from core settings
                 if not tenant_id:
                     try:
-                        from codestory.config.settings import get_settings  # type: ignore[import-untyped]
+                        from codestory.config.settings import get_settings
 
                         core_settings = get_settings()
                         tenant_id = getattr(

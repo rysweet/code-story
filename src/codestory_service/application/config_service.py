@@ -12,8 +12,8 @@ from typing import Any
 import redis.asyncio as redis
 from fastapi import HTTPException, status
 
-from codestory.config.settings import get_settings as get_core_settings  # type: ignore[import-untyped]
-from codestory.config.writer import (  # type: ignore[import-untyped]
+from codestory.config.settings import get_settings as get_core_settings
+from codestory.config.writer import (
     update_config,
     update_env,
     update_toml,

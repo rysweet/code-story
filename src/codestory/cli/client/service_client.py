@@ -11,7 +11,7 @@ import httpx
 from pydantic import SecretStr
 from rich.console import Console
 
-from codestory.config import Settings, get_settings  # type: ignore[import-untyped]
+from codestory.config import Settings, get_settings
 
 
 class ServiceClient:

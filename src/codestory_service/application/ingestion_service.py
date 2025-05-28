@@ -182,7 +182,7 @@ class IngestionService:
             ingestion_started = await self.celery.start_ingestion(request)
 
             # Publish initial progress event
-            from codestory.ingestion_pipeline.step import StepStatus  # type: ignore[import-untyped]
+            from codestory.ingestion_pipeline.step import StepStatus
 
             initial_event = JobProgressEvent(
                 job_id=ingestion_started.job_id,

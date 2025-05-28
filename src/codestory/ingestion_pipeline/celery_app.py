@@ -6,7 +6,7 @@ for task management and distributed processing.
 
 import logging
 
-from celery import Celery  # type: ignore[import-untyped]
+from celery import Celery
 
 from ..config.settings import get_settings
 

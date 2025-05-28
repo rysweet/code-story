@@ -9,7 +9,7 @@ to actual filesystem paths in the repository.
 import logging
 import os
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 logger = logging.getLogger(__name__)
 

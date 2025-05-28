@@ -3,7 +3,7 @@
 This module provides utilities for managing authorization scopes in the MCP Adapter.
 """
 
-from codestory_mcp.utils.config import get_mcp_settings  # type: ignore[import-untyped]
+from codestory_mcp.utils.config import get_mcp_settings
 
 
 class ScopeManager:

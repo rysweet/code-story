@@ -10,11 +10,11 @@ import time
 import traceback
 from typing import Any
 
-from celery import shared_task  # type: ignore[import-untyped]
+from celery import shared_task
 
-from codestory.config.settings import get_settings  # type: ignore[import-untyped]
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id  # type: ignore[import-untyped]
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ class FileSystemStep(PipelineStep):
 
         # Import Celery app for better debugging
         try:
-            from codestory.ingestion_pipeline.celery_app import app as celery_app  # type: ignore[import-untyped]
+            from codestory.ingestion_pipeline.celery_app import app as celery_app
 
             # Log worker and queue status
             active_queues = celery_app.control.inspect().active_queues()
@@ -175,7 +175,7 @@ class FileSystemStep(PipelineStep):
             log_debug(f"Celery task initial status: {task.status}", job_id)
 
             # Try to get task info
-            from celery.result import AsyncResult  # type: ignore[import-untyped]
+            from celery.result import AsyncResult
 
             result = AsyncResult(task.id, app=celery_app)
             log_debug(f"Celery AsyncResult state: {result.state}", job_id)

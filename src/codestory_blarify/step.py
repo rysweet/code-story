@@ -11,14 +11,14 @@ from typing import Any
 from uuid import uuid4
 
 import docker
-from celery import current_app, shared_task  # type: ignore[import-untyped]
-from celery.app.control import Control  # type: ignore[import-untyped]
-from celery.result import AsyncResult  # type: ignore[import-untyped]
+from celery import current_app, shared_task
+from celery.app.control import Control
+from celery.result import AsyncResult
 from docker.errors import DockerException
 
-from codestory.config.settings import get_settings  # type: ignore[import-untyped]
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus  # type: ignore[import-untyped]
+from codestory.config.settings import get_settings
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
 # Set up logging
 logger = logging.getLogger(__name__)

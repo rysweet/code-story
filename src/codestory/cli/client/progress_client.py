@@ -9,7 +9,7 @@ from typing import Any, Callable, Callable, Callable, Callable
 import redis
 from rich.console import Console
 
-from codestory.config import Settings, get_settings  # type: ignore[import-untyped]
+from codestory.config import Settings, get_settings
 
 
 class ProgressClient:
@@ -231,7 +231,7 @@ class ProgressClient:
     def _poll_http(self) -> None:
         """Poll service API for progress updates when Redis is unavailable."""
         # Import here to avoid circular imports
-        from codestory.cli.client.service_client import ServiceClient, ServiceError  # type: ignore[import-untyped]
+        from codestory.cli.client.service_client import ServiceClient, ServiceError
 
         client = ServiceClient(console=self.console, settings=self.settings)
 

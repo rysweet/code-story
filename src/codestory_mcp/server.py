@@ -18,11 +18,11 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from prometheus_client import make_asgi_app
 
-from codestory_mcp.auth.entra_validator import EntraValidator  # type: ignore[import-untyped]
-from codestory_mcp.tools import get_all_tools, get_tool  # type: ignore[import-untyped]
-from codestory_mcp.tools.base import ToolError  # type: ignore[import-untyped]
-from codestory_mcp.utils.config import get_mcp_settings  # type: ignore[import-untyped]
-from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
+from codestory_mcp.auth.entra_validator import EntraValidator
+from codestory_mcp.tools import get_all_tools, get_tool
+from codestory_mcp.tools.base import ToolError
+from codestory_mcp.utils.config import get_mcp_settings
+from codestory_mcp.utils.metrics import get_metrics
 
 # Configure structured logging
 logger = structlog.get_logger(__name__)
