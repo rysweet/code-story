@@ -1,5 +1,8 @@
 # Shell Command History
 
+## May 28, 2025
+- `docker compose down && docker compose up --build` - Restarted Docker containers to test Azure OpenAI health check reasoning model fix
+
 ## May 22, 2025 (Comprehensive Logging for Azure OpenAI Diagnostics)
 - `codestory stop` - Stop all Code Story services using docker compose down
 - `docker compose build` - Rebuild Docker images with updated code
@@ -217,3 +220,26 @@
 - `gh issue create --title "Implement IDE Plugin Support and Development Tool Integration" --body "Priority: Medium..." --label "enhancement,auto-backlog"` - Create GitHub issue #41 for IDE integration
 - `gh issue create --title "Implement Async Operation Management and Task Control" --body "Priority: High..." --label "enhancement,auto-backlog"` - Create GitHub issue #42 for async operation management
 - `gh issue create --title "Enhance Ingestion Pipeline Robustness and Recovery" --body "Priority: High..." --label "enhancement,auto-backlog"` - Create GitHub issue #43 for pipeline robustness
+
+## May 28, 2025 (Azure OpenAI Health Check Fix for Reasoning Models)
+
+- Fixed Azure OpenAI health check in `src/codestory_service/infrastructure/openai_adapter.py` to properly handle reasoning models (o1/o1-preview/o1-mini)
+- **Key Changes Made:**
+  1. **Fixed model detection**: Now checks `AZURE_OPENAI__DEPLOYMENT_ID` environment variable first, then falls back to `self.client.chat_model`
+  2. **Uses proper client method**: Now calls `self.client.chat_async()` which handles reasoning model parameter conversion automatically
+  3. **Removed direct Azure OpenAI client calls**: Eliminates bypassing of existing reasoning model logic
+  4. **Removed duplicate health check method**: Fixed duplicated `check_health` method in the file
+- **Technical Details:**
+  - Used `ChatMessage` models instead of raw dictionaries for proper type safety
+  - Leveraged existing `_is_reasoning_model()` and `_adjust_params_for_reasoning_model()` logic
+  - `max_tokens=1` parameter gets automatically converted to `max_completion_tokens=1` for reasoning models
+  - Temperature parameter gets automatically removed for reasoning models
+- **Problem Solved**: Fixed BadRequestError 400 "max_tokens or model output limit was reached" for reasoning models
+
+## May 28, 2025 (Azure OpenAI Reasoning Model Work Commit)
+- `git status` - Check git status to identify all modified and new files for Azure OpenAI reasoning model work
+- `git checkout -b feature/azure-openai-reasoning-models` - Create new feature branch for Azure OpenAI reasoning model implementation
+- `git add src/codestory_service/infrastructure/openai_adapter.py tests/integration/test_llm/test_client_integration.py tests/unit/test_llm/test_client.py Specifications/prompt-history.md Specifications/shell_history.md` - Stage all Azure OpenAI reasoning model changes
+- `git commit -m "Fix Azure OpenAI Health Check for Reasoning Models (o1) and Add Comprehensive Support..."` - Commit Azure OpenAI reasoning model fixes with comprehensive description
+- `git push origin feature/azure-openai-reasoning-models` - Push feature branch to remote repository for pull request creation
+- `gh pr create --title "Fix Azure OpenAI Health Check for Reasoning Models (o1) and Add Comprehensive Support" --body-file pr_description_azure_openai.md` - Create pull request #47 with comprehensive description

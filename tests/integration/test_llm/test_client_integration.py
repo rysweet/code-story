@@ -82,6 +82,160 @@ def test_chat_completion(client):
 
 
 @pytest.mark.integration
+def test_reasoning_model_parameter_handling(client):
+    """Test that reasoning models use correct parameters (max_completion_tokens).
+    
+    This test verifies that when using reasoning models like o1, the client
+    properly converts max_tokens to max_completion_tokens and omits temperature.
+    """
+    # Get current settings to check if we have a reasoning model configured
+    settings = get_settings()
+    reasoning_model = settings.openai.reasoning_model
+    
+    # Skip if no reasoning model is configured or if it's not actually a reasoning model
+    if not reasoning_model or not any(rm in reasoning_model.lower() for rm in ["o1", "o1-preview", "o1-mini"]):
+        pytest.skip(f"No reasoning model configured or '{reasoning_model}' is not a reasoning model")
+    
+    # Prepare a simple chat message that should work with reasoning models
+    messages = [
+        ChatMessage(
+            role=ChatRole.SYSTEM,
+            content="You are a helpful assistant.",
+        ),
+        ChatMessage(
+            role=ChatRole.USER,
+            content="What is 2+2? Answer briefly."
+        ),
+    ]
+
+    # Test with the reasoning model - this should use max_completion_tokens internally
+    result = client.chat(
+        messages=messages,
+        model=reasoning_model,
+        max_tokens=10,  # This should be converted to max_completion_tokens
+        # Note: temperature is intentionally omitted as reasoning models don't support it
+    )
+
+    # Verify response structure
+    assert result.model is not None
+    assert len(result.choices) > 0
+    assert result.choices[0].message.content is not None
+    assert "4" in result.choices[0].message.content
+
+    # Verify token usage was recorded
+    assert result.usage.prompt_tokens > 0
+    assert result.usage.completion_tokens > 0
+    assert result.usage.total_tokens > 0
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_reasoning_model_async_parameter_handling(client):
+    """Test async reasoning model parameter handling.
+    
+    This test verifies that the async version properly handles reasoning model
+    parameters just like the sync version.
+    """
+    # Get current settings to check if we have a reasoning model configured
+    settings = get_settings()
+    reasoning_model = settings.openai.reasoning_model
+    
+    # Skip if no reasoning model is configured or if it's not actually a reasoning model
+    if not reasoning_model or not any(rm in reasoning_model.lower() for rm in ["o1", "o1-preview", "o1-mini"]):
+        pytest.skip(f"No reasoning model configured or '{reasoning_model}' is not a reasoning model")
+    
+    # Prepare a simple chat message
+    messages = [
+        ChatMessage(
+            role=ChatRole.SYSTEM,
+            content="You are a helpful assistant.",
+        ),
+        ChatMessage(
+            role=ChatRole.USER,
+            content="What is the capital of France? Answer with just the city name."
+        ),
+    ]
+
+    # Test async with the reasoning model
+    result = await client.chat_async(
+        messages=messages,
+        model=reasoning_model,
+        max_tokens=10,  # This should be converted to max_completion_tokens
+        # Note: temperature is intentionally omitted as reasoning models don't support it
+    )
+
+    # Verify response structure
+    assert result.model is not None
+    assert len(result.choices) > 0
+    assert result.choices[0].message.content is not None
+    assert "Paris" in result.choices[0].message.content
+
+    # Verify token usage was recorded
+    assert result.usage.prompt_tokens > 0
+    assert result.usage.completion_tokens > 0
+    assert result.usage.total_tokens > 0
+
+
+@pytest.mark.integration
+def test_regular_model_vs_reasoning_model_parameters(client):
+    """Test that regular models and reasoning models use different parameters.
+    
+    This test verifies that regular models can use temperature while reasoning
+    models cannot, demonstrating the parameter adjustment logic works correctly.
+    """
+    # Get current settings
+    settings = get_settings()
+    chat_model = settings.openai.chat_model
+    reasoning_model = settings.openai.reasoning_model
+    
+    # Skip if reasoning model is not actually a reasoning model
+    if not reasoning_model or not any(rm in reasoning_model.lower() for rm in ["o1", "o1-preview", "o1-mini"]):
+        pytest.skip(f"No reasoning model configured or '{reasoning_model}' is not a reasoning model")
+    
+    # Prepare a simple test message
+    messages = [
+        ChatMessage(
+            role=ChatRole.SYSTEM,
+            content="You are a helpful assistant.",
+        ),
+        ChatMessage(
+            role=ChatRole.USER,
+            content="Say 'hello' in response."
+        ),
+    ]
+
+    # Test regular model with temperature (should work)
+    regular_result = client.chat(
+        messages=messages,
+        model=chat_model,
+        max_tokens=5,
+        temperature=0.1,  # Regular models support temperature
+    )
+    
+    # Verify regular model response
+    assert regular_result.model is not None
+    assert len(regular_result.choices) > 0
+    assert regular_result.choices[0].message.content is not None
+
+    # Test reasoning model without temperature (should work)
+    reasoning_result = client.chat(
+        messages=messages,
+        model=reasoning_model,
+        max_tokens=5,
+        # No temperature parameter - reasoning models don't support it
+    )
+    
+    # Verify reasoning model response
+    assert reasoning_result.model is not None
+    assert len(reasoning_result.choices) > 0
+    assert reasoning_result.choices[0].message.content is not None
+
+    # Both should have token usage
+    assert regular_result.usage.total_tokens > 0
+    assert reasoning_result.usage.total_tokens > 0
+
+
+@pytest.mark.integration
 def test_embedding(client):
     """Test embedding generation with real API.
 

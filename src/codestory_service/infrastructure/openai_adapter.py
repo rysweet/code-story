@@ -120,8 +120,6 @@ class OpenAIAdapter:
         Raises:
             HTTPException: If connecting to OpenAI fails
         """
-        # Log Azure OpenAI configuration details for debugging
-        logger.info("=== OpenAI Adapter Initialization ===")
 
         # Log environment variables (without sensitive values)
         endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "NOT_SET")
@@ -163,15 +161,20 @@ class OpenAIAdapter:
 
         try:
             # Create or use provided client
-            if client is None:
-                logger.info("Creating new OpenAI client...")
-                # Create a new client
-                self.client = OpenAIClient()
-                logger.info("OpenAI client created successfully")
-            else:
-                logger.info("Using provided OpenAI client")
-                # Use the provided client
-                self.client = client
+            logger.info("Initializing OpenAI client...")
+            try:
+                self.client = client or OpenAIClient(
+                    endpoint=os.environ.get("AZURE_OPENAI__ENDPOINT"),
+                    embedding_model=os.environ.get("OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"),
+                    chat_model=os.environ.get("OPENAI__CHAT_MODEL", "gpt-4o"),
+                    reasoning_model=os.environ.get("OPENAI__REASONING_MODEL", "gpt-4o"),
+                    api_version=os.environ.get("AZURE_OPENAI__API_VERSION", "2025-03-01-preview"),
+                )
+                logger.info("OpenAI client initialized successfully.")
+                logger.info(f"Client details: Endpoint={self.client.endpoint}, ChatModel={self.client.chat_model}, EmbeddingModel={self.client.embedding_model}, ReasoningModel={self.client.reasoning_model}")
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI client: {e}")
+                raise
 
             # Log client configuration details
             logger.info(f"Chat model: {getattr(self.client, 'chat_model', 'NOT_SET')}")
@@ -242,30 +245,45 @@ class OpenAIAdapter:
         Returns:
             Dictionary containing health information
         """
-        logger.info("=== OpenAI Health Check Starting ===")
-
         try:
-            client = self.client._async_client
+            # Get the actual deployment model from environment first, then fallback to client default
+            test_model = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID") or self.client.chat_model
             test_message = "Hello! This is a health check."
-            test_model = self.client.chat_model
-
+            
             logger.info(f"Health check using model: {test_model}")
             logger.info(f"Test message: {test_message}")
 
-            # Log request details
-            request_params = {
-                "model": test_model,
-                "messages": [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": test_message},
-                ],
-                "max_completion_tokens": 1,
-            }
-            logger.info(f"Request parameters: {request_params}")
+            # Check if this is a reasoning model and adjust parameters accordingly
+            is_reasoning_model = any(reasoning_model in test_model.lower() for reasoning_model in ["o1", "o1-preview", "o1-mini"])
+            logger.info(f"Is reasoning model: {is_reasoning_model}")
+            
+            # Use the client's chat_async method which handles reasoning models properly
+            from codestory.llm.models import ChatMessage
+            messages = [
+                ChatMessage(role="system", content="You are a helpful assistant."),
+                ChatMessage(role="user", content=test_message),
+            ]
 
-            # Use model parameter for Azure OpenAI chat completions
-            logger.info("Sending health check request to OpenAI API...")
-            response = await client.chat.completions.create(**request_params)
+            # Prepare parameters based on model type
+            chat_params = {
+                "messages": messages,
+                "model": test_model,
+            }
+            
+            if is_reasoning_model:
+                # For reasoning models, use max_completion_tokens and no temperature
+                chat_params["max_completion_tokens"] = 10  # Use a higher value for better chance of completion
+                logger.info("Using max_completion_tokens=10 for reasoning model (no temperature)")
+            else:
+                # For regular models, use max_tokens
+                chat_params["max_tokens"] = 10
+                chat_params["temperature"] = 0.1  # Low temperature for consistent health check
+                logger.info("Using max_tokens=10 and temperature=0.1 for regular model")
+
+            logger.info("Sending health check request via OpenAI client...")
+            logger.info(f"Request parameters: {list(chat_params.keys())}")
+            
+            response = await self.client.chat_async(**chat_params)
 
             logger.info("Health check request completed successfully")
             logger.info(f"Response ID: {getattr(response, 'id', 'N/A')}")
@@ -315,7 +333,7 @@ class OpenAIAdapter:
 
             logger.error(f"Full traceback: {traceback.format_exc()}")
 
-            # Check for 404 errors - this indicates a serious API configuration issue 
+            # Check for 404 errors - this indicates a serious API configuration issue
             # that needs fixing
             if (
                 "<html>" in error_message
