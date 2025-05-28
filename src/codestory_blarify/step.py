@@ -7,8 +7,8 @@ and store AST and symbol bindings in Neo4j.
 import logging
 import os
 import time
-import uuid
 from typing import Any
+from uuid import uuid4
 
 import docker
 from celery import current_app, shared_task
@@ -56,10 +56,8 @@ class BlarifyStep(PipelineStep):
             self.docker_client.ping()
             logger.info("Docker client initialized successfully")
         except DockerException as e:
-            logger.warning(
-                f"Docker client initialization failed: {e}. Will use Celery task."
-            )
-            self.docker_client = None
+            logger.warning(f"Docker client initialization failed: {e}. Will use Celery task.")
+            self.docker_client = None  # type: ignore  # TODO: Fix None assignment
 
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the Blarify step.
@@ -79,12 +77,10 @@ class BlarifyStep(PipelineStep):
         """
         # Validate repository path
         if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"blarify-{uuid.uuid4()}"
+        job_id = f"blarify-{uuid4()}"
 
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
@@ -92,7 +88,7 @@ class BlarifyStep(PipelineStep):
         timeout = config.get("timeout", self.timeout)
 
         # Start the Celery task
-        
+
         # Get the registered task to support task_always_eager in test environments
         if "codestory_blarify.step.run_blarify" in current_app.tasks:
             # Direct task lookup works better with task_always_eager
@@ -119,7 +115,7 @@ class BlarifyStep(PipelineStep):
                     "docker_image": docker_image,
                     "timeout": timeout,
                     "config": config,
-                }
+                },
             )
             logger.debug("Using send_task with fully qualified task name")
 
@@ -156,26 +152,38 @@ class BlarifyStep(PipelineStep):
         if job_id in self.active_jobs:
             job_info = self.active_jobs[job_id]
             task_id = job_info["task_id"]
-            
+
             # If our internal status is STOPPED or CANCELLED, prioritize that over Celery's status
             # This fixes a race condition where the job was stopped but Celery hasn't updated yet
             if job_info.get("status") in [StepStatus.STOPPED, StepStatus.CANCELLED]:
-                logger.debug(f"Job {job_id} has internal status {job_info['status']}, using that over Celery status")
+                logger.debug(
+                    f"Job {job_id} has internal status {job_info['status']}, using that "
+                    f"over Celery status"
+                )
                 return {
                     "status": job_info["status"],
                     "message": f"Job {job_id} is {job_info['status']}",
                     "job_id": job_id,
                 }
-            
+
             # Check Docker container status for running jobs in CI environment
             # This helps detect if Docker containers are actually still running
-            if os.environ.get("CI") == "true" and job_info.get("status") == StepStatus.RUNNING and self.docker_client:
+            if (
+                os.environ.get("CI") == "true"
+                and job_info.get("status") == StepStatus.RUNNING
+                and self.docker_client
+            ):
                 container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
                 try:
-                    containers = self.docker_client.containers.list(filters={"name": container_name})
+                    containers = self.docker_client.containers.list(
+                        filters={"name": container_name}
+                    )
                     if not containers:
                         # Container is gone but job status wasn't updated
-                        logger.info(f"Container {container_name} is not running, updating job status to COMPLETED")
+                        logger.info(
+                            f"Container {container_name} is not running, updating job status "
+                            f"to COMPLETED"
+                        )
                         job_info["status"] = StepStatus.COMPLETED
                         job_info["end_time"] = time.time()
                         return {
@@ -186,9 +194,10 @@ class BlarifyStep(PipelineStep):
                 except Exception as e:
                     # If we can't check container status, log and continue
                     logger.warning(f"Error checking container status: {e}")
-            
+
             # Fall through to Celery status check with task_id
             from celery.result import AsyncResult
+
             result = AsyncResult(task_id)
 
             # Check if it's REVOKED - this means the job was stopped
@@ -231,7 +240,7 @@ class BlarifyStep(PipelineStep):
                     status_info.update(result.info)
 
                 return status_info
-            
+
         # No internal tracking, check if this is a task ID
 
         try:
@@ -287,7 +296,7 @@ class BlarifyStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        
+
         # Use the control interface from the current app
         control = Control(current_app)
         control.revoke(task_id, terminate=True)
@@ -309,19 +318,19 @@ class BlarifyStep(PipelineStep):
         # Update job status
         job_info["status"] = StepStatus.STOPPED
         job_info["end_time"] = time.time()
-        
+
         # Update the task result if possible
         try:
             result = AsyncResult(task_id)
             if result.state in ["PENDING", "STARTED", "PROGRESS"]:
                 # Force the task status to be recognized as stopped
                 result.revoke(terminate=True)
-                
+
                 # Important: In some CI environments, task status isn't immediately updated
                 # We need to force-update our internal tracking
                 if hasattr(result, "_cache") and result._cache:
                     result._cache["status"] = "REVOKED"
-                    
+
                 logger.info(f"Task {task_id} revoked and status updated")
         except Exception as e:
             logger.warning(f"Error updating task result: {e}")
@@ -333,13 +342,18 @@ class BlarifyStep(PipelineStep):
             while retry_count < max_retries:
                 try:
                     # Check if any container with the target name still exists
-                    containers = self.docker_client.containers.list(all=True, filters={"name": container_name})
+                    containers = self.docker_client.containers.list(
+                        all=True, filters={"name": container_name}
+                    )
                     if not containers:
                         logger.info(f"Verified container {container_name} is stopped/removed")
                         break
-                        
+
                     # Container still exists, wait and retry
-                    logger.warning(f"Container {container_name} still exists, retrying stop... (attempt {retry_count + 1})")
+                    logger.warning(
+                        f"Container {container_name} still exists, retrying stop... "
+                        f"(attempt {retry_count + 1})"
+                    )
                     for container in containers:
                         try:
                             container.stop(timeout=5)
@@ -449,9 +463,9 @@ def run_blarify(
     # Format Neo4j connection string for Blarify
     # Check if host has 'bolt://' prefix and remove it
     host = neo4j_uri.replace("bolt://", "")
-    
+
     # Handle container networking - if this is a Docker service name, also provide localhost option
-    if ':' not in host and not host.startswith(('localhost', '127.0.0.1')):
+    if ":" not in host and not host.startswith(("localhost", "127.0.0.1")):
         # This is likely a Docker service name like 'neo4j', try localhost with mapped port
         neo4j_port = "7689"  # Default mapped port in docker-compose.yml
         alt_host = f"host.docker.internal:{neo4j_port}"
@@ -478,15 +492,22 @@ def run_blarify(
                 pass
             else:
                 # Try to map host path to container path
-                for host_path, container_path in os.environ.get("CODESTORY_MOUNT_MAPPINGS", "").split(';'):
+                for host_path, container_path in os.environ.get(
+                    "CODESTORY_MOUNT_MAPPINGS", ""
+                ).split(";"):
                     if host_path and container_path and repository_path.startswith(host_path):
-                        container_repository_path = repository_path.replace(host_path, container_path, 1)
-                        logger.info(f"Mapped repository path from {repository_path} to {container_repository_path}")
+                        container_repository_path = repository_path.replace(
+                            host_path, container_path, 1
+                        )
+                        logger.info(
+                            f"Mapped repository path from {repository_path} to "
+                            f"{container_repository_path}"
+                        )
                         break
-        
+
         # Container name for easier identification
         container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
-        
+
         # Check if the repository path is already mounted in any running container
         try:
             running_containers = client.containers.list()
@@ -499,7 +520,10 @@ def run_blarify(
                         if mount["Type"] == "bind" and mount["Source"] == repository_path:
                             # Repository is already mounted, use the container path
                             container_repository_path = mount["Destination"]
-                            logger.info(f"Found existing mount: {repository_path} -> {container_repository_path}")
+                            logger.info(
+                                f"Found existing mount: {repository_path} -> "
+                                f"{container_repository_path}"
+                            )
                             break
         except Exception as e:
             logger.warning(f"Error checking existing containers: {e}")
@@ -518,9 +542,7 @@ def run_blarify(
             client.images.pull(docker_image)
             logger.info(f"Pulled Docker image: {docker_image}")
         except DockerException as e:
-            logger.warning(
-                f"Failed to pull Docker image: {e}. Assuming it exists locally."
-            )
+            logger.warning(f"Failed to pull Docker image: {e}. Assuming it exists locally.")
 
         # Update status
         self.update_state(
@@ -574,7 +596,7 @@ def run_blarify(
         for log_line in container.logs(stream=True, follow=True):
             try:
                 log_line = log_line.decode("utf-8").strip()
-                
+
                 # Reset inactivity timer on any log output
                 last_activity_time = time.time()
 
@@ -590,7 +612,7 @@ def run_blarify(
                         progress = min(progress + 0.5, 90.0)
                 elif "Error:" in log_line:
                     logger.error(f"Blarify error: {log_line}")
-                
+
                 # Update progress at regular intervals
                 current_time = time.time()
                 if current_time - last_log_time > log_interval:
@@ -603,22 +625,30 @@ def run_blarify(
                         },
                     )
                     logger.debug(f"Blarify progress: {progress:.1f}%")
-                    
+
                 # Check for inactivity timeout
                 if current_time - last_activity_time > max_inactivity:
-                    logger.error(f"Blarify process timed out due to inactivity after {max_inactivity} seconds")
+                    logger.error(
+                        f"Blarify process timed out due to inactivity after "
+                        f"{max_inactivity} seconds"
+                    )
                     # Attempt to stop the container gracefully
                     try:
                         container.stop(timeout=10)
-                        logger.info(f"Stopped container {container.id} due to inactivity timeout")
+                        logger.info(
+                            f"Stopped container {container.id} due to inactivity timeout"
+                        )
                     except Exception as e:
                         logger.warning(f"Error stopping container: {e}")
-                    
-                    raise TimeoutError(f"Blarify process timed out due to inactivity after {max_inactivity} seconds")
+
+                    raise TimeoutError(
+                        f"Blarify process timed out due to inactivity after "
+                        f"{max_inactivity} seconds"
+                    )
             except Exception as e:
                 logger.warning(f"Error processing log line: {e}")
                 # Don't break the loop for parsing errors
-                if not isinstance(e, (ValueError, IndexError)):
+                if not isinstance(e, ValueError | IndexError):
                     # Break if it's a more serious error like a timeout
                     break
 
@@ -652,7 +682,7 @@ def run_blarify(
         # Connect to Neo4j and verify data
         try:
             # Try localhost first if in Docker container
-            if ':' not in host and not host.startswith(('localhost', '127.0.0.1')):
+            if ":" not in host and not host.startswith(("localhost", "127.0.0.1")):
                 try:
                     # Try with localhost
                     localhost_uri = "bolt://localhost:7689"
@@ -662,9 +692,14 @@ def run_blarify(
                         password=settings.neo4j.password.get_secret_value(),
                         database=settings.neo4j.database,
                     )
-                    logger.info(f"Connected to Neo4j using localhost override: {localhost_uri}")
+                    logger.info(
+                        f"Connected to Neo4j using localhost override: {localhost_uri}"
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to connect to Neo4j using localhost: {e}, falling back to original URI")
+                    logger.warning(
+                        f"Failed to connect to Neo4j using localhost: {e}, falling back "
+                        f"to original URI"
+                    )
                     connector = Neo4jConnector(
                         uri=settings.neo4j.uri,
                         username=settings.neo4j.username,
@@ -679,12 +714,12 @@ def run_blarify(
                     password=settings.neo4j.password.get_secret_value(),
                     database=settings.neo4j.database,
                 )
-                
+
             # Check for AST nodes
-            ast_count = connector.execute_query(
-                "MATCH (n:AST) RETURN count(n) as count"
-            )[0].get("count", 0)
-            
+            ast_count = connector.execute_query("MATCH (n:AST) RETURN count(n) as count")[0].get(
+                "count", 0
+            )
+
         except Exception as e:
             logger.warning(f"Error connecting to Neo4j for verification: {e}")
             ast_count = 0  # Unable to verify, assume 0

@@ -57,14 +57,10 @@ class SummarizeNodeTool(BaseTool):
 
         # Validate parameters
         if not node_id:
-            raise ToolError(
-                "Node ID cannot be empty", status_code=status.HTTP_400_BAD_REQUEST
-            )
+            raise ToolError("Node ID cannot be empty", status_code=status.HTTP_400_BAD_REQUEST)
 
         # Log summarization request
-        logger.info(
-            "Summarizing node", node_id=node_id, include_context=include_context
-        )
+        logger.info("Summarizing node", node_id=node_id, include_context=include_context)
 
         try:
             # Get node details
@@ -139,4 +135,4 @@ class SummarizeNodeTool(BaseTool):
             raise ToolError(
                 f"Node summarization failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            ) from e

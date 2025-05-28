@@ -345,8 +345,19 @@ else
   echo "Failed to create visualization file"
 fi
 
-# Step 9: Show example commands for further exploration
-echo -e "\nStep 9: Example commands for further exploration"
+# Step 9: Show database management commands
+echo -e "\nStep 9: Database management"
+echo "Showing database commands:"
+codestory database --help
+
+echo -e "\nDatabase clear command usage:"
+echo "codestory database clear            # With confirmation prompt"
+echo "codestory database clear --force    # Skip confirmation"
+echo "codestory db clear                  # Shorthand version"
+echo "codestory dbc                       # Shortest alias"
+
+# Step 10: Show example commands for further exploration
+echo -e "\nStep 10: Example commands for further exploration"
 cat << 'COMMANDS'
 # When authentication is properly configured, you could use these commands:
 
@@ -362,6 +373,10 @@ codestory ask "Explain the role of the ingestion pipeline in the Code Story syst
 # Generate a visualization focused on a specific component
 codestory visualize generate --query "MATCH (n:Module)-[r]-(m) WHERE n.name CONTAINS 'ingestion' RETURN n, r, m" --output ingestion_visualization.html
 
+# Database operations
+codestory database clear    # Clear the database (with confirmation)
+codestory dbc --force       # Clear without confirmation (alias)
+
 # Command shortcuts for efficiency:
 codestory q = codestory query run
 codestory ss = codestory service start
@@ -369,6 +384,7 @@ codestory st = codestory service status
 codestory sx = codestory service stop
 codestory gs = codestory ask
 codestory vz = codestory visualize generate
+codestory db = codestory database
 COMMANDS
 
 echo -e "\nNote: The visualization endpoint has been updated to allow unauthenticated access, making it"

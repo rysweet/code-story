@@ -4,6 +4,7 @@ This module provides endpoints for starting, monitoring, and managing
 ingestion pipeline jobs.
 """
 
+import contextlib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
@@ -63,7 +64,7 @@ async def start_ingestion(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start ingestion: {e!s}",
-        )
+        ) from e
 
 
 @router.get(
@@ -114,7 +115,7 @@ async def list_jobs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list jobs: {e!s}",
-        )
+        ) from e
 
 
 @router.get(
@@ -151,7 +152,7 @@ async def get_job_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get job status: {e!s}",
-        )
+        ) from e
 
 
 @router.post(
@@ -188,7 +189,7 @@ async def cancel_job(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel job: {e!s}",
-        )
+        ) from e
 
 
 @router.websocket("/ws/status/{job_id}")
@@ -214,7 +215,5 @@ async def job_status_websocket(
         logger.error(f"WebSocket error: {e!s}")
         # WebSocket connection is likely already closed
         # but try to close it explicitly just in case
-        try:
+        with contextlib.suppress(Exception):
             await websocket.close(code=1011, reason=str(e))
-        except Exception:
-            pass

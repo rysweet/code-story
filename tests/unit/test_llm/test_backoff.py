@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import openai
 import pytest
+
 from codestory.llm.backoff import (
     before_retry_callback,
     get_retry_after,
@@ -23,12 +24,12 @@ from codestory.llm.metrics import OperationType
 @pytest.fixture(autouse=True)
 def mock_all_prometheus():
     """Mock all Prometheus metrics objects before any module imports."""
-    with patch("prometheus_client.Counter") as mock_counter, patch(
-        "prometheus_client.Gauge"
-    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram, patch(
-        "prometheus_client.registry.REGISTRY._names_to_collectors", {}
-    ), patch(
-        "codestory.llm.metrics.record_retry"
+    with (
+        patch("prometheus_client.Counter") as mock_counter,
+        patch("prometheus_client.Gauge") as mock_gauge,
+        patch("prometheus_client.Histogram") as mock_histogram,
+        patch("prometheus_client.registry.REGISTRY._names_to_collectors", {}),
+        patch("codestory.llm.metrics.record_retry"),
     ):
         # Configure the mocks to behave like the real counters
         mock_labels = MagicMock()
@@ -109,9 +110,7 @@ class TestRetryDecorators:
             mock_retry.return_value = lambda f: f
 
             # Apply our decorator
-            decorator = retry_on_openai_errors(
-                max_retries=3, operation_type=OperationType.CHAT
-            )
+            decorator = retry_on_openai_errors(max_retries=3, operation_type=OperationType.CHAT)
             decorated_func = decorator(mock_func)
 
             # First call should raise RateLimitError
@@ -161,9 +160,7 @@ class TestRetryDecorators:
 
             # Define a function that raises OpenAI APIConnectionError
             def test_func():
-                raise openai.APIConnectionError(
-                    message="Connection error", request=MagicMock()
-                )
+                raise openai.APIConnectionError(message="Connection error", request=MagicMock())
 
             # Apply our decorator
             decorated_func = retry_on_openai_errors(max_retries=1)(test_func)
@@ -270,6 +267,4 @@ class TestRetryDecorators:
 
             # Verify the decorator works as expected
             assert decorated is mock_decorated  # The function is decorated
-            assert (
-                mock_retry.call_count == 1
-            )  # Retry was called once to create decorator
+            assert mock_retry.call_count == 1  # Retry was called once to create decorator

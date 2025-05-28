@@ -71,9 +71,7 @@ class AuthService:
                 )
             elif request.username == "user" and request.password == "password":
                 # Create token with user role
-                token = await self.validator.create_dev_token(
-                    request.username, roles=["user"]
-                )
+                token = await self.validator.create_dev_token(request.username, roles=["user"])
 
                 return TokenResponse(
                     access_token=token,
@@ -96,7 +94,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Login failed: {e!s}",
-            )
+            ) from e
 
     async def get_user_info(self, claims: dict[str, Any]) -> UserInfo:
         """Get information about the current user.
@@ -115,9 +113,7 @@ class AuthService:
             is_authenticated=True,
         )
 
-    def check_permission(
-        self, claims: dict[str, Any], required_roles: list[str]
-    ) -> bool:
+    def check_permission(self, claims: dict[str, Any], required_roles: list[str]) -> bool:
         """Check if the user has the required permissions.
 
         Args:

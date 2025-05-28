@@ -45,7 +45,7 @@ class TestServiceCommand:
         """Test that auth-renew command exists."""
         # Get all commands in the service group
         commands = service.commands
-        
+
         # Check if auth-renew is in the commands
         assert "auth-renew" in commands
 
@@ -53,7 +53,7 @@ class TestServiceCommand:
         """Test that auth-renew command has correct help text."""
         # Run the command with --help flag
         result = cli_runner.invoke(service, ["auth-renew", "--help"])
-        
+
         # Check output contains expected help text
         assert result.exit_code == 0
         assert "Renew Azure authentication tokens" in result.output
@@ -71,7 +71,7 @@ class TestServiceCommand:
         # Mock being inside a container
         mock_exists.return_value = True  # /.dockerenv exists
         mock_run.return_value = mock.MagicMock(returncode=0)
-        
+
         # Run the command
         result = cli_runner.invoke(
             renew_azure_auth,
@@ -79,15 +79,15 @@ class TestServiceCommand:
             obj=ctx_obj,
             catch_exceptions=False,
         )
-        
+
         # Check that correct methods were called
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        
+
         # Assert subprocess.run was called with the right command
         args, kwargs = mock_run.call_args
         assert "inject_azure_tokens.py" in str(args[0])
-        
+
         # Check output
         assert "Azure authentication tokens updated successfully." in result.output
 
@@ -101,7 +101,7 @@ class TestServiceCommand:
         # Mock being inside a container
         mock_exists.return_value = True  # /.dockerenv exists
         mock_run.return_value = mock.MagicMock(returncode=0)
-        
+
         # Run the command
         result = cli_runner.invoke(
             renew_azure_auth,
@@ -109,17 +109,17 @@ class TestServiceCommand:
             obj=ctx_obj,
             catch_exceptions=False,
         )
-        
+
         # Check that correct methods were called
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        
+
         # Assert subprocess.run was called with the right command and tenant
         args, kwargs = mock_run.call_args
         assert "inject_azure_tokens.py" in str(args[0])
         assert "--tenant" in str(args[0])
         assert "12345678-1234-1234-1234-123456789012" in str(args[0])
-        
+
         # Check output
         assert "Azure authentication tokens updated successfully." in result.output
 
@@ -133,7 +133,7 @@ class TestServiceCommand:
         # Mock being inside a container
         mock_exists.return_value = True  # /.dockerenv exists
         mock_run.return_value = mock.MagicMock(returncode=0)
-        
+
         # Run the command
         result = cli_runner.invoke(
             renew_azure_auth,
@@ -141,11 +141,11 @@ class TestServiceCommand:
             obj=ctx_obj,
             catch_exceptions=False,
         )
-        
+
         # Check that correct methods were called
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        
+
         # Assert subprocess.run was called with the right command and check flag
         args, kwargs = mock_run.call_args
         assert "inject_azure_tokens.py" in str(args[0])
@@ -163,7 +163,7 @@ class TestServiceCommand:
         # Mock being inside a container
         mock_exists.return_value = True  # /.dockerenv exists
         mock_run.return_value = mock.MagicMock(returncode=1)
-        
+
         # Run the command
         result = cli_runner.invoke(
             renew_azure_auth,
@@ -171,11 +171,11 @@ class TestServiceCommand:
             obj=ctx_obj,
             catch_exceptions=False,
         )
-        
+
         # Check that correct methods were called
         assert result.exit_code == 1
         mock_run.assert_called_once()
-        
+
         # Check output
         assert "Azure authentication renewal failed." in result.output
 
@@ -188,13 +188,13 @@ class TestServiceCommand:
         """Test auth-renew command when run on host (outside container)."""
         # Mock being outside a container
         mock_exists.return_value = False  # /.dockerenv doesn't exist
-        
+
         # Mock running containers
         mock_get_containers.return_value = ["codestory-service", "codestory-worker"]
-        
-        # Mock subprocess run 
+
+        # Mock subprocess run
         mock_run.return_value = mock.MagicMock(returncode=0)
-        
+
         # Run the command
         result = cli_runner.invoke(
             renew_azure_auth,
@@ -202,16 +202,16 @@ class TestServiceCommand:
             obj=ctx_obj,
             catch_exceptions=False,
         )
-        
+
         # Check that correct methods were called
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        
+
         # Assert subprocess.run was called with a python command to the script
         args, kwargs = mock_run.call_args
         assert sys.executable in args[0][0]
         assert "inject_azure_tokens.py" in str(args[0])
-        
+
         # Check output
         assert "Azure authentication renewed successfully." in result.output
 
@@ -224,10 +224,10 @@ class TestServiceCommand:
         """Test auth-renew when no containers are running."""
         # Mock being outside a container
         mock_exists.return_value = False  # /.dockerenv doesn't exist
-        
+
         # Mock no running containers
         mock_get_containers.return_value = []
-        
+
         # Run the command
         result = cli_runner.invoke(
             renew_azure_auth,
@@ -235,7 +235,7 @@ class TestServiceCommand:
             obj=ctx_obj,
             catch_exceptions=False,
         )
-        
+
         # Check output and exit code
         assert result.exit_code == 1
         assert "Token injection failed." in result.output

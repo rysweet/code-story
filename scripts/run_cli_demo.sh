@@ -188,8 +188,12 @@ echo -e "\nStep 9: Running queries on the ingested code"
 echo "Executing a Cypher query to find Python files:"
 codestory query run "MATCH (f:File) WHERE f.extension = 'py' RETURN f.path AS FilePath" || echo "Query failed - may need more time for data to be available"
 
-echo -e "\nStep 10: Asking a natural language question about the code:"
+echo -e "\nStep 10: Asking natural language questions about the code:"
+echo "Question 1: What does the greeting function do in the hello.py file?"
 codestory ask "What does the greeting function do in the hello.py file?" || echo "Question failed - may need more time for data to be indexed"
+
+echo -e "\nQuestion 2: What Python files are in this project?"
+codestory ask "What Python files are in this project?" || echo "Question failed - may need more time for data to be indexed"
 
 # Step 11: Generate visualization with ingested data
 echo -e "\nStep 11: Generating visualization with ingested data"
@@ -228,10 +232,19 @@ codestory gs = codestory ask
 codestory vz = codestory visualize generate
 COMMANDS
 
-# Step 13: Clean up
-echo -e "\nStep 13: Cleaning up"
+# Step 13: Show database commands
+echo -e "\nStep 13: Demonstrating database commands"
+echo "Showing database clear command (not executing it):"
+codestory database --help
+echo -e "\nTo clear the database, you would use:"
+echo "codestory database clear"
+echo "codestory db clear --force  # Skip confirmation"
+echo "codestory dbc  # Shorthand alias"
+
+# Step 14: Clean up
+echo -e "\nStep 14: Cleaning up"
 echo "Attempting to clear the database..."
-codestory query run "MATCH (n) DETACH DELETE n" || echo "Database clear failed - this is expected if service isn't running"
+codestory database clear --force || echo "Database clear failed - this is expected if service isn't running"
 
 echo "Stopping the service..."
 codestory service stop || echo "Service stop failed"

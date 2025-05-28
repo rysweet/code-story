@@ -1,3 +1,5 @@
+from typing import Any
+
 """Document finder for locating documentation files in repositories.
 
 This module provides functionality for locating documentation files
@@ -73,7 +75,7 @@ class DocumentFinder:
         ignore_patterns = ignore_patterns or []
         ignore_regex = self._compile_ignore_patterns(ignore_patterns)
 
-        doc_files = []
+        doc_files: list[Any] = []
         doc_files.extend(self._find_standalone_docs(ignore_regex))
         doc_files.extend(self._find_code_docstrings(ignore_regex))
 
@@ -89,7 +91,7 @@ class DocumentFinder:
         Returns:
             List of compiled regular expressions
         """
-        result = []
+        result: list[Any] = []
         for pattern in patterns:
             # Convert glob pattern to regex
             regex = pattern.replace(".", r"\.").replace("*", ".*").replace("?", ".")
@@ -109,14 +111,9 @@ class DocumentFinder:
         Returns:
             True if the path should be ignored, False otherwise
         """
-        for pattern in ignore_patterns:
-            if pattern.search(path):
-                return True
-        return False
+        return any(pattern.search(path) for pattern in ignore_patterns)
 
-    def _find_standalone_docs(
-        self, ignore_patterns: list[re.Pattern]
-    ) -> list[DocumentationFile]:
+    def _find_standalone_docs(self, ignore_patterns: list[re.Pattern]) -> list[DocumentationFile]:
         """Find standalone documentation files (Markdown, RST, etc.).
 
         Args:
@@ -125,7 +122,7 @@ class DocumentFinder:
         Returns:
             List of DocumentationFile objects
         """
-        result = []
+        result: list[Any] = []
 
         # Query Neo4j for file nodes
         query = """
@@ -190,9 +187,7 @@ class DocumentFinder:
 
         return result
 
-    def _find_code_docstrings(
-        self, ignore_patterns: list[re.Pattern]
-    ) -> list[DocumentationFile]:
+    def _find_code_docstrings(self, ignore_patterns: list[re.Pattern]) -> list[DocumentationFile]:
         """Find documentation within code files (docstrings, comments).
 
         Args:
@@ -201,7 +196,7 @@ class DocumentFinder:
         Returns:
             List of DocumentationFile objects
         """
-        result = []
+        result: list[Any] = []
 
         # Query Neo4j for files with docstrings
         query = """

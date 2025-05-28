@@ -69,9 +69,7 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
         patch.object(FileSystemStep, "run", autospec=True) as mock_fs_run,
         patch.object(BlarifyStep, "run", autospec=True) as mock_blarify_run,
         patch.object(SummarizerStep, "run", autospec=True) as mock_summarizer_run,
-        patch.object(
-            DocumentationGrapherStep, "run", autospec=True
-        ) as mock_docgrapher_run,
+        patch.object(DocumentationGrapherStep, "run", autospec=True) as mock_docgrapher_run,
     ):
         # Setup side effects to track execution order
         def fs_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
@@ -82,15 +80,11 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
             execution_order.append("blarify")
             return "blarify-job-id"
 
-        def summarizer_side_effect(
-            self: Any, repository_path: str, **kwargs: Any
-        ) -> str:
+        def summarizer_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("summarizer")
             return "summarizer-job-id"
 
-        def docgrapher_side_effect(
-            self: Any, repository_path: str, **kwargs: Any
-        ) -> str:
+        def docgrapher_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("documentation_grapher")
             return "docgrapher-job-id"
 
@@ -103,9 +97,7 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
         with (
             patch.object(FileSystemStep, "status", autospec=True) as mock_fs_status,
             patch.object(BlarifyStep, "status", autospec=True) as mock_blarify_status,
-            patch.object(
-                SummarizerStep, "status", autospec=True
-            ) as mock_summarizer_status,
+            patch.object(SummarizerStep, "status", autospec=True) as mock_summarizer_status,
             patch.object(
                 DocumentationGrapherStep, "status", autospec=True
             ) as mock_docgrapher_status,
@@ -144,10 +136,10 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
                 },
                 "status_mocks": {
                     "filesystem": mock_fs_status,
-                    "blarify": mock_blarify_status, 
+                    "blarify": mock_blarify_status,
                     "summarizer": mock_summarizer_status,
                     "documentation_grapher": mock_docgrapher_status,
-                }
+                },
             }
 
 
@@ -232,9 +224,7 @@ def test_step_dependency_resolution(
         elif step_name == "documentation_grapher":
             # Documentation grapher depends on filesystem
             execute_step_with_deps("filesystem")
-            mock_steps["mocks"]["documentation_grapher"](
-                None, repository_path=sample_repo
-            )
+            mock_steps["mocks"]["documentation_grapher"](None, repository_path=sample_repo)
 
     # Execute the target step (which will recursively execute its dependencies)
     execute_step_with_deps(target_step)
@@ -391,9 +381,7 @@ def test_only_necessary_steps_run(
         elif step_name == "documentation_grapher":
             # Documentation grapher depends on filesystem
             execute_step_with_deps("filesystem")
-            mock_steps["mocks"]["documentation_grapher"](
-                None, repository_path=sample_repo
-            )
+            mock_steps["mocks"]["documentation_grapher"](None, repository_path=sample_repo)
             mock_steps["mocks"]["documentation_grapher"].called = True
 
     # Execute only the summarizer step (which will execute its dependencies)
@@ -410,7 +398,7 @@ def test_only_necessary_steps_run(
 
 def test_error_handling_in_dependency_chain():
     """Test that failures in a dependency properly fail the dependent steps.
-    
+
     This test verifies that when one step fails, dependent steps will not run.
     We test this by setting up mock steps where the filesystem step fails,
     and then verify that blarify correctly reports an error about its dependency.
@@ -424,7 +412,7 @@ def test_error_handling_in_dependency_chain():
             "blarify": ["filesystem"],
         }
     }
-    
+
     # Set up a failed filesystem step job in the active_jobs dictionary
     fs_job_id = "fs-job-id"
     manager.active_jobs[fs_job_id] = {
@@ -435,63 +423,66 @@ def test_error_handling_in_dependency_chain():
         "error": "Simulated filesystem step failure",
         "step_name": "filesystem",
     }
-    
+
     # Define the dependency check function (similar to how PipelineManager would check)
     def check_dependencies(step_name, repo_path):
         # Get the dependencies for this step from the config
         dependencies = []
-        if "dependencies" in manager.config:
-            if step_name in manager.config["dependencies"]:
-                dependencies = manager.config["dependencies"][step_name]
-        
+        if "dependencies" in manager.config and step_name in manager.config["dependencies"]:
+            dependencies = manager.config["dependencies"][step_name]
+
         # Check each dependency to see if it completed successfully
         for dep_name in dependencies:
             dep_job_found = False
             # Look for a job for this dependency
-            for job_id, job_info in manager.active_jobs.items():
-                if (job_info.get("step_name") == dep_name and 
-                    job_info.get("repository_path") == repo_path):
+            for _job_id, job_info in manager.active_jobs.items():
+                if (
+                    job_info.get("step_name") == dep_name
+                    and job_info.get("repository_path") == repo_path
+                ):
                     dep_job_found = True
                     # Check if it failed
                     if job_info.get("status") == StepStatus.FAILED:
                         return False, dep_name
-            
+
             # If no job was found for a dependency, it's not satisfied
             if not dep_job_found:
                 return False, dep_name
-        
+
         # All dependencies checked and satisfied
         return True, None
-    
+
     # Create a new job for blarify that should detect the filesystem dependency failure
     repo_path = "/mock/repo/path"
     step_name = "blarify"
-    
+
     # Check dependencies first using our function
     deps_satisfied, failed_dep = check_dependencies(step_name, repo_path)
-    
+
     # Assert that dependencies are not satisfied
     assert deps_satisfied is False, "Dependencies should not be satisfied"
     assert failed_dep == "filesystem", "Filesystem should be reported as the failing dependency"
-    
+
     # Now simulate what the PipelineManager would do - create a failed job for blarify
     # due to the filesystem dependency failure
     if not deps_satisfied:
         blarify_job_id = "blarify-job-id"
         manager.active_jobs[blarify_job_id] = {
-            "task_id": "mock-task-id", 
+            "task_id": "mock-task-id",
             "repository_path": repo_path,
             "start_time": time.time(),
             "status": StepStatus.FAILED,
             "step_name": step_name,
-            "error": f"Dependency failed: {failed_dep}"
+            "error": f"Dependency failed: {failed_dep}",
         }
-    
+
     # Verify that the blarify job was properly marked as failed due to dependency
     blarify_job = manager.active_jobs["blarify-job-id"]
-    assert blarify_job["status"] == StepStatus.FAILED, \
-        "BlarifyStep should be marked as failed when its dependency failed"
-    
+    assert (
+        blarify_job["status"] == StepStatus.FAILED
+    ), "BlarifyStep should be marked as failed when its dependency failed"
+
     # Verify the error mentions the dependency failure
-    assert "dependency failed: filesystem" in blarify_job["error"].lower(), \
-        f"Error should mention dependency failure: {blarify_job['error']}"
+    assert (
+        "dependency failed: filesystem" in blarify_job["error"].lower()
+    ), f"Error should mention dependency failure: {blarify_job['error']}"

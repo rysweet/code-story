@@ -43,14 +43,14 @@ class AuthorizationError(Exception):
 class EntraValidator:
     """JWT token validator for Microsoft Entra ID."""
 
-    def __init__(
-        self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None
-    ):
+    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None) -> None:
         """Initialize the validator.
 
         Args:
             tenant_id: Microsoft Entra ID tenant ID
             audience: Expected audience claim
+            scope_manager: Optional scope manager instance
+            jwks_client: Optional JWKS client instance
         """
         self.tenant_id = tenant_id
         self.audience = audience
@@ -103,10 +103,10 @@ class EntraValidator:
 
         except jwt.PyJWTError as e:
             logger.warning("Token validation failed", error=str(e))
-            raise AuthenticationError(f"Token validation failed: {e!s}")
+            raise AuthenticationError(f"Token validation failed: {e!s}") from e
         except Exception as e:
             logger.exception("Unexpected error during token validation")
-            raise AuthenticationError(f"Token validation failed: {e!s}")
+            raise AuthenticationError(f"Token validation failed: {e!s}") from e
 
     def _verify_scopes(self, claims: dict[str, Any]) -> None:
         """Verify the token contains required scopes.
@@ -126,7 +126,7 @@ class EntraValidator:
         elif isinstance(raw_scopes, list):
             scopes = raw_scopes
         else:
-            scopes = []
+            scopes: list[Any] = []
 
         # Check scopes against required scopes
         if not self.scope_manager.has_required_scope(scopes):

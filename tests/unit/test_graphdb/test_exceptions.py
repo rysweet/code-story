@@ -1,6 +1,5 @@
 """Tests for graph database exceptions."""
 
-
 from codestory.graphdb.exceptions import (
     ConnectionError,
     Neo4jError,

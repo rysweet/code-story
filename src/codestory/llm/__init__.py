@@ -27,24 +27,24 @@ from .models import (
 )
 
 __all__ = [
-    # Client
-    "OpenAIClient",
-    "create_client",
-    # Exceptions
-    "OpenAIError",
     "AuthenticationError",
-    "RateLimitError",
-    "InvalidRequestError",
-    "ServiceUnavailableError",
-    "TimeoutError",
-    "ContextLengthError",
+    "ChatCompletionRequest",
+    "ChatCompletionResponse",
+    "ChatMessage",
+    "ChatRole",
     # Models
     "CompletionRequest",
     "CompletionResponse",
-    "ChatCompletionRequest",
-    "ChatCompletionResponse",
+    "ContextLengthError",
     "EmbeddingRequest",
     "EmbeddingResponse",
-    "ChatMessage",
-    "ChatRole",
+    "InvalidRequestError",
+    # Client
+    "OpenAIClient",
+    # Exceptions
+    "OpenAIError",
+    "RateLimitError",
+    "ServiceUnavailableError",
+    "TimeoutError",
+    "create_client",
 ]

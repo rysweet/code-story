@@ -96,9 +96,7 @@ async def test_get_current_user_without_auth_header(mock_settings, mock_metrics)
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_with_valid_token(
-    mock_settings, mock_metrics, mock_entra_validator
-):
+async def test_get_current_user_with_valid_token(mock_settings, mock_metrics, mock_entra_validator):
     """Test get_current_user with valid token."""
     # Enable authentication
     mock_settings.auth_enabled = True
@@ -109,9 +107,7 @@ async def test_get_current_user_with_valid_token(
 
     # Mock validate_token to return an awaitable Future
     future = asyncio.Future()
-    future.set_result(
-        {"sub": "test-user", "name": "Test User", "scopes": ["code-story.read"]}
-    )
+    future.set_result({"sub": "test-user", "name": "Test User", "scopes": ["code-story.read"]})
     mock_entra_validator.validate_token.return_value = future
 
     # Call get_current_user
@@ -183,9 +179,7 @@ async def test_tool_executor_tool_not_found(mock_metrics, mock_tool):
     executor = tool_executor(lambda tool_name, params, user: None)
 
     # Mock get_tool to raise KeyError
-    with mock.patch(
-        "codestory_mcp.server.get_tool", side_effect=KeyError("Tool not found")
-    ):
+    with mock.patch("codestory_mcp.server.get_tool", side_effect=KeyError("Tool not found")):
         # Execute tool and expect error
         with pytest.raises(HTTPException) as excinfo:
             await executor("nonexistentTool", {"param": "value"}, {"sub": "test-user"})
@@ -280,8 +274,9 @@ async def test_tool_executor_unexpected_error(mock_metrics, mock_tool):
 def test_create_app(mock_settings):
     """Test app creation."""
     # Mock dependencies
-    with mock.patch("codestory_mcp.server.CORSMiddleware"), mock.patch(
-        "codestory_mcp.server.make_asgi_app"
+    with (
+        mock.patch("codestory_mcp.server.CORSMiddleware"),
+        mock.patch("codestory_mcp.server.make_asgi_app"),
     ):
         # Create app
         app = create_app()

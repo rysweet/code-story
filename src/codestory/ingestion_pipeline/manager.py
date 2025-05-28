@@ -151,9 +151,7 @@ class PipelineManager:
         record_job_metrics(StepStatus.RUNNING)
 
         # Start the orchestrator task
-        task = orchestrate_pipeline.apply_async(
-            args=[repository_path, step_configs, job_id]
-        )
+        task = orchestrate_pipeline.apply_async(args=[repository_path, step_configs, job_id])
 
         # Store job information
         self.active_jobs[job_id] = {
@@ -187,7 +185,8 @@ class PipelineManager:
 
         # Get status from Celery
         status_task = get_job_status.apply_async(args=[task_id])
-        # Add timeout for robustness - this is not in a task so it's not affected by the anti-pattern
+        # Add timeout for robustness - this is not in a task so it's not affected 
+        # by the anti-pattern
         status_result = status_task.get(timeout=30)
 
         # Update job info with latest status
@@ -224,7 +223,8 @@ class PipelineManager:
 
         # Stop the job
         stop_task = stop_job.apply_async(args=[task_id])
-        # Add timeout for robustness - this is not in a task so it's not affected by the anti-pattern
+        # Add timeout for robustness - this is not in a task so it's not affected 
+        # by the anti-pattern
         stop_result = stop_task.get(timeout=30)
 
         # Update job info with stop result
@@ -257,7 +257,8 @@ class PipelineManager:
 
         # Cancel the job (same as stop for Celery)
         stop_task = stop_job.apply_async(args=[task_id])
-        # Add timeout for robustness - this is not in a task so it's not affected by the anti-pattern
+        # Add timeout for robustness - this is not in a task so it's not affected 
+        # by the anti-pattern
         stop_result = stop_task.get(timeout=30)
 
         # Update status to CANCELLED instead of STOPPED
@@ -272,9 +273,7 @@ class PipelineManager:
 
         return job_info
 
-    def run_single_step(
-        self, repository_path: str, step_name: str, **step_config: Any
-    ) -> str:
+    def run_single_step(self, repository_path: str, step_name: str, **step_config: Any) -> str:
         """Run a single workflow step.
 
         This is useful for testing or running a step in isolation.
@@ -317,8 +316,6 @@ class PipelineManager:
             "status": StepStatus.RUNNING,
         }
 
-        logger.info(
-            f"Started single step {step_name} as job {job_id} for {repository_path}"
-        )
+        logger.info(f"Started single step {step_name} as job {job_id} for {repository_path}")
 
         return job_id

@@ -73,7 +73,7 @@ async def get_current_user(request: Request) -> dict[str, Any]:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid authentication token: {e!s}",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
 
 # Tool execution wrapper
@@ -115,18 +115,18 @@ def tool_executor(func: Callable) -> Callable:
             metrics.record_tool_call(tool_name, "success", duration)
 
             return result
-        except KeyError:
+        except KeyError as err:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tool not found: {tool_name}",
-            )
+            ) from err
         except ToolError as e:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise HTTPException(
                 status_code=e.status_code,
                 detail=e.message,
-            )
+            ) from e
         except HTTPException:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise
@@ -136,13 +136,13 @@ def tool_executor(func: Callable) -> Callable:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Tool execution error: {e!s}",
-            )
+            ) from e
 
     return wrapper
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> Any:
     """Application lifespan handler.
 
     This context manager handles startup and shutdown events.
@@ -231,7 +231,7 @@ def create_app() -> FastAPI:
         description="Get a list of available tools and their schemas",
     )
     async def get_tools(
-        user: dict[str, Any] = Depends(get_current_user)
+        user: dict[str, Any] = Depends(get_current_user),
     ) -> dict[str, list[dict[str, Any]]]:
         """Get a list of available tools and their schemas.
 
@@ -273,9 +273,7 @@ def create_app() -> FastAPI:
 
     # Add custom error handler
     @app.exception_handler(Exception)
-    async def generic_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """Handle generic exceptions.
 
         Args:

@@ -27,7 +27,7 @@ def _redact_secrets(
     Returns:
         A copy of the dictionary with secrets redacted
     """
-    result = {}
+    result: dict[Any, Any] = {}
     secret_fields = secret_fields or set()
 
     for key, value in config_dict.items():
@@ -74,7 +74,7 @@ def settings_to_dict(
 
     # Process SecretStr values before redaction
     def process_secrets(d: dict[str, Any]) -> dict[str, Any]:
-        result = {}
+        result: dict[Any, Any] = {}
         for k, v in d.items():
             if isinstance(v, dict):
                 result[k] = process_secrets(v)
@@ -181,7 +181,7 @@ def create_env_template(
         settings = get_settings()
 
     # Get a flattened view of the settings
-    flattened_settings = {}
+    flattened_settings: dict[Any, Any] = {}
     config_dict = settings.model_dump(by_alias=False, exclude_none=True)
 
     def _flatten_dict(d: dict[str, Any], prefix: str = "") -> None:
@@ -213,9 +213,7 @@ def create_env_template(
     # Neo4j settings
     if include_comments:
         lines.append("# Neo4j settings")
-    lines.append(
-        "NEO4J__URI=bolt://localhost:7687"
-    )  # Hard-coded to match test expectations
+    lines.append("NEO4J__URI=bolt://localhost:7687")  # Hard-coded to match test expectations
     lines.append(f"NEO4J__USERNAME={settings.neo4j.username}")
     lines.append("NEO4J__PASSWORD=your-password-here")
     lines.append("")

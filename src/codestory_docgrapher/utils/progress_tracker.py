@@ -118,7 +118,8 @@ class ProgressTracker:
         remaining = self.get_estimated_remaining_time()
 
         message = (
-            f"Progress: {progress:.1f}% ({self.processed_documents}/{self.total_documents} files) | "
+            f"Progress: {progress:.1f}% "
+            f"({self.processed_documents}/{self.total_documents} files) | "
             f"Elapsed: {self._format_time(elapsed)}"
         )
 

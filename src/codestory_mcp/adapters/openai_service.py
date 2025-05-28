@@ -78,7 +78,8 @@ class OpenAIServiceAdapter:
                     ChatMessage(
                         role="user",
                         content=(
-                            "Please summarize what this code does, its main purpose, and how it works."
+                            "Please summarize what this code does, its main purpose, "
+                            "and how it works."
                         ),
                     )
                 )
@@ -121,7 +122,7 @@ class OpenAIServiceAdapter:
             raise ToolError(
                 f"Code summarization failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
-            )
+            ) from e
 
     async def generate_path_explanation(
         self, path_elements: list[dict[str, Any]], max_tokens: int = 300
@@ -146,7 +147,10 @@ class OpenAIServiceAdapter:
 
             for i, element in enumerate(path_elements):
                 if element.get("element_type") == "node":
-                    path_description += f"\nNode {i//2 + 1}: {element.get('name', 'Unknown')} (Type: {element.get('type', 'Unknown')})"
+                    path_description += (
+                        f"\nNode {i // 2 + 1}: {element.get('name', 'Unknown')} "
+                        f"(Type: {element.get('type', 'Unknown')})"
+                    )
                     if "content" in element and len(element["content"]) < 200:
                         path_description += f"\nContent: {element['content'][:200]}..."
                 else:  # relationship
@@ -157,9 +161,10 @@ class OpenAIServiceAdapter:
                 ChatMessage(
                     role="system",
                     content=(
-                        "You are a helpful assistant that explains relationships between code elements. "
-                        "Based on the path between code elements, explain how they are related "
-                        "and what this relationship means for the codebase."
+                        "You are a helpful assistant that explains relationships "
+                        "between code elements. Based on the path between code elements, "
+                        "explain how they are related and what this relationship means "
+                        "for the codebase."
                     ),
                 ),
                 ChatMessage(
@@ -189,18 +194,14 @@ class OpenAIServiceAdapter:
 
             # Record metrics
             duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "openai_path_explanation", "success", duration
-            )
+            self.metrics.record_service_api_call("openai_path_explanation", "success", duration)
 
             return explanation
 
         except Exception as e:
             # Record metrics
             duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "openai_path_explanation", "error", duration
-            )
+            self.metrics.record_service_api_call("openai_path_explanation", "error", duration)
 
             # Log error
             logger.exception(
@@ -212,11 +213,9 @@ class OpenAIServiceAdapter:
             raise ToolError(
                 f"Path explanation failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
-            )
+            ) from e
 
-    async def find_similar_code(
-        self, code: str, limit: int = 5
-    ) -> list[dict[str, Any]]:
+    async def find_similar_code(self, code: str, limit: int = 5) -> list[dict[str, Any]]:
         """Find semantically similar code.
 
         Args:
@@ -233,13 +232,11 @@ class OpenAIServiceAdapter:
 
         try:
             # Get embeddings for the code snippet
-            embedding = await self.client.create_embedding(code)
+            await self.client.create_embedding(code)
 
             # Record metrics for embedding creation
             embedding_duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "openai_embedding", "success", embedding_duration
-            )
+            self.metrics.record_service_api_call("openai_embedding", "success", embedding_duration)
 
             # TODO: Implement vector search for similar code
             # This would typically use the embedding to search a vector index
@@ -260,9 +257,7 @@ class OpenAIServiceAdapter:
 
             # Record metrics
             total_duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "similar_code", "success", total_duration
-            )
+            self.metrics.record_service_api_call("similar_code", "success", total_duration)
             self.metrics.record_graph_operation("similar_code")
 
             return results
@@ -282,7 +277,7 @@ class OpenAIServiceAdapter:
             raise ToolError(
                 f"Similar code search failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
-            )
+            ) from e
 
 
 @lru_cache

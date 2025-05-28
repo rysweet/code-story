@@ -32,7 +32,10 @@ from codestory_summarizer.step import SummarizerStep
 # Custom implementation of process_filesystem that directly uses the neo4j_connector
 def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_patterns=None):
     """Custom implementation of process_filesystem for testing."""
-    print(f"*** TEST_DEBUG: Running custom_process_filesystem for test_summarizer_integration with {job_id} ***")
+    print(
+        f"*** TEST_DEBUG: Running custom_process_filesystem for test_summarizer_integration "
+        f"with {job_id} ***"
+    )
     print(f"Repository path: {repository_path}")
     print(f"Ignore patterns: {ignore_patterns}")
 
@@ -65,7 +68,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
 
         # Process the repository
         for current_dir, dirs, files in os.walk(repository_path):
-            rel_path = os.path.relpath(current_dir, repository_path)
+            os.path.relpath(current_dir, repository_path)
 
             # Filter directories based on ignore patterns
             dirs_to_remove = []
@@ -84,7 +87,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
             dir_path = os.path.relpath(current_dir, repository_path)
             if dir_path == ".":
                 # This is the repository root
-                dir_id = repo_id
+                pass
             else:
                 dir_properties = {
                     "name": os.path.basename(current_dir),
@@ -100,7 +103,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
                 dir_result = neo4j_connector.execute_query(
                     dir_query, params={"props": dir_properties}, write=True
                 )
-                dir_id = dir_result[0]["id"] if dir_result else None
+                dir_result[0]["id"] if dir_result else None
 
                 # Link to parent directory
                 parent_path = os.path.dirname(dir_path)
@@ -114,7 +117,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"repo_name": repo_name, "dir_path": dir_path},
-                        write=True
+                        write=True,
                     )
                 else:
                     # Parent is another directory
@@ -126,7 +129,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"parent_path": parent_path, "dir_path": dir_path},
-                        write=True
+                        write=True,
                     )
 
                 dir_count += 1
@@ -158,7 +161,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
                 file_result = neo4j_connector.execute_query(
                     file_query, params={"props": file_properties}, write=True
                 )
-                file_id = file_result[0]["id"] if file_result else None
+                file_result[0]["id"] if file_result else None
 
                 # Link to directory
                 if dir_path == ".":
@@ -171,7 +174,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"repo_name": repo_name, "file_path": file_path},
-                        write=True
+                        write=True,
                     )
                 else:
                     # Parent is a directory
@@ -183,7 +186,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
                     neo4j_connector.execute_query(
                         rel_query,
                         params={"dir_path": dir_path, "file_path": file_path},
-                        write=True
+                        write=True,
                     )
 
                 file_count += 1
@@ -201,6 +204,7 @@ def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_p
             "status": StepStatus.FAILED,
             "error": f"Error processing filesystem: {e!s}",
         }
+
 
 # Mark these tests as integration tests
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
@@ -229,7 +233,10 @@ def mock_llm_client():
                     node_type = "repository"
 
             # Generate a mock summary based on the node type
-            summary_text = f"This is a generated summary for a {node_type}. It explains what the code does and why it exists."
+            summary_text = (
+                f"This is a generated summary for a {node_type}. "
+                "It explains what the code does and why it exists."
+            )
 
             # Create a mock response
             mock_response = ChatCompletionResponse(
@@ -240,9 +247,7 @@ def mock_llm_client():
                 choices=[
                     ChatCompletionResponseChoice(
                         index=0,
-                        message=ChatMessage(
-                            role=ChatRole.ASSISTANT, content=summary_text
-                        ),
+                        message=ChatMessage(role=ChatRole.ASSISTANT, content=summary_text),
                         finish_reason="stop",
                     )
                 ],
@@ -337,9 +342,7 @@ Welcome to the documentation for the sample repository.
         (repo_dir / ".git").mkdir()
         (repo_dir / ".git" / "config").write_text("# Git config")
         (repo_dir / "src" / "__pycache__").mkdir()
-        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text(
-            "# Bytecode"
-        )
+        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text("# Bytecode")
 
         yield str(repo_dir)
 
@@ -369,19 +372,17 @@ def initialized_repo(sample_repo, neo4j_connector):
     """Initialize the repository in Neo4j using a custom implementation of process_filesystem."""
     # Create a job ID for direct execution
     job_id = str(uuid.uuid4())
-    
+
     # Run our custom implementation directly (using the module-level function)
     result = custom_process_filesystem(
         repository_path=sample_repo,
         job_id=job_id,
         neo4j_connector=neo4j_connector,
-        ignore_patterns=[".git/", "__pycache__/"]
+        ignore_patterns=[".git/", "__pycache__/"],
     )
-    
+
     # Verify that the step completed successfully
-    assert (
-        result["status"] == StepStatus.COMPLETED
-    ), f"FileSystemStep failed: {result.get('error')}"
+    assert result["status"] == StepStatus.COMPLETED, f"FileSystemStep failed: {result.get('error')}"
 
     # Simulate AST nodes by adding some Class and Function nodes manually
     # In a real scenario, these would be created by the Blarify step
@@ -490,7 +491,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         # Find repository node
         repo_result = neo4j_connector.execute_query(
             "MATCH (r:Repository {path: $path}) RETURN elementId(r) as id",
-            params={"path": repository_path}
+            params={"path": repository_path},
         )
         if repo_result and len(repo_result) > 0:
             repo_id = repo_result[0]["id"]
@@ -498,7 +499,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a repository. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a repository. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -506,7 +508,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
                 CREATE (r)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": repo_id},
-                write=True
+                write=True,
             )
 
         # Find directory nodes
@@ -515,12 +517,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         )
         for dir_result in dir_results:
             dir_id = dir_result["id"]
-            dir_path = dir_result["path"]
+            dir_result["path"]
             # Create directory summary
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a directory. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a directory. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -528,7 +531,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
                 CREATE (d)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": dir_id},
-                write=True
+                write=True,
             )
 
         # Find file nodes
@@ -537,12 +540,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         )
         for file_result in file_results:
             file_id = file_result["id"]
-            file_path = file_result["path"]
+            file_result["path"]
             # Create file summary
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a file. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a file. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -550,7 +554,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
                 CREATE (f)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": file_id},
-                write=True
+                write=True,
             )
 
         # Find class nodes
@@ -559,12 +563,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         )
         for class_result in class_results:
             class_id = class_result["id"]
-            class_name = class_result["name"]
+            class_result["name"]
             # Create class summary
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a class. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a class. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -572,7 +577,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
                 CREATE (c)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": class_id},
-                write=True
+                write=True,
             )
 
         # Find method nodes
@@ -581,12 +586,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         )
         for method_result in method_results:
             method_id = method_result["id"]
-            method_name = method_result["name"]
+            method_result["name"]
             # Create method summary
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a function. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a function. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -594,7 +600,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
                 CREATE (m)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": method_id},
-                write=True
+                write=True,
             )
 
         # Find function nodes
@@ -603,12 +609,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         )
         for function_result in function_results:
             function_id = function_result["id"]
-            function_name = function_result["name"]
+            function_result["name"]
             # Create function summary
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a function. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a function. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -616,7 +623,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
                 CREATE (f)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": function_id},
-                write=True
+                write=True,
             )
 
         # Update job status
@@ -628,7 +635,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
     step = SummarizerStep()
 
     # Patch the run method
-    with patch.object(SummarizerStep, 'run', mock_run):
+    with patch.object(SummarizerStep, "run", mock_run):
         # Run the step with our patched method
         job_id = step.run(
             repository_path=initialized_repo,
@@ -643,9 +650,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 
     # Verify that summaries were created in Neo4j
     # 1. Count the number of Summary nodes
-    summary_result = neo4j_connector.execute_query(
-        "MATCH (s:Summary) RETURN COUNT(s) as count"
-    )
+    summary_result = neo4j_connector.execute_query("MATCH (s:Summary) RETURN COUNT(s) as count")
     summary_count = summary_result[0]["count"] if summary_result and len(summary_result) > 0 else 0
 
     # We should have summaries for:
@@ -665,11 +670,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         RETURN COUNT(s) as count
         """
     )
-    file_summaries = file_summaries_result[0]["count"] if file_summaries_result and len(file_summaries_result) > 0 else 0
+    file_summaries = (
+        file_summaries_result[0]["count"]
+        if file_summaries_result and len(file_summaries_result) > 0
+        else 0
+    )
 
-    assert (
-        file_summaries >= 4
-    ), f"Expected summaries for at least 4 files, got {file_summaries}"
+    assert file_summaries >= 4, f"Expected summaries for at least 4 files, got {file_summaries}"
 
     # 3. Check that directory nodes have summaries
     dir_summaries_result = neo4j_connector.execute_query(
@@ -678,11 +685,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         RETURN COUNT(s) as count
         """
     )
-    dir_summaries = dir_summaries_result[0]["count"] if dir_summaries_result and len(dir_summaries_result) > 0 else 0
+    dir_summaries = (
+        dir_summaries_result[0]["count"]
+        if dir_summaries_result and len(dir_summaries_result) > 0
+        else 0
+    )
 
-    assert (
-        dir_summaries >= 4
-    ), f"Expected summaries for at least 4 directories, got {dir_summaries}"
+    assert dir_summaries >= 4, f"Expected summaries for at least 4 directories, got {dir_summaries}"
 
     # 4. Check that class nodes have summaries
     class_summaries_result = neo4j_connector.execute_query(
@@ -691,11 +700,13 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         RETURN COUNT(s) as count
         """
     )
-    class_summaries = class_summaries_result[0]["count"] if class_summaries_result and len(class_summaries_result) > 0 else 0
+    class_summaries = (
+        class_summaries_result[0]["count"]
+        if class_summaries_result and len(class_summaries_result) > 0
+        else 0
+    )
 
-    assert (
-        class_summaries >= 1
-    ), f"Expected summaries for at least 1 class, got {class_summaries}"
+    assert class_summaries >= 1, f"Expected summaries for at least 1 class, got {class_summaries}"
 
     # 5. Check that method nodes have summaries
     method_summaries_result = neo4j_connector.execute_query(
@@ -704,7 +715,11 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         RETURN COUNT(s) as count
         """
     )
-    method_summaries = method_summaries_result[0]["count"] if method_summaries_result and len(method_summaries_result) > 0 else 0
+    method_summaries = (
+        method_summaries_result[0]["count"]
+        if method_summaries_result and len(method_summaries_result) > 0
+        else 0
+    )
 
     assert (
         method_summaries >= 2
@@ -717,7 +732,11 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         RETURN COUNT(s) as count
         """
     )
-    function_summaries = function_summaries_result[0]["count"] if function_summaries_result and len(function_summaries_result) > 0 else 0
+    function_summaries = (
+        function_summaries_result[0]["count"]
+        if function_summaries_result and len(function_summaries_result) > 0
+        else 0
+    )
 
     assert (
         function_summaries >= 1
@@ -730,7 +749,11 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         RETURN s.text as text LIMIT 1
         """
     )
-    sample_summary = sample_summary_result[0]["text"] if sample_summary_result and len(sample_summary_result) > 0 else ""
+    sample_summary = (
+        sample_summary_result[0]["text"]
+        if sample_summary_result and len(sample_summary_result) > 0
+        else ""
+    )
 
     assert (
         "generated summary" in sample_summary.lower()
@@ -742,9 +765,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 
 
 @pytest.mark.integration
-def test_summarizer_step_ingestion_update(
-    initialized_repo, neo4j_connector, mock_llm_client
-):
+def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, mock_llm_client):
     """Test that the summarizer step can update summaries for a modified repository."""
     # Create a direct run function that doesn't use Celery
     import uuid
@@ -772,7 +793,7 @@ def test_summarizer_step_ingestion_update(
         # Find repository node
         repo_result = neo4j_connector.execute_query(
             "MATCH (r:Repository {path: $path}) RETURN elementId(r) as id",
-            params={"path": repository_path}
+            params={"path": repository_path},
         )
         if repo_result and len(repo_result) > 0:
             repo_id = repo_result[0]["id"]
@@ -780,7 +801,8 @@ def test_summarizer_step_ingestion_update(
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a repository. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a repository. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -788,7 +810,7 @@ def test_summarizer_step_ingestion_update(
                 CREATE (r)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": repo_id},
-                write=True
+                write=True,
             )
 
         # Find file nodes
@@ -797,12 +819,13 @@ def test_summarizer_step_ingestion_update(
         )
         for file_result in file_results:
             file_id = file_result["id"]
-            file_path = file_result["path"]
+            file_result["path"]
             # Create file summary
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a file. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a file. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -810,7 +833,7 @@ def test_summarizer_step_ingestion_update(
                 CREATE (f)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": file_id},
-                write=True
+                write=True,
             )
 
         # Update job status
@@ -843,7 +866,8 @@ def test_summarizer_step_ingestion_update(
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a NEW file. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a NEW file. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -851,7 +875,7 @@ def test_summarizer_step_ingestion_update(
                 CREATE (f)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": new_file_id},
-                write=True
+                write=True,
             )
 
         # Find any new functions (our new_function)
@@ -864,7 +888,8 @@ def test_summarizer_step_ingestion_update(
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a NEW function. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a NEW function. It explains what '
+                          'the code does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -872,7 +897,7 @@ def test_summarizer_step_ingestion_update(
                 CREATE (f)-[:HAS_SUMMARY]->(s)
                 """,
                 params={"id": function_id},
-                write=True
+                write=True,
             )
 
         # Update job status
@@ -884,7 +909,7 @@ def test_summarizer_step_ingestion_update(
     step = SummarizerStep()
 
     # Patch the run method
-    with patch.object(SummarizerStep, 'run', mock_run):
+    with patch.object(SummarizerStep, "run", mock_run):
         # Run the step with our patched method
         job_id = step.run(
             repository_path=initialized_repo,
@@ -895,13 +920,19 @@ def test_summarizer_step_ingestion_update(
         status = step.active_jobs[job_id]
 
         # Verify that the step completed successfully
-        assert status["status"] == StepStatus.COMPLETED, f"Initial run failed: {status.get('error')}"
+        assert (
+            status["status"] == StepStatus.COMPLETED
+        ), f"Initial run failed: {status.get('error')}"
 
     # Record the number of summaries
     initial_summary_result = neo4j_connector.execute_query(
         "MATCH (s:Summary) RETURN COUNT(s) as count"
     )
-    initial_summary_count = initial_summary_result[0]["count"] if initial_summary_result and len(initial_summary_result) > 0 else 0
+    initial_summary_count = (
+        initial_summary_result[0]["count"]
+        if initial_summary_result and len(initial_summary_result) > 0
+        else 0
+    )
 
     # Modify the repository by adding a new file
     new_file_path = Path(initialized_repo) / "src" / "main" / "new_module.py"
@@ -915,15 +946,15 @@ def new_function():
 
     # Update the filesystem representation using our custom implementation
     from codestory.ingestion_pipeline.step import StepStatus
-    
+
     # Use the custom_process_filesystem function defined at module level
     fs_result = custom_process_filesystem(
         repository_path=initialized_repo,
         job_id=str(uuid.uuid4()),
         neo4j_connector=neo4j_connector,
-        ignore_patterns=[".git/", "__pycache__/"]
+        ignore_patterns=[".git/", "__pycache__/"],
     )
-    
+
     assert (
         fs_result["status"] == StepStatus.COMPLETED
     ), f"Filesystem update failed: {fs_result.get('error')}"
@@ -938,7 +969,9 @@ def new_function():
     new_file_id_result = neo4j_connector.execute_query(
         "MATCH (f:File {path: 'src/main/new_module.py'}) RETURN ID(f) as id"
     )
-    new_file_id = new_file_id_result[0]["id"] if new_file_id_result and len(new_file_id_result) > 0 else None
+    new_file_id = (
+        new_file_id_result[0]["id"] if new_file_id_result and len(new_file_id_result) > 0 else None
+    )
     assert new_file_id is not None, "Could not get ID for the new file"
 
     neo4j_connector.execute_query(
@@ -953,19 +986,19 @@ def new_function():
         CREATE (file)-[:CONTAINS]->(f)
         """,
         params={"file_id": new_file_id},
-        write=True
+        write=True,
     )
 
     # Run the summarizer update with our custom mock
-    with patch.object(SummarizerStep, 'ingestion_update', mock_ingestion_update):
+    with patch.object(SummarizerStep, "ingestion_update", mock_ingestion_update):
         job_id = step.ingestion_update(
             repository_path=initialized_repo,
             max_concurrency=2,  # Reduce concurrency for testing
         )
-        
+
         # Get the status directly since our implementation runs synchronously
         status = step.active_jobs[job_id]
-        
+
         # Verify that the update completed successfully
         assert status["status"] == StepStatus.COMPLETED, f"Update failed: {status.get('error')}"
 
@@ -973,12 +1006,19 @@ def new_function():
     updated_summary_result = neo4j_connector.execute_query(
         "MATCH (s:Summary) RETURN COUNT(s) as count"
     )
-    updated_summary_count = updated_summary_result[0]["count"] if updated_summary_result and len(updated_summary_result) > 0 else 0
+    updated_summary_count = (
+        updated_summary_result[0]["count"]
+        if updated_summary_result and len(updated_summary_result) > 0
+        else 0
+    )
 
     # We should have at least one new summary for the new file
     assert (
         updated_summary_count > initial_summary_count
-    ), f"Expected more summaries after update, but got {updated_summary_count} (was {initial_summary_count})"
+    ), (
+        f"Expected more summaries after update, but got {updated_summary_count} "
+        f"(was {initial_summary_count})"
+    )
 
     # Check that the new file has a summary
     new_file_summary_result = neo4j_connector.execute_query(
@@ -987,7 +1027,11 @@ def new_function():
         RETURN s.text as text
         """
     )
-    new_file_summary = new_file_summary_result[0] if new_file_summary_result and len(new_file_summary_result) > 0 else None
+    new_file_summary = (
+        new_file_summary_result[0]
+        if new_file_summary_result and len(new_file_summary_result) > 0
+        else None
+    )
 
     assert new_file_summary is not None, "New file does not have a summary"
     assert (

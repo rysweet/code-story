@@ -3,6 +3,7 @@
 This module contains tests for the application services used in the service.
 """
 
+import contextlib
 from unittest import mock
 
 import pytest
@@ -56,9 +57,7 @@ class TestAuthService:
         assert response.access_token == "test.jwt.token"
         assert response.token_type == "Bearer"
         assert response.expires_in == 3600
-        mock_validator.create_dev_token.assert_called_once_with(
-            "admin", roles=["admin", "user"]
-        )
+        mock_validator.create_dev_token.assert_called_once_with("admin", roles=["admin", "user"])
 
     @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, service):
@@ -122,9 +121,7 @@ class TestConfigService:
             "general": {"debug": True},
             "openai": {"api_key": "sk_test_123456"},
         }
-        service.service_settings.model_dump.return_value = {
-            "service": {"title": "Test API"}
-        }
+        service.service_settings.model_dump.return_value = {"service": {"title": "Test API"}}
 
         # Get config dump
         config = service.get_config_dump(include_sensitive=False)
@@ -303,9 +300,7 @@ class TestGraphService:
 
         await service.execute_vector_search(query)
 
-        mock_openai.create_embeddings.assert_called_once_with(
-            ["Find authentication functions"]
-        )
+        mock_openai.create_embeddings.assert_called_once_with(["Find authentication functions"])
         mock_neo4j.execute_vector_search.assert_called_once()
 
     @pytest.mark.asyncio
@@ -338,9 +333,7 @@ class TestGraphService:
         await service.answer_question(request)
 
         # Check that embeddings were created
-        mock_openai.create_embeddings.assert_called_once_with(
-            ["How does authentication work?"]
-        )
+        mock_openai.create_embeddings.assert_called_once_with(["How does authentication work?"])
 
         # Check that vector search was performed
         mock_neo4j.execute_vector_search.assert_called_once()
@@ -394,7 +387,8 @@ class TestIngestionService:
 
         # Check that publish_progress was called
         service.publish_progress.assert_called_once_with(
-            "job123", mock.ANY  # Don't check exact JobProgressEvent details
+            "job123",
+            mock.ANY,  # Don't check exact JobProgressEvent details
         )
 
     @pytest.mark.asyncio
@@ -424,10 +418,8 @@ class TestIngestionService:
                 # Then simulate a connection error
                 raise Exception("Connection closed")
             except Exception as e:
-                try:
+                with contextlib.suppress(Exception):
                     await websocket.close(code=1011, reason=str(e))
-                except Exception:
-                    pass
 
         # Replace the method with our test version
         service.subscribe_to_progress = test_subscribe

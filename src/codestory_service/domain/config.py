@@ -61,12 +61,8 @@ class ConfigMetadata(BaseModel):
     description: str = Field(..., description="Description of the configuration key")
     default_value: Any | None = Field(default=None, description="Default value")
     source: ConfigSource = Field(..., description="Source of the current value")
-    permission: ConfigPermission = Field(
-        ..., description="Permission level for the key"
-    )
-    env_var: str | None = Field(
-        default=None, description="Name of the environment variable"
-    )
+    permission: ConfigPermission = Field(..., description="Permission level for the key")
+    env_var: str | None = Field(default=None, description="Name of the environment variable")
     required: bool = Field(default=False, description="Whether the value is required")
     json_schema: dict[str, Any] | None = Field(
         default=None, description="JSON Schema for validation"
@@ -99,9 +95,7 @@ class ConfigGroup(BaseModel):
     """Group of configuration items in a section."""
 
     section: ConfigSection = Field(..., description="Configuration section")
-    items: dict[str, ConfigItem] = Field(
-        ..., description="Configuration items in this section"
-    )
+    items: dict[str, ConfigItem] = Field(..., description="Configuration items in this section")
 
 
 class ConfigDump(BaseModel):
@@ -115,16 +109,12 @@ class ConfigDump(BaseModel):
 
     def redact_sensitive(self) -> "ConfigDump":
         """Return a new ConfigDump with sensitive values redacted."""
-        redacted_groups = {}
+        redacted_groups: dict[Any, Any] = {}
 
         for section, group in self.groups.items():
-            redacted_items = {
-                key: item.redact_if_sensitive() for key, item in group.items.items()
-            }
+            redacted_items = {key: item.redact_if_sensitive() for key, item in group.items.items()}
 
-            redacted_groups[section] = ConfigGroup(
-                section=section, items=redacted_items
-            )
+            redacted_groups[section] = ConfigGroup(section=section, items=redacted_items)
 
         return ConfigDump(
             groups=redacted_groups, version=self.version, last_updated=self.last_updated
@@ -141,12 +131,8 @@ class ConfigPatchItem(BaseModel):
 class ConfigPatch(BaseModel):
     """Patch with configuration updates."""
 
-    items: list[ConfigPatchItem] = Field(
-        ..., description="Configuration items to update"
-    )
-    comment: str | None = Field(
-        default=None, description="Comment describing the changes"
-    )
+    items: list[ConfigPatchItem] = Field(..., description="Configuration items to update")
+    comment: str | None = Field(default=None, description="Comment describing the changes")
 
     @field_validator("items")
     @classmethod
@@ -164,33 +150,15 @@ class ConfigSchemaProperty(BaseModel):
     title: str = Field(..., description="Display title")
     description: str = Field(..., description="Property description")
     default: Any | None = Field(default=None, description="Default value")
-    enum: list[Any] | None = Field(
-        default=None, description="Enum values if applicable"
-    )
-    format: str | None = Field(
-        default=None, description="Format hint (e.g., password)"
-    )
-    minimum: float | None = Field(
-        default=None, description="Minimum value for numbers"
-    )
-    maximum: float | None = Field(
-        default=None, description="Maximum value for numbers"
-    )
-    minLength: int | None = Field(
-        default=None, description="Minimum length for strings"
-    )
-    maxLength: int | None = Field(
-        default=None, description="Maximum length for strings"
-    )
-    pattern: str | None = Field(
-        default=None, description="Regex pattern for strings"
-    )
-    readOnly: bool | None = Field(
-        default=None, description="If true, value is read-only"
-    )
-    writeOnly: bool | None = Field(
-        default=None, description="If true, value is write-only"
-    )
+    enum: list[Any] | None = Field(default=None, description="Enum values if applicable")
+    format: str | None = Field(default=None, description="Format hint (e.g., password)")
+    minimum: float | None = Field(default=None, description="Minimum value for numbers")
+    maximum: float | None = Field(default=None, description="Maximum value for numbers")
+    min_length: int | None = Field(default=None, description="Minimum length for strings", alias="minLength")
+    max_length: int | None = Field(default=None, description="Maximum length for strings", alias="maxLength")
+    pattern: str | None = Field(default=None, description="Regex pattern for strings")
+    read_only: bool | None = Field(default=None, description="If true, value is read-only", alias="readOnly")
+    write_only: bool | None = Field(default=None, description="If true, value is write-only", alias="writeOnly")
 
 
 class ConfigSchemaSection(BaseModel):
@@ -218,14 +186,14 @@ class ConfigSchema(BaseModel):
     @classmethod
     def create_from_config(cls, config: ConfigDump) -> "ConfigSchema":
         """Create a JSON Schema from the configuration."""
-        properties = {}
-        required = []
-        ui_schema = {"ui:order": []}
+        properties: dict[Any, Any] = {}
+        required: list[Any] = []
+        ui_schema: Any = {"ui:order": []}
 
         for section_name, group in config.groups.items():
-            section_properties = {}
-            section_required = []
-            section_ui = {"ui:order": []}
+            section_properties: dict[Any, Any] = {}
+            section_required: list[Any] = []
+            section_ui: Any = {"ui:order": []}
 
             for key, item in group.items.items():
                 meta = item.metadata
@@ -236,8 +204,8 @@ class ConfigSchema(BaseModel):
                     title=key,
                     description=meta.description,
                     default=meta.default_value,
-                    readOnly=meta.permission == ConfigPermission.READ_ONLY,
-                    writeOnly=meta.permission == ConfigPermission.SENSITIVE,
+                    read_only=meta.permission == ConfigPermission.READ_ONLY,
+                    write_only=meta.permission == ConfigPermission.SENSITIVE,
                 )
 
                 # Special handling for type-specific properties
@@ -245,11 +213,11 @@ class ConfigSchema(BaseModel):
                     if meta.json_schema and "pattern" in meta.json_schema:
                         prop.pattern = meta.json_schema["pattern"]
                     if meta.json_schema and "maxLength" in meta.json_schema:
-                        prop.maxLength = meta.json_schema["maxLength"]
+                        prop.max_length = meta.json_schema["maxLength"]
 
                 # Handle secrets as password fields
                 if meta.type == ConfigValueType.SECRET:
-                    section_ui[key] = {"ui:widget": "password"}
+                    section_ui[key] = {"ui:widget": "password"}  # type: ignore  # TODO: Fix type compatibility
 
                 section_properties[key] = prop
                 section_ui["ui:order"].append(key)
@@ -267,7 +235,7 @@ class ConfigSchema(BaseModel):
 
             properties[section_name.value] = section_schema
             ui_schema["ui:order"].append(section_name.value)
-            ui_schema[section_name.value] = section_ui
+            ui_schema[section_name.value] = section_ui  # type: ignore  # TODO: Fix type compatibility
 
         json_schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",

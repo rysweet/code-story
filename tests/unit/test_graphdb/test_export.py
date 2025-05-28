@@ -47,9 +47,7 @@ def test_export_to_json(mock_connector):
         )
 
         # Verify connector called correctly
-        mock_connector.execute_query.assert_called_once_with(
-            "MATCH (n) RETURN n", {"key": "value"}
-        )
+        mock_connector.execute_query.assert_called_once_with("MATCH (n) RETURN n", {"key": "value"})
 
         # Verify output file created
         assert os.path.exists(output_path)
@@ -81,9 +79,7 @@ def test_export_to_csv(mock_connector):
         )
 
         # Verify connector called correctly
-        mock_connector.execute_query.assert_called_once_with(
-            "MATCH (n) RETURN n", {"key": "value"}
-        )
+        mock_connector.execute_query.assert_called_once_with("MATCH (n) RETURN n", {"key": "value"})
 
         # Verify output file created
         assert os.path.exists(output_path)
@@ -229,9 +225,7 @@ def test_export_cypher_script(mock_connector):
         output_path = os.path.join(temp_dir, "export.cypher")
 
         # Export as Cypher script
-        result_path = export_cypher_script(
-            connector=mock_connector, output_path=output_path
-        )
+        result_path = export_cypher_script(connector=mock_connector, output_path=output_path)
 
         # Verify output file created
         assert os.path.exists(output_path)

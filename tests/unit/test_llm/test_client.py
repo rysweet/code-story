@@ -24,14 +24,11 @@ from codestory.llm.models import (
 @pytest.fixture(autouse=True)
 def patch_prometheus_metrics():
     """Patch prometheus metrics to avoid registration conflicts during tests."""
-    with patch("prometheus_client.Counter") as mock_counter, patch(
-        "prometheus_client.Gauge"
-    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram:
-        # Configure the mocks to behave like the real counter
-        mock_labels = MagicMock()
-        mock_counter.return_value.labels = mock_labels
-        mock_gauge.return_value.labels = mock_labels
-        mock_histogram.return_value.labels = mock_labels
+    with (
+        patch("prometheus_client.Counter"),
+        patch("prometheus_client.Gauge"),
+        patch("prometheus_client.Histogram"),
+    ):
         yield
 
 
@@ -68,12 +65,8 @@ def client():
         patch("codestory.llm.client.get_bearer_token_provider"),
         # Also patch the metric decorators to avoid registration conflicts
         patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
-        patch(
-            "codestory.llm.client.instrument_async_request", lambda op: lambda f: f
-        ),
-        patch(
-            "codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f
-        ),
+        patch("codestory.llm.client.instrument_async_request", lambda op: lambda f: f),
+        patch("codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f),
         patch(
             "codestory.llm.client.retry_on_openai_errors_async",
             lambda **kw: lambda f: f,
@@ -124,14 +117,15 @@ class TestOpenAIClient:
 
     def test_init_missing_credentials(self):
         """Test client initialization with missing credentials."""
-        with patch(
-            "codestory.llm.client.get_settings",
-            side_effect=Exception("No settings"),
-        ), patch(
-            "codestory.llm.client.DefaultAzureCredential"
-        ), patch(
-            "codestory.llm.client.get_bearer_token_provider"
-        ), pytest.raises(AuthenticationError):
+        with (
+            patch(
+                "codestory.llm.client.get_settings",
+                side_effect=Exception("No settings"),
+            ),
+            patch("codestory.llm.client.DefaultAzureCredential"),
+            patch("codestory.llm.client.get_bearer_token_provider"),
+            pytest.raises(AuthenticationError),
+        ):
             OpenAIClient()  # No endpoint provided
 
         # No need to test api_key since we're using Azure AD
@@ -181,9 +175,7 @@ class TestOpenAIClient:
 
     def test_chat(self, client):
         """Test chat completion."""
-        with patch.object(
-            client._sync_client.chat.completions, "create"
-        ) as mock_create:
+        with patch.object(client._sync_client.chat.completions, "create") as mock_create:
             # Configure the mock response
             mock_response = MagicMock()
             mock_response.model_dump.return_value = {
@@ -211,9 +203,7 @@ class TestOpenAIClient:
 
             # Create messages
             messages = [
-                ChatMessage(
-                    role=ChatRole.SYSTEM, content="You are a helpful assistant."
-                ),
+                ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
                 ChatMessage(role=ChatRole.USER, content="Hello, assistant!"),
             ]
 
@@ -243,9 +233,7 @@ class TestOpenAIClient:
             mock_response = MagicMock()
             mock_response.model_dump.return_value = {
                 "object": "list",
-                "data": [
-                    {"object": "embedding", "embedding": [0.1, 0.2, 0.3], "index": 0}
-                ],
+                "data": [{"object": "embedding", "embedding": [0.1, 0.2, 0.3], "index": 0}],
                 "model": "text-embedding-3-small",
                 "usage": {"prompt_tokens": 8, "total_tokens": 8},
             }
@@ -278,9 +266,7 @@ class TestOpenAIClient:
             patch("codestory.llm.backoff.retry_on_openai_errors"),
             patch("codestory.llm.client.DefaultAzureCredential"),
             patch("codestory.llm.client.get_bearer_token_provider"),
-            patch(
-                "codestory.llm.client.instrument_request", lambda op: lambda f: f
-            ),
+            patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
         ):
             # Configure the mock OpenAI client
             mock_completions = MagicMock()
@@ -328,9 +314,7 @@ class TestOpenAIClient:
         future.set_result(mock_response)
 
         # Create a patch for the async client
-        with patch.object(
-            client._async_client.completions, "create", return_value=future
-        ):
+        with patch.object(client._async_client.completions, "create", return_value=future):
             # Call the method
             result = await client.complete_async("Test prompt")
 
@@ -358,7 +342,10 @@ class TestCreateClient:
             patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
             patch("codestory.llm.client.instrument_async_request", lambda op: lambda f: f),
             patch("codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f),
-            patch("codestory.llm.client.retry_on_openai_errors_async", lambda **kw: lambda f: f),
+            patch(
+                "codestory.llm.client.retry_on_openai_errors_async",
+                lambda **kw: lambda f: f,
+            ),
         ):
             client = create_client()
 

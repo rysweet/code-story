@@ -71,9 +71,7 @@ class TestNodeSerializer:
 
     def test_to_dict_with_exclude_properties(self, mock_node):
         """Test node serialization with excluded properties."""
-        result = NodeSerializer.to_dict(
-            mock_node, exclude_properties=["content", "lines"]
-        )
+        result = NodeSerializer.to_dict(mock_node, exclude_properties=["content", "lines"])
 
         assert "content" not in result
         assert "properties" in result
@@ -99,9 +97,7 @@ class TestNodeSerializer:
 
         mock_node2.__getitem__ = mock.Mock(side_effect=getitem)
         mock_node2.__contains__ = mock.Mock(side_effect=contains)
-        mock_node2.get = mock.Mock(
-            side_effect=lambda k, d=None: mock_node2.properties.get(k, d)
-        )
+        mock_node2.get = mock.Mock(side_effect=lambda k, d=None: mock_node2.properties.get(k, d))
         mock_node2.items = mock.Mock(return_value=mock_node2.properties.items())
 
         result = NodeSerializer.to_mcp_result([mock_node, mock_node2])
@@ -130,9 +126,7 @@ class TestNodeSerializer:
 
         mock_node2.__getitem__ = mock.Mock(side_effect=getitem)
         mock_node2.__contains__ = mock.Mock(side_effect=contains)
-        mock_node2.get = mock.Mock(
-            side_effect=lambda k, d=None: mock_node2.properties.get(k, d)
-        )
+        mock_node2.get = mock.Mock(side_effect=lambda k, d=None: mock_node2.properties.get(k, d))
         mock_node2.items = mock.Mock(return_value=mock_node2.properties.items())
 
         result = NodeSerializer.to_mcp_result([(mock_node, 0.95), (mock_node2, 0.85)])
@@ -227,9 +221,7 @@ class TestRelationshipSerializer:
 
     def test_to_dict_with_include_properties(self, mock_relationship):
         """Test relationship serialization with included properties."""
-        result = RelationshipSerializer.to_dict(
-            mock_relationship, include_properties=["count"]
-        )
+        result = RelationshipSerializer.to_dict(mock_relationship, include_properties=["count"])
 
         assert "properties" in result
         assert "count" in result["properties"]
@@ -237,9 +229,7 @@ class TestRelationshipSerializer:
 
     def test_to_dict_with_exclude_properties(self, mock_relationship):
         """Test relationship serialization with excluded properties."""
-        result = RelationshipSerializer.to_dict(
-            mock_relationship, exclude_properties=["count"]
-        )
+        result = RelationshipSerializer.to_dict(mock_relationship, exclude_properties=["count"])
 
         assert "properties" in result
         assert "count" not in result["properties"]

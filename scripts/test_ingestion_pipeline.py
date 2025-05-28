@@ -23,9 +23,7 @@ def main():
     """Run a test of the ingestion pipeline."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Test the ingestion pipeline")
-    parser.add_argument(
-        "repository", help="Path to the repository to process", type=Path
-    )
+    parser.add_argument("repository", help="Path to the repository to process", type=Path)
     parser.add_argument(
         "--config",
         help="Path to the pipeline configuration",
@@ -42,9 +40,7 @@ def main():
 
     # Verify repository path
     if not args.repository.exists() or not args.repository.is_dir():
-        print(
-            f"Error: Repository path '{args.repository}' does not exist or is not a directory"
-        )
+        print(f"Error: Repository path '{args.repository}' does not exist or is not a directory")
         return 1
 
     # Verify configuration path
@@ -125,7 +121,7 @@ def main():
                 # If we have step results, show them
                 if "steps" in status:
                     for i, step in enumerate(status["steps"]):
-                        print(f"  Step {i+1} ({step['step']}): {step['status']}")
+                        print(f"  Step {i + 1} ({step['step']}): {step['status']}")
 
                 time.sleep(5)
 

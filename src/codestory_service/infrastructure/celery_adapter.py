@@ -62,9 +62,7 @@ class CeleryAdapter:
                 "status": "healthy",
                 "details": {
                     "active_workers": len(active_workers) if active_workers else 0,
-                    "registered_tasks": len(registered_workers)
-                    if registered_workers
-                    else 0,
+                    "registered_tasks": len(registered_workers) if registered_workers else 0,
                 },
             }
         except Exception as e:
@@ -85,32 +83,33 @@ class CeleryAdapter:
 
         Raises:
             HTTPException: If starting the ingestion job fails
-            
+
         Notes:
             This method applies parameter filtering to ensure each pipeline step only
             receives parameters it can handle. Different steps have different parameter
             requirements, and parameter filtering prevents "unexpected keyword argument"
             errors when passing configuration between steps.
-            
+
             Parameter filtering is applied as follows:
             - blarify: Excludes 'concurrency' parameter
-            - summarizer/docgrapher: Only includes safe parameters ('job_id', 'ignore_patterns', 
+            - summarizer/docgrapher: Only includes safe parameters ('job_id', 'ignore_patterns',
               'timeout', 'incremental') plus step-specific parameters
             - filesystem and other steps: Receives all parameters
         """
         try:
             # The orchestrate_pipeline task expects repository_path, step_configs, and job_id
             # We need to transform the IngestionRequest into these parameters
-            
+
             # Use the source as the repository path
             repository_path = request.source
-            
+
             # Generate a job_id
-            import uuid
-            job_id = str(uuid.uuid4())
-            
+            from uuid import uuid4
+
+            job_id = str(uuid4())
+
             # Create step configs
-            step_configs = []
+            step_configs: list[Any] = []
             if request.steps:
                 for step_name in request.steps:
                     step_configs.append({"name": step_name})
@@ -118,33 +117,46 @@ class CeleryAdapter:
                 # Default steps if none provided
                 for step_name in ["filesystem", "blarify", "summarizer", "docgrapher"]:
                     step_configs.append({"name": step_name})
-            
+
             # Add options to each step if provided, with parameter filtering
             if request.options:
                 for step_config in step_configs:
                     step_name = step_config["name"]
-                    
+
                     # Filter options based on step type to avoid parameter conflicts
                     if step_name == "blarify":
                         # Blarify step doesn't use certain parameters
-                        filtered_options = {k: v for k, v in request.options.items() 
-                                          if k not in ['concurrency']}
+                        filtered_options = {
+                            k: v for k, v in request.options.items() if k not in ["concurrency"]
+                        }
                         step_config.update(filtered_options)
-                        logger.debug(f"Applied filtered options for blarify step: {filtered_options}")
-                        
+                        logger.debug(
+                            f"Applied filtered options for blarify step: {filtered_options}"
+                        )
+
                     elif step_name in ["summarizer", "docgrapher"]:
                         # These steps have specific parameters
-                        safe_params = ['job_id', 'ignore_patterns', 'timeout', 'incremental']
-                        filtered_options = {k: v for k, v in request.options.items() 
-                                          if k in safe_params or k == step_name + "_specific"}
+                        safe_params = [
+                            "job_id",
+                            "ignore_patterns",
+                            "timeout",
+                            "incremental",
+                        ]
+                        filtered_options = {
+                            k: v
+                            for k, v in request.options.items()
+                            if k in safe_params or k == step_name + "_specific"
+                        }
                         step_config.update(filtered_options)
-                        logger.debug(f"Applied filtered options for {step_name} step: {filtered_options}")
-                        
+                        logger.debug(
+                            f"Applied filtered options for {step_name} step: {filtered_options}"
+                        )
+
                     else:
                         # For filesystem and other steps, include all options
                         step_config.update(request.options)
                         logger.debug(f"Applied all options for {step_name} step")
-            
+
             # Submit the Celery task with positional parameters
             # For testing, use a local reference that can be mocked
             task_func = getattr(self, "_run_ingestion_pipeline", run_ingestion_pipeline)
@@ -169,7 +181,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to start ingestion: {e!s}",
-            )
+            ) from e
 
     async def get_job_status(self, job_id: str) -> IngestionJob:
         """Get the status of an ingestion job.
@@ -189,10 +201,22 @@ class CeleryAdapter:
 
             if task.state == "PENDING":
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.PENDING,
-                    created_at=int(time.time()),  # We don't know the exact time
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    created_at=int(time.time(
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                )),  # We don't know the exact time
                     updated_at=int(time.time()),
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
                     progress=0.0,
                     current_step="Waiting to start",
                     message="Task is waiting for execution",
@@ -208,9 +232,17 @@ class CeleryAdapter:
                 message = info.get("message", "Task is in progress")
 
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.RUNNING,
-                    created_at=info.get("created_at", int(time.time())),
+                    created_at=info.get("created_at", int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ))),
                     updated_at=int(time.time()),
                     progress=progress,
                     current_step=current_step,
@@ -223,9 +255,17 @@ class CeleryAdapter:
                 result = task.result or {}
 
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.COMPLETED,
-                    created_at=result.get("created_at", int(time.time() - 60)),
+                    created_at=result.get("created_at", int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60)),
                     updated_at=int(time.time()),
                     progress=100.0,
                     current_step="Completed",
@@ -236,9 +276,17 @@ class CeleryAdapter:
 
             if task.state == "FAILURE":
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.FAILED,
-                    created_at=int(time.time() - 60),  # Estimate
+                    created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                     updated_at=int(time.time()),
                     progress=0.0,
                     current_step="Failed",
@@ -249,9 +297,17 @@ class CeleryAdapter:
 
             if task.state == "REVOKED":
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.CANCELLED,
-                    created_at=int(time.time() - 60),  # Estimate
+                    created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                     updated_at=int(time.time()),
                     progress=0.0,
                     current_step="Cancelled",
@@ -262,9 +318,17 @@ class CeleryAdapter:
 
             # Default case for unknown state
             return IngestionJob(
-                job_id=job_id,
+job_id=job_id,
                 status=JobStatus.UNKNOWN,
-                created_at=int(time.time() - 60),  # Estimate
+                created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                 updated_at=int(time.time()),
                 progress=0.0,
                 current_step=task.state,
@@ -278,7 +342,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get job status: {e!s}",
-            )
+            ) from e
 
     async def cancel_job(self, job_id: str) -> IngestionJob:
         """Cancel an ingestion job.
@@ -307,6 +371,13 @@ class CeleryAdapter:
                 return IngestionJob(
                     job_id=job_id,
                     status=status_map.get(task.state, JobStatus.UNKNOWN),
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
                     created_at=int(time.time() - 60),  # Estimate
                     updated_at=int(time.time()),
                     progress=100.0 if task.state == "SUCCESS" else 0.0,
@@ -321,9 +392,17 @@ class CeleryAdapter:
 
             # Return updated job status
             return IngestionJob(
-                job_id=job_id,
+job_id=job_id,
                 status=JobStatus.CANCELLING,
-                created_at=int(time.time() - 60),  # Estimate
+                created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                 updated_at=int(time.time()),
                 progress=0.0,
                 current_step="Cancelling",
@@ -337,7 +416,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to cancel job: {e!s}",
-            )
+            ) from e
 
     async def list_jobs(
         self, status: list[JobStatus] | None = None, limit: int = 10, offset: int = 0
@@ -372,7 +451,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to list jobs: {e!s}",
-            )
+            ) from e
 
 
 # DummyCeleryAdapter has been removed as Celery is now a required component
@@ -386,7 +465,7 @@ async def get_celery_adapter() -> CeleryAdapter:
 
     Returns:
         CeleryAdapter instance
-        
+
     Raises:
         RuntimeError: If Celery is not available or not healthy
     """
@@ -404,4 +483,4 @@ async def get_celery_adapter() -> CeleryAdapter:
     except Exception as e:
         # Log the error and fail
         logger.error(f"Failed to create Celery adapter: {e!s}")
-        raise RuntimeError(f"Celery component required but unavailable: {e!s}")
+        raise RuntimeError(f"Celery component required but unavailable: {e!s}") from e

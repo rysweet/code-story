@@ -1,3 +1,5 @@
+from typing import Any
+
 """Entity linker for linking documentation entities to code entities.
 
 This module provides functionality for linking documentation entities to code
@@ -40,11 +42,9 @@ class EntityLinker:
         self.module_ref_pattern = re.compile(r"(?:^|[^\w/])([\w.]+)(?:$|[^\w])")
 
         # Cache for Neo4j IDs to avoid repeated queries
-        self.entity_cache = {}
+        self.entity_cache: dict[Any, Any] = {}
 
-    def link_entities(
-        self, entities: list[DocumentationEntity]
-    ) -> list[DocumentationRelationship]:
+    def link_entities(self, entities: list[DocumentationEntity]) -> list[DocumentationRelationship]:
         """Link documentation entities to code entities.
 
         Args:
@@ -53,7 +53,7 @@ class EntityLinker:
         Returns:
             List of relationships between documentation and code entities
         """
-        relationships = []
+        relationships: list[Any] = []
 
         # Process each entity
         for entity in entities:
@@ -65,9 +65,7 @@ class EntityLinker:
         )
         return relationships
 
-    def _link_entity(
-        self, entity: DocumentationEntity
-    ) -> list[DocumentationRelationship]:
+    def _link_entity(self, entity: DocumentationEntity) -> list[DocumentationRelationship]:
         """Link a documentation entity to code entities.
 
         Args:
@@ -76,7 +74,7 @@ class EntityLinker:
         Returns:
             List of relationships
         """
-        relationships = []
+        relationships: list[Any] = []
 
         # Check for explicit references in entity content
         if entity.referenced_code:
@@ -119,7 +117,7 @@ class EntityLinker:
         Returns:
             List of (entity_type, entity_name) tuples
         """
-        references = []
+        references: list[Any] = []
 
         # Extract file references
         for match in self.file_ref_pattern.finditer(content):
@@ -196,7 +194,7 @@ class EntityLinker:
         if cache_key in self.entity_cache:
             return self.entity_cache[cache_key]
 
-        results = []
+        results: list[Any] = []
 
         # Query Neo4j for matching entities
         if entity_type == "file":
@@ -245,7 +243,8 @@ class EntityLinker:
         elif entity_type == "module":
             query = """
             MATCH (f:File)
-            WHERE f.path = $name OR f.path ENDS WITH $name OR replace(f.path, '/', '.') CONTAINS $name
+            WHERE f.path = $name OR f.path ENDS WITH $name OR 
+                  replace(f.path, '/', '.') CONTAINS $name
             RETURN ID(f) as id
             """
 
@@ -260,9 +259,7 @@ class EntityLinker:
 
         return results
 
-    def _link_by_location(
-        self, entity: DocumentationEntity
-    ) -> list[DocumentationRelationship]:
+    def _link_by_location(self, entity: DocumentationEntity) -> list[DocumentationRelationship]:
         """Link a documentation entity to code entities based on its location.
 
         This is used for docstrings to link them to their containing entities.
@@ -273,7 +270,7 @@ class EntityLinker:
         Returns:
             List of relationships
         """
-        relationships = []
+        relationships: list[Any] = []
 
         # Check if the entity has metadata about its owner
         owner_type = entity.metadata.get("owner_type")
@@ -283,7 +280,7 @@ class EntityLinker:
             return relationships
 
         # Find code entities matching the owner
-        code_entities = []
+        code_entities: list[Any] = []
 
         if owner_type == "function":
             query = """

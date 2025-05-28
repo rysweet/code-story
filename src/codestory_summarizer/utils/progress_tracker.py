@@ -36,9 +36,7 @@ class ProgressTracker:
     def _count_node_types(self) -> None:
         """Count the number of nodes of each type in the graph."""
         for node_data in self.graph.nodes.values():
-            self.node_type_counts[node_data.type] = (
-                self.node_type_counts.get(node_data.type, 0) + 1
-            )
+            self.node_type_counts[node_data.type] = self.node_type_counts.get(node_data.type, 0) + 1
 
     def get_progress_stats(self) -> dict[str, int]:
         """Get progress statistics.
@@ -116,7 +114,8 @@ class ProgressTracker:
         remaining = self.get_estimated_remaining_time()
 
         message = (
-            f"Progress: {progress:.1f}% ({self.graph.completed_count}/{self.graph.total_count} nodes) | "
+            f"Progress: {progress:.1f}% "
+            f"({self.graph.completed_count}/{self.graph.total_count} nodes) | "
             f"Elapsed: {_format_time(elapsed)}"
         )
 

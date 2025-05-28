@@ -5,10 +5,7 @@ high-quality summaries of function and method nodes.
 """
 
 
-
-def get_function_summary_prompt(
-    content: str, context: list[str], max_tokens: int = 8000
-) -> str:
+def get_function_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a function.
 
     Args:
@@ -23,7 +20,8 @@ def get_function_summary_prompt(
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert code summarizer specializing in function analysis. Analyze the following function and write a comprehensive summary.
+    prompt = f"""You are an expert code summarizer specializing in function analysis. Analyze the 
+following function and write a comprehensive summary.
 
 Function information:
 {chr(10).join(context)}
@@ -40,7 +38,8 @@ Your task is to:
 4. Note any edge cases or error handling mechanisms
 5. Describe any key optimizations or techniques used
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the function does, WHY it exists, and HOW it accomplishes its purpose.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the function 
+does, WHY it exists, and HOW it accomplishes its purpose.
 
 Summary:
 """
@@ -48,9 +47,7 @@ Summary:
     return prompt
 
 
-def get_method_summary_prompt(
-    content: str, context: list[str], max_tokens: int = 8000
-) -> str:
+def get_method_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a method.
 
     Args:
@@ -65,7 +62,8 @@ def get_method_summary_prompt(
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert code summarizer specializing in object-oriented design. Analyze the following method and write a comprehensive summary.
+    prompt = f"""You are an expert code summarizer specializing in object-oriented design. Analyze 
+the following method and write a comprehensive summary.
 
 Method information:
 {chr(10).join(context)}
@@ -82,7 +80,8 @@ Your task is to:
 4. Note any overriding of parent class methods or implementation of interface methods
 5. Describe any side effects or state changes this method causes
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the method does, WHY it exists, and HOW it accomplishes its purpose within the class.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the method 
+does, WHY it exists, and HOW it accomplishes its purpose within the class.
 
 Summary:
 """

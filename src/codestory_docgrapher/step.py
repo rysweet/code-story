@@ -7,8 +7,8 @@ a knowledge graph of documentation and links it to code entities.
 import logging
 import os
 import time
-import uuid
 from typing import Any
+from uuid import uuid4
 
 from celery import shared_task
 
@@ -32,7 +32,7 @@ class DocumentationGrapherStep(PipelineStep):
     entities and relationships, and links them to code entities.
     """
 
-    def __init__(self):
+    def __init__(self) -> Any:
         """Initialize the DocumentationGrapher step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
@@ -54,12 +54,10 @@ class DocumentationGrapherStep(PipelineStep):
         """
         # Validate repository path
         if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"docgrapher-{uuid.uuid4()}"
+        job_id = f"docgrapher-{uuid4()}"
 
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
@@ -67,7 +65,7 @@ class DocumentationGrapherStep(PipelineStep):
 
         # Start the Celery task using current_app.send_task with the fully qualified task name
         from celery import current_app
-        
+
         # Use the fully qualified task name to avoid task routing issues
         task = current_app.send_task(
             "codestory_docgrapher.step.run_docgrapher",
@@ -77,7 +75,7 @@ class DocumentationGrapherStep(PipelineStep):
                 "ignore_patterns": ignore_patterns,
                 "use_llm": use_llm,
                 "config": config,
-            }
+            },
         )
 
         # Store job information
@@ -89,9 +87,7 @@ class DocumentationGrapherStep(PipelineStep):
             "config": config,
         }
 
-        logger.info(
-            f"Started DocumentationGrapher job {job_id} for repository: {repository_path}"
-        )
+        logger.info(f"Started DocumentationGrapher job {job_id} for repository: {repository_path}")
 
         return job_id
 
@@ -126,7 +122,8 @@ class DocumentationGrapherStep(PipelineStep):
                     return {
                         "status": StepStatus.COMPLETED,
                         "message": "Task completed successfully",
-                        "result": result.result,  # Fixed: Use result directly instead of blocking get()
+                        "result": result.result,  # Fixed: Use result directly instead of 
+                                                  # blocking get()
                     }
                 elif result.state == "FAILURE":
                     return {

@@ -1,3 +1,5 @@
+from typing import Any
+
 """Parser for code docstrings in various languages.
 
 This module provides a parser for extracting entities and relationships
@@ -28,7 +30,7 @@ class DocstringParser(Parser):
     various programming languages.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the docstring parser."""
         # Python docstring patterns
         self.py_docstring_pattern = re.compile(r'"""(.*?)"""', re.DOTALL)
@@ -74,8 +76,8 @@ class DocstringParser(Parser):
         file_path = document.path
         source_type = document.metadata.get("source_type", "unknown")
 
-        entities = []
-        relationships = []
+        entities: list[Any] = []
+        relationships: list[Any] = []
 
         # Extract docstrings based on the source type
         if source_type == "python":
@@ -86,7 +88,7 @@ class DocstringParser(Parser):
             docstrings = self._extract_javadoc_docstrings(content, file_path)
         else:
             # Try all extraction methods
-            docstrings = []
+            docstrings: list[Any] = []
             docstrings.extend(self._extract_python_docstrings(content, file_path))
             docstrings.extend(self._extract_js_docstrings(content, file_path))
             docstrings.extend(self._extract_javadoc_docstrings(content, file_path))
@@ -122,7 +124,7 @@ class DocstringParser(Parser):
         Returns:
             List of docstring entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all docstrings with triple double quotes
         for match in self.py_docstring_pattern.finditer(content):
@@ -202,7 +204,7 @@ class DocstringParser(Parser):
         Returns:
             List of docstring entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all JSDoc comments
         for match in self.jsdoc_pattern.finditer(content):
@@ -248,7 +250,7 @@ class DocstringParser(Parser):
         Returns:
             List of docstring entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all Javadoc comments
         for match in self.javadoc_pattern.finditer(content):
@@ -396,7 +398,7 @@ class DocstringParser(Parser):
         Returns:
             List of section entities
         """
-        sections = []
+        sections: list[Any] = []
         content = docstring.content
         file_path = docstring.file_path
 
@@ -438,11 +440,11 @@ class DocstringParser(Parser):
         Returns:
             List of parameter description entities
         """
-        sections = []
+        sections: list[Any] = []
         in_params = False
-        param_section = []
+        param_section: list[str] = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.param_pattern.search(line):
                 # Start of parameters section
                 if param_section:
@@ -459,7 +461,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    param_section = []
+                    param_section: list[Any] = []
 
                 in_params = True
                 param_section.append(line)
@@ -483,7 +485,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    param_section = []
+                    param_section: list[Any] = []
                 in_params = False
 
         # Add last section if it exists
@@ -516,11 +518,11 @@ class DocstringParser(Parser):
         Returns:
             List of return description entities
         """
-        sections = []
+        sections: list[Any] = []
         in_returns = False
-        return_section = []
+        return_section: list[str] = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.return_pattern.search(line):
                 # Start of returns section
                 if return_section:
@@ -537,7 +539,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    return_section = []
+                    return_section: list[Any] = []
 
                 in_returns = True
                 return_section.append(line)
@@ -561,7 +563,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    return_section = []
+                    return_section: list[Any] = []
                 in_returns = False
 
         # Add last section if it exists
@@ -594,11 +596,11 @@ class DocstringParser(Parser):
         Returns:
             List of exception description entities
         """
-        sections = []
+        sections: list[Any] = []
         in_raises = False
-        raises_section = []
+        raises_section: list[str] = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.raises_pattern.search(line):
                 # Start of raises section
                 if raises_section:
@@ -615,7 +617,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    raises_section = []
+                    raises_section: list[Any] = []
 
                 in_raises = True
                 raises_section.append(line)
@@ -639,7 +641,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    raises_section = []
+                    raises_section: list[Any] = []
                 in_raises = False
 
         # Add last section if it exists
@@ -672,11 +674,11 @@ class DocstringParser(Parser):
         Returns:
             List of example entities
         """
-        sections = []
+        sections: list[Any] = []
         in_example = False
-        example_section = []
+        example_section: list[Any] = []
 
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if self.example_pattern.search(line):
                 # Start of example section
                 if example_section:
@@ -693,7 +695,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    example_section = []
+                    example_section: list[Any] = []
 
                 in_example = True
                 example_section.append(line)
@@ -717,7 +719,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    example_section = []
+                    example_section: list[Any] = []
                 in_example = False
 
         # Add last section if it exists

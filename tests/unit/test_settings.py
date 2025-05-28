@@ -137,26 +137,29 @@ def create_test_settings():
 
     return settings
 
+
 # Patch the get_settings function to return our test settings
 test_settings = create_test_settings()
+
 
 # This needs to be imported by the conftest.py module to apply the patch
 def setup_test_settings():
     """Set up test settings for unit tests."""
     # Create the patch for get_settings
-    settings_patch = patch('codestory.config.settings.get_settings', return_value=test_settings)
+    settings_patch = patch("codestory.config.settings.get_settings", return_value=test_settings)
     settings_patch.start()
-    
+
     # Also patch Settings.__new__ to return our test settings for direct instantiation
-    new_patch = patch('codestory.config.settings.Settings.__new__', return_value=test_settings)
+    new_patch = patch("codestory.config.settings.Settings.__new__", return_value=test_settings)
     new_patch.start()
-    
+
     # Set environment variables for tests
     os.environ["CODESTORY_TEST_ENV"] = "true"
     os.environ["NEO4J_DATABASE"] = "testdb"
-    
+
     return (settings_patch, new_patch)
-    
+
+
 def test_settings_creation():
     """Test that test settings can be created without errors."""
     settings = create_test_settings()

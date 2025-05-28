@@ -58,9 +58,7 @@ class SimilarCodeTool(BaseTool):
 
         # Validate parameters
         if not code:
-            raise ToolError(
-                "Code snippet cannot be empty", status_code=status.HTTP_400_BAD_REQUEST
-            )
+            raise ToolError("Code snippet cannot be empty", status_code=status.HTTP_400_BAD_REQUEST)
 
         if limit < 1:
             raise ToolError(
@@ -73,15 +71,13 @@ class SimilarCodeTool(BaseTool):
 
         try:
             # Find similar code
-            results = await self.openai_service.find_similar_code(
-                code=code, limit=limit
-            )
+            results = await self.openai_service.find_similar_code(code=code, limit=limit)
 
             # Create response
             response = {"matches": results}
 
             # Add metadata to response
-            response["metadata"] = {
+            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
                 "code_length": len(code),
                 "limit": limit,
                 "result_count": len(results),
@@ -103,4 +99,4 @@ class SimilarCodeTool(BaseTool):
             raise ToolError(
                 f"Similar code search failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            ) from e

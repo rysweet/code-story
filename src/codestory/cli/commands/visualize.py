@@ -1,38 +1,36 @@
-"""
-Visualization commands for the Code Story CLI.
-"""
+"""Visualization commands for the Code Story CLI."""
 
+import contextlib
 import os
 import webbrowser
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
-from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ..client import ServiceClient
 from ..require_service_available import require_service_available
+
+if TYPE_CHECKING:
+    from rich.console import Console
+
+    from ..client import ServiceClient
 
 
 @click.group(help="Generate and manage visualizations of the Code Story graph.")
-def visualize():
+def visualize() -> Any:
     """Command group for visualization operations."""
     pass
 
 
-@visualize.command(
-    name="generate", help="Generate a visualization of the Code Story graph."
-)
+@visualize.command(name="generate", help="Generate a visualization of the Code Story graph.")
 @click.option(
     "--output",
     "-o",
@@ -68,9 +66,7 @@ def generate(
     theme: str = "auto",
     title: str | None = None,
 ) -> None:
-    """
-    Generate a visualization of the Code Story graph.
-    """
+    """Generate a visualization of the Code Story graph."""
     require_service_available()
 
     client: ServiceClient = ctx.obj["client"]
@@ -119,17 +115,19 @@ def generate(
             console.print(f"[bold red]Error:[/] {e!s}")
             console.print("[bold red]The Code Story service must be running.[/]")
             console.print("Starting service automatically...")
-            
+
             # Try to start the service
             import subprocess
             import time
-            
+
             try:
                 # Start the service in the background
-                subprocess.Popen(["codestory", "service", "start"], 
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE)
-                
+                subprocess.Popen(
+                    ["codestory", "service", "start"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+
                 # Wait for service to start (up to 10 seconds)
                 service_started = False
                 for _ in range(10):
@@ -142,10 +140,10 @@ def generate(
                         break
                     except Exception:
                         console.print("[yellow]Waiting for service to start...[/]")
-                
+
                 if not service_started:
                     raise Exception("Failed to start the service automatically")
-                
+
                 # Determine output path
                 if output:
                     output_path = os.path.abspath(output)
@@ -160,10 +158,12 @@ def generate(
                 # Write visualization to file
                 with open(output_path, "w") as f:
                     f.write(html_content)
-            
+
             except Exception as start_error:
                 console.print(f"[bold red]Failed to start service:[/] {start_error!s}")
-                console.print("[bold red]Please start the service manually:[/] codestory service start")
+                console.print(
+                    "[bold red]Please start the service manually:[/] codestory service start"
+                )
                 return
 
     # Show success message
@@ -184,9 +184,7 @@ def generate(
             webbrowser.open(f"file://{output_path}")
             console.print("[dim]Visualization opened in browser...[/]")
         else:
-            console.print(
-                "\nTo view the visualization, open the HTML file in a web browser."
-            )
+            console.print("\nTo view the visualization, open the HTML file in a web browser.")
             console.print(f"Or run: [cyan]open {output_path}[/]")
 
 
@@ -200,9 +198,7 @@ def generate(
 )
 @click.pass_context
 def list_visualizations(ctx: click.Context, limit: int = 10) -> None:
-    """
-    List previously generated visualizations.
-    """
+    """List previously generated visualizations."""
     console: Console = ctx.obj["console"]
 
     # Find HTML files in the current directory that match the pattern
@@ -231,9 +227,7 @@ def list_visualizations(ctx: click.Context, limit: int = 10) -> None:
 @click.argument("path", type=click.Path(exists=True))
 @click.pass_context
 def open_visualization(ctx: click.Context, path: str) -> None:
-    """
-    Open a previously generated visualization.
-    """
+    """Open a previously generated visualization."""
     console: Console = ctx.obj["console"]
 
     # Verify it's an HTML file
@@ -252,9 +246,7 @@ def open_visualization(ctx: click.Context, path: str) -> None:
 @visualize.command(name="help", help="Show information about visualization features.")
 @click.pass_context
 def viz_help(ctx: click.Context) -> None:
-    """
-    Show information about visualization features.
-    """
+    """Show information about visualization features."""
     console: Console = ctx.obj["console"]
 
     help_text = """
@@ -266,7 +258,8 @@ def viz_help(ctx: click.Context) -> None:
 
     ## Visualization Types
 
-    - **Force** (default): A force-directed graph where nodes repel each other and edges act like springs.
+    - **Force** (default): A force-directed graph where nodes repel each other 
+      and edges act like springs.
       Best for showing relationships between components.
 
     - **Hierarchy**: A tree-like visualization showing inheritance and containment relationships.
@@ -305,4 +298,3 @@ def viz_help(ctx: click.Context) -> None:
             expand=False,
         )
     )
-

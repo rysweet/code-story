@@ -102,11 +102,12 @@ def temp_toml_file():
 
 def test_settings_default_values(mock_env):
     """Test default values for settings."""
-    with patch(
-        "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
-    ), patch(
-        "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
-        return_value=None,
+    with (
+        patch("src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"),
+        patch(
+            "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
+            return_value=None,
+        ),
     ):
         settings = Settings()
         assert settings.app_name == "code-story"
@@ -123,25 +124,26 @@ def test_settings_default_values(mock_env):
 
 def test_settings_override_from_env(mock_env):
     """Test overriding settings from environment variables."""
-    with patch.dict(
-        os.environ,
-        {
-            "NEO4J__URI": "bolt://neo4j:7687",
-            "SERVICE__PORT": "9000",
-            "OPENAI__EMBEDDING_MODEL": "text-embedding-3-large",
-        },
-        clear=False,
-    ):
-        with patch(
-            "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
-        ), patch(
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "NEO4J__URI": "bolt://neo4j:7687",
+                "SERVICE__PORT": "9000",
+                "OPENAI__EMBEDDING_MODEL": "text-embedding-3-large",
+            },
+            clear=False,
+        ),
+        patch("src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"),
+        patch(
             "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
             return_value=None,
-        ):
-            settings = Settings()
-            assert settings.neo4j.uri == "bolt://neo4j:7687"
-            assert settings.service.port == 9000
-            assert settings.openai.embedding_model == "text-embedding-3-large"
+        ),
+    ):
+        settings = Settings()
+        assert settings.neo4j.uri == "bolt://neo4j:7687"
+        assert settings.service.port == 9000
+        assert settings.openai.embedding_model == "text-embedding-3-large"
 
 
 def test_get_settings_cache():
@@ -262,9 +264,10 @@ def test_export_to_json():
         },
     }
 
-    with patch(
-        "src.codestory.config.export.get_settings", return_value=mock_settings
-    ), patch("json.dumps") as mock_json_dumps:
+    with (
+        patch("src.codestory.config.export.get_settings", return_value=mock_settings),
+        patch("json.dumps") as mock_json_dumps,
+    ):
         # Mock JSON dumps to return predictable output
         mock_json_dumps.return_value = (
             "{\n"
@@ -358,83 +361,85 @@ def test_create_env_template():
 def test_settings_validation(mock_env):
     """Test validation of settings."""
     # Test valid log level
-    with patch.dict(
-        os.environ,
-        {
-            "NEO4J__URI": "bolt://localhost:7687",
-            "NEO4J__USERNAME": "neo4j",
-            "NEO4J__PASSWORD": "password",
-            "REDIS__URI": "redis://localhost:6379",
-            "OPENAI__API_KEY": "test-key",
-            "LOG_LEVEL": "DEBUG",
-            # Include all required nested settings to avoid validation errors
-            "AZURE_OPENAI__DEPLOYMENT_ID": "gpt-4o",
-            "AZURE_OPENAI__API_VERSION": "2024-05-01",
-            "PLUGINS__ENABLED": '["blarify", "filesystem", "summarizer", "docgrapher"]',
-            "AZURE__KEYVAULT_NAME": "test-keyvault",
-            "AZURE__TENANT_ID": "test-tenant",
-            # Service settings
-            "SERVICE__HOST": "0.0.0.0",
-            "SERVICE__PORT": "8000",
-            # Ingestion settings
-            "INGESTION__CONFIG_PATH": "pipeline_config.yml",
-            "INGESTION__CHUNK_SIZE": "1024",
-            # Telemetry settings
-            "TELEMETRY__METRICS_PORT": "9090",
-            "TELEMETRY__LOG_FORMAT": "json",
-            # Interface settings
-            "INTERFACE__THEME": "dark",
-            "INTERFACE__DEFAULT_VIEW": "graph",
-        },
-        clear=True,
-    ):
-        with patch(
-            "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
-        ), patch(
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "NEO4J__URI": "bolt://localhost:7687",
+                "NEO4J__USERNAME": "neo4j",
+                "NEO4J__PASSWORD": "password",
+                "REDIS__URI": "redis://localhost:6379",
+                "OPENAI__API_KEY": "test-key",
+                "LOG_LEVEL": "DEBUG",
+                # Include all required nested settings to avoid validation errors
+                "AZURE_OPENAI__DEPLOYMENT_ID": "gpt-4o",
+                "AZURE_OPENAI__API_VERSION": "2024-05-01",
+                "PLUGINS__ENABLED": '["blarify", "filesystem", "summarizer", "docgrapher"]',
+                "AZURE__KEYVAULT_NAME": "test-keyvault",
+                "AZURE__TENANT_ID": "test-tenant",
+                # Service settings
+                "SERVICE__HOST": "0.0.0.0",
+                "SERVICE__PORT": "8000",
+                # Ingestion settings
+                "INGESTION__CONFIG_PATH": "pipeline_config.yml",
+                "INGESTION__CHUNK_SIZE": "1024",
+                # Telemetry settings
+                "TELEMETRY__METRICS_PORT": "9090",
+                "TELEMETRY__LOG_FORMAT": "json",
+                # Interface settings
+                "INTERFACE__THEME": "dark",
+                "INTERFACE__DEFAULT_VIEW": "graph",
+            },
+            clear=True,
+        ),
+        patch("src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"),
+        patch(
             "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
             return_value=None,
-        ):
-            settings = Settings()
-            assert settings.log_level == "DEBUG"
+        ),
+    ):
+        settings = Settings()
+        assert settings.log_level == "DEBUG"
 
     # Test valid telemetry log format
-    with patch.dict(
-        os.environ,
-        {
-            "NEO4J__URI": "bolt://localhost:7687",
-            "NEO4J__USERNAME": "neo4j",
-            "NEO4J__PASSWORD": "password",
-            "REDIS__URI": "redis://localhost:6379",
-            "OPENAI__API_KEY": "test-key",
-            "TELEMETRY__LOG_FORMAT": "text",
-            # Include all required nested settings to avoid validation errors
-            "AZURE_OPENAI__DEPLOYMENT_ID": "gpt-4o",
-            "AZURE_OPENAI__API_VERSION": "2024-05-01",
-            "PLUGINS__ENABLED": '["blarify", "filesystem", "summarizer", "docgrapher"]',
-            "AZURE__KEYVAULT_NAME": "test-keyvault",
-            "AZURE__TENANT_ID": "test-tenant",
-            # Service settings
-            "SERVICE__HOST": "0.0.0.0",
-            "SERVICE__PORT": "8000",
-            # Ingestion settings
-            "INGESTION__CONFIG_PATH": "pipeline_config.yml",
-            "INGESTION__CHUNK_SIZE": "1024",
-            # Telemetry settings
-            "TELEMETRY__METRICS_PORT": "9090",
-            # Interface settings
-            "INTERFACE__THEME": "dark",
-            "INTERFACE__DEFAULT_VIEW": "graph",
-        },
-        clear=True,
-    ):
-        with patch(
-            "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
-        ), patch(
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "NEO4J__URI": "bolt://localhost:7687",
+                "NEO4J__USERNAME": "neo4j",
+                "NEO4J__PASSWORD": "password",
+                "REDIS__URI": "redis://localhost:6379",
+                "OPENAI__API_KEY": "test-key",
+                "TELEMETRY__LOG_FORMAT": "text",
+                # Include all required nested settings to avoid validation errors
+                "AZURE_OPENAI__DEPLOYMENT_ID": "gpt-4o",
+                "AZURE_OPENAI__API_VERSION": "2024-05-01",
+                "PLUGINS__ENABLED": '["blarify", "filesystem", "summarizer", "docgrapher"]',
+                "AZURE__KEYVAULT_NAME": "test-keyvault",
+                "AZURE__TENANT_ID": "test-tenant",
+                # Service settings
+                "SERVICE__HOST": "0.0.0.0",
+                "SERVICE__PORT": "8000",
+                # Ingestion settings
+                "INGESTION__CONFIG_PATH": "pipeline_config.yml",
+                "INGESTION__CHUNK_SIZE": "1024",
+                # Telemetry settings
+                "TELEMETRY__METRICS_PORT": "9090",
+                # Interface settings
+                "INTERFACE__THEME": "dark",
+                "INTERFACE__DEFAULT_VIEW": "graph",
+            },
+            clear=True,
+        ),
+        patch("src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"),
+        patch(
             "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
             return_value=None,
-        ):
-            settings = Settings()
-            assert settings.telemetry.log_format == "text"
+        ),
+    ):
+        settings = Settings()
+        assert settings.telemetry.log_format == "text"
 
 
 def test_settings_with_azure_keyvault(mock_env):
@@ -443,8 +448,9 @@ def test_settings_with_azure_keyvault(mock_env):
     # when keyvault_name is set
 
     # Mock the import that would happen in KeyVault integration
-    with patch("importlib.import_module") as mock_import, patch(
-        "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
+    with (
+        patch("importlib.import_module"),
+        patch("src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"),
     ):
         # Create settings with KeyVault name
         try:

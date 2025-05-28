@@ -1,16 +1,15 @@
+from typing import Any
+
 """Neo4j schema definitions and initialization.
 
 This module provides functions to initialize and manage the Neo4j database schema,
 including constraints, indexes, and vector indexes for embedding search.
 """
 
-
 from .exceptions import SchemaError
 
 # Node label constraints
-FILE_CONSTRAINTS = [
-    "CREATE CONSTRAINT IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE"
-]
+FILE_CONSTRAINTS = ["CREATE CONSTRAINT IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE"]
 
 DIRECTORY_CONSTRAINTS = [
     "CREATE CONSTRAINT IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE"
@@ -24,9 +23,7 @@ FUNCTION_CONSTRAINTS = [
     "CREATE CONSTRAINT IF NOT EXISTS FOR (f:Function) REQUIRE (f.name, f.module) IS UNIQUE"
 ]
 
-MODULE_CONSTRAINTS = [
-    "CREATE CONSTRAINT IF NOT EXISTS FOR (m:Module) REQUIRE m.name IS UNIQUE"
-]
+MODULE_CONSTRAINTS = ["CREATE CONSTRAINT IF NOT EXISTS FOR (m:Module) REQUIRE m.name IS UNIQUE"]
 
 # Full-text indexes
 FULLTEXT_INDEXES = [
@@ -117,8 +114,8 @@ def get_schema_initialization_queries() -> list[str]:
     schema_elements = get_all_schema_elements()
 
     # Flatten all queries into a single list
-    initialization_queries = []
-    for element_type, queries in schema_elements.items():
+    initialization_queries: list[Any] = []
+    for _element_type, queries in schema_elements.items():
         initialization_queries.extend(queries)
 
     return initialization_queries
@@ -151,15 +148,18 @@ def create_custom_vector_index(
     except Exception as e:
         # GDS plugin is not available, this is an error
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.error(f"Graph Data Science plugin not available: {e!s}. Vector indices require GDS plugin.")
+        logger.error(
+            f"Graph Data Science plugin not available: {e!s}. Vector indices require GDS plugin."
+        )
         raise SchemaError(
             f"Graph Data Science plugin required for vector indices: {e!s}",
             operation="create_vector_index",
             cause=e,
             label=label,
             property=property_name,
-        )
+        ) from e
 
     # Create the vector index
     query = get_vector_index_query(label, property_name, dimensions, similarity)
@@ -167,6 +167,7 @@ def create_custom_vector_index(
         connector.execute_query(query, write=True)
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to create vector index on {label}.{property_name}: {e!s}")
         raise SchemaError(
@@ -177,7 +178,7 @@ def create_custom_vector_index(
             property=property_name,
             dimensions=dimensions,
             similarity=similarity,
-        )
+        ) from e
 
 
 def initialize_schema(connector, force: bool = False) -> None:
@@ -196,29 +197,17 @@ def initialize_schema(connector, force: bool = False) -> None:
             # Drop all constraints
             connector.execute_query("SHOW CONSTRAINTS", write=False)
             connector.execute_query("DROP CONSTRAINT file_path IF EXISTS", write=True)
-            connector.execute_query(
-                "DROP CONSTRAINT directory_path IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP CONSTRAINT class_name_module IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP CONSTRAINT function_name_module IF EXISTS", write=True
-            )
+            connector.execute_query("DROP CONSTRAINT directory_path IF EXISTS", write=True)
+            connector.execute_query("DROP CONSTRAINT class_name_module IF EXISTS", write=True)
+            connector.execute_query("DROP CONSTRAINT function_name_module IF EXISTS", write=True)
             connector.execute_query("DROP CONSTRAINT module_name IF EXISTS", write=True)
 
             # Drop all indexes
             connector.execute_query("DROP INDEX file_content IF EXISTS", write=True)
             connector.execute_query("DROP INDEX code_name IF EXISTS", write=True)
-            connector.execute_query(
-                "DROP INDEX documentation_content IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP INDEX file_extension_idx IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP INDEX node_created_at_idx IF EXISTS", write=True
-            )
+            connector.execute_query("DROP INDEX documentation_content IF EXISTS", write=True)
+            connector.execute_query("DROP INDEX file_extension_idx IF EXISTS", write=True)
+            connector.execute_query("DROP INDEX node_created_at_idx IF EXISTS", write=True)
         except Exception as e:
             import logging
 
@@ -263,7 +252,7 @@ def initialize_schema(connector, force: bool = False) -> None:
                 "error_type": type(e).__name__,
                 "error_message": str(e),
             }
-            raise SchemaError("Failed to initialize schema", details=details, cause=e)
+            raise SchemaError("Failed to initialize schema", details=details, cause=e) from e
 
 
 def verify_schema(connector) -> dict[str, dict[str, bool]]:
@@ -289,7 +278,7 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
 
         # Verify each schema element
         schema_elements = get_all_schema_elements()
-        verification_results = {
+        verification_results: Any = {
             "constraints": {},
             "indexes": {},
             "vector_indexes": {},
@@ -300,9 +289,7 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
 
         for constraint in schema_elements["constraints"]:
             # Extract constraint label and properties from the new FOR/REQUIRE syntax
-            constraint_parts = (
-                constraint.split("IF NOT EXISTS FOR")[1].split("REQUIRE")[0].strip()
-            )
+            constraint_parts = constraint.split("IF NOT EXISTS FOR")[1].split("REQUIRE")[0].strip()
             constraint_name = constraint_parts
             verification_results["constraints"][constraint_name] = (
                 constraint_name in existing_constraints
@@ -313,13 +300,12 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
                 if "INDEX" in index and "IF NOT EXISTS" in index:
                     parts = index.split("INDEX")
                     if len(parts) > 1:
-                        # Extract the index name which comes after "INDEX" and before "IF NOT EXISTS"
+                        # Extract the index name which comes after "INDEX" and before 
+                        # "IF NOT EXISTS"
                         name_part = parts[1].split("IF NOT EXISTS")[0].strip()
-                        verification_results["indexes"][name_part] = (
-                            name_part in existing_indexes
-                        )
+                        verification_results["indexes"][name_part] = name_part in existing_indexes
 
         return verification_results
 
     except Exception as e:
-        raise SchemaError("Failed to verify schema", operation="verify_schema", cause=e)
+        raise SchemaError("Failed to verify schema", operation="verify_schema", cause=e) from e

@@ -18,14 +18,14 @@ def test_client():
     """Create a test client for the application."""
     # Set test environment flag
     os.environ["CODESTORY_TEST_ENV"] = "true"
-    
+
     # Create the test client
     client = TestClient(app)
-    
+
     # Yield the client for the test
     yield client
-    
-    # Clean up 
+
+    # Clean up
     if "CODESTORY_TEST_ENV" in os.environ:
         del os.environ["CODESTORY_TEST_ENV"]
 
@@ -52,7 +52,7 @@ def test_legacy_health_check(test_client):
             "status": "healthy",
             "details": {"database": "testdb"},
         }
-        
+
         with mock.patch(
             "codestory_service.infrastructure.openai_adapter.OpenAIAdapter.check_health"
         ) as mock_openai_health:
@@ -60,7 +60,7 @@ def test_legacy_health_check(test_client):
                 "status": "healthy",
                 "details": {"models": ["text-embedding-ada-002", "gpt-4"]},
             }
-            
+
             # Also mock Celery adapter
             with mock.patch(
                 "codestory_service.infrastructure.celery_adapter.CeleryAdapter.check_health"
@@ -69,30 +69,30 @@ def test_legacy_health_check(test_client):
                     "status": "healthy",
                     "details": {"active_workers": 1, "registered_tasks": 5},
                 }
-                
+
                 # Mock Redis client class with a context manager
                 with mock.patch("redis.asyncio.Redis", autospec=True) as MockRedis:
                     # Create a mock instance
                     mock_redis_instance = mock.MagicMock()
-                    
+
                     # Configure the async methods
                     ping_mock = mock.AsyncMock()
                     ping_mock.return_value = True
                     mock_redis_instance.ping = ping_mock
-                    
+
                     info_mock = mock.AsyncMock()
                     info_mock.return_value = {
                         "redis_version": "6.2.0",
-                        "used_memory_human": "1.5M"
+                        "used_memory_human": "1.5M",
                     }
                     mock_redis_instance.info = info_mock
-                    
+
                     close_mock = mock.AsyncMock()
                     mock_redis_instance.close = close_mock
-                    
+
                     # Make the constructor return our mock instance
                     MockRedis.return_value = mock_redis_instance
-                    
+
                     response = test_client.get("/health")
                     assert response.status_code == 200
                     data = response.json()
@@ -104,7 +104,7 @@ def test_v1_health_check(test_client):
     """Test the v1 health check endpoint with all services mocked.
 
     This test verifies that the health check endpoint successfully checks
-    the health of all components by mocking them to ensure consistent 
+    the health of all components by mocking them to ensure consistent
     test results without dependencies on external services.
     """
     # Mock all required services for a comprehensive health check
@@ -145,32 +145,34 @@ def test_v1_health_check(test_client):
                 with mock.patch("redis.asyncio.Redis", autospec=True) as MockRedis:
                     # Create a mock instance
                     mock_redis_instance = mock.MagicMock()
-                    
+
                     # Configure the async methods
                     mock_redis_instance.ping = mock.AsyncMock(return_value=True)
-                    mock_redis_instance.info = mock.AsyncMock(return_value={
-                        "redis_version": "6.2.0",
-                        "used_memory_human": "1.5M"
-                    })
+                    mock_redis_instance.info = mock.AsyncMock(
+                        return_value={
+                            "redis_version": "6.2.0",
+                            "used_memory_human": "1.5M",
+                        }
+                    )
                     mock_redis_instance.close = mock.AsyncMock()
-                    
+
                     # Make the constructor return our mock instance
                     MockRedis.return_value = mock_redis_instance
-                
+
                     # Now test the health check with all components mocked
                     response = test_client.get("/v1/health")
                     assert response.status_code == 200
                     data = response.json()
-                    
+
                     # Overall status should be healthy
                     assert data["status"] == "healthy"
                     assert "components" in data
-                    
+
                     # All individual components should be healthy
                     for component_name in ["neo4j", "celery", "openai", "redis"]:
                         assert component_name in data["components"]
                         assert data["components"][component_name]["status"] == "healthy"
-                    
+
                     # Verify our mocks were called
                     mock_neo4j_health.assert_called_once()
                     mock_celery_health.assert_called_once()
@@ -180,10 +182,10 @@ def test_v1_health_check(test_client):
 @pytest.mark.integration
 def test_health_check_degraded_service(test_client):
     """Test health check returns degraded status when some components fail.
-    
+
     This test verifies that:
     1. The service returns HTTP 200 even when components are degraded
-    2. The overall status properly reflects component failures 
+    2. The overall status properly reflects component failures
     3. Individual component statuses are reported correctly
     """
     # Mock Neo4j as healthy
@@ -202,9 +204,9 @@ def test_health_check_degraded_service(test_client):
             mock_celery_health.return_value = {
                 "status": "degraded",
                 "details": {
-                    "active_workers": 1, 
+                    "active_workers": 1,
                     "expected_workers": 2,
-                    "message": "Fewer workers than expected"
+                    "message": "Fewer workers than expected",
                 },
             }
 
@@ -216,37 +218,39 @@ def test_health_check_degraded_service(test_client):
                     "status": "unhealthy",
                     "details": {
                         "error": "API authentication failed",
-                        "message": "Service running in limited mode"
+                        "message": "Service running in limited mode",
                     },
                 }
-                
+
                 # Mock Redis client
                 with mock.patch("redis.asyncio.Redis", autospec=True) as MockRedis:
                     # Create a mock instance with healthy response
                     mock_redis_instance = mock.MagicMock()
                     mock_redis_instance.ping = mock.AsyncMock(return_value=True)
-                    mock_redis_instance.info = mock.AsyncMock(return_value={
-                        "redis_version": "6.2.0",
-                        "used_memory_human": "1.5M"
-                    })
+                    mock_redis_instance.info = mock.AsyncMock(
+                        return_value={
+                            "redis_version": "6.2.0",
+                            "used_memory_human": "1.5M",
+                        }
+                    )
                     mock_redis_instance.close = mock.AsyncMock()
                     MockRedis.return_value = mock_redis_instance
 
                     # Test both endpoints for consistent behavior
                     endpoints = ["/v1/health", "/health"]
-                    
+
                     for endpoint in endpoints:
                         # Test the health check endpoint
                         response = test_client.get(endpoint)
-                        
+
                         # Should still return 200 OK even though components are failing
                         assert response.status_code == 200
                         data = response.json()
-                        
+
                         # Overall status should be degraded
                         assert data["status"] == "degraded"
                         assert "components" in data
-                        
+
                         # Check individual component statuses
                         if "neo4j" in data["components"]:
                             assert data["components"]["neo4j"]["status"] == "healthy"
@@ -261,7 +265,7 @@ def test_health_check_degraded_service(test_client):
 @pytest.mark.integration
 def test_health_check_all_components_unhealthy(test_client):
     """Test health check behavior when all components are unhealthy.
-    
+
     This test verifies that:
     1. The service returns HTTP 200 even when all components are unhealthy
     2. The overall status is marked as unhealthy
@@ -291,26 +295,28 @@ def test_health_check_all_components_unhealthy(test_client):
                     "status": "unhealthy",
                     "details": {"error": "API authentication failed"},
                 }
-                
+
                 # Mock Redis with unhealthy response (fails to connect)
                 with mock.patch("redis.asyncio.Redis", autospec=True) as MockRedis:
                     # Create a mock instance that raises exception on ping
                     mock_redis_instance = mock.MagicMock()
-                    mock_redis_instance.ping = mock.AsyncMock(side_effect=Exception("Connection refused"))
+                    mock_redis_instance.ping = mock.AsyncMock(
+                        side_effect=Exception("Connection refused")
+                    )
                     MockRedis.return_value = mock_redis_instance
 
                     # Test both endpoints
                     for endpoint in ["/v1/health", "/health"]:
                         response = test_client.get(endpoint)
-                        
+
                         # Should still return 200 OK
                         assert response.status_code == 200
                         data = response.json()
-                        
+
                         # Overall status should be unhealthy
                         assert data["status"] == "unhealthy"
                         assert "components" in data
-                        
+
                         # Check all components show as unhealthy
                         if "neo4j" in data["components"]:
                             assert data["components"]["neo4j"]["status"] == "unhealthy"
@@ -379,7 +385,7 @@ def test_config_api_minimal(test_client):
     data = response.json()
     assert "title" in data
     assert "properties" in data
-    
+
     # Check that neo4j section exists
     assert "neo4j" in data["properties"]
 

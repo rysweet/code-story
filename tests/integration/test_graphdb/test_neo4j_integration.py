@@ -32,10 +32,14 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     # Skip all these tests in CI environment since we're having port configuration issues
     if os.environ.get("CI") == "true":
         pytest.skip("Skipping Neo4j integration tests in CI environment")
-    
+
     # Use either NEO4J_URI or NEO4J__URI from environment (double underscore is for Settings)
     # CI environment uses 7687, local docker-compose.test.yml uses 7688
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or f"bolt://localhost:{neo4j_port}"
+    uri = (
+        os.environ.get("NEO4J__URI")
+        or os.environ.get("NEO4J_URI")
+        or f"bolt://localhost:{neo4j_port}"
+    )
     username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
     password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
     database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
@@ -46,9 +50,7 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     os.environ["NEO4J_DATABASE"] = database
     os.environ["CODESTORY_TEST_DB"] = database
 
-    connector = Neo4jConnector(
-        uri=uri, username=username, password=password, database=database
-    )
+    connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
 
     try:
         # Clear database before tests
@@ -83,7 +85,7 @@ def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
         name="file.py",
         extension="py",
         size=1024,
-        content="print('hello')"
+        content="print('hello')",
         # Note: not using metadata for now as Neo4j doesn't support nested properties directly
     )
 
@@ -171,9 +173,7 @@ def test_transaction_management(neo4j_connector: Neo4jConnector) -> None:
     assert len(results) == 3
 
     # Verify all nodes were created
-    count_result = neo4j_connector.execute_query(
-        "MATCH (n:Test) RETURN count(n) AS count"
-    )
+    count_result = neo4j_connector.execute_query("MATCH (n:Test) RETURN count(n) AS count")
     assert count_result[0]["count"] == 3
 
 
@@ -193,9 +193,7 @@ def test_transaction_rollback(neo4j_connector: Neo4jConnector) -> None:
         neo4j_connector.execute_many(queries, params_list, write=True)
 
     # Verify no nodes were created (transaction rolled back)
-    count_result = neo4j_connector.execute_query(
-        "MATCH (n:TestRollback) RETURN count(n) AS count"
-    )
+    count_result = neo4j_connector.execute_query("MATCH (n:TestRollback) RETURN count(n) AS count")
     assert count_result[0]["count"] == 0
 
 
@@ -243,7 +241,9 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         result = neo4j_connector.execute_query(check_query)
         print(f"Using GDS version: {result[0]['version']}")
     except Exception as e:
-        pytest.skip(f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin.")
+        pytest.skip(
+            f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin."
+        )
 
     # Create test nodes with embeddings
     embedding1 = [0.1, 0.2, 0.3, 0.4]

@@ -1,6 +1,4 @@
-"""
-Command modules for the Code Story CLI.
-"""
+"""Command modules for the Code Story CLI."""
 
 import os
 import sys

@@ -3,7 +3,6 @@
 This module provides utilities for managing authorization scopes in the MCP Adapter.
 """
 
-
 from codestory_mcp.utils.config import get_mcp_settings
 
 
@@ -44,11 +43,7 @@ class ScopeManager:
             return True
 
         # Check if any required scope is present
-        for required_scope in self.settings.required_scopes:
-            if required_scope in scopes:
-                return True
-
-        return False
+        return any(required_scope in scopes for required_scope in self.settings.required_scopes)
 
     def can_execute_tool(self, tool_name: str, scopes: list[str]) -> bool:
         """Check if the provided scopes allow executing the specified tool.

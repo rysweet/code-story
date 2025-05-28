@@ -23,9 +23,7 @@ class ParallelExecutor:
     dependency graph, respecting the DAG order and limiting concurrency.
     """
 
-    def __init__(
-        self, max_concurrency: int = 5, executor: ThreadPoolExecutor | None = None
-    ):
+    def __init__(self, max_concurrency: int = 5, executor: ThreadPoolExecutor | None = None):
         """Initialize the parallel executor.
 
         Args:
@@ -62,9 +60,7 @@ class ParallelExecutor:
         self.processing_function = process_func
         self.loop = asyncio.get_event_loop()
 
-        logger.info(
-            f"Starting parallel processing with max concurrency: {self.max_concurrency}"
-        )
+        logger.info(f"Starting parallel processing with max concurrency: {self.max_concurrency}")
 
         # Get initial leaf nodes
         ready_nodes = self.graph.get_ready_nodes()
@@ -193,9 +189,7 @@ class ParallelExecutor:
                 try:
                     on_completion(node_id, self.graph.nodes[node_id])
                 except Exception as e:
-                    logger.exception(
-                        f"Error in completion callback for node {node_id}: {e}"
-                    )
+                    logger.exception(f"Error in completion callback for node {node_id}: {e}")
         else:
             self.graph.update_node_status(node_id, ProcessingStatus.FAILED)
             self.failed_tasks.add(node_id)

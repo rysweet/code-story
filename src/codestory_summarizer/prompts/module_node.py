@@ -5,11 +5,10 @@ high-quality summaries of module nodes.
 """
 
 
-
 def get_module_summary_prompt(
     content: str,
     context: list[str],
-    child_summaries: list[str] = [],  # Use empty list instead of None
+    child_summaries: list[str] | None = None,  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a module.
@@ -24,10 +23,13 @@ def get_module_summary_prompt(
         Prompt for generating a module summary
     """
     # Truncate content if it's too long
+    if child_summaries is None:
+        child_summaries = []
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert code architect. Analyze the following module and write a comprehensive summary.
+    prompt = f"""You are an expert code architect. Analyze the following module and write a 
+comprehensive summary.
 
 Module information:
 {chr(10).join(context)}
@@ -52,7 +54,8 @@ Your task is to:
 4. Describe any important patterns or design principles implemented
 5. Note the module's role in the larger codebase architecture
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the module does, WHY it exists, and HOW it should be used.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the module 
+does, WHY it exists, and HOW it should be used.
 
 Summary:
 """
@@ -63,7 +66,7 @@ Summary:
 def get_summary_prompt(
     content: str,
     context: list[str],
-    child_summaries: list[str] = [],  # Use empty list instead of None
+    child_summaries: list[str] | None = None,  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a module.
@@ -81,4 +84,6 @@ def get_summary_prompt(
         Prompt for generating a module summary
     """
     # Use child_summaries directly since empty list is already the default
+    if child_summaries is None:
+        child_summaries = []
     return get_module_summary_prompt(content, context, child_summaries, max_tokens)

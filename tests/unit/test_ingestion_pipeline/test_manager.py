@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
@@ -23,10 +24,11 @@ sys.modules["celery.result"] = MagicMock()
 @pytest.fixture(autouse=True)
 def mock_prometheus_metrics():
     """Mock prometheus metrics to avoid registration issues during tests."""
-    with patch("prometheus_client.Counter") as mock_counter, patch(
-        "prometheus_client.Gauge"
-    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram, patch(
-        "prometheus_client.REGISTRY._names_to_collectors", {}
+    with (
+        patch("prometheus_client.Counter") as mock_counter,
+        patch("prometheus_client.Gauge") as mock_gauge,
+        patch("prometheus_client.Histogram") as mock_histogram,
+        patch("prometheus_client.REGISTRY._names_to_collectors", {}),
     ):
         mock_counter.return_value.labels.return_value.inc = MagicMock()
         mock_gauge.return_value.inc = MagicMock()
@@ -75,9 +77,7 @@ class TestPipelineManager:
 
     def test_init(self, config_file):
         """Test initialization with a configuration file."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
 
             manager = PipelineManager(config_path=config_file)
@@ -90,11 +90,10 @@ class TestPipelineManager:
 
     def test_get_step_class_found(self, config_file, mock_step_class):
         """Test getting a step class that exists."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover, patch(
-            "codestory.ingestion_pipeline.manager.find_step_manually"
-        ) as mock_find:
+        with (
+            patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover,
+            patch("codestory.ingestion_pipeline.manager.find_step_manually") as mock_find,
+        ):
             mock_discover.return_value = {"filesystem": mock_step_class}
             mock_find.return_value = None
 
@@ -102,9 +101,7 @@ class TestPipelineManager:
 
             # Just override _get_step_class directly
             original_method = manager._get_step_class
-            manager._get_step_class = (
-                lambda name: mock_step_class if name == "filesystem" else None
-            )
+            manager._get_step_class = lambda name: mock_step_class if name == "filesystem" else None
             try:
                 step_class = manager._get_step_class("filesystem")
                 assert step_class is mock_step_class
@@ -114,15 +111,11 @@ class TestPipelineManager:
 
     def test_get_step_class_not_found(self, config_file):
         """Test getting a step class that doesn't exist."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
 
             # Also patch find_step_manually to return None
-            with patch(
-                "codestory.ingestion_pipeline.manager.find_step_manually"
-            ) as mock_find:
+            with patch("codestory.ingestion_pipeline.manager.find_step_manually") as mock_find:
                 mock_find.return_value = None
 
                 manager = PipelineManager(config_path=config_file)
@@ -132,9 +125,7 @@ class TestPipelineManager:
 
     def test_prepare_step_configs(self, config_file):
         """Test preparing step configurations from the config file."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
 
             manager = PipelineManager(config_path=config_file)
@@ -146,9 +137,7 @@ class TestPipelineManager:
 
     def test_validate_steps_all_found(self, config_file, mock_step_class):
         """Test validating steps when all are found."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {
                 "filesystem": mock_step_class,
                 "blarify": mock_step_class,
@@ -161,26 +150,21 @@ class TestPipelineManager:
 
     def test_validate_steps_missing(self, config_file, mock_step_class):
         """Test validating steps when some are missing."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {"filesystem": mock_step_class}
 
             # Also patch find_step_manually to return None for blarify
-            with patch(
-                "codestory.ingestion_pipeline.manager.find_step_manually"
-            ) as mock_find:
+            with patch("codestory.ingestion_pipeline.manager.find_step_manually") as mock_find:
                 mock_find.return_value = None
 
                 manager = PipelineManager(config_path=config_file)
 
-                # We need to specifically mock the _get_step_class method to make it return None for blarify
+                # We need to specifically mock the _get_step_class method to make it
+                # return None for blarify
                 with patch.object(
                     manager,
                     "_get_step_class",
-                    side_effect=lambda name: mock_step_class
-                    if name == "filesystem"
-                    else None,
+                    side_effect=lambda name: mock_step_class if name == "filesystem" else None,
                 ):
                     # Should raise an exception
                     with pytest.raises(ValueError) as exc:
@@ -190,9 +174,7 @@ class TestPipelineManager:
 
     def test_start_job(self, config_file, mock_step_class):
         """Test starting a job."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {
                 "filesystem": mock_step_class,
                 "blarify": mock_step_class,
@@ -217,9 +199,7 @@ class TestPipelineManager:
                     manager = PipelineManager(config_path=config_file)
 
                     # Add explicit mock for _get_step_class
-                    with patch.object(
-                        manager, "_get_step_class", return_value=mock_step_class
-                    ):
+                    with patch.object(manager, "_get_step_class", return_value=mock_step_class):
                         job_id = manager.start_job(repo_path)
 
                         assert job_id == "test-uuid"
@@ -232,9 +212,7 @@ class TestPipelineManager:
 
     def test_status(self, config_file, mock_step_class):
         """Test checking job status."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
 
             # Set up the status response directly
@@ -244,9 +222,7 @@ class TestPipelineManager:
             }
 
             # Mock get_job_status task
-            with patch(
-                "codestory.ingestion_pipeline.manager.get_job_status"
-            ) as mock_task:
+            with patch("codestory.ingestion_pipeline.manager.get_job_status") as mock_task:
                 mock_result = MagicMock()
                 # Make sure the mock returns our exact response
                 mock_result.get.return_value = status_response
@@ -276,9 +252,7 @@ class TestPipelineManager:
 
     def test_stop(self, config_file, mock_step_class):
         """Test stopping a job."""
-        with patch(
-            "codestory.ingestion_pipeline.manager.discover_pipeline_steps"
-        ) as mock_discover:
+        with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
 
             # Mock stop_job task

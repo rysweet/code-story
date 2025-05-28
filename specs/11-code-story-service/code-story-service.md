@@ -361,3 +361,25 @@ Standard HTTP codes: `400` validation, `401/403` auth, `404` missing,
 
 ---
 
+## Error Logging and Propagation
+
+- All service errors must be recorded to a persistent error log on the server (e.g., `/var/log/codestory/error.log`).
+- On any endpoint invocation, the service checks the error log for new entries since the last request.
+- If new errors are found, the service includes an `error_package` in the response payload with the error messages and clears the processed entries from the log.
+- Consumers can use the `error_package` to detect and handle service-side failures.
+
+## Health Check Extensions
+
+- The `/health` endpoint returns any unreported errors in the `error_package` field:
+
+```json
+{
+  "status": "unhealthy",
+  "error_package": [
+    "Traceback ...",
+    "Detail ..."
+  ],
+  "components": { ... }
+}
+```
+

@@ -5,10 +5,7 @@ high-quality summaries of class nodes.
 """
 
 
-
-def get_class_summary_prompt(
-    content: str, context: list[str], max_tokens: int = 8000
-) -> str:
+def get_class_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a class.
 
     Args:
@@ -23,7 +20,8 @@ def get_class_summary_prompt(
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert code summarizer specializing in object-oriented design patterns. Analyze the following class and write a comprehensive summary.
+    prompt = f"""You are an expert code summarizer specializing in object-oriented design patterns. 
+Analyze the following class and write a comprehensive summary.
 
 Class information:
 {chr(10).join(context)}
@@ -40,7 +38,8 @@ Your task is to:
 4. Note any design patterns or programming paradigms being utilized
 5. Describe the class's role in the broader application architecture
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the class does, WHY it exists, and HOW it accomplishes its purpose.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the class 
+does, WHY it exists, and HOW it accomplishes its purpose.
 
 Summary:
 """

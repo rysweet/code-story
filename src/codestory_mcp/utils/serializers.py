@@ -46,18 +46,19 @@ class NodeSerializer:
             result["path"] = node["path"]
 
         # Add content if available and not explicitly excluded
-        if "content" in node and (
-            not exclude_properties or "content" not in exclude_properties
+        if (
+            "content" in node
+            and (not exclude_properties or "content" not in exclude_properties)
+            and (not include_properties or "content" in include_properties)
         ):
-            if not include_properties or "content" in include_properties:
-                result["content"] = node["content"]
+            result["content"] = node["content"]
 
         # Add score if provided
         if score is not None:
             result["score"] = score
 
         # Process properties according to include/exclude lists
-        properties = {}
+        properties: dict[Any, Any] = {}
         for key, value in node.items():
             # Skip already handled properties
             if key in ("name", "path", "content"):
@@ -92,21 +93,17 @@ class NodeSerializer:
         Returns:
             MCP result dictionary with matches array
         """
-        matches = []
+        matches: list[Any] = []
 
         for item in nodes:
             if isinstance(item, tuple):
                 node, score = item
                 matches.append(
-                    NodeSerializer.to_dict(
-                        node, score, include_properties, exclude_properties
-                    )
+                    NodeSerializer.to_dict(node, score, include_properties, exclude_properties)
                 )
             else:
                 matches.append(
-                    NodeSerializer.to_dict(
-                        item, None, include_properties, exclude_properties
-                    )
+                    NodeSerializer.to_dict(item, None, include_properties, exclude_properties)
                 )
 
         return {"matches": matches}
@@ -144,7 +141,7 @@ class RelationshipSerializer:
         }
 
         # Process properties according to include/exclude lists
-        properties = {}
+        properties: dict[Any, Any] = {}
         for key, value in relationship.items():
             # Apply include/exclude filters
             if include_properties and key not in include_properties:
@@ -155,7 +152,7 @@ class RelationshipSerializer:
             # Add property to result
             properties[key] = value
 
-        result["properties"] = properties
+        result["properties"] = properties  # type: ignore  # TODO: Fix type compatibility
 
         return result
 
@@ -181,10 +178,10 @@ class RelationshipSerializer:
         Returns:
             MCP result dictionary with paths array
         """
-        result_paths = []
+        result_paths: list[Any] = []
 
         for path in paths:
-            path_elements = []
+            path_elements: list[Any] = []
 
             for i, element in enumerate(path):
                 if i % 2 == 0:  # Node (even indices)

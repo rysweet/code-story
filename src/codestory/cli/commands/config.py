@@ -1,7 +1,6 @@
-"""
-Configuration commands for the Code Story CLI.
-"""
+"""Configuration commands for the Code Story CLI."""
 
+import contextlib
 import json
 import os
 import sys
@@ -11,9 +10,7 @@ from typing import Any
 import click
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
 from rich.console import Console
 from rich.prompt import Confirm
@@ -24,7 +21,7 @@ from ..client import ServiceClient, ServiceError
 
 
 @click.group(help="Manage Code Story configuration.")
-def config():
+def config() -> Any:
     """Command group for configuration operations."""
     pass
 
@@ -38,12 +35,8 @@ def config():
     help="Output format.",
 )
 @click.pass_context
-def show_config(
-    ctx: click.Context, sensitive: bool = False, format: str = "table"
-) -> None:
-    """
-    Show current configuration.
-    """
+def show_config(ctx: click.Context, sensitive: bool = False, format: str = "table") -> None:
+    """Show current configuration."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -73,9 +66,7 @@ def show_config(
 @click.argument("key_value_pairs", nargs=-1)
 @click.option("--no-confirm", is_flag=True, help="Don't ask for confirmation.")
 @click.pass_context
-def set_config(
-    ctx: click.Context, key_value_pairs: list[str], no_confirm: bool = False
-) -> None:
+def set_config(ctx: click.Context, key_value_pairs: list[str], no_confirm: bool = False) -> None:
     """
     Update configuration values.
 
@@ -131,9 +122,7 @@ def set_config(
 @config.command(name="edit", help="Edit configuration in an editor.")
 @click.pass_context
 def edit_config(ctx: click.Context) -> None:
-    """
-    Edit configuration in an editor.
-    """
+    """Edit configuration in an editor."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
 
@@ -145,9 +134,7 @@ def edit_config(ctx: click.Context) -> None:
         sys.exit(1)
 
     # Create temporary file with configuration
-    with tempfile.NamedTemporaryFile(
-        suffix=".json", mode="w+", delete=False
-    ) as temp_file:
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w+", delete=False) as temp_file:
         json.dump(config_data, temp_file, indent=2)
         temp_file_path = temp_file.name
 
@@ -169,7 +156,7 @@ def edit_config(ctx: click.Context) -> None:
 
         # Apply updates
         console.print("Updating configuration...")
-        result = client.update_config(updated_config)
+        client.update_config(updated_config)
 
         console.print("[green]Configuration updated successfully.[/]")
 
@@ -183,8 +170,6 @@ def edit_config(ctx: click.Context) -> None:
         # Clean up
         if os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
-
-
 
 
 def _display_config_table(
@@ -208,9 +193,7 @@ def _display_config_table(
 
     for key, value in sorted(flat_config.items()):
         # Check if sensitive
-        is_sensitive = (
-            "password" in key.lower() or "secret" in key.lower() or "key" in key.lower()
-        )
+        is_sensitive = "password" in key.lower() or "secret" in key.lower() or "key" in key.lower()
 
         if is_sensitive and not sensitive:
             # Mask sensitive values
@@ -227,9 +210,7 @@ def _display_config_table(
     console.print(table)
 
 
-def _flatten_dict(
-    d: dict[str, Any], parent_key: str = "", sep: str = "."
-) -> dict[str, Any]:
+def _flatten_dict(d: dict[str, Any], parent_key: str = "", sep: str = ".") -> dict[str, Any]:
     """
     Flatten a nested dictionary.
 
@@ -241,7 +222,7 @@ def _flatten_dict(
     Returns:
         Flattened dictionary
     """
-    items = []
+    items: list[Any] = []
     for k, v in d.items():
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
 
@@ -253,9 +234,7 @@ def _flatten_dict(
     return dict(items)
 
 
-def _build_config_tree(
-    tree: Tree, config_data: dict[str, Any], sensitive: bool = False
-) -> None:
+def _build_config_tree(tree: Tree, config_data: dict[str, Any], sensitive: bool = False) -> None:
     """
     Build a tree representation of configuration data.
 
@@ -272,9 +251,7 @@ def _build_config_tree(
         else:
             # Check if sensitive
             is_sensitive = (
-                "password" in key.lower()
-                or "secret" in key.lower()
-                or "key" in key.lower()
+                "password" in key.lower() or "secret" in key.lower() or "key" in key.lower()
             )
 
             if is_sensitive and not sensitive:
@@ -297,7 +274,7 @@ def _format_value_for_table(value: Any) -> str:
     Returns:
         Formatted string representation
     """
-    if isinstance(value, (dict, list)):
+    if isinstance(value, dict | list):
         return json.dumps(value)
     elif value is None:
         return "[dim]null[/]"
@@ -317,13 +294,13 @@ def _format_value_for_tree(value: Any) -> str:
     Returns:
         Formatted string representation
     """
-    if isinstance(value, (dict, list)):
+    if isinstance(value, dict | list):
         return f"[yellow]{json.dumps(value)}[/]"
     elif value is None:
         return "[dim]null[/]"
     elif isinstance(value, bool):
         return f"[green]{str(value).lower()}[/]"
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, int | float):
         return f"[green]{value}[/]"
     else:
         return f'[green]"{value}"[/]'

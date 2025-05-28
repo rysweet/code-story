@@ -79,21 +79,17 @@ class GraphServiceAdapter:
                     status_code=response.status_code,
                     error=response.text,
                 )
-                self.metrics.record_service_api_call(
-                    endpoint, "error", time.time() - start_time
-                )
+                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
 
             # Record successful API call
-            self.metrics.record_service_api_call(
-                endpoint, "success", time.time() - start_time
-            )
+            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Extract results
             data = response.json()
 
             # Convert to Node objects with scores
-            results = []
+            results: list[Any] = []
             for item in data.get("data", []):
                 # Create Node-like object
                 node = MockNode(
@@ -117,10 +113,8 @@ class GraphServiceAdapter:
                 "Search request error",
                 error=str(e),
             )
-            self.metrics.record_service_api_call(
-                endpoint, "error", time.time() - start_time
-            )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def find_node(self, node_id: str) -> Node:
         """Find a node by ID.
@@ -153,9 +147,7 @@ class GraphServiceAdapter:
                     status_code=response.status_code,
                     error=response.text,
                 )
-                self.metrics.record_service_api_call(
-                    endpoint, "error", time.time() - start_time
-                )
+                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
                 raise ToolError(
                     error_message,
                     status_code=status.HTTP_404_NOT_FOUND
@@ -164,9 +156,7 @@ class GraphServiceAdapter:
                 )
 
             # Record successful API call
-            self.metrics.record_service_api_call(
-                endpoint, "success", time.time() - start_time
-            )
+            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Extract results
             data = response.json().get("data", {})
@@ -188,10 +178,8 @@ class GraphServiceAdapter:
                 node_id=node_id,
                 error=str(e),
             )
-            self.metrics.record_service_api_call(
-                endpoint, "error", time.time() - start_time
-            )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def find_paths(
         self, from_id: str, to_id: str, max_paths: int = 3
@@ -231,23 +219,19 @@ class GraphServiceAdapter:
                     status_code=response.status_code,
                     error=response.text,
                 )
-                self.metrics.record_service_api_call(
-                    endpoint, "error", time.time() - start_time
-                )
+                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
 
             # Record successful API call
-            self.metrics.record_service_api_call(
-                endpoint, "success", time.time() - start_time
-            )
+            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Extract results
             data = response.json()
 
             # Convert to paths of nodes and relationships
-            paths = []
+            paths: list[Any] = []
             for path_data in data.get("data", []):
-                path = []
+                path: list[Any] = []
 
                 # Process elements in the path
                 for element in path_data.get("elements", []):
@@ -284,10 +268,8 @@ class GraphServiceAdapter:
                 "Path finding request error",
                 error=str(e),
             )
-            self.metrics.record_service_api_call(
-                endpoint, "error", time.time() - start_time
-            )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def execute_cypher(
         self, query: str, parameters: dict[str, Any] | None = None
@@ -314,7 +296,7 @@ class GraphServiceAdapter:
             }
 
             if parameters:
-                payload["parameters"] = parameters
+                payload["parameters"] = parameters  # type: ignore  # TODO: Fix type compatibility
 
             # Make request to Code Story service
             response = await self.client.post(endpoint, json=payload)
@@ -327,15 +309,11 @@ class GraphServiceAdapter:
                     status_code=response.status_code,
                     error=response.text,
                 )
-                self.metrics.record_service_api_call(
-                    endpoint, "error", time.time() - start_time
-                )
+                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
 
             # Record successful API call
-            self.metrics.record_service_api_call(
-                endpoint, "success", time.time() - start_time
-            )
+            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Return results
             return response.json()
@@ -347,10 +325,8 @@ class GraphServiceAdapter:
                 "Cypher query request error",
                 error=str(e),
             )
-            self.metrics.record_service_api_call(
-                endpoint, "error", time.time() - start_time
-            )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def close(self) -> None:
         """Close the HTTP client."""

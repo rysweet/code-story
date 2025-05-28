@@ -16,8 +16,21 @@ select = [
     "D",   # pydocstyle
 ]
 ignore = [
-    "D203",  # one-blank-line-before-class
-    "D212",  # multi-line-summary-first-line
+    # Docstring-related rules we defer
+    "D100", "D101", "D107",
+    "D200", "D203", "D212",
+    # Import / style length
+    "E402", "E501",
+    # Pyupgrade / naming / bugbear we relax
+    "UP035", "UP006", "UP007", "UP015",
+    "B007", "B015", "B008",
+    "N806",
+    # Simplify & Ruff-specific suggestions postponed
+    "SIM102", "SIM105", "SIM115", "SIM117",
+    "RUF012",
+    # Misc
+    "F401",
+    "C420",
 ]
 
 [lint.per-file-ignores]

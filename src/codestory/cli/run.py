@@ -8,13 +8,15 @@ is run directly.
 """
 
 import sys
+from typing import Any
 
 from codestory.cli.main import main
 
 
-def run():
+def run() -> Any:
     """Run the CLI application with proper exit code."""
     return main()
+
 
 if __name__ == "__main__":
     sys.exit(run())

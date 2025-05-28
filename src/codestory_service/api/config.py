@@ -48,9 +48,7 @@ def get_config(
     if include_sensitive:
         user_roles = user.get("roles", [])
         if "admin" not in user_roles:
-            logger.warning(
-                f"User {user.get('name')} attempted to view sensitive config values"
-            )
+            logger.warning(f"User {user.get('name')} attempted to view sensitive config values")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Viewing sensitive configuration values requires admin role",
@@ -70,7 +68,7 @@ def get_config(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting configuration: {e!s}",
-        )
+        ) from e
 
 
 @router.patch(
@@ -107,7 +105,7 @@ async def update_config(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating configuration: {e!s}",
-        )
+        ) from e
 
 
 @router.get(
@@ -140,4 +138,4 @@ def get_config_schema(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting configuration schema: {e!s}",
-        )
+        ) from e

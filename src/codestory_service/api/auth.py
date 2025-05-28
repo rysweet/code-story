@@ -24,7 +24,10 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
     "/login",
     response_model=TokenResponse,
     summary="Login",
-    description="Login with username and password to get a JWT token. Only available in development mode.",
+    description=(
+        "Login with username and password to get a JWT token. "
+        "Only available in development mode."
+    ),
 )
 async def login(
     request: LoginRequest, auth_service: AuthService = Depends(get_auth_service)
@@ -62,7 +65,7 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Login failed: {e!s}",
-        )
+        ) from e
 
 
 @router.get(
@@ -85,9 +88,7 @@ async def get_user_info(
         UserInfo with user details
     """
     if not user:
-        return UserInfo(
-            id="anonymous", name="Anonymous User", roles=[], is_authenticated=False
-        )
+        return UserInfo(id="anonymous", name="Anonymous User", roles=[], is_authenticated=False)
 
     try:
         logger.info(f"Getting info for user: {user.get('name', 'unknown')}")
@@ -97,4 +98,4 @@ async def get_user_info(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting user info: {e!s}",
-        )
+        ) from e

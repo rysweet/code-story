@@ -43,9 +43,7 @@ def get_summary_prompt(
             max_tokens=max_tokens,
         )
     elif node_type == NodeType.CLASS:
-        return get_class_summary_prompt(
-            content=content, context=context, max_tokens=max_tokens
-        )
+        return get_class_summary_prompt(content=content, context=context, max_tokens=max_tokens)
     elif node_type in (NodeType.FUNCTION, NodeType.METHOD):
         return get_function_summary_prompt(
             content=content,
@@ -82,7 +80,8 @@ def get_summary_prompt(
         )
     else:
         # Generic prompt for other node types
-        prompt = f"""You are an expert code summarizer. Analyze the following code and write a comprehensive summary.
+        prompt = f"""You are an expert code summarizer. Analyze the following code and write a 
+comprehensive summary.
 
 Information:
 {chr(10).join(context)}
@@ -92,7 +91,8 @@ Content:
 {content}
 ```
 
-Your task is to provide a concise, technical summary of what this code does, why it exists, and how it works.
+Your task is to provide a concise, technical summary of what this code does, why it exists, 
+and how it works.
 
 Summary:
 """

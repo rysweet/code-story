@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-"""
-Script to directly run the filesystem integration test.
-"""
+"""Script to directly run the filesystem integration test."""
 
 import os
 import sys
@@ -13,7 +11,6 @@ from pathlib import Path
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, current_dir)
 
-from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_filesystem.step import FileSystemStep
@@ -37,21 +34,15 @@ def run_test():
 
         # Create some files
         (repo_dir / "README.md").write_text("# Sample Repository")
-        (repo_dir / "src" / "main" / "app.py").write_text(
-            "def main():\n    print('Hello, world!')"
-        )
-        (repo_dir / "src" / "test" / "test_app.py").write_text(
-            "def test_main():\n    assert True"
-        )
+        (repo_dir / "src" / "main" / "app.py").write_text("def main():\n    print('Hello, world!')")
+        (repo_dir / "src" / "test" / "test_app.py").write_text("def test_main():\n    assert True")
         (repo_dir / "docs" / "index.md").write_text("# Documentation")
 
         # Add some files that should be ignored
         (repo_dir / ".git").mkdir()
         (repo_dir / ".git" / "config").write_text("# Git config")
         (repo_dir / "src" / "__pycache__").mkdir()
-        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text(
-            "# Bytecode"
-        )
+        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text("# Bytecode")
 
         sample_repo = str(repo_dir)
         print(f"Created sample repository at: {sample_repo}")
@@ -60,7 +51,10 @@ def run_test():
         try:
             # Use direct connection parameters to connect to the test Neo4j instance
             neo4j_connector = Neo4jConnector(
-                uri="bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")",  # Port defined in docker-compose.test.yml
+                uri="bolt://localhost:"
+                + (
+                    (os.environ.get("CI") == "true" and "7687") or "7688"
+                ),  # Port defined in docker-compose.test.yml
                 username="neo4j",
                 password="password",
                 database="codestory-test",  # Database defined in docker-compose.test.yml
@@ -71,12 +65,12 @@ def run_test():
                 neo4j_connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
                 print("Successfully connected to Neo4j and cleared the database")
             except Exception as e:
-                print(f"Failed to connect to Neo4j: {str(e)}")
+                print(f"Failed to connect to Neo4j: {e!s}")
                 return
 
             # Create the step
             step = FileSystemStep()
-            print(f"Step created")
+            print("Step created")
 
             # Print configuration for debugging
             print(f"Neo4j URI: {neo4j_connector.uri}")
@@ -85,6 +79,7 @@ def run_test():
 
             # Check if Celery worker is running and get detailed information
             from celery.app.control import Control
+
             from codestory.ingestion_pipeline.celery_app import app
 
             control = Control(app)
@@ -106,16 +101,14 @@ def run_test():
                 # Check if our specific task is registered
                 all_tasks = []
                 registered = i.registered() or {}
-                for worker, tasks in registered.items():
+                for _worker, tasks in registered.items():
                     all_tasks.extend(tasks)
 
                 task_name = "filesystem.run"
                 if task_name in all_tasks:
                     print(f"✅ Task '{task_name}' is registered!")
                 else:
-                    print(
-                        f"❌ Task '{task_name}' is NOT registered. Available tasks: {all_tasks}"
-                    )
+                    print(f"❌ Task '{task_name}' is NOT registered. Available tasks: {all_tasks}")
             except Exception as e:
                 print(f"Error inspecting Celery: {e}")
 
@@ -131,9 +124,7 @@ def run_test():
                 print(f"Task imported: {process_filesystem}")
 
                 # Verify task is registered with Celery
-                print(
-                    f"Task registered with app? {process_filesystem.name in app.tasks}"
-                )
+                print(f"Task registered with app? {process_filesystem.name in app.tasks}")
 
                 # Now run the step through the regular interface
                 print("Running the FileSystemStep.run method...")
@@ -156,9 +147,7 @@ def run_test():
             status = {"status": StepStatus.RUNNING}
 
             print("\n*** POLLING STATUS ***")
-            print(
-                f"Waiting for job {job_id} to complete (timeout: {max_wait_time}s)..."
-            )
+            print(f"Waiting for job {job_id} to complete (timeout: {max_wait_time}s)...")
 
             # Poll more frequently and for longer to give the task time to complete
             poll_count = 0
@@ -169,9 +158,7 @@ def run_test():
                 try:
                     print(f"\nPoll {poll_count}:")
                     status = step.status(job_id)
-                    print(
-                        f"Job status: {status['status']} - {status.get('message', '')}"
-                    )
+                    print(f"Job status: {status['status']} - {status.get('message', '')}")
 
                     if status["status"] in (StepStatus.COMPLETED, StepStatus.FAILED):
                         print(f"Job reached terminal state: {status['status']}")

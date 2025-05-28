@@ -21,10 +21,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",  # Support for Google and NumPy style docstrings
     "sphinx.ext.githubpages",
-    
     # Markdown support
     "myst_parser",  # Markdown support
-    
     # Additional extensions
     "sphinxcontrib.mermaid",  # Diagrams
     "sphinx_copybutton",  # Copy button for code blocks

@@ -59,15 +59,11 @@ class QueryResultFormat(str, Enum):
 class QueryResult(BaseModel):
     """Model for Cypher query results."""
 
-    query_id: str = Field(
-        default_factory=lambda: str(uuid4()), description="Query execution ID"
-    )
+    query_id: str = Field(default_factory=lambda: str(uuid4()), description="Query execution ID")
     columns: list[str] = Field(..., description="Column names in result set")
     rows: list[list[Any]] = Field(..., description="Result rows")
     row_count: int = Field(..., description="Number of rows returned")
-    execution_time_ms: int = Field(
-        ..., description="Query execution time in milliseconds"
-    )
+    execution_time_ms: int = Field(..., description="Query execution time in milliseconds")
     has_more: bool = Field(default=False, description="Whether there are more results")
     format: QueryResultFormat = Field(
         default=QueryResultFormat.TABULAR, description="Format of the results"
@@ -150,9 +146,7 @@ class VectorResult(BaseModel):
 
     results: list[SearchResult] = Field(..., description="Search results")
     total_count: int = Field(..., description="Total number of matching results")
-    execution_time_ms: int = Field(
-        ..., description="Search execution time in milliseconds"
-    )
+    execution_time_ms: int = Field(..., description="Search execution time in milliseconds")
     query_embedding_time_ms: int | None = Field(
         default=None,
         description="Time to generate query embedding",
@@ -246,13 +240,9 @@ class Path(BaseModel):
     """Single path in a path result."""
 
     nodes: list[PathNode] = Field(..., description="Nodes in the path")
-    relationships: list[PathRelationship] = Field(
-        ..., description="Relationships in the path"
-    )
+    relationships: list[PathRelationship] = Field(..., description="Relationships in the path")
     length: int = Field(..., description="Path length (number of relationships)")
-    cost: float | None = Field(
-        default=None, description="Path cost (for weighted paths)"
-    )
+    cost: float | None = Field(default=None, description="Path cost (for weighted paths)")
 
 
 class PathResult(BaseModel):
@@ -314,9 +304,7 @@ class AskAnswer(BaseModel):
 
     answer: str = Field(..., description="Natural language answer to the question")
     references: list[Reference] = Field(..., description="References to code entities")
-    conversation_id: str = Field(
-        ..., description="ID for continued conversation context"
-    )
+    conversation_id: str = Field(..., description="ID for continued conversation context")
     execution_time_ms: int = Field(..., description="Execution time in milliseconds")
     confidence_score: float = Field(
         ...,
@@ -346,17 +334,13 @@ class VisualizationTheme(str, Enum):
 class NodeFilter(BaseModel):
     """Filter for graph nodes in visualization."""
 
-    node_types: list[str] | None = Field(
-        default=None, description="Types of nodes to include"
-    )
-    search_query: str | None = Field(
-        default=None, description="Text search to filter nodes"
-    )
+    node_types: list[str] | None = Field(default=None, description="Types of nodes to include")
+    search_query: str | None = Field(default=None, description="Text search to filter nodes")
     max_nodes: int = Field(
-        default=100, 
-        description="Maximum number of nodes to display initially", 
-        ge=10, 
-        le=500
+        default=100,
+        description="Maximum number of nodes to display initially",
+        ge=10,
+        le=500,
     )
     include_orphans: bool = Field(
         default=False, description="Whether to include nodes with no connections"
@@ -372,32 +356,29 @@ class VisualizationRequest(BaseModel):
     theme: VisualizationTheme = Field(
         default=VisualizationTheme.AUTO, description="Visualization theme"
     )
-    filter: NodeFilter | None = Field(
-        default=None, description="Filter for nodes to include"
-    )
+    filter: NodeFilter | None = Field(default=None, description="Filter for nodes to include")
     focus_node_id: str | None = Field(
         default=None, description="Node ID to focus the visualization on"
     )
     depth: int = Field(
-        default=2, 
-        description="Depth of relationships to include from focus node", 
-        ge=1, 
-        le=5
+        default=2,
+        description="Depth of relationships to include from focus node",
+        ge=1,
+        le=5,
     )
-    
+
 
 class DatabaseClearRequest(BaseModel):
     """Request to clear the database."""
-    
+
     confirm: bool = Field(
         default=False,
-        description="Confirmation that the database should be cleared. Must be True."
+        description="Confirmation that the database should be cleared. Must be True.",
     )
     preserve_schema: bool = Field(
-        default=True,
-        description="Whether to preserve constraints and indexes."
+        default=True, description="Whether to preserve constraints and indexes."
     )
-    
+
     @field_validator("confirm")
     @classmethod
     def confirm_must_be_true(cls, v: bool) -> bool:
@@ -409,10 +390,10 @@ class DatabaseClearRequest(BaseModel):
 
 class DatabaseClearResponse(BaseModel):
     """Response from database clear operation."""
-    
+
     status: str = Field(..., description="Status of the operation")
     message: str = Field(..., description="Description of the operation result")
     timestamp: str = Field(
         default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        description="Timestamp of the operation"
+        description="Timestamp of the operation",
     )

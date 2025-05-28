@@ -234,9 +234,7 @@ class DependencyAnalyzer:
         for func_data in funcs:
             # Determine if this is a method (parent is a class) or a function
             parent_labels = func_data["parent_labels"]
-            node_type = (
-                NodeType.METHOD if "Class" in parent_labels else NodeType.FUNCTION
-            )
+            node_type = NodeType.METHOD if "Class" in parent_labels else NodeType.FUNCTION
 
             func_node = NodeData(
                 id=str(func_data["id"]),

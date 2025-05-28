@@ -49,9 +49,7 @@ def mock_settings():
 def load_env_vars():
     """Load environment variables for unit tests."""
     # Load environment variables from .env file
-    env_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
-    )
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
     load_dotenv(env_path)
 
     # Ensure project root is in Python path for proper imports

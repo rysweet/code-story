@@ -5,11 +5,10 @@ high-quality summaries of directory nodes.
 """
 
 
-
 def get_directory_summary_prompt(
     content: str,
     context: list[str],
-    child_summaries: list[str] = [],  # Use empty list instead of None
+    child_summaries: list[str] | None = None,  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
@@ -23,7 +22,10 @@ def get_directory_summary_prompt(
     Returns:
         Prompt for generating a directory summary
     """
-    prompt = f"""You are an expert software architect. Analyze the following directory and write a comprehensive summary.
+    if child_summaries is None:
+        child_summaries = []
+    prompt = f"""You are an expert software architect. Analyze the following directory and write a 
+comprehensive summary.
 
 Directory information:
 {chr(10).join(context)}
@@ -43,7 +45,8 @@ Directory information:
 4. Describe how this directory fits into the larger project structure
 5. Note any important conventions, patterns, or organization strategies
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the directory contains, WHY it exists, and HOW it contributes to the overall project architecture.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the directory 
+contains, WHY it exists, and HOW it contributes to the overall project architecture.
 
 Summary:
 """
@@ -54,7 +57,7 @@ Summary:
 def get_summary_prompt(
     content: str,
     context: list[str],
-    child_summaries: list[str] = [],  # Use empty list instead of None
+    child_summaries: list[str] | None = None,  # Use empty list instead of None
     max_tokens: int = 8000,
 ) -> str:
     """Generate a prompt for summarizing a directory.
@@ -71,4 +74,6 @@ def get_summary_prompt(
     Returns:
         Prompt for generating a directory summary
     """
+    if child_summaries is None:
+        child_summaries = []
     return get_directory_summary_prompt(content, context, child_summaries, max_tokens)

@@ -211,9 +211,10 @@ def test_export_to_json(mock_settings):
         },
     }
 
-    with patch(
-        "src.codestory.config.export.get_settings", return_value=mock_settings
-    ), patch("json.dumps") as mock_json_dumps:
+    with (
+        patch("src.codestory.config.export.get_settings", return_value=mock_settings),
+        patch("json.dumps") as mock_json_dumps,
+    ):
         # Configure mock_json_dumps to return predictable output
         mock_json_dumps.return_value = (
             "{\n"
@@ -250,9 +251,7 @@ def test_export_to_json(mock_settings):
 
         try:
             # For file output test, bypass redaction
-            with patch(
-                "src.codestory.config.export.settings_to_dict"
-            ) as mock_settings_to_dict:
+            with patch("src.codestory.config.export.settings_to_dict") as mock_settings_to_dict:
                 mock_settings_to_dict.return_value = {
                     "neo4j": {
                         "uri": "bolt://localhost:7687",

@@ -30,9 +30,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line("markers", "integration: mark test as an integration test")
-    config.addinivalue_line(
-        "markers", "openai: mark test as requiring OpenAI API access"
-    )
+    config.addinivalue_line("markers", "openai: mark test as requiring OpenAI API access")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -83,25 +81,18 @@ def openai_credentials() -> dict[str, Any]:
         pass
 
     # Fall back to environment variables
-    endpoint = os.environ.get("OPENAI__ENDPOINT") or os.environ.get(
-        "AZURE_OPENAI_ENDPOINT"
-    )
+    endpoint = os.environ.get("OPENAI__ENDPOINT") or os.environ.get("AZURE_OPENAI_ENDPOINT")
 
     if not endpoint:
         pytest.skip("No OpenAI API endpoint found in environment")
 
-    sub_id = os.environ.get("OPENAI__SUBSCRIPTION_ID") or os.environ.get(
-        "AZURE_SUBSCRIPTION_ID"
-    )
+    sub_id = os.environ.get("OPENAI__SUBSCRIPTION_ID") or os.environ.get("AZURE_SUBSCRIPTION_ID")
 
     return {
         "endpoint": endpoint,
-        "tenant_id": os.environ.get("OPENAI__TENANT_ID")
-        or os.environ.get("AZURE_TENANT_ID"),
+        "tenant_id": os.environ.get("OPENAI__TENANT_ID") or os.environ.get("AZURE_TENANT_ID"),
         "subscription_id": sub_id,
-        "embedding_model": os.environ.get(
-            "OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"
-        ),
+        "embedding_model": os.environ.get("OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"),
         "chat_model": os.environ.get("OPENAI__CHAT_MODEL", "gpt-4o"),
         "reasoning_model": os.environ.get("OPENAI__REASONING_MODEL", "gpt-4o"),
     }
@@ -125,15 +116,12 @@ def azure_login(openai_credentials) -> None:
             text=True,
         )
 
-        current_tenant = (
-            tenant_result.stdout.strip() if tenant_result.returncode == 0 else None
-        )
+        current_tenant = tenant_result.stdout.strip() if tenant_result.returncode == 0 else None
 
         # If tenant doesn't match, suggest login
         if tenant_result.returncode != 0 or current_tenant != tenant_id:
             pytest.skip(
-                f"Azure CLI not logged into the correct tenant. Run:\n"
-                f"az login --tenant {tenant_id}"
+                f"Azure CLI not logged into the correct tenant. Run:\naz login --tenant {tenant_id}"
             )
 
         # Set subscription if provided

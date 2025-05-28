@@ -4,7 +4,6 @@ This module defines the domain models for authentication-related entities,
 including login requests, token responses, and user information.
 """
 
-
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -47,9 +46,7 @@ class UserInfo(BaseModel):
     name: str = Field(..., description="Display name")
     email: EmailStr | None = Field(None, description="Email address")
     roles: list[str] = Field(default_factory=list, description="User roles")
-    is_authenticated: bool = Field(
-        True, description="Whether the user is authenticated"
-    )
+    is_authenticated: bool = Field(True, description="Whether the user is authenticated")
 
 
 class RoleInfo(BaseModel):
@@ -68,9 +65,7 @@ class AuthResponse(BaseModel):
 
     success: bool = Field(..., description="Whether authentication was successful")
     message: str = Field(..., description="Authentication message")
-    token: TokenResponse | None = Field(
-        None, description="Token, if authentication was successful"
-    )
+    token: TokenResponse | None = Field(None, description="Token, if authentication was successful")
     user: UserInfo | None = Field(
         None, description="User information, if authentication was successful"
     )

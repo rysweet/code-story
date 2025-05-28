@@ -16,6 +16,7 @@ sys.path.insert(0, src_dir)
 if __name__ == "__main__":
     # Now import the Celery app - importing here to avoid E402 error
     from codestory.ingestion_pipeline.celery_app import app
+
     print(f"Starting Celery worker. PYTHONPATH includes: {src_dir}")
 
     # Print information about the Celery app
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
     # This is equivalent to running:
     # celery -A codestory.ingestion_pipeline.celery_app:app worker -l debug -Q ingestion \
-#     --concurrency=1 --loglevel=DEBUG
+    #     --concurrency=1 --loglevel=DEBUG
     from celery.__main__ import main
 
     sys.exit(main())

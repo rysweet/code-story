@@ -26,6 +26,7 @@ class BaseTool(ABC):
     description: ClassVar[str]
     parameters: ClassVar[dict[str, Any]]
 
+    @abstractmethod
     def __init__(self) -> None:
         """Initialize the tool."""
         pass

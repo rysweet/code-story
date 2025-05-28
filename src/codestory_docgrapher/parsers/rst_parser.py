@@ -1,3 +1,5 @@
+from typing import Any
+
 """Parser for ReStructuredText documentation files.
 
 This module provides a parser for extracting entities and relationships
@@ -27,7 +29,7 @@ class RstParser(Parser):
     This parser extracts entities and relationships from ReStructuredText files.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the RST parser."""
         # Heading patterns for different styles (e.g., === or ---)
         self.heading_pattern1 = re.compile(
@@ -89,11 +91,11 @@ class RstParser(Parser):
         content = document.content
         file_path = document.path
 
-        entities = []
-        relationships = []
+        entities: list[Any] = []
+        relationships: list[Any] = []
 
         # Extract headings and create section entities
-        headings = []
+        headings: list[Any] = []
         headings.extend(self._extract_headings_style1(content, file_path))
         headings.extend(self._extract_headings_style2(content, file_path))
         entities.extend(headings)
@@ -152,13 +154,13 @@ class RstParser(Parser):
         Returns:
             List of heading entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all headings with over/underlines (e.g., === Title ===)
         for match in self.heading_pattern1.finditer(content):
             overline_char = match.group(1)
             heading_text = match.group(2).strip()
-            underline_char = match.group(3)
+            match.group(3)
             start_pos = match.start()
             end_pos = match.end()
 
@@ -194,7 +196,7 @@ class RstParser(Parser):
         Returns:
             List of heading entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all headings with underlines (e.g., Title ===)
         for match in self.heading_pattern2.finditer(content):
@@ -254,13 +256,13 @@ class RstParser(Parser):
         Returns:
             List of relationships between headings
         """
-        relationships = []
+        relationships: list[Any] = []
 
         # Sort headings by position in document
         sorted_headings = sorted(headings, key=lambda h: h.start_pos or 0)
 
         # Stack to keep track of parent headings
-        stack = []
+        stack: list[Any] = []
 
         for heading in sorted_headings:
             level = heading.metadata.get("level", 1)
@@ -299,7 +301,7 @@ class RstParser(Parser):
         Returns:
             List of code block entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all code blocks
         for match in self.code_block_pattern.finditer(content):
@@ -335,7 +337,7 @@ class RstParser(Parser):
         Returns:
             List of link entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all links (inline style)
         for match in self.link_pattern.finditer(content):
@@ -415,7 +417,7 @@ class RstParser(Parser):
         Returns:
             List of image entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all images
         for match in self.image_pattern.finditer(content):
@@ -450,7 +452,7 @@ class RstParser(Parser):
         Returns:
             List of list entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all lists
         for match in self.list_pattern.finditer(content):
@@ -487,7 +489,7 @@ class RstParser(Parser):
         Returns:
             List of reference entities
         """
-        entities = []
+        entities: list[Any] = []
 
         # Find all code references
         for pattern in self.code_ref_patterns:
@@ -537,7 +539,7 @@ class RstParser(Parser):
         Returns:
             List of relationships
         """
-        relationships = []
+        relationships: list[Any] = []
 
         # Sort containers by position
         sorted_containers = sorted(containers, key=lambda e: e.start_pos or 0)

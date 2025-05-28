@@ -1,6 +1,5 @@
 """Tests for OpenAI client exceptions."""
 
-
 from codestory.llm.exceptions import (
     AuthenticationError,
     ContextLengthError,
@@ -83,8 +82,6 @@ def test_llm_context_length_error():
     assert error.input_tokens is None
 
     # With token counts
-    error = ContextLengthError(
-        "Context length exceeded", max_tokens=8192, input_tokens=9000
-    )
+    error = ContextLengthError("Context length exceeded", max_tokens=8192, input_tokens=9000)
     assert error.max_tokens == 8192
     assert error.input_tokens == 9000

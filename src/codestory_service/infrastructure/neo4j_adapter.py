@@ -68,10 +68,9 @@ class Neo4jAdapter:
             # Use an executor to run the synchronous method in a thread pool
             # to avoid blocking the async event loop
             import asyncio
+
             loop = asyncio.get_event_loop()
-            connection_info = await loop.run_in_executor(
-                None, self.connector.check_connection
-            )
+            connection_info = await loop.run_in_executor(None, self.connector.check_connection)
 
             return {
                 "status": "healthy",
@@ -119,12 +118,12 @@ class Neo4jAdapter:
             )
 
             # Extract column names from the first record if available
-            columns = []
+            columns: list[Any] = []
             if result and len(result) > 0:
                 columns = list(result[0].keys())
 
             # Extract rows as lists to match the domain model
-            rows = []
+            rows: list[Any] = []
             for record in result:
                 row = [record.get(col) for col in columns]
                 rows.append(row)
@@ -145,13 +144,13 @@ class Neo4jAdapter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Query execution failed: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error in query execution: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {e!s}",
-            )
+            ) from e
 
     async def execute_vector_search(
         self, query_model: VectorQuery, embedding: list[float]
@@ -190,7 +189,7 @@ class Neo4jAdapter:
             # Execute vector search query with synchronous method
             result = self.connector.execute_query(
                 f"""
-                MATCH (n{':' + node_label if node_label != '*' else ''})
+                MATCH (n{":" + node_label if node_label != "*" else ""})
                 WHERE n.embedding IS NOT NULL
                 WITH n, gds.similarity.cosine(n.embedding, $embedding) AS score
                 WHERE score >= $min_score
@@ -206,7 +205,7 @@ class Neo4jAdapter:
             )
 
             # Map results to domain model
-            search_results = []
+            search_results: list[Any] = []
             for item in result:
                 node = item.get("n", {})
 
@@ -253,9 +252,7 @@ class Neo4jAdapter:
                     score=item.get("score", 0.0),
                     content_snippet=content_snippet,
                     properties={
-                        k: v
-                        for k, v in node.items()
-                        if k not in ["id", "name", "path", "filePath"]
+                        k: v for k, v in node.items() if k not in ["id", "name", "path", "filePath"]
                     },
                     path=path,
                 )
@@ -275,13 +272,13 @@ class Neo4jAdapter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Vector search failed: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error in vector search: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {e!s}",
-            )
+            ) from e
 
     async def find_path(self, path_request: PathRequest) -> PathResult:
         """Find paths between nodes.
@@ -309,17 +306,13 @@ class Neo4jAdapter:
 
             # Map direction to Cypher syntax
             direction_map = {"outgoing": ">", "incoming": "<", "both": ""}
-            dir_symbol = direction_map.get(path_request.direction.value, "")
+            direction_map.get(path_request.direction.value, "")
 
             # Handle relationship types
             rel_types = ""
             if path_request.relationship_types:
                 rel_list = "|".join(
-                    [
-                        t.value
-                        for t in path_request.relationship_types
-                        if t.value != "any"
-                    ]
+                    [t.value for t in path_request.relationship_types if t.value != "any"]
                 )
                 if rel_list:
                     rel_types = f":{rel_list}"
@@ -347,7 +340,8 @@ class Neo4jAdapter:
                 query = f"""
                 MATCH (start), (end)
                 WHERE elementId(start) = $start_id AND elementId(end) = $end_id
-                CALL apoc.path.{algo}(start, end, $relationship_pattern, null, $max_depth) YIELD path
+                CALL apoc.path.{algo}(start, end, $relationship_pattern, null, $max_depth) 
+                YIELD path
                 RETURN path
                 LIMIT $limit
                 """
@@ -367,7 +361,7 @@ class Neo4jAdapter:
             result = self.connector.execute_query(query, params=params)
 
             # Convert results to domain model
-            paths = []
+            paths: list[Any] = []
             for item in result:
                 if "path" not in item:
                     continue
@@ -375,8 +369,8 @@ class Neo4jAdapter:
                 path_data = item["path"]
 
                 # Extract nodes and relationships
-                path_nodes = []
-                path_rels = []
+                path_nodes: list[Any] = []
+                path_rels: list[Any] = []
 
                 # Process nodes in the path
                 if "nodes" in path_data:
@@ -384,11 +378,7 @@ class Neo4jAdapter:
                         path_node = PathNode(
                             id=node.get("id", "unknown"),
                             labels=node.get("labels", []),
-                            properties={
-                                k: v
-                                for k, v in node.items()
-                                if k not in ["id", "labels"]
-                            },
+                            properties={k: v for k, v in node.items() if k not in ["id", "labels"]},
                         )
                         path_nodes.append(path_node)
 
@@ -431,36 +421,36 @@ class Neo4jAdapter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Path finding failed: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error in path finding: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {e!s}",
-            )
+            ) from e
 
 
 class DummyNeo4jConnector:
     """Dummy Neo4j connector for use when connection to Neo4j fails.
-    
+
     This allows basic service functionality without Neo4j available.
     """
-    
-    def __init__(self):
+
+    def __init__(self) -> Any:
         """Initialize the dummy connector."""
         logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
-    
+
     def check_connection(self) -> dict[str, Any]:
         """Return dummy connection info."""
         return {
             "database": "dummy",
             "components": ["Dummy Neo4j Connector"],
         }
-    
+
     def close(self) -> None:
         """Dummy close method."""
         pass
-    
+
     def execute_query(
         self, query: str, params: dict[str, Any] | None = None, write: bool = False
     ) -> list[dict[str, Any]]:
@@ -472,13 +462,13 @@ class DummyNeo4jConnector:
 
 class DummyNeo4jAdapter(Neo4jAdapter):
     """Neo4j adapter that uses a dummy connector.
-    
+
     This allows basic service functionality without Neo4j being available.
     """
-    
-    def __init__(self):
+
+    def __init__(self) -> Any:
         """Initialize with a dummy connector."""
-        self.connector = DummyNeo4jConnector()
+        self.connector = DummyNeo4jConnector()  # type: ignore  # TODO: Fix type compatibility
 
 
 async def get_neo4j_adapter() -> Neo4jAdapter:
@@ -499,6 +489,6 @@ async def get_neo4j_adapter() -> Neo4jAdapter:
         # Log the error but don't fail
         logger.warning(f"Failed to create real Neo4j adapter: {e!s}")
         logger.warning("Falling back to dummy Neo4j adapter for demo purposes")
-        
+
         # Return a dummy adapter instead
         return DummyNeo4jAdapter()

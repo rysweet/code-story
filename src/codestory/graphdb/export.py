@@ -154,9 +154,7 @@ def export_graph_data(
         raise ExportError(f"Failed to export graph data: {e!s}") from e
 
 
-def export_cypher_script(
-    connector: Neo4jConnector, output_path: str | Path
-) -> str:
+def export_cypher_script(connector: Neo4jConnector, output_path: str | Path) -> str:
     """
     Export database as a Cypher script that can recreate the graph.
 

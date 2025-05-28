@@ -1,4 +1,5 @@
 """Test for the config API."""
+
 import os
 
 # Determine Neo4j port based on CI environment
@@ -81,9 +82,7 @@ def test_client(neo4j_connector):
         return test_user
 
     # Store original auth dependency to restore later
-    original_auth_dependency = global_app.dependency_overrides.get(
-        get_current_user, None
-    )
+    original_auth_dependency = global_app.dependency_overrides.get(get_current_user, None)
 
     # Override the auth dependency to bypass authentication
     global_app.dependency_overrides[get_current_user] = get_test_user

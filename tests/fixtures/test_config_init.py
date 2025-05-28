@@ -53,13 +53,14 @@ os.environ["INTERFACE__THEME"] = "light"
 # Azure settings
 os.environ["AZURE__KEYVAULT_NAME"] = "test-key-vault"
 
+
 def create_test_config_file():
     """Create the test configuration file if it doesn't exist."""
     # Get path to the project root
     project_root = Path(__file__).parent.parent.parent
-    
+
     test_config_path = project_root / "tests" / "fixtures" / "test_config.toml"
-    
+
     if not test_config_path.exists():
         # Create the test config.toml file
         test_config_content = """# Test configuration file for CI environments
@@ -135,8 +136,9 @@ client_secret = ""
         print(f"Created test config file at {test_config_path}")
     else:
         print(f"Test config file already exists at {test_config_path}")
-        
+
     return test_config_path
+
 
 # Create the test config file
 test_config_path = create_test_config_file()

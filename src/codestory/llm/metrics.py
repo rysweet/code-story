@@ -26,50 +26,65 @@ class OperationType(str, Enum):
 
 
 # Function to get or create metrics to avoid duplicate registration issues
-def _get_or_create_counter(name, description, labels=None):
+def _get_or_create_counter(name, description, labels=None) -> Any:
     try:
         return Counter(name, description, labels)
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
-            if isinstance(collector, Counter) and hasattr(collector, "_name") and collector._name == name:
+            if (
+                isinstance(collector, Counter)
+                and hasattr(collector, "_name")
+                and collector._name == name
+            ):
                 return collector
-                
+
         # If we can't find it or it's not a Counter, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
         from prometheus_client import CollectorRegistry
+
         private_registry = CollectorRegistry()
         return Counter(name, description, labels, registry=private_registry)
 
 
-def _get_or_create_gauge(name, description, labels=None):
+def _get_or_create_gauge(name, description, labels=None) -> Any:
     try:
         return Gauge(name, description, labels)
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
-            if isinstance(collector, Gauge) and hasattr(collector, "_name") and collector._name == name:
+            if (
+                isinstance(collector, Gauge)
+                and hasattr(collector, "_name")
+                and collector._name == name
+            ):
                 return collector
-                
+
         # If we can't find it or it's not a Gauge, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
         from prometheus_client import CollectorRegistry
+
         private_registry = CollectorRegistry()
         return Gauge(name, description, labels, registry=private_registry)
 
 
-def _get_or_create_histogram(name, description, labels=None, buckets=None):
+def _get_or_create_histogram(name, description, labels=None, buckets=None) -> Any:
     try:
         return Histogram(name, description, labels, buckets=buckets)
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
-            if isinstance(collector, Histogram) and hasattr(collector, "_name") and collector._name == name:
+            if (
+                isinstance(collector, Histogram)
+                and hasattr(collector, "_name")
+                and collector._name == name
+            ):
                 return collector
-                
+
         # If we can't find it or it's not a Histogram, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
         from prometheus_client import CollectorRegistry
+
         private_registry = CollectorRegistry()
         return Histogram(name, description, labels, buckets=buckets, registry=private_registry)
 
@@ -134,9 +149,9 @@ def record_request(
 
     if tokens:
         for token_type, count in tokens.items():
-            TOKEN_USAGE.labels(
-                operation=operation.value, model=model, token_type=token_type
-            ).inc(count)
+            TOKEN_USAGE.labels(operation=operation.value, model=model, token_type=token_type).inc(
+                count
+            )
 
 
 def record_error(
@@ -151,9 +166,7 @@ def record_error(
         model: Model used for the request
         error_type: Type of error that occurred
     """
-    ERROR_COUNT.labels(
-        operation=operation.value, model=model, error_type=error_type
-    ).inc()
+    ERROR_COUNT.labels(operation=operation.value, model=model, error_type=error_type).inc()
 
 
 def record_retry(
@@ -222,9 +235,7 @@ def instrument_request(
                 duration = time.time() - start_time
                 error_type = type(e).__name__
 
-                record_request(
-                    operation=operation, model=model, status="error", duration=duration
-                )
+                record_request(operation=operation, model=model, status="error", duration=duration)
 
                 record_error(operation=operation, model=model, error_type=error_type)
 
@@ -291,9 +302,7 @@ def instrument_async_request(
                 duration = time.time() - start_time
                 error_type = type(e).__name__
 
-                record_request(
-                    operation=operation, model=model, status="error", duration=duration
-                )
+                record_request(operation=operation, model=model, status="error", duration=duration)
 
                 record_error(operation=operation, model=model, error_type=error_type)
 

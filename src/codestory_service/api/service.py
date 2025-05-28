@@ -22,7 +22,10 @@ router = APIRouter(prefix="/v1/service", tags=["service"])
 @router.post(
     "/start",
     summary="Start service",
-    description="Start the Code Story service and its dependencies. Only available in development mode.",
+    description=(
+        "Start the Code Story service and its dependencies. "
+        "Only available in development mode."
+    ),
 )
 async def start_service(
     user: dict = Depends(require_role(["admin"])),
@@ -60,13 +63,16 @@ async def start_service(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start service: {e!s}",
-        )
+        ) from e
 
 
 @router.post(
     "/stop",
     summary="Stop service",
-    description="Stop the Code Story service and its dependencies. Only available in development mode.",
+    description=(
+        "Stop the Code Story service and its dependencies. "
+        "Only available in development mode."
+    ),
 )
 async def stop_service(user: dict = Depends(require_role(["admin"]))) -> dict[str, str]:
     """Stop the Code Story service and its dependencies.
@@ -102,4 +108,4 @@ async def stop_service(user: dict = Depends(require_role(["admin"]))) -> dict[st
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to stop service: {e!s}",
-        )
+        ) from e

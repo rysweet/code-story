@@ -48,12 +48,8 @@ class MCPSettings(BaseSettings):
     workers: int = Field(4, description="Number of worker processes")
 
     # Authentication
-    azure_tenant_id: str | None = Field(
-        None, description="Microsoft Entra ID tenant ID"
-    )
-    azure_client_id: str | None = Field(
-        None, description="Client ID for the MCP adapter"
-    )
+    azure_tenant_id: str | None = Field(None, description="Microsoft Entra ID tenant ID")
+    azure_client_id: str | None = Field(None, description="Client ID for the MCP adapter")
     auth_enabled: bool = Field(False, description="Enable/disable authentication")
 
     # Service configuration
@@ -65,9 +61,7 @@ class MCPSettings(BaseSettings):
     api_token_issuer: str = Field(
         "https://sts.windows.net/", description="Issuer claim for JWT tokens"
     )
-    api_audience: str | None = Field(
-        None, description="Audience claim for JWT tokens"
-    )
+    api_audience: str | None = Field(None, description="Audience claim for JWT tokens")
     required_scopes: list[str] = Field(
         ["code-story.read", "code-story.query"],
         description="Required scopes for authorization",
@@ -80,17 +74,11 @@ class MCPSettings(BaseSettings):
     enable_grpc: bool = Field(True, description="Enable gRPC server")
 
     # Metrics and tracing
-    prometheus_metrics_path: str = Field(
-        "/metrics", description="Path for Prometheus metrics"
-    )
-    enable_opentelemetry: bool = Field(
-        False, description="Enable OpenTelemetry tracing"
-    )
+    prometheus_metrics_path: str = Field("/metrics", description="Path for Prometheus metrics")
+    enable_opentelemetry: bool = Field(False, description="Enable OpenTelemetry tracing")
 
     # Documentation
-    openapi_url: str = Field(
-        "/openapi.json", description="URL for OpenAPI documentation"
-    )
+    openapi_url: str = Field("/openapi.json", description="URL for OpenAPI documentation")
     docs_url: str = Field("/docs", description="URL for Swagger UI documentation")
     redoc_url: str = Field("/redoc", description="URL for ReDoc documentation")
 
@@ -128,4 +116,4 @@ def get_mcp_settings() -> MCPSettings:
     Returns:
         MCP settings instance
     """
-    return MCPSettings()
+    return MCPSettings()  # type: ignore  # TODO: Pydantic BaseSettings with defaults

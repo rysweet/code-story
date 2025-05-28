@@ -37,12 +37,12 @@ class MSALValidator:
         # Determine if we're in development mode with simplified auth
         self.dev_mode = self.settings.dev_mode
         self.auth_enabled = self.settings.auth_enabled
-        
+
         # For better compatibility, consider auth disabled in dev mode
         if self.dev_mode:
             self.auth_enabled = False
             logger.info("Development mode enabled - authentication will be bypassed")
-            
+
         if not self.auth_enabled:
             logger.warning(
                 "Running with authentication DISABLED. "
@@ -80,9 +80,7 @@ class MSALValidator:
 
             # Try to decode the token, but don't enforce validation
             try:
-                claims = jwt.decode(
-                    token, options={"verify_signature": False, "verify_exp": False}
-                )
+                claims = jwt.decode(token, options={"verify_signature": False, "verify_exp": False})
                 return claims
             except Exception:
                 return {
@@ -95,24 +93,22 @@ class MSALValidator:
         # Dev mode with simplified JWT validation
         if self.dev_mode and self.jwt_secret:
             try:
-                claims = jwt.decode(
-                    token, self.jwt_secret, algorithms=[self.jwt_algorithm]
-                )
+                claims = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
                 return claims
-            except jwt.ExpiredSignatureError:
+            except jwt.ExpiredSignatureError as err:
                 logger.warning("Token has expired")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token has expired",
                     headers={"WWW-Authenticate": "Bearer"},
-                )
+                ) from err
             except jwt.InvalidTokenError as e:
                 logger.warning(f"Invalid token: {e!s}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=f"Invalid token: {e!s}",
                     headers={"WWW-Authenticate": "Bearer"},
-                )
+                ) from e
 
         # Production mode with full MSAL validation
         # This is just a placeholder - in a real implementation, we would use
@@ -123,7 +119,7 @@ class MSALValidator:
             detail="Full MSAL validation not implemented",
         )
 
-    async def create_dev_token(self, username: str, roles: list[str] = ["user"]) -> str:
+    async def create_dev_token(self, username: str, roles: list[str] | None = None) -> str:
         """Create a development JWT token.
 
         This is only available in development mode and should not be used in production.
@@ -138,6 +134,8 @@ class MSALValidator:
         Raises:
             HTTPException: If token creation fails or is not available
         """
+        if roles is None:
+            roles = ["user"]
         if not self.dev_mode:
             logger.error("Token creation only available in development mode")
             raise HTTPException(
@@ -174,7 +172,7 @@ class MSALValidator:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create token: {e!s}",
-            )
+            ) from e
 
 
 async def get_msal_validator() -> MSALValidator:
@@ -215,16 +213,18 @@ async def get_current_user(
         "roles": ["admin", "user"],
         "exp": int(time.time() + 3600),
     }
-    
+
     # Case 1: Authentication is disabled
     if not validator.auth_enabled:
         logger.info("Using development user due to auth_enabled=False")
         return dev_user
-    
+
     # Case 2: No credentials provided
     if credentials is None:
         if validator.dev_mode:
-            logger.warning("No authentication credentials provided. Using development user in dev mode.")
+            logger.warning(
+                "No authentication credentials provided. Using development user in dev mode."
+            )
             return dev_user
         else:
             # In production mode, enforce authentication
@@ -233,7 +233,7 @@ async def get_current_user(
                 detail="Authentication credentials missing",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    
+
     # Case 3: Credentials provided, validate token
     try:
         token = credentials.credentials
@@ -277,7 +277,7 @@ async def get_optional_user(
         }
         logger.debug("Using development user for optional authentication")
         return dev_user
-    
+
     # In production mode, try to authenticate or return None
     if not credentials or not credentials.credentials:
         return None
@@ -288,7 +288,7 @@ async def get_optional_user(
         return None
 
 
-def require_role(required_roles: list[str]):
+def require_role(required_roles: list[str]) -> Any:
     """Create a dependency that requires the user to have one of the specified roles.
 
     Args:
@@ -301,9 +301,7 @@ def require_role(required_roles: list[str]):
         HTTPException: If the user doesn't have any of the required roles
     """
 
-    async def role_checker(
-        user: dict[str, Any] = Depends(get_current_user)
-    ) -> dict[str, Any]:
+    async def role_checker(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
         user_roles = user.get("roles", [])
 
         # Check if the user has any of the required roles
@@ -321,9 +319,7 @@ def require_role(required_roles: list[str]):
     return role_checker
 
 
-async def is_admin(
-    user: dict[str, Any] = Depends(get_current_user)
-) -> dict[str, Any]:
+async def is_admin(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     """Check if the current user has admin role.
 
     Args:
@@ -336,15 +332,15 @@ async def is_admin(
         HTTPException: If the user doesn't have admin role
     """
     user_roles = user.get("roles", [])
-    
+
     if "admin" in user_roles:
         return user
-        
+
     logger.warning(
         f"Admin access denied: User {user.get('name')} with roles {user_roles} "
         f"does not have the admin role"
     )
     raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN, 
-        detail="Administrative privileges required"
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Administrative privileges required",
     )
