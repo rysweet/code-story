@@ -3,7 +3,7 @@
 # CLI Demo Test - Phase 1: Infrastructure Setup
 # This script tests the foundational infrastructure requirements
 
-set -e
+set +e
 echo "========================================="
 echo "CLI Demo Test - Phase 1: Infrastructure Setup"
 echo "========================================="

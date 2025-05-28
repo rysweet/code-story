@@ -239,3 +239,7 @@
 ## May 28, 2025 (Azure OpenAI Reasoning Model Work Commit)
 - `git status` - Check git status to identify all modified and new files for Azure OpenAI reasoning model work
 - `git checkout -b feature/azure-openai-reasoning-models` - Create new feature branch for Azure OpenAI reasoning model implementation
+- `git add src/codestory_service/infrastructure/openai_adapter.py tests/integration/test_llm/test_client_integration.py tests/unit/test_llm/test_client.py Specifications/prompt-history.md Specifications/shell_history.md` - Stage all Azure OpenAI reasoning model changes
+- `git commit -m "Fix Azure OpenAI Health Check for Reasoning Models (o1) and Add Comprehensive Support..."` - Commit Azure OpenAI reasoning model fixes with comprehensive description
+- `git push origin feature/azure-openai-reasoning-models` - Push feature branch to remote repository for pull request creation
+- `gh pr create --title "Fix Azure OpenAI Health Check for Reasoning Models (o1) and Add Comprehensive Support" --body-file pr_description_azure_openai.md` - Create pull request #47 with comprehensive description
