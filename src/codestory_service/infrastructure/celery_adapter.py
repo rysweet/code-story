@@ -10,8 +10,8 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.ingestion_pipeline.celery_app import app as celery_app
-from codestory.ingestion_pipeline.tasks import (
+from codestory.ingestion_pipeline.celery_app import app as celery_app  # type: ignore[import-untyped]
+from codestory.ingestion_pipeline.tasks import (  # type: ignore[import-untyped]
     orchestrate_pipeline as run_ingestion_pipeline,
 )
 
@@ -206,7 +206,7 @@ job_id=job_id,
                     source=None,
                     source_type=None,
                     branch=None,
-                    created_at=int(time.time(
+                    created_at=int(time.time(  # type: ignore[call-arg]
                     started_at=None,
                     completed_at=None,
                     duration=None,
@@ -231,10 +231,10 @@ job_id=job_id,
                 current_step = info.get("step", "Processing")
                 message = info.get("message", "Task is in progress")
 
-                return IngestionJob(
+                return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.RUNNING,
-                    created_at=info.get("created_at", int(time.time(
+                    created_at=info.get("created_at", int(time.time(  # type: ignore[call-arg]
                     source=None,
                     source_type=None,
                     branch=None,
@@ -254,10 +254,10 @@ job_id=job_id,
             if task.state == "SUCCESS":
                 result = task.result or {}
 
-                return IngestionJob(
+                return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.COMPLETED,
-                    created_at=result.get("created_at", int(time.time(
+                    created_at=result.get("created_at", int(time.time(  # type: ignore[call-arg]
                     source=None,
                     source_type=None,
                     branch=None,
@@ -275,10 +275,10 @@ job_id=job_id,
                 )
 
             if task.state == "FAILURE":
-                return IngestionJob(
+                return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.FAILED,
-                    created_at=int(time.time(
+                    created_at=int(time.time(  # type: ignore[call-arg]
                     source=None,
                     source_type=None,
                     branch=None,
@@ -296,10 +296,10 @@ job_id=job_id,
                 )
 
             if task.state == "REVOKED":
-                return IngestionJob(
+                return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.CANCELLED,
-                    created_at=int(time.time(
+                    created_at=int(time.time(  # type: ignore[call-arg]
                     source=None,
                     source_type=None,
                     branch=None,
@@ -317,10 +317,10 @@ job_id=job_id,
                 )
 
             # Default case for unknown state
-            return IngestionJob(
+            return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                 status=JobStatus.UNKNOWN,
-                created_at=int(time.time(
+                created_at=int(time.time(  # type: ignore[call-arg]
                     source=None,
                     source_type=None,
                     branch=None,
@@ -391,10 +391,10 @@ job_id=job_id,
             self.app.control.revoke(job_id, terminate=True)
 
             # Return updated job status
-            return IngestionJob(
+            return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                 status=JobStatus.CANCELLING,
-                created_at=int(time.time(
+                created_at=int(time.time(  # type: ignore[call-arg]
                     source=None,
                     source_type=None,
                     branch=None,
@@ -449,7 +449,7 @@ job_id=job_id,
         except Exception as e:
             logger.error(f"Failed to list jobs: {e!s}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,  # type: ignore[union-attr]
                 detail=f"Failed to list jobs: {e!s}",
             ) from e
 

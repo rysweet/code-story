@@ -50,7 +50,7 @@ class MarkdownParser(Parser):
             re.compile(r"`((?:[a-zA-Z0-9_]+/)+[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9]+)?)`"),
         ]
 
-    def parse(self, document: DocumentationFile) -> dict:
+    def parse(self, document: DocumentationFile) -> dict[str, Any]:
         """Parse a Markdown documentation file.
 
         Args:

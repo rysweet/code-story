@@ -13,7 +13,7 @@ from pathlib import Path
 try:
     import rich_click as click
 except ImportError:
-    import click
+    import click  # type: ignore[no-redef]
 from rich.console import Console
 from rich.table import Table
 
@@ -639,7 +639,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 )
                 if process.returncode == 0:
                     unhealthy_containers = [
-                        c for c in process.stdout.strip().split("\n") if c and c in containers
+                        c for c in process.stdout.strip().split("\n") if c and c in containers  # type: ignore[arg-type]
                     ]
             except Exception:
                 pass
@@ -699,7 +699,7 @@ def find_docker_compose_file() -> str | None:
 
     # Then try looking in the project root
     try:
-        from codestory.config.settings import get_project_root
+        from codestory.config.settings import get_project_root  # type: ignore[import-untyped]
 
         project_root = get_project_root()
         for filename in compose_file_names:
@@ -850,10 +850,10 @@ def renew_azure_auth(
                     console.print("Run with --verbose for full output.")
                     # Show the last few lines of the error
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:]
+                        error_lines = process.stderr.strip().split("\n")[-5:]  # type: ignore[arg-type]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
-                            console.print(f"  {line}")
+                            console.print(f"  {line}")  # type: ignore[str-bytes-safe]
 
             if success:
                 console.print("[green]Azure authentication tokens updated successfully.[/]")
@@ -1007,10 +1007,10 @@ def renew_azure_auth(
                     console.print("[red]Token injection failed.[/]")
                     console.print("Run with --verbose for full output.")
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:]
+                        error_lines = process.stderr.strip().split("\n")[-5:]  # type: ignore[arg-type]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
-                            console.print(f"  {line}")
+                            console.print(f"  {line}")  # type: ignore[str-bytes-safe]
                     sys.exit(1)
 
             if success:

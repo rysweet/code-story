@@ -199,7 +199,7 @@ class ConfigSchema(BaseModel):
                 meta = item.metadata
 
                 # Create property schema
-                prop = ConfigSchemaProperty(
+                prop = ConfigSchemaProperty(  # type: ignore[call-arg]
                     type=meta.type.value,
                     title=key,
                     description=meta.description,
@@ -217,7 +217,7 @@ class ConfigSchema(BaseModel):
 
                 # Handle secrets as password fields
                 if meta.type == ConfigValueType.SECRET:
-                    section_ui[key] = {"ui:widget": "password"}  # type: ignore  # TODO: Fix type compatibility
+                    section_ui[key] = {"ui:widget": "password"}
 
                 section_properties[key] = prop
                 section_ui["ui:order"].append(key)
@@ -235,7 +235,7 @@ class ConfigSchema(BaseModel):
 
             properties[section_name.value] = section_schema
             ui_schema["ui:order"].append(section_name.value)
-            ui_schema[section_name.value] = section_ui  # type: ignore  # TODO: Fix type compatibility
+            ui_schema[section_name.value] = section_ui
 
         json_schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",

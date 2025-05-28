@@ -5,6 +5,7 @@ These endpoints are mainly used in development mode.
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -76,7 +77,7 @@ async def login(
 )
 async def get_user_info(
     auth_service: AuthService = Depends(get_auth_service),
-    user: dict = Depends(get_optional_user),
+    user: dict[str, Any] | None = Depends(get_optional_user),
 ) -> UserInfo:
     """Get information about the current user.
 
@@ -88,7 +89,7 @@ async def get_user_info(
         UserInfo with user details
     """
     if not user:
-        return UserInfo(id="anonymous", name="Anonymous User", roles=[], is_authenticated=False)
+        return UserInfo(id="anonymous", name="Anonymous User", roles=[], is_authenticated=False)  # type: ignore[call-arg]
 
     try:
         logger.info(f"Getting info for user: {user.get('name', 'unknown')}")

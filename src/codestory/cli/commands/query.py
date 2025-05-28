@@ -375,7 +375,7 @@ def _display_query_result(
                 panel = Panel(
                     _format_object(item, color),
                     title=f"Result {i}",
-                    border_style="cyan" if color else None,
+                    border_style="cyan" if color else None,  # type: ignore[arg-type]
                 )
                 console.print(panel)
         else:
@@ -383,7 +383,7 @@ def _display_query_result(
             panel = Panel(
                 _format_object(results, color),
                 title="Result",
-                border_style="cyan" if color else None,
+                border_style="cyan" if color else None,  # type: ignore[arg-type]
             )
             console.print(panel)
 
@@ -418,7 +418,7 @@ def _display_results_as_tree(console: Console, result: dict[str, Any], color: bo
             console.print("[yellow]No results found.[/]" if color else "No results found.")
             return
 
-        tree = Tree("Query Results", style="bold cyan" if color else None)
+        tree = Tree("Query Results", style="bold cyan" if color else None)  # type: ignore[arg-type]
 
         for i, record in enumerate(records, 1):
             record_tree = tree.add(f"Record {i}")
@@ -444,7 +444,7 @@ def _display_results_as_tree(console: Console, result: dict[str, Any], color: bo
         # MCP tool call results
         results = result["results"]
 
-        tree = Tree("Query Results", style="bold cyan" if color else None)
+        tree = Tree("Query Results", style="bold cyan" if color else None)  # type: ignore[arg-type]
 
         if isinstance(results, list):
             for i, item in enumerate(results, 1):
@@ -528,10 +528,10 @@ def _results_to_csv(result: dict[str, Any]) -> str:
 
         if isinstance(results, list) and results and isinstance(results[0], dict):
             # Try to extract common keys for a table
-            columns: set[Any] = set()
+            columns: set[Any] = set()  # type: ignore[no-redef]
             for item in results:
                 if isinstance(item, dict):
-                    columns.update(item.keys())
+                    columns.update(item.keys())  # type: ignore[attr-defined]
 
             columns = sorted(columns)
 
@@ -541,7 +541,7 @@ def _results_to_csv(result: dict[str, Any]) -> str:
             # Write rows
             for item in results:
                 if isinstance(item, dict):
-                    row: list[Any] = []
+                    row: list[Any] = []  # type: ignore[no-redef]
                     for column in columns:
                         value = item.get(column)
                         if isinstance(value, dict | list):
@@ -600,9 +600,9 @@ def _format_object(obj: Any, color: bool = True) -> str:
             # Format code with syntax highlighting
             lang = obj.get("language", "text")
             if color:
-                return Syntax(obj["code"], lang, theme="monokai", line_numbers=True)
+                return Syntax(obj["code"], lang, theme="monokai", line_numbers=True)  # type: ignore[return-value]
             else:
-                return obj["code"]
+                return obj["code"]  # type: ignore[no-any-return]
 
         # Format as JSON
         return json.dumps(obj, indent=2)

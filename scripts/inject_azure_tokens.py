@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import importlib
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
@@ -104,17 +106,20 @@ def extract_tenant_id_from_settings() -> str | None:
 
     # Check .codestory.toml file
     try:
-        import toml
+        toml: Any = None
+        try:
+            toml = importlib.import_module("toml")
+        except ImportError:
+            logger.warning("toml package not available, skipping config file check")
 
-        config_path = Path(".codestory.toml")
-        if config_path.exists():
-            config = toml.load(config_path)
-            if "azure_openai" in config and "tenant_id" in config["azure_openai"]:
-                tenant_id = config["azure_openai"]["tenant_id"]
-                logger.info(f"Found tenant ID in .codestory.toml: {tenant_id}")
-                return tenant_id
-    except ImportError:
-        logger.warning("toml package not available, skipping config file check")
+        if toml is not None:
+            config_path = Path(".codestory.toml")
+            if config_path.exists():
+                config = toml.load(config_path)
+                if "azure_openai" in config and "tenant_id" in config["azure_openai"]:
+                    tenant_id = config["azure_openai"]["tenant_id"]
+                    logger.info(f"Found tenant ID in .codestory.toml: {tenant_id}")
+                    return tenant_id
     except Exception as e:
         logger.warning(f"Error reading .codestory.toml: {e}")
 

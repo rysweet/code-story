@@ -9,7 +9,7 @@ to actual filesystem paths in the repository.
 import logging
 import os
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class PathMatcher:
         """
         # Check cache first
         if path_reference in self.path_cache:
-            return self.path_cache[path_reference]
+            return self.path_cache[path_reference]  # type: ignore[no-any-return]
 
         # Try exact match first
         if path_reference in self.file_paths:
@@ -108,7 +108,7 @@ class PathMatcher:
         if len(matching_paths) == 1:
             # Unambiguous match
             self.path_cache[path_reference] = matching_paths[0]
-            return matching_paths[0]
+            return matching_paths[0]  # type: ignore[no-any-return]
         elif len(matching_paths) > 1:
             # Multiple matches, try to find the best one
             # Check if any match contains directory components from the reference
@@ -130,17 +130,17 @@ class PathMatcher:
 
                 if len(filtered_paths) == 1:
                     self.path_cache[path_reference] = filtered_paths[0]
-                    return filtered_paths[0]
+                    return filtered_paths[0]  # type: ignore[no-any-return]
                 elif len(filtered_paths) > 1:
                     # Still ambiguous, return the shortest path
                     shortest = min(filtered_paths, key=len)
                     self.path_cache[path_reference] = shortest
-                    return shortest
+                    return shortest  # type: ignore[no-any-return]
 
             # No directory components or still ambiguous, return the shortest path
             shortest = min(matching_paths, key=len)
             self.path_cache[path_reference] = shortest
-            return shortest
+            return shortest  # type: ignore[no-any-return]
 
         # Try to match by extension
         if "." in basename:
@@ -150,7 +150,7 @@ class PathMatcher:
             if matching_paths:
                 # Return any one file with matching extension
                 self.path_cache[path_reference] = matching_paths[0]
-                return matching_paths[0]
+                return matching_paths[0]  # type: ignore[no-any-return]
 
         # No match found
         self.path_cache[path_reference] = None

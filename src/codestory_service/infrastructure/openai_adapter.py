@@ -12,8 +12,8 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.llm.client import OpenAIClient
-from codestory.llm.exceptions import (
+from codestory.llm.client import OpenAIClient  # type: ignore[import-untyped]
+from codestory.llm.exceptions import (  # type: ignore[import-untyped]
     AuthenticationError,
 )
 

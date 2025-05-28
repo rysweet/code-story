@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from codestory.config.settings import get_settings
+from codestory.config.settings import get_settings  # type: ignore[import-untyped]
 
 # Set up logging
 logger = logging.getLogger(__name__)

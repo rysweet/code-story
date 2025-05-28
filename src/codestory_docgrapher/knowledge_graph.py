@@ -9,7 +9,7 @@ documentation entities and relationships, and storing it in Neo4j.
 import logging
 import time
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
 
 from .entity_linker import EntityLinker
 from .models import (
@@ -262,7 +262,7 @@ class KnowledgeGraph:
                         f"and code entities"
                     )
 
-    def get_graph_stats(self) -> dict:
+    def get_graph_stats(self) -> dict[str, Any]:
         """Get statistics about the graph.
 
         Returns:
@@ -282,7 +282,7 @@ class KnowledgeGraph:
         Returns:
             Dict mapping entity types to counts
         """
-        counts: dict[Any, Any] = {}
+        counts: dict[str, int] = {}
         for entity in self.graph.entities.values():
             type_name = entity.type.value
             counts[type_name] = counts.get(type_name, 0) + 1
@@ -294,7 +294,7 @@ class KnowledgeGraph:
         Returns:
             Dict mapping relationship types to counts
         """
-        counts: dict[Any, Any] = {}
+        counts: dict[str, int] = {}
         for rel in self.graph.relationships.values():
             type_name = rel.type.value
             counts[type_name] = counts.get(type_name, 0) + 1

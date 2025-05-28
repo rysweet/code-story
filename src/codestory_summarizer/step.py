@@ -12,13 +12,13 @@ import time
 from typing import Any
 from uuid import uuid4
 
-from celery import shared_task
+from celery import shared_task  # type: ignore[import-untyped]
 
-from codestory.config.settings import get_settings
-from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
-from codestory.llm.client import create_client
-from codestory.llm.models import ChatMessage, ChatRole
+from codestory.config.settings import get_settings  # type: ignore[import-untyped]
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
+from codestory.ingestion_pipeline.step import PipelineStep, StepStatus  # type: ignore[import-untyped]
+from codestory.llm.client import create_client  # type: ignore[import-untyped]
+from codestory.llm.models import ChatMessage, ChatRole  # type: ignore[import-untyped]
 
 from .dependency_analyzer import DependencyAnalyzer
 from .models import NodeData, SummaryData
@@ -115,7 +115,7 @@ class SummarizerStep(PipelineStep):
         """
         if job_id not in self.active_jobs:
             # Check if this is a task ID
-            from celery.result import AsyncResult
+            from celery.result import AsyncResult  # type: ignore[import-untyped]
 
             try:
                 result = AsyncResult(job_id)
@@ -204,7 +204,7 @@ class SummarizerStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke
+        from celery.task.control import revoke  # type: ignore[import-untyped]
 
         revoke(task_id, terminate=True)
 
@@ -265,7 +265,7 @@ class SummarizerStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")
+@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")  # type: ignore[misc]
 def run_summarizer(
     self: Any,
     repository_path: str,

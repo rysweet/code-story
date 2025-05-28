@@ -153,7 +153,7 @@ class ProgressTracker:
             minutes = (seconds % 3600) / 60
             return f"{hours:.1f}h {minutes:.0f}m"
 
-    def get_status_dict(self) -> dict:
+    def get_status_dict(self) -> dict[str, float | int]:
         """Get the current status as a dictionary.
 
         Returns:

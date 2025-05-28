@@ -6,6 +6,7 @@ It also provides visualization endpoints for generating graph visualizations.
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse
@@ -57,7 +58,7 @@ db_router = APIRouter(prefix="/v1/database", tags=["database"])
 async def execute_cypher_query(
     query: CypherQuery,
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> QueryResult:
     """Execute a Cypher query against the graph database.
 
@@ -104,7 +105,7 @@ async def execute_cypher_query(
 async def execute_vector_search(
     query: VectorQuery,
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> VectorResult:
     """Execute a vector similarity search.
 
@@ -141,7 +142,7 @@ async def execute_vector_search(
 async def find_path(
     path_request: PathRequest,
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> PathResult:
     """Find paths between nodes in the graph.
 
@@ -180,7 +181,7 @@ async def find_path(
 async def ask_question(
     request: AskRequest,
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> AskAnswer:
     """Answer a natural language question about the codebase.
 
@@ -231,7 +232,7 @@ async def generate_visualization(
         False, description="Whether to include nodes with no connections"
     ),
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_optional_user),
+    user: dict[str, Any] | None = Depends(get_optional_user),
 ) -> HTMLResponse:
     """Generate an interactive HTML visualization of the code graph.
 
@@ -271,7 +272,7 @@ async def generate_visualization(
             theme=theme,
             focus_node_id=focus_node_id,
             depth=depth,
-            filter={
+            filter={  # type: ignore[arg-type]
                 "node_types": parsed_node_types,
                 "search_query": search_query,
                 "max_nodes": max_nodes,
@@ -307,7 +308,7 @@ async def generate_visualization_legacy(
     type: str = Query("force", description="Type of visualization"),
     theme: str = Query("auto", description="Color theme"),
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(get_optional_user),
+    user: dict[str, Any] | None = Depends(get_optional_user),
 ) -> HTMLResponse:
     """Legacy endpoint for generating an interactive HTML visualization of the code graph.
 
@@ -364,7 +365,7 @@ async def generate_visualization_legacy(
 async def clear_database(
     request: DatabaseClearRequest,
     graph_service: GraphService = Depends(get_graph_service),
-    user: dict = Depends(is_admin),  # Require admin privileges
+    user: dict[str, Any] = Depends(is_admin),  # Require admin privileges
 ) -> DatabaseClearResponse:
     """Clear all data from the database.
 

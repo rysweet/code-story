@@ -7,7 +7,7 @@ rate limiting and transient errors from the Azure OpenAI API.
 import functools
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar, cast
+from typing import Any, Callable, Callable, Callable, Callable, TypeVar, cast
 
 import openai
 from tenacity import (
@@ -42,12 +42,12 @@ def get_retry_after(retry_state: RetryCallState) -> float:
     Returns:
         Time to wait before retrying in seconds
     """
-    exception = retry_state.outcome.exception()
-    if hasattr(exception, "retry_after") and exception.retry_after is not None:
-        return min(exception.retry_after, 60)  # Cap at 60 seconds
+    exception = retry_state.outcome.exception()  # type: ignore[union-attr]
+    if exception is not None and hasattr(exception, "retry_after") and exception.retry_after is not None:
+        return float(min(exception.retry_after, 60))  # Cap at 60 seconds
 
-    # Default to using exponential backoff
-    return None
+    # Default to using exponential backoff - return a default value
+    return 1.0
 
 
 def before_retry_callback(retry_state: RetryCallState) -> None:
@@ -56,13 +56,13 @@ def before_retry_callback(retry_state: RetryCallState) -> None:
     Args:
         retry_state: Current retry state
     """
-    exception = retry_state.outcome.exception()
+    exception = retry_state.outcome.exception()  # type: ignore[union-attr]
     attempt = retry_state.attempt_number
 
     operation = getattr(retry_state.kwargs.get("_operation_type", None), "value", "unknown")
     model = retry_state.kwargs.get("model", "unknown")
 
-    wait_time = retry_state.next_action.sleep
+    wait_time = retry_state.next_action.sleep  # type: ignore[union-attr]
 
     logger.warning(
         f"Retrying {operation} request to model {model} after error: {exception!s}. "

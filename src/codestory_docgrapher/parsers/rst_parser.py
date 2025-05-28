@@ -79,7 +79,7 @@ class RstParser(Parser):
             re.compile(r":file:`([^`]+)`"),
         ]
 
-    def parse(self, document: DocumentationFile) -> dict:
+    def parse(self, document: DocumentationFile) -> dict[str, Any]:
         """Parse a ReStructuredText documentation file.
 
         Args:

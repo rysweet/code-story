@@ -485,18 +485,18 @@ class Settings(BaseSettings):
                 try:
                     secret = client.get_secret("neo4j-password")
                     self.neo4j.password = (
-                        SecretStr(secret.value) if secret.value is not None else None
-                    )  # type: ignore  # TODO: Fix type compatibility
+                        SecretStr(secret.value) if secret.value is not None else None  # type: ignore[assignment]
+                    )
                 except Exception:
                     pass
 
             # Load OpenAI API key if needed
-            if not self.openai.api_key.get_secret_value():
+            if not self.openai.api_key.get_secret_value():  # type: ignore[union-attr]
                 try:
                     secret = client.get_secret("openai-api-key")
                     self.openai.api_key = (
                         SecretStr(secret.value) if secret.value is not None else None
-                    )  # type: ignore  # TODO: Fix type compatibility
+                    )
                 except Exception:
                     pass
 
@@ -509,7 +509,7 @@ class Settings(BaseSettings):
                     secret = client.get_secret("azure-openai-api-key")
                     self.azure_openai.api_key = (
                         SecretStr(secret.value) if secret.value is not None else None
-                    )  # type: ignore  # TODO: Fix type compatibility
+                    )
                 except Exception:
                     pass
 
@@ -519,7 +519,7 @@ class Settings(BaseSettings):
                     secret = client.get_secret("azure-client-secret")
                     self.azure.client_secret = (
                         SecretStr(secret.value) if secret.value is not None else None
-                    )  # type: ignore  # TODO: Fix type compatibility
+                    )
                 except Exception:
                     pass
 

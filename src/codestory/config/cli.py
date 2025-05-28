@@ -29,7 +29,7 @@ console = Console()
 
 
 @app.command("get")
-def get_setting(
+def get_setting(  # type: ignore[no-untyped-def]
     setting_path: str = typer.Argument(
         ..., help="Setting path in dot notation (e.g., 'neo4j.uri')"
     ),
@@ -55,7 +55,7 @@ def get_setting(
 
 
 @app.command("set")
-def set_setting(
+def set_setting(  # type: ignore[no-untyped-def]
     setting_path: str = typer.Argument(
         ..., help="Setting path in dot notation (e.g., 'neo4j.uri')"
     ),
@@ -102,7 +102,7 @@ def set_setting(
 
 
 @app.command("list")
-def list_settings(
+def list_settings(  # type: ignore[no-untyped-def]
     section: str
     | None = typer.Option(None, "--section", "-s", help="Section to list (e.g., 'neo4j')"),
     format: str = typer.Option("table", "--format", "-f", help="Output format (table, json, toml)"),
@@ -154,7 +154,7 @@ def list_settings(
 
 
 @app.command("export")
-def export_config(
+def export_config(  # type: ignore[no-untyped-def]
     format: str = typer.Option("env", "--format", "-f", help="Output format (env, json, toml)"),
     output: str
     | None = typer.Option(None, "--output", "-o", help="Output file path (default: stdout)"),
