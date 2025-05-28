@@ -92,7 +92,8 @@ class ServiceSettings(BaseModel):
     worker_concurrency: int = Field(4, description="Celery worker concurrency")
 
     @field_validator("log_level")
-    def validate_log_level(self, v: str) -> str:
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
         """Validate log level is a valid logging level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
@@ -161,7 +162,8 @@ class TelemetrySettings(BaseModel):
     log_format: str = Field("json", description="Log format")
 
     @field_validator("log_format")
-    def validate_log_format(self, v: str) -> str:
+    @classmethod
+    def validate_log_format(cls, v: str) -> str:
         """Validate that log format is either 'json' or 'text'."""
         if v not in ["json", "text"]:
             raise ValueError("log_format must be either 'json' or 'text'")

@@ -82,7 +82,8 @@ class IngestionRequest(BaseModel):
     )
 
     @field_validator("source")
-    def source_not_empty(self, v: str) -> str:
+    @classmethod
+    def source_not_empty(cls, v: str) -> str:
         """Validate that source is not empty.
 
         Args:
@@ -99,7 +100,8 @@ class IngestionRequest(BaseModel):
         return v
 
     @field_validator("source")
-    def validate_source(self, v: str, info: Any) -> str:
+    @classmethod
+    def validate_source(cls, v: str, info: Any) -> str:
         """Validate the source based on source_type.
 
         Args:
