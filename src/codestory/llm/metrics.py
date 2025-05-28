@@ -86,9 +86,7 @@ def _get_or_create_histogram(name, description, labels=None, buckets=None):
         from prometheus_client import CollectorRegistry
 
         private_registry = CollectorRegistry()
-        return Histogram(
-            name, description, labels, buckets=buckets, registry=private_registry
-        )
+        return Histogram(name, description, labels, buckets=buckets, registry=private_registry)
 
 
 # Prometheus metrics
@@ -151,9 +149,9 @@ def record_request(
 
     if tokens:
         for token_type, count in tokens.items():
-            TOKEN_USAGE.labels(
-                operation=operation.value, model=model, token_type=token_type
-            ).inc(count)
+            TOKEN_USAGE.labels(operation=operation.value, model=model, token_type=token_type).inc(
+                count
+            )
 
 
 def record_error(
@@ -168,9 +166,7 @@ def record_error(
         model: Model used for the request
         error_type: Type of error that occurred
     """
-    ERROR_COUNT.labels(
-        operation=operation.value, model=model, error_type=error_type
-    ).inc()
+    ERROR_COUNT.labels(operation=operation.value, model=model, error_type=error_type).inc()
 
 
 def record_retry(
@@ -239,9 +235,7 @@ def instrument_request(
                 duration = time.time() - start_time
                 error_type = type(e).__name__
 
-                record_request(
-                    operation=operation, model=model, status="error", duration=duration
-                )
+                record_request(operation=operation, model=model, status="error", duration=duration)
 
                 record_error(operation=operation, model=model, error_type=error_type)
 
@@ -308,9 +302,7 @@ def instrument_async_request(
                 duration = time.time() - start_time
                 error_type = type(e).__name__
 
-                record_request(
-                    operation=operation, model=model, status="error", duration=duration
-                )
+                record_request(operation=operation, model=model, status="error", duration=duration)
 
                 record_error(operation=operation, model=model, error_type=error_type)
 

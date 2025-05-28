@@ -79,9 +79,7 @@ class TestSearchGraphTool:
     @pytest.fixture
     def graph_service(self):
         """Create a mock graph service."""
-        with mock.patch(
-            "codestory_mcp.tools.search_graph.get_graph_service"
-        ) as mock_get_service:
+        with mock.patch("codestory_mcp.tools.search_graph.get_graph_service") as mock_get_service:
             service = mock.Mock()
             mock_get_service.return_value = service
             yield service
@@ -89,9 +87,7 @@ class TestSearchGraphTool:
     @pytest.fixture
     def metrics(self):
         """Create a mock metrics object."""
-        with mock.patch(
-            "codestory_mcp.tools.search_graph.get_metrics"
-        ) as mock_get_metrics:
+        with mock.patch("codestory_mcp.tools.search_graph.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
             mock_get_metrics.return_value = metrics
             yield metrics
@@ -143,9 +139,7 @@ class TestSearchGraphTool:
 
         mock_node.__getitem__ = mock.Mock(side_effect=getitem)
         mock_node.__contains__ = mock.Mock(side_effect=contains)
-        mock_node.get = mock.Mock(
-            side_effect=lambda k, d=None: mock_node.properties.get(k, d)
-        )
+        mock_node.get = mock.Mock(side_effect=lambda k, d=None: mock_node.properties.get(k, d))
         mock_node.items = mock.Mock(return_value=mock_node.properties.items())
 
         # Create a future to mock async function return value
@@ -154,9 +148,7 @@ class TestSearchGraphTool:
         graph_service.search.return_value = future
 
         # Call the tool
-        result = await tool(
-            {"query": "test query", "node_types": ["Class"], "limit": 5}
-        )
+        result = await tool({"query": "test query", "node_types": ["Class"], "limit": 5})
 
         # Verify graph service call
         graph_service.search.assert_called_once_with(
@@ -198,9 +190,7 @@ class TestSummarizeNodeTool:
     @pytest.fixture
     def graph_service(self):
         """Create a mock graph service."""
-        with mock.patch(
-            "codestory_mcp.tools.summarize_node.get_graph_service"
-        ) as mock_get_service:
+        with mock.patch("codestory_mcp.tools.summarize_node.get_graph_service") as mock_get_service:
             service = mock.Mock()
             mock_get_service.return_value = service
             yield service
@@ -218,9 +208,7 @@ class TestSummarizeNodeTool:
     @pytest.fixture
     def metrics(self):
         """Create a mock metrics object."""
-        with mock.patch(
-            "codestory_mcp.tools.summarize_node.get_metrics"
-        ) as mock_get_metrics:
+        with mock.patch("codestory_mcp.tools.summarize_node.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
             mock_get_metrics.return_value = metrics
             yield metrics
@@ -315,9 +303,7 @@ class TestPathToTool:
     @pytest.fixture
     def graph_service(self):
         """Create a mock graph service."""
-        with mock.patch(
-            "codestory_mcp.tools.path_to.get_graph_service"
-        ) as mock_get_service:
+        with mock.patch("codestory_mcp.tools.path_to.get_graph_service") as mock_get_service:
             service = mock.Mock()
             mock_get_service.return_value = service
             yield service
@@ -325,9 +311,7 @@ class TestPathToTool:
     @pytest.fixture
     def openai_service(self):
         """Create a mock OpenAI service."""
-        with mock.patch(
-            "codestory_mcp.tools.path_to.get_openai_service"
-        ) as mock_get_service:
+        with mock.patch("codestory_mcp.tools.path_to.get_openai_service") as mock_get_service:
             service = mock.Mock()
             mock_get_service.return_value = service
             yield service
@@ -390,9 +374,7 @@ class TestPathToTool:
         mock_node1.__getitem__ = mock.Mock(side_effect=node1_getitem)
         mock_node1.__contains__ = mock.Mock(side_effect=node1_contains)
         mock_node1.items = mock.Mock(return_value=mock_node1_props.items())
-        mock_node1.get = mock.Mock(
-            side_effect=lambda k, d=None: mock_node1_props.get(k, d)
-        )
+        mock_node1.get = mock.Mock(side_effect=lambda k, d=None: mock_node1_props.get(k, d))
 
         mock_rel = mock.Mock()
         mock_rel.id = "rel-123"
@@ -427,9 +409,7 @@ class TestPathToTool:
         mock_node2.__getitem__ = mock.Mock(side_effect=node2_getitem)
         mock_node2.__contains__ = mock.Mock(side_effect=node2_contains)
         mock_node2.items = mock.Mock(return_value=mock_node2_props.items())
-        mock_node2.get = mock.Mock(
-            side_effect=lambda k, d=None: mock_node2_props.get(k, d)
-        )
+        mock_node2.get = mock.Mock(side_effect=lambda k, d=None: mock_node2_props.get(k, d))
 
         # Create futures to mock async function return values
         paths_future = asyncio.Future()
@@ -474,9 +454,7 @@ class TestSimilarCodeTool:
     @pytest.fixture
     def openai_service(self):
         """Create a mock OpenAI service."""
-        with mock.patch(
-            "codestory_mcp.tools.similar_code.get_openai_service"
-        ) as mock_get_service:
+        with mock.patch("codestory_mcp.tools.similar_code.get_openai_service") as mock_get_service:
             service = mock.Mock()
             mock_get_service.return_value = service
             yield service
@@ -484,9 +462,7 @@ class TestSimilarCodeTool:
     @pytest.fixture
     def metrics(self):
         """Create a mock metrics object."""
-        with mock.patch(
-            "codestory_mcp.tools.similar_code.get_metrics"
-        ) as mock_get_metrics:
+        with mock.patch("codestory_mcp.tools.similar_code.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
             mock_get_metrics.return_value = metrics
             yield metrics
@@ -546,9 +522,7 @@ class TestSimilarCodeTool:
         result = await tool({"code": "def test(): pass", "limit": 2})
 
         # Verify service call
-        openai_service.find_similar_code.assert_called_once_with(
-            code="def test(): pass", limit=2
-        )
+        openai_service.find_similar_code.assert_called_once_with(code="def test(): pass", limit=2)
 
         # Verify result
         assert "matches" in result

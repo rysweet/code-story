@@ -25,18 +25,14 @@ class TestIngestCommands:
     ) -> None:
         """Test 'ingest start' and 'ingest status' commands with real repository."""
         # Start ingestion
-        result = cli_runner.invoke(
-            app, ["ingest", "start", test_repository, "--no-progress"]
-        )
+        result = cli_runner.invoke(app, ["ingest", "start", test_repository, "--no-progress"])
 
         # Check result
         assert result.exit_code == 0
         assert "Starting ingestion" in result.output
 
         # Extract job ID from output
-        job_id_line = next(
-            line for line in result.output.splitlines() if "Job ID:" in line
-        )
+        job_id_line = next(line for line in result.output.splitlines() if "Job ID:" in line)
         job_id = job_id_line.split("Job ID:")[1].strip()
         assert job_id
 
@@ -76,9 +72,7 @@ class TestIngestCommands:
 
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_ingest_jobs_list(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_ingest_jobs_list(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'ingest jobs' command with real service."""
         # List all jobs
         result = cli_runner.invoke(app, ["ingest", "jobs"])
@@ -87,16 +81,11 @@ class TestIngestCommands:
         assert result.exit_code == 0
 
         # Should either have jobs or indicate no jobs
-        assert (
-            "Ingestion Jobs" in result.output
-            or "No ingestion jobs found" in result.output
-        )
+        assert "Ingestion Jobs" in result.output or "No ingestion jobs found" in result.output
 
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_mount_command(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_mount_command(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test the 'ingest mount' command with a real repository."""
         # Only run this test if Docker is available
         if not is_docker_running():
@@ -117,19 +106,14 @@ class TestIngestCommands:
             assert result.exit_code == 0
 
             # The output should either indicate success or that it's already mounted
-            assert (
-                "Successfully mounted" in result.output
-                or "already mounted" in result.output
-            )
+            assert "Successfully mounted" in result.output or "already mounted" in result.output
 
             # Verify that the repository is actually mounted
             assert is_repo_mounted(temp_dir)
 
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_force_remount(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_force_remount(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test the '--force-remount' option with a real repository."""
         # Only run this test if Docker is available
         if not is_docker_running():

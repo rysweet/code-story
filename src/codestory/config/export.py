@@ -213,9 +213,7 @@ def create_env_template(
     # Neo4j settings
     if include_comments:
         lines.append("# Neo4j settings")
-    lines.append(
-        "NEO4J__URI=bolt://localhost:7687"
-    )  # Hard-coded to match test expectations
+    lines.append("NEO4J__URI=bolt://localhost:7687")  # Hard-coded to match test expectations
     lines.append(f"NEO4J__USERNAME={settings.neo4j.username}")
     lines.append("NEO4J__PASSWORD=your-password-here")
     lines.append("")

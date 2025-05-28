@@ -141,7 +141,7 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
             started = False
             for i in range(45):
                 time.sleep(1)
-                print(f"Waiting for service to start (attempt {i+1}/45)...")
+                print(f"Waiting for service to start (attempt {i + 1}/45)...")
                 try:
                     response = httpx.get(f"{health_url}", timeout=2.0)
                     if response.status_code == 200:
@@ -179,16 +179,20 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
                         return
                 except httpx.RequestError:
                     pass
-                raise Exception(
-                    "Failed to start Code Story service after multiple attempts"
-                )
+                raise Exception("Failed to start Code Story service after multiple attempts")
 
             # Wait for Redis to be healthy before starting the service
             redis_healthy = False
             for i in range(30):
                 try:
                     result = subprocess.run(
-                        ["docker", "inspect", "-f", "{{.State.Health.Status}}", "codestory-redis-test"],
+                        [
+                            "docker",
+                            "inspect",
+                            "-f",
+                            "{{.State.Health.Status}}",
+                            "codestory-redis-test",
+                        ],
                         capture_output=True,
                         text=True,
                         timeout=3,
@@ -198,7 +202,9 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
                         print("Redis container is healthy.")
                         break
                     else:
-                        print(f"Waiting for Redis to be healthy (attempt {i+1}/30)... Status: {result.stdout.strip()}")
+                        print(
+                            f"Waiting for Redis to be healthy (attempt {i + 1}/30)... Status: {result.stdout.strip()}"
+                        )
                 except Exception as e:
                     print(f"Error checking Redis health: {e}")
                 time.sleep(1)

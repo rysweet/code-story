@@ -37,9 +37,7 @@ def temp_repository():
         # Create some files in the repository to make it look real
         readme_path = os.path.join(temp_dir, "README.md")
         with open(readme_path, "w") as f:
-            f.write(
-                "# Test Repository\n\nThis is a test repository for mounting tests."
-            )
+            f.write("# Test Repository\n\nThis is a test repository for mounting tests.")
 
         # Create a Python file
         py_file_path = os.path.join(temp_dir, "test_file.py")
@@ -181,9 +179,7 @@ class TestRepositoryMounting:
             text=True,
         )
 
-        assert (
-            container_name in container_check.stdout
-        ), "Test container with mount is not running"
+        assert container_name in container_check.stdout, "Test container with mount is not running"
 
         # Verify path exists in container
         print("Verifying path exists with mounting")
@@ -387,9 +383,7 @@ class TestCliAutoMount:
             # Verify the client's start_ingestion was called with the container path
             mock_client.start_ingestion.assert_called_once()
             call_args = mock_client.start_ingestion.call_args[0][0]
-            assert (
-                container_path in call_args
-            ), f"Container path not passed to service: {call_args}"
+            assert container_path in call_args, f"Container path not passed to service: {call_args}"
 
             print("Test 2 passed: CLI correctly used mounted repository")
 

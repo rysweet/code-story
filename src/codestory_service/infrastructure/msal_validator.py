@@ -80,9 +80,7 @@ class MSALValidator:
 
             # Try to decode the token, but don't enforce validation
             try:
-                claims = jwt.decode(
-                    token, options={"verify_signature": False, "verify_exp": False}
-                )
+                claims = jwt.decode(token, options={"verify_signature": False, "verify_exp": False})
                 return claims
             except Exception:
                 return {
@@ -95,9 +93,7 @@ class MSALValidator:
         # Dev mode with simplified JWT validation
         if self.dev_mode and self.jwt_secret:
             try:
-                claims = jwt.decode(
-                    token, self.jwt_secret, algorithms=[self.jwt_algorithm]
-                )
+                claims = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
                 return claims
             except jwt.ExpiredSignatureError as err:
                 logger.warning("Token has expired")
@@ -246,9 +242,7 @@ async def get_current_user(
     except HTTPException as e:
         # If in dev mode, use dev user instead of failing
         if validator.dev_mode:
-            logger.warning(
-                f"Auth error in dev mode: {e.detail}. Using development user instead."
-            )
+            logger.warning(f"Auth error in dev mode: {e.detail}. Using development user instead.")
             return dev_user
         # In production, raise the original error
         raise
@@ -294,7 +288,7 @@ async def get_optional_user(
         return None
 
 
-def require_role(required_roles: list[str]):
+def require_role(required_roles: list[str]) -> Any:
     """Create a dependency that requires the user to have one of the specified roles.
 
     Args:
@@ -307,9 +301,7 @@ def require_role(required_roles: list[str]):
         HTTPException: If the user doesn't have any of the required roles
     """
 
-    async def role_checker(
-        user: dict[str, Any] = Depends(get_current_user)
-    ) -> dict[str, Any]:
+    async def role_checker(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
         user_roles = user.get("roles", [])
 
         # Check if the user has any of the required roles

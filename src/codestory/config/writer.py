@@ -114,9 +114,7 @@ def parse_setting_path(setting_path: str) -> tuple[str, str]:
     """
     parts = setting_path.split(".", 1)
     if len(parts) != 2:
-        raise ValueError(
-            f"Setting path '{setting_path}' should be in format 'section.key'"
-        )
+        raise ValueError(f"Setting path '{setting_path}' should be in format 'section.key'")
     return parts[0], parts[1]
 
 
@@ -169,14 +167,10 @@ def update_config(
     # Persist to file if requested
     if persist_to == "env":
         env_key = f"{section.upper()}__{key.upper()}"
-        value_str = (
-            value.get_secret_value() if isinstance(value, SecretStr) else str(value)
-        )
+        value_str = value.get_secret_value() if isinstance(value, SecretStr) else str(value)
         update_env(env_key, value_str)
     elif persist_to == "toml":
-        value_to_save = (
-            value.get_secret_value() if isinstance(value, SecretStr) else value
-        )
+        value_to_save = value.get_secret_value() if isinstance(value, SecretStr) else value
         update_toml(section, key, value_to_save)
 
     # Clear the settings cache to force reloading on next access

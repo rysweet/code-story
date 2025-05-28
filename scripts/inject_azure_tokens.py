@@ -34,18 +34,14 @@ TARGET_CONTAINERS = ["codestory-service", "codestory-worker"]
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Inject Azure tokens into Code Story containers"
-    )
+    parser = argparse.ArgumentParser(description="Inject Azure tokens into Code Story containers")
     parser.add_argument("--tenant-id", help="Azure tenant ID to use for authentication")
     parser.add_argument(
         "--restart-containers",
         action="store_true",
         help="Restart containers after token injection",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
     return parser.parse_args()
 
 
@@ -101,9 +97,7 @@ def get_running_containers() -> list[str]:
 def extract_tenant_id_from_settings() -> str | None:
     """Extract tenant ID from environment variables or settings files."""
     # Check environment variables first
-    tenant_id = os.environ.get("AZURE_TENANT_ID") or os.environ.get(
-        "AZURE_OPENAI__TENANT_ID"
-    )
+    tenant_id = os.environ.get("AZURE_TENANT_ID") or os.environ.get("AZURE_OPENAI__TENANT_ID")
     if tenant_id:
         logger.info(f"Found tenant ID in environment variables: {tenant_id}")
         return tenant_id
@@ -198,9 +192,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         )
 
         if container_check.returncode != 0:
-            logger.warning(
-                f"Container {container_name} does not exist or is not running"
-            )
+            logger.warning(f"Container {container_name} does not exist or is not running")
             return False
 
         # Get the location of Azure tokens on the host
@@ -216,9 +208,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         # Count the number of files in the token location
         token_files = os.listdir(token_location)
         if not token_files:
-            logger.warning(
-                f"Azure token directory {token_location} exists but is empty"
-            )
+            logger.warning(f"Azure token directory {token_location} exists but is empty")
             print(f"\nAzure token directory at {token_location} is empty.")
             print("Please run 'az login' to create valid Azure credentials.\n")
             return False
@@ -245,13 +235,12 @@ def inject_tokens_into_container(container_name: str) -> bool:
             "mkdir -p /root/.azure",
         ]
 
-        mkdir_result = subprocess.run(
-            mkdir_cmd, capture_output=True, text=True
-        )
+        mkdir_result = subprocess.run(mkdir_cmd, capture_output=True, text=True)
 
         if mkdir_result.returncode != 0:
             logger.warning(
-                f"Failed to create /root/.azure directory in {container_name}: {mkdir_result.stderr}"
+                f"Failed to create /root/.azure directory in {container_name}: "
+                f"{mkdir_result.stderr}"
             )
             # Continue anyway as the cp might succeed if the directory already exists
 
@@ -263,14 +252,10 @@ def inject_tokens_into_container(container_name: str) -> bool:
             f"{container_name}:/root/.azure/",
         ]
 
-        result = subprocess.run(
-            copy_cmd, capture_output=True, text=True
-        )
+        result = subprocess.run(copy_cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
-            logger.error(
-                f"Failed to copy tokens to {container_name}:/root/.azure: {result.stderr}"
-            )
+            logger.error(f"Failed to copy tokens to {container_name}:/root/.azure: {result.stderr}")
             return False
 
         # Verify that the files were copied
@@ -283,14 +268,10 @@ def inject_tokens_into_container(container_name: str) -> bool:
             "ls -la /root/.azure/",
         ]
 
-        verify_result = subprocess.run(
-            verify_cmd, capture_output=True, text=True
-        )
+        verify_result = subprocess.run(verify_cmd, capture_output=True, text=True)
 
         if verify_result.returncode != 0 or not verify_result.stdout.strip():
-            logger.error(
-                "Token injection failed: No files found in container after copy"
-            )
+            logger.error("Token injection failed: No files found in container after copy")
             return False
 
         logger.info(f"Files in /root/.azure/: {verify_result.stdout}")
@@ -302,12 +283,16 @@ def inject_tokens_into_container(container_name: str) -> bool:
             container_name,
             "bash",
             "-c",
-            "if [ -d '/home/appuser' ]; then mkdir -p /home/appuser/.azure && cp -r /root/.azure/* /home/appuser/.azure/ 2>/dev/null || true; chown -R appuser:appuser /home/appuser/.azure 2>/dev/null || true; fi",
+            (
+                "if [ -d '/home/appuser' ]; then "
+                "mkdir -p /home/appuser/.azure && "
+                "cp -r /root/.azure/* /home/appuser/.azure/ 2>/dev/null || true; "
+                "chown -R appuser:appuser /home/appuser/.azure 2>/dev/null || true; "
+                "fi"
+            ),
         ]
 
-        appuser_result = subprocess.run(
-            appuser_copy_cmd, capture_output=True, text=True
-        )
+        appuser_result = subprocess.run(appuser_copy_cmd, capture_output=True, text=True)
 
         if appuser_result.returncode != 0:
             logger.warning(
@@ -347,14 +332,13 @@ def restart_container(container_name: str) -> bool:
             return False
 
         container_status = container_check.stdout.strip()
-        logger.info(
-            f"Container {container_name} status before restart: {container_status}"
-        )
+        logger.info(f"Container {container_name} status before restart: {container_status}")
 
         # If container is not running, try to start it
         if container_status != "running":
             logger.info(
-                f"Container {container_name} is not running (status: {container_status}), trying to start it"
+                f"Container {container_name} is not running (status: {container_status}), "
+                f"trying to start it"
             )
             start_result = subprocess.run(
                 ["docker", "start", container_name],
@@ -393,15 +377,18 @@ def restart_container(container_name: str) -> bool:
                 text=True,
             )
 
-            if (
-                verify_check.returncode == 0
-                and verify_check.stdout.strip() == "running"
-            ):
+            if verify_check.returncode == 0 and verify_check.stdout.strip() == "running":
                 logger.info(f"Container {container_name} is running after restart")
                 return True
             else:
+                status = (
+                    verify_check.stdout.strip()
+                    if verify_check.returncode == 0
+                    else "unknown"
+                )
                 logger.warning(
-                    f"Container {container_name} might not be running properly after restart. Status: {verify_check.stdout.strip() if verify_check.returncode == 0 else 'unknown'}"
+                    f"Container {container_name} might not be running properly "
+                    f"after restart. Status: {status}"
                 )
                 return False
         else:
@@ -427,14 +414,16 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
                 logger.error("Azure CLI is not available or not properly installed")
                 print("\nAzure CLI is not available or not properly installed.")
                 print(
-                    "Please install Azure CLI with 'brew install azure-cli' or follow instructions at:"
+                    "Please install Azure CLI with 'brew install azure-cli' or "
+                    "follow instructions at:"
                 )
                 print("https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n")
                 return False
 
-            logger.info(
-                f"Azure CLI is available: {az_version.stdout.splitlines()[0] if az_version.stdout else 'unknown version'}"
+            version = (
+                az_version.stdout.splitlines()[0] if az_version.stdout else "unknown version"
             )
+            logger.info(f"Azure CLI is available: {version}")
         except Exception as e:
             logger.error(f"Failed to check Azure CLI availability: {e}")
             print("\nAzure CLI is not available on this system.")
@@ -455,9 +444,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
         # Try to include scope if using a recent version of Azure CLI
         # Check version to decide if we should add scope
         try:
-            version_info = (
-                az_version.stdout.splitlines()[0] if az_version.stdout else ""
-            )
+            version_info = az_version.stdout.splitlines()[0] if az_version.stdout else ""
             import re
 
             version_match = re.search(r"azure-cli\s+(\d+)\.(\d+)\.(\d+)", version_info)
@@ -465,12 +452,8 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
                 major, minor, patch = map(int, version_match.groups())
                 # For Azure CLI 2.30.0 or later, add scope
                 if major > 2 or (major == 2 and minor >= 30):
-                    login_cmd.extend(
-                        ["--scope", "https://cognitiveservices.azure.com/.default"]
-                    )
-                    logger.info(
-                        "Added scope parameter to login command based on Azure CLI version"
-                    )
+                    login_cmd.extend(["--scope", "https://cognitiveservices.azure.com/.default"])
+                    logger.info("Added scope parameter to login command based on Azure CLI version")
         except Exception as e:
             logger.warning(f"Error checking Azure CLI version for scope parameter: {e}")
             # Continue without scope parameter
@@ -479,9 +462,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
         print(f"\nRunning Azure authentication: {' '.join(login_cmd)}")
         print("A browser window should open for you to log in...")
 
-        result = subprocess.run(
-            login_cmd, capture_output=True, text=True
-        )
+        result = subprocess.run(login_cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
             logger.info("Azure authentication successful")
@@ -507,9 +488,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
 
                     # Trim token for display (just first few chars)
                     access_token = token_info.get("accessToken", "")
-                    token_preview = (
-                        access_token[:10] + "..." if access_token else "none"
-                    )
+                    token_preview = access_token[:10] + "..." if access_token else "none"
 
                     logger.info(f"Verified access token: {token_preview}")
 
@@ -517,15 +496,11 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
                     expires_on = token_info.get("expiresOn", "unknown")
                     subscription = token_info.get("subscription", "unknown")
 
-                    logger.info(
-                        f"Token expires on: {expires_on}, Subscription: {subscription}"
-                    )
+                    logger.info(f"Token expires on: {expires_on}, Subscription: {subscription}")
                     print(f"Access token expires on: {expires_on}")
                     print(f"Subscription: {subscription}")
                 else:
-                    logger.warning(
-                        f"Could not verify token after login: {verify_result.stderr}"
-                    )
+                    logger.warning(f"Could not verify token after login: {verify_result.stderr}")
             except Exception as e:
                 logger.warning(f"Error verifying token after login: {e}")
 
@@ -538,9 +513,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
                 print("\nError: The tenant name or ID is incorrect or not found.")
                 print(f"Please verify that the tenant ID '{tenant_id}' is correct.")
             elif "AADSTS50034" in result.stderr:
-                print(
-                    "\nError: The user or application was not found in the directory."
-                )
+                print("\nError: The user or application was not found in the directory.")
                 print("Please check your Azure AD credentials.")
             elif "AADSTS50076" in result.stderr or "AADSTS50079" in result.stderr:
                 print("\nError: Multi-factor authentication (MFA) is required.")
@@ -627,9 +600,7 @@ def main():
             print("This tenant ID was found in your environment configuration.\n")
 
         # Don't proceed without valid tokens
-        logger.warning(
-            "Azure tokens are invalid or expired. Please authenticate manually."
-        )
+        logger.warning("Azure tokens are invalid or expired. Please authenticate manually.")
         sys.exit(1)
 
     # Inject tokens into each container
@@ -639,7 +610,8 @@ def main():
             successful_injections += 1
 
     logger.info(
-        f"Successfully injected tokens into {successful_injections}/{len(codestory_containers)} containers"
+        f"Successfully injected tokens into {successful_injections}/"
+        f"{len(codestory_containers)} containers"
     )
 
     # Restart containers if requested
@@ -673,7 +645,8 @@ def main():
 
                     status = result.stdout.strip()
                     logger.info(
-                        f"Container {container} health status: {status} (attempt {attempt+1}/{max_attempts})"
+                        f"Container {container} health status: {status} "
+                        f"(attempt {attempt + 1}/{max_attempts})"
                     )
 
                     if status == "healthy":
@@ -691,9 +664,7 @@ def main():
     if args.restart_containers:
         print("Containers have been restarted to use the new tokens.")
     else:
-        print(
-            "\nNote: For tokens to take effect, you may need to restart containers with:"
-        )
+        print("\nNote: For tokens to take effect, you may need to restart containers with:")
         print("  docker restart " + " ".join(codestory_containers))
 
     return 0

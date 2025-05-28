@@ -8,8 +8,8 @@ import logging
 import time
 from typing import Any
 
-from celery import chain
-from celery.result import AsyncResult
+from celery import chain  # type: ignore[import-untyped]
+from celery.result import AsyncResult  # type: ignore[import-untyped]
 
 from .celery_app import app
 from .step import StepStatus
@@ -96,9 +96,7 @@ def run_step(
 
         # Log what we're trying to do
         logger.debug(f"Dispatching to task: {task_name}")
-        logger.debug(
-            f"Available tasks: {[t for t in app.tasks if step_name in t]}"
-        )
+        logger.debug(f"Available tasks: {[t for t in app.tasks if step_name in t]}")
 
         # Prepare configuration for the step task - with parameter filtering
         step_config_copy = step_config.copy()
@@ -107,9 +105,7 @@ def run_step(
         # This avoids the "got multiple values for argument" error
         if "repository_path" in step_config_copy:
             # If it's already in the config, remove it to avoid conflicts
-            logger.warning(
-                "Removing duplicate repository_path from step config to avoid conflicts"
-            )
+            logger.warning("Removing duplicate repository_path from step config to avoid conflicts")
             del step_config_copy["repository_path"]
 
         # Include job_id in kwargs if present
@@ -161,9 +157,7 @@ def run_step(
         start_poll = time.time()
         step_result = None
 
-        logger.info(
-            f"Waiting for task {task_name} (id: {step_task.id}) with timeout {timeout}s"
-        )
+        logger.info(f"Waiting for task {task_name} (id: {step_task.id}) with timeout {timeout}s")
         last_log_time = start_poll
         poll_counter = 0
 
@@ -187,9 +181,7 @@ def run_step(
                     logger.error(f"Error getting task state: {e}")
 
             if async_result.ready():
-                logger.info(
-                    f"Task {task_name} is ready after {time.time() - start_poll:.1f}s"
-                )
+                logger.info(f"Task {task_name} is ready after {time.time() - start_poll:.1f}s")
                 if async_result.successful():
                     try:
                         step_result = async_result.result
@@ -209,9 +201,7 @@ def run_step(
             time.sleep(1)  # Wait before checking again
 
         if step_result is None:
-            logger.error(
-                f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s"
-            )
+            logger.error(f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s")
             raise Exception(f"Step task timed out after {timeout} seconds")
 
         # Update result with step's result
@@ -250,8 +240,7 @@ def run_step(
 
     # Log completion
     logger.info(
-        f"Completed step {step_name} with status {result['status']} "
-        f"in {duration:.2f} seconds"
+        f"Completed step {step_name} with status {result['status']} in {duration:.2f} seconds"
     )
 
     return result
@@ -284,9 +273,7 @@ def orchestrate_pipeline(
     """
     # Record start time
     start_time = time.time()
-    logger.info(
-        f"Starting pipeline for repository: {repository_path} (job_id: {job_id})"
-    )
+    logger.info(f"Starting pipeline for repository: {repository_path} (job_id: {job_id})")
 
     # Record metric for job start
     record_job_metrics(StepStatus.RUNNING)
@@ -326,9 +313,7 @@ def orchestrate_pipeline(
         # Run the workflow as a chain (sequential execution)
         # Prepare arguments for the chain
         try:
-            logger.info(
-                f"Sending args=[{repository_path}] to chain with {len(workflow)} steps"
-            )
+            logger.info(f"Sending args=[{repository_path}] to chain with {len(workflow)} steps")
 
             # The first argument to the chain is the repository_path
             # This will be passed to the first task in the chain
@@ -338,7 +323,7 @@ def orchestrate_pipeline(
         except Exception as e:
             logger.error(f"Error starting chain: {e}")
             # Try to get more detailed error message
-            from celery.exceptions import CeleryError
+            from celery.exceptions import CeleryError  # type: ignore[import-untyped]
 
             if isinstance(e, CeleryError):
                 logger.error(f"Celery error details: {e.args}")
@@ -351,9 +336,7 @@ def orchestrate_pipeline(
         start_poll = time.time()
         all_results = None
 
-        logger.info(
-            f"Waiting for chain (id: {chain_result.id}) with timeout {timeout}s"
-        )
+        logger.info(f"Waiting for chain (id: {chain_result.id}) with timeout {timeout}s")
         last_log_time = start_poll
         poll_counter = 0
 
@@ -380,9 +363,7 @@ def orchestrate_pipeline(
                 if async_result.successful():
                     try:
                         all_results = async_result.result
-                        logger.info(
-                            f"Chain completed successfully: {type(all_results)}"
-                        )
+                        logger.info(f"Chain completed successfully: {type(all_results)}")
                         break
                     except Exception as e:
                         logger.error(f"Error getting chain result: {e}")
@@ -439,10 +420,7 @@ def orchestrate_pipeline(
     record_job_metrics(StepStatus(result["status"]))
 
     # Log completion
-    logger.info(
-        f"Completed pipeline with status {result['status']} "
-        f"in {duration:.2f} seconds"
-    )
+    logger.info(f"Completed pipeline with status {result['status']} in {duration:.2f} seconds")
 
     return result
 

@@ -24,9 +24,7 @@ from codestory.config.writer import (
 class ConfigWriter:
     """Wrapper for configuration writing functions."""
 
-    def update_config(
-        self, setting_path: str, value: Any, persist_to: str | None = None
-    ) -> None:
+    def update_config(self, setting_path: str, value: Any, persist_to: str | None = None) -> None:
         """Update a configuration setting."""
         update_config(setting_path, value, persist_to)
 
@@ -34,9 +32,7 @@ class ConfigWriter:
         """Update a value in the .env file."""
         update_env(key, value, env_file)
 
-    def update_toml(
-        self, section: str, key: str, value: Any, toml_file: str | None = None
-    ) -> None:
+    def update_toml(self, section: str, key: str, value: Any, toml_file: str | None = None) -> None:
         """Update a value in the .codestory.toml file."""
         update_toml(section, key, value, toml_file)
 
@@ -139,19 +135,13 @@ class ConfigService:
             notification = {
                 "timestamp": int(time.time()),
                 "changes": list(changes),
-                "requires_restart": any(
-                    key not in self.hot_reloadable for key in changes
-                ),
+                "requires_restart": any(key not in self.hot_reloadable for key in changes),
             }
 
             # Publish to Redis
-            await self.redis.publish(
-                self.notification_channel, json.dumps(notification)
-            )
+            await self.redis.publish(self.notification_channel, json.dumps(notification))
 
-            logger.info(
-                f"Published config update notification for {len(changes)} changes"
-            )
+            logger.info(f"Published config update notification for {len(changes)} changes")
         except Exception as e:
             logger.error(f"Failed to publish config update notification: {e!s}")
 
@@ -165,12 +155,8 @@ class ConfigService:
             ConfigDump with all configuration values and metadata
         """
         # Export settings to a dictionary structure
-        settings_export = self.core_settings.model_dump(
-            by_alias=False, exclude_none=True
-        )
-        service_export = self.service_settings.model_dump(
-            by_alias=False, exclude_none=True
-        )
+        settings_export = self.core_settings.model_dump(by_alias=False, exclude_none=True)
+        service_export = self.service_settings.model_dump(by_alias=False, exclude_none=True)
 
         # Combine core and service settings
         settings_export.update(service_export)
@@ -233,9 +219,7 @@ class ConfigService:
                 description=f"Configuration value for {full_key}",
                 source=ConfigSource.CONFIG_FILE,  # Default source
                 permission=(
-                    ConfigPermission.SENSITIVE
-                    if is_sensitive
-                    else ConfigPermission.READ_WRITE
+                    ConfigPermission.SENSITIVE if is_sensitive else ConfigPermission.READ_WRITE
                 ),
                 required=False,  # Default
             )
@@ -313,14 +297,10 @@ class ConfigService:
                 # Update the configuration
                 if section != "service":
                     # Core settings
-                    self.writer.update_setting(
-                        section, key, item.value, comment=patch.comment
-                    )
+                    self.writer.update_setting(section, key, item.value, comment=patch.comment)
                 else:
                     # Service settings (would use a different writer in reality)
-                    self.writer.update_setting(
-                        "service", key, item.value, comment=patch.comment
-                    )
+                    self.writer.update_setting("service", key, item.value, comment=patch.comment)
 
                 changed_keys.add(item.key)
 
@@ -392,9 +372,7 @@ class ConfigService:
                     current_value = getattr(section_obj, key)
 
                     # Check type compatibility
-                    if isinstance(current_value, str) and not isinstance(
-                        item.value, str
-                    ):
+                    if isinstance(current_value, str) and not isinstance(item.value, str):
                         errors.append(
                             ConfigValidationError(
                                 path=item.key,
@@ -402,9 +380,7 @@ class ConfigService:
                                 value=item.value,
                             )
                         )
-                    elif isinstance(current_value, int) and not isinstance(
-                        item.value, int
-                    ):
+                    elif isinstance(current_value, int) and not isinstance(item.value, int):
                         errors.append(
                             ConfigValidationError(
                                 path=item.key,
@@ -422,9 +398,7 @@ class ConfigService:
                                 value=item.value,
                             )
                         )
-                    elif isinstance(current_value, bool) and not isinstance(
-                        item.value, bool
-                    ):
+                    elif isinstance(current_value, bool) and not isinstance(item.value, bool):
                         errors.append(
                             ConfigValidationError(
                                 path=item.key,
@@ -432,9 +406,7 @@ class ConfigService:
                                 value=item.value,
                             )
                         )
-                    elif isinstance(current_value, list) and not isinstance(
-                        item.value, list
-                    ):
+                    elif isinstance(current_value, list) and not isinstance(item.value, list):
                         errors.append(
                             ConfigValidationError(
                                 path=item.key,
@@ -442,9 +414,7 @@ class ConfigService:
                                 value=item.value,
                             )
                         )
-                    elif isinstance(current_value, dict) and not isinstance(
-                        item.value, dict
-                    ):
+                    elif isinstance(current_value, dict) and not isinstance(item.value, dict):
                         errors.append(
                             ConfigValidationError(
                                 path=item.key,

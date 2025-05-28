@@ -151,9 +151,7 @@ class PipelineManager:
         record_job_metrics(StepStatus.RUNNING)
 
         # Start the orchestrator task
-        task = orchestrate_pipeline.apply_async(
-            args=[repository_path, step_configs, job_id]
-        )
+        task = orchestrate_pipeline.apply_async(args=[repository_path, step_configs, job_id])
 
         # Store job information
         self.active_jobs[job_id] = {
@@ -272,9 +270,7 @@ class PipelineManager:
 
         return job_info
 
-    def run_single_step(
-        self, repository_path: str, step_name: str, **step_config: Any
-    ) -> str:
+    def run_single_step(self, repository_path: str, step_name: str, **step_config: Any) -> str:
         """Run a single workflow step.
 
         This is useful for testing or running a step in isolation.
@@ -317,8 +313,6 @@ class PipelineManager:
             "status": StepStatus.RUNNING,
         }
 
-        logger.info(
-            f"Started single step {step_name} as job {job_id} for {repository_path}"
-        )
+        logger.info(f"Started single step {step_name} as job {job_id} for {repository_path}")
 
         return job_id

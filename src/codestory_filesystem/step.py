@@ -10,7 +10,7 @@ import time
 import traceback
 from typing import Any
 
-from celery import shared_task
+from celery import shared_task  # type: ignore[import-untyped]
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -51,9 +51,7 @@ def log_info(message: str, job_id: str | None = None) -> None:
         print(formatted_message)
 
 
-def log_error(
-    message: str, error: Exception | None = None, job_id: str | None = None
-) -> None:
+def log_error(message: str, error: Exception | None = None, job_id: str | None = None) -> None:
     """Log an error message with consistent formatting and optional exception details.
 
     Args:
@@ -74,9 +72,7 @@ def log_error(
 
     # Add stack trace to debug log for errors
     if error and DEBUG_ENABLED:
-        stack_trace = "".join(
-            traceback.format_exception(type(error), error, error.__traceback__)
-        )
+        stack_trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         print(f"FILESYSTEM_STEP STACK TRACE: {job_context}\n{stack_trace}")
 
 
@@ -101,7 +97,7 @@ class FileSystemStep(PipelineStep):
     of directories and files in Neo4j, which can be linked to AST nodes.
     """
 
-    def __init__(self):
+    def __init__(self) -> Any:
         """Initialize the filesystem step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
@@ -126,9 +122,7 @@ class FileSystemStep(PipelineStep):
         # Generate a job ID if not provided
         job_id = config.pop("job_id", None) or generate_job_id()
 
-        log_info(
-            f"Starting filesystem step with repository path: {repository_path}", job_id
-        )
+        log_info(f"Starting filesystem step with repository path: {repository_path}", job_id)
         log_debug(f"Configuration parameters: {config}", job_id)
 
         # Validate repository path
@@ -181,7 +175,7 @@ class FileSystemStep(PipelineStep):
             log_debug(f"Celery task initial status: {task.status}", job_id)
 
             # Try to get task info
-            from celery.result import AsyncResult
+            from celery.result import AsyncResult  # type: ignore[import-untyped]
 
             result = AsyncResult(task.id, app=celery_app)
             log_debug(f"Celery AsyncResult state: {result.state}", job_id)
@@ -311,9 +305,7 @@ class FileSystemStep(PipelineStep):
 
                     # Log the progress percentage if available
                     if progress_info.get("progress") is not None:
-                        log_info(
-                            f"Progress: {progress_info.get('progress'):.1f}%", job_id
-                        )
+                        log_info(f"Progress: {progress_info.get('progress'):.1f}%", job_id)
 
             # Update job info with latest status
             job_info.update(status_info)
@@ -489,18 +481,12 @@ def process_filesystem(
 
     # Generate a job ID if not provided
     if job_id is None:
-        job_id = (
-            f"task-{self.request.id}"
-            if hasattr(self, "request")
-            else f"task-{time.time()}"
-        )
+        job_id = f"task-{self.request.id}" if hasattr(self, "request") else f"task-{time.time()}"
 
     # Get task ID for logging
     task_id = self.request.id if hasattr(self, "request") else "Unknown"
 
-    log_info(
-        f"Starting filesystem processing task for repository: {repository_path}", job_id
-    )
+    log_info(f"Starting filesystem processing task for repository: {repository_path}", job_id)
     log_debug(f"Task ID: {task_id}", job_id)
     log_debug(
         f"Configuration: ignore_patterns={ignore_patterns}, max_depth={max_depth}, include_extensions={include_extensions}",
@@ -600,16 +586,14 @@ def process_filesystem(
         connection_uri = params["uri"]
         try:
             log_debug(
-                f"Trying Neo4j connection #{i+1}/{len(connection_params)}: {connection_uri}",
+                f"Trying Neo4j connection #{i + 1}/{len(connection_params)}: {connection_uri}",
                 job_id,
             )
             neo4j = Neo4jConnector(**params)
 
             # Test the connection with a simple query
             log_debug("Testing Neo4j connection with simple query", job_id)
-            test_result = neo4j.execute_query(
-                "MATCH (n) RETURN count(n) as count LIMIT 1"
-            )
+            test_result = neo4j.execute_query("MATCH (n) RETURN count(n) as count LIMIT 1")
             log_info(f"Neo4j connection successful to {connection_uri}", job_id)
             log_debug(f"Connection test result: {test_result}", job_id)
 
@@ -617,24 +601,24 @@ def process_filesystem(
             break
         except Exception as e:
             log_error(
-                f"Neo4j connection #{i+1} to {connection_uri} failed",
+                f"Neo4j connection #{i + 1} to {connection_uri} failed",
                 error=e,
                 job_id=job_id,
             )
-            errors.append(f"Connection {i+1} ({connection_uri}): {e}")
+            errors.append(f"Connection {i + 1} ({connection_uri}): {e}")
             if neo4j:
                 try:
                     neo4j.close()
                 except Exception as close_error:
-                    log_debug(
-                        f"Error closing failed Neo4j connection: {close_error}", job_id
-                    )
+                    log_debug(f"Error closing failed Neo4j connection: {close_error}", job_id)
             neo4j = None
 
     # Check if a working connection was found
     if not neo4j:
         error_details = "\n".join(errors)
-        error_msg = "All Neo4j connection attempts failed. Cannot proceed without database connection."
+        error_msg = (
+            "All Neo4j connection attempts failed. Cannot proceed without database connection."
+        )
         log_error(error_msg, job_id=job_id)
         log_debug(f"Detailed connection errors:\n{error_details}", job_id)
 
@@ -713,9 +697,7 @@ def process_filesystem(
             raise
 
         # Process the repository
-        log_info(
-            f"Starting filesystem traversal for repository: {repository_path}", job_id
-        )
+        log_info(f"Starting filesystem traversal for repository: {repository_path}", job_id)
         log_debug(
             f"Repository validation: exists={os.path.exists(repository_path)}, is_dir={os.path.isdir(repository_path)}",
             job_id,
@@ -734,9 +716,7 @@ def process_filesystem(
             "dir_total": 0.0,
         }
 
-        log_info(
-            f"Starting directory traversal. Ignore patterns: {ignore_patterns}", job_id
-        )
+        log_info(f"Starting directory traversal. Ignore patterns: {ignore_patterns}", job_id)
 
         # Track total directories to process (approximate count for progress)
         total_dirs_estimate = sum(
@@ -748,16 +728,14 @@ def process_filesystem(
             dir_start_time = time.time()
             rel_path = os.path.relpath(current_dir, repository_path)
             log_info(
-                f"Processing directory {dir_count+1}: {rel_path} with {len(files)} files",
+                f"Processing directory {dir_count + 1}: {rel_path} with {len(files)} files",
                 job_id,
             )
 
             # Check depth limit
             if max_depth is not None:
                 if rel_path != "." and rel_path.count(os.sep) >= max_depth:
-                    log_info(
-                        f"Skipping directory due to depth limit: {rel_path}", job_id
-                    )
+                    log_info(f"Skipping directory due to depth limit: {rel_path}", job_id)
                     dirs.clear()  # Don't descend further
                     continue
 
@@ -769,9 +747,7 @@ def process_filesystem(
                     for pat in ignore_patterns
                     if pat.endswith("/")
                 ):
-                    log_debug(
-                        f"Ignoring directory {d} (matched ignore pattern)", job_id
-                    )
+                    log_debug(f"Ignoring directory {d} (matched ignore pattern)", job_id)
                     dirs_to_remove.append(d)
 
             for d in dirs_to_remove:
@@ -828,9 +804,7 @@ def process_filesystem(
                     parent_path = os.path.dirname(rel_dir_path)
                     if parent_path == "":
                         # Parent is the repo
-                        log_debug(
-                            f"Linking directory {rel_dir_path} to repository", job_id
-                        )
+                        log_debug(f"Linking directory {rel_dir_path} to repository", job_id)
                         rel_query = """
                         MATCH (r:Repository {path: $repo_path})
                         MATCH (d:Directory {path: $dir_path})
@@ -877,19 +851,13 @@ def process_filesystem(
 
                     # Report directory progress for every directory
                     if total_dirs_estimate > 0:
-                        progress_percent = min(
-                            100, (dir_count / total_dirs_estimate) * 100
-                        )
+                        progress_percent = min(100, (dir_count / total_dirs_estimate) * 100)
                     else:
                         progress_percent = 0
 
                     if dir_count > 0:
-                        avg_dir_node_time = (
-                            dir_timing_stats["dir_node_creation"] / dir_count
-                        )
-                        avg_dir_linking_time = (
-                            dir_timing_stats["dir_linking"] / dir_count
-                        )
+                        avg_dir_node_time = dir_timing_stats["dir_node_creation"] / dir_count
+                        avg_dir_linking_time = dir_timing_stats["dir_linking"] / dir_count
                     else:
                         avg_dir_node_time = 0
                         avg_dir_linking_time = 0
@@ -938,9 +906,7 @@ def process_filesystem(
 
             # Process files in the current directory
             start_dir_time = time.time()
-            log_info(
-                f"Processing {len(files)} files in directory {rel_dir_path}", job_id
-            )
+            log_info(f"Processing {len(files)} files in directory {rel_dir_path}", job_id)
             files_processed = 0
             files_skipped = 0
 
@@ -965,9 +931,7 @@ def process_filesystem(
                     continue
 
                 # Check if extension is included
-                if include_extensions and not any(
-                    file.endswith(ext) for ext in include_extensions
-                ):
+                if include_extensions and not any(file.endswith(ext) for ext in include_extensions):
                     files_skipped += 1
                     continue
 
@@ -976,9 +940,7 @@ def process_filesystem(
                 if rel_dir_path == ".":
                     file_path = file
 
-                log_debug(
-                    f"[{file_idx+1}/{len(files)}] Processing file: {file_path}", job_id
-                )
+                log_debug(f"[{file_idx + 1}/{len(files)}] Processing file: {file_path}", job_id)
                 try:
                     # Get file metadata
                     metadata_start = time.time()
@@ -1015,9 +977,7 @@ def process_filesystem(
                     file_timing_stats["file_node_creation"] += node_time
 
                     if not file_node:
-                        log_error(
-                            f"Failed to create file node for {file_path}", job_id=job_id
-                        )
+                        log_error(f"Failed to create file node for {file_path}", job_id=job_id)
                     else:
                         log_debug(
                             f"File node created in {node_time:.3f}s: {file_path}",
@@ -1078,12 +1038,8 @@ def process_filesystem(
                     # Calculate average times for reporting
                     if files_processed > 0:
                         avg_time_per_file = file_timing_stats["total"] / files_processed
-                        avg_node_time = (
-                            file_timing_stats["file_node_creation"] / files_processed
-                        )
-                        avg_linking_time = (
-                            file_timing_stats["linking"] / files_processed
-                        )
+                        avg_node_time = file_timing_stats["file_node_creation"] / files_processed
+                        avg_linking_time = file_timing_stats["linking"] / files_processed
                     else:
                         avg_time_per_file = 0
                         avg_node_time = 0
@@ -1092,7 +1048,7 @@ def process_filesystem(
                     # Report progress more frequently for better visibility
                     if file_count % 10 == 0:
                         progress_msg = (
-                            f"Processed {file_count}/{file_count+files_skipped} files, "
+                            f"Processed {file_count}/{file_count + files_skipped} files, "
                             f"{dir_count} directories. "
                             f"Avg time per file: {avg_time_per_file:.3f}s "
                             f"(node: {avg_node_time:.3f}s, linking: {avg_linking_time:.3f}s)"
@@ -1116,9 +1072,7 @@ def process_filesystem(
                                 },
                             )
                         except Exception as e:
-                            log_error(
-                                "Error updating progress state", error=e, job_id=job_id
-                            )
+                            log_error("Error updating progress state", error=e, job_id=job_id)
 
                 except Exception as e:
                     log_error(
@@ -1156,8 +1110,7 @@ def process_filesystem(
                 "total": dir_timing_stats.get("dir_total", 0),
                 "node_creation": dir_timing_stats.get("dir_node_creation", 0),
                 "linking": dir_timing_stats.get("dir_linking", 0),
-                "avg_per_directory": dir_timing_stats.get("dir_total", 0)
-                / max(1, dir_count)
+                "avg_per_directory": dir_timing_stats.get("dir_total", 0) / max(1, dir_count)
                 if dir_count
                 else 0,
             },
@@ -1261,9 +1214,7 @@ def process_filesystem(
                 "file_count": file_count,
                 "dir_count": dir_count,
                 "performance": {
-                    "avg_file_time": overall_timing_stats["file_operations"][
-                        "avg_per_file"
-                    ],
+                    "avg_file_time": overall_timing_stats["file_operations"]["avg_per_file"],
                     "avg_dir_time": overall_timing_stats["directory_operations"][
                         "avg_per_directory"
                     ],
@@ -1273,13 +1224,9 @@ def process_filesystem(
                 },
             }
 
-            neo4j.execute_query(
-                record_query, params={"props": record_props}, write=True
-            )
+            neo4j.execute_query(record_query, params={"props": record_props}, write=True)
 
-            log_debug(
-                "Successfully created processing record with performance data", job_id
-            )
+            log_debug("Successfully created processing record with performance data", job_id)
         except Exception as e:
             log_error("Error creating processing record", error=e, job_id=job_id)
             # Continue despite record creation failure
@@ -1349,6 +1296,4 @@ def process_filesystem(
                 log_debug("Closing Neo4j connection", job_id)
                 neo4j.close()
             except Exception as close_error:
-                log_error(
-                    "Error closing Neo4j connection", error=close_error, job_id=job_id
-                )
+                log_error("Error closing Neo4j connection", error=close_error, job_id=job_id)

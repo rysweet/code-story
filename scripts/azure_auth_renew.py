@@ -253,53 +253,54 @@ def inject_azure_tokens_into_container(container_name: str) -> bool:
     """
     try:
         # Create a tar file containing the Azure token files
-        with tempfile.NamedTemporaryFile(suffix=".tar") as temp_tar:
-            # Create a temporary directory to organize files
-            with tempfile.TemporaryDirectory() as temp_dir:
-                azure_dir = os.path.join(temp_dir, ".azure")
-                os.makedirs(azure_dir, exist_ok=True)
+        with (
+            tempfile.NamedTemporaryFile(suffix=".tar") as temp_tar,
+            tempfile.TemporaryDirectory() as temp_dir,
+        ):
+            azure_dir = os.path.join(temp_dir, ".azure")
+            os.makedirs(azure_dir, exist_ok=True)
 
-                # Copy token files to temp directory
-                for file_path in [MSAL_TOKEN_CACHE, AZURE_PROFILE, ACCESS_TOKENS]:
-                    if os.path.exists(file_path):
-                        shutil.copy2(
-                            file_path,
-                            os.path.join(azure_dir, os.path.basename(file_path)),
-                        )
+            # Copy token files to temp directory
+            for file_path in [MSAL_TOKEN_CACHE, AZURE_PROFILE, ACCESS_TOKENS]:
+                if os.path.exists(file_path):
+                    shutil.copy2(
+                        file_path,
+                        os.path.join(azure_dir, os.path.basename(file_path)),
+                    )
 
-                # Create tar file
-                tar_cmd = ["tar", "-cf", temp_tar.name, "-C", temp_dir, ".azure"]
-                subprocess.run(tar_cmd, check=True)
+            # Create tar file
+            tar_cmd = ["tar", "-cf", temp_tar.name, "-C", temp_dir, ".azure"]
+            subprocess.run(tar_cmd, check=True)
 
-                # Copy tar file to container and extract
-                subprocess.run(
-                    [
-                        "docker",
-                        "cp",
-                        temp_tar.name,
-                        f"{container_name}:/tmp/azure_tokens.tar",
-                    ],
-                    check=True,
-                )
+            # Copy tar file to container and extract
+            subprocess.run(
+                [
+                    "docker",
+                    "cp",
+                    temp_tar.name,
+                    f"{container_name}:/tmp/azure_tokens.tar",
+                ],
+                check=True,
+            )
 
-                # Extract in container
-                subprocess.run(
-                    [
-                        "docker",
-                        "exec",
-                        container_name,
-                        "bash",
-                        "-c",
-                        ("cd / && tar -xf /tmp/azure_tokens.tar && "
-                         "chmod -R 700 /.azure && rm /tmp/azure_tokens.tar"),
-                    ],
-                    check=True,
-                )
+            # Extract in container
+            subprocess.run(
+                [
+                    "docker",
+                    "exec",
+                    container_name,
+                    "bash",
+                    "-c",
+                    (
+                        "cd / && tar -xf /tmp/azure_tokens.tar && "
+                        "chmod -R 700 /.azure && rm /tmp/azure_tokens.tar"
+                    ),
+                ],
+                check=True,
+            )
 
-                logger.info(
-                    f"Successfully injected Azure tokens into container {container_name}"
-                )
-                return True
+            logger.info(f"Successfully injected Azure tokens into container {container_name}")
+            return True
 
     except Exception as e:
         logger.error(f"Error injecting tokens into container {container_name}: {e}")
@@ -326,9 +327,7 @@ def detect_auth_issues() -> tuple[bool, str | None]:
     return False, None
 
 
-def renew_authentication(
-    tenant_id: str | None = None, container_filter: str | None = None
-) -> bool:
+def renew_authentication(tenant_id: str | None = None, container_filter: str | None = None) -> bool:
     """
     Renew Azure authentication tokens and inject into containers.
 
@@ -378,17 +377,11 @@ def renew_authentication(
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Azure Authentication Renewal Tool")
-    parser.add_argument(
-        "--check", action="store_true", help="Check for auth issues without fixing"
-    )
-    parser.add_argument(
-        "--renew", action="store_true", help="Force renewal of auth tokens"
-    )
+    parser.add_argument("--check", action="store_true", help="Check for auth issues without fixing")
+    parser.add_argument("--renew", action="store_true", help="Force renewal of auth tokens")
     parser.add_argument("--tenant", help="Specify Azure tenant ID for login")
     parser.add_argument("--container", help="Inject tokens into specific container")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
     return parser.parse_args()
 
 

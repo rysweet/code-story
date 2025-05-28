@@ -252,9 +252,7 @@ class TestConfigAPI:
 
         # Call with admin user should work
         admin_user = {"roles": ["admin"]}
-        config.get_config(
-            include_sensitive=True, config_service=mock_service, user=admin_user
-        )
+        config.get_config(include_sensitive=True, config_service=mock_service, user=admin_user)
 
         mock_service.get_config_dump.assert_called_with(include_sensitive=True)
 
@@ -386,9 +384,7 @@ class TestVisualizationAPI:
         assert result.body == b"<html>Test Visualization</html>"
 
     @pytest.mark.asyncio
-    async def test_generate_visualization_with_filters(
-        self, mock_request, mock_graph_service
-    ):
+    async def test_generate_visualization_with_filters(self, mock_request, mock_graph_service):
         """Test generate visualization endpoint with filters."""
         # Call the endpoint with filters
         result = await graph.generate_visualization(
@@ -548,9 +544,7 @@ class TestHealthAPI:
         result = await health.health_check(neo4j, celery, openai)
 
         # Check the result
-        assert (
-            result.status == "degraded"
-        )  # Updated expectation to match implementation
+        assert result.status == "degraded"  # Updated expectation to match implementation
         assert result.components["neo4j"].status == "unhealthy"
         assert result.components["celery"].status == "healthy"
         assert result.components["openai"].status == "healthy"
@@ -753,9 +747,7 @@ class TestHealthAPI:
         result = await health.health_check(neo4j, celery, openai, auto_fix=True)
 
         # Check the result
-        assert (
-            result.status == "unhealthy"
-        )  # Changed expectation to match implementation
+        assert result.status == "unhealthy"  # Changed expectation to match implementation
         assert result.components["openai"].status == "unhealthy"
 
         # Verify details about the timeout

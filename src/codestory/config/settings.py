@@ -19,9 +19,7 @@ class Neo4jSettings(BaseModel):
     password: SecretStr = Field(..., description="Neo4j password")
     database: str = Field("neo4j", description="Neo4j database name")
     connection_timeout: int = Field(30, description="Connection timeout in seconds")
-    max_connection_pool_size: int = Field(
-        50, description="Maximum connection pool size"
-    )
+    max_connection_pool_size: int = Field(50, description="Maximum connection pool size")
     connection_acquisition_timeout: int = Field(
         60, description="Connection acquisition timeout in seconds"
     )
@@ -36,30 +34,18 @@ class RedisSettings(BaseModel):
 class OpenAISettings(BaseModel):
     """OpenAI API settings."""
 
-    api_key: SecretStr | None = Field(
-        None, description="OpenAI API key (for direct API key auth)"
-    )
-    endpoint: str = Field(
-        "https://api.openai.com/v1", description="OpenAI API endpoint"
-    )
-    tenant_id: str | None = Field(
-        None, description="Azure AD tenant ID for authentication"
-    )
+    api_key: SecretStr | None = Field(None, description="OpenAI API key (for direct API key auth)")
+    endpoint: str = Field("https://api.openai.com/v1", description="OpenAI API endpoint")
+    tenant_id: str | None = Field(None, description="Azure AD tenant ID for authentication")
     subscription_id: str | None = Field(None, description="Azure subscription ID")
     embedding_model: str = Field(
         "text-embedding-3-small", description="OpenAI embedding model to use"
     )
     chat_model: str = Field("gpt-4o", description="OpenAI chat model to use")
-    reasoning_model: str = Field(
-        "gpt-4o", description="OpenAI model for reasoning tasks"
-    )
-    api_version: str = Field(
-        "2025-03-01-preview", description="API version (for Azure OpenAI)"
-    )
+    reasoning_model: str = Field("gpt-4o", description="OpenAI model for reasoning tasks")
+    api_version: str = Field("2025-03-01-preview", description="API version (for Azure OpenAI)")
     max_retries: int = Field(3, description="Maximum number of retries")
-    retry_backoff_factor: float = Field(
-        2.0, description="Backoff factor between retries"
-    )
+    retry_backoff_factor: float = Field(2.0, description="Backoff factor between retries")
     temperature: float = Field(0.1, description="Temperature for generation")
     max_tokens: int = Field(4096, description="Maximum tokens per request")
     timeout: float = Field(60.0, description="Timeout in seconds for API requests")
@@ -76,9 +62,7 @@ class AzureOpenAISettings(BaseModel):
         "text-embedding-3-small", description="Azure OpenAI embedding model to use"
     )
     chat_model: str = Field("gpt-4o", description="Azure OpenAI chat model to use")
-    reasoning_model: str = Field(
-        "gpt-4o", description="Azure OpenAI model for reasoning tasks"
-    )
+    reasoning_model: str = Field("gpt-4o", description="Azure OpenAI model for reasoning tasks")
 
 
 class ServiceSettings(BaseModel):
@@ -109,16 +93,10 @@ class IngestionSettings(BaseModel):
     )
     chunk_size: int = Field(1024, description="Text chunk size for processing")
     chunk_overlap: int = Field(200, description="Overlap between text chunks")
-    embedding_model: str = Field(
-        "text-embedding-3-small", description="Model for embeddings"
-    )
-    embedding_dimensions: int = Field(
-        1536, description="Dimensions in embedding vectors"
-    )
+    embedding_model: str = Field("text-embedding-3-small", description="Model for embeddings")
+    embedding_dimensions: int = Field(1536, description="Dimensions in embedding vectors")
     max_retries: int = Field(3, description="Number of retry attempts")
-    retry_backoff_factor: float = Field(
-        2.0, description="Backoff multiplier between retries"
-    )
+    retry_backoff_factor: float = Field(2.0, description="Backoff multiplier between retries")
     concurrency: int = Field(5, description="Default concurrency for ingestion tasks")
     steps: dict[str, dict[str, Any]] = Field(
         default_factory=dict, description="Step-specific configuration"
@@ -130,9 +108,7 @@ class IngestionSettings(BaseModel):
         if "steps" not in self.__dict__ or not self.steps:
             self.steps = {
                 "blarify": {"timeout": 300, "docker_image": "codestory/blarify:latest"},
-                "filesystem": {
-                    "ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]
-                },
+                "filesystem": {"ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]},
                 "summarizer": {"max_concurrency": 5, "max_tokens_per_file": 8000},
                 "docgrapher": {"enabled": True},
             }
@@ -146,18 +122,14 @@ class PluginSettings(BaseModel):
         ["blarify", "filesystem", "summarizer", "docgrapher"],
         description="List of enabled plugins",
     )
-    plugin_directory: str = Field(
-        "plugins", description="Directory for plugin discovery"
-    )
+    plugin_directory: str = Field("plugins", description="Directory for plugin discovery")
 
 
 class TelemetrySettings(BaseModel):
     """Telemetry settings."""
 
     metrics_port: int = Field(9090, description="Port for Prometheus metrics")
-    metrics_endpoint: str = Field(
-        "/metrics", description="Endpoint for Prometheus metrics"
-    )
+    metrics_endpoint: str = Field("/metrics", description="Endpoint for Prometheus metrics")
     trace_sample_rate: float = Field(1.0, description="OpenTelemetry trace sample rate")
     log_format: str = Field("json", description="Log format")
 
@@ -300,9 +272,7 @@ class Settings(BaseSettings):
             config_files_to_try.append(self._CONFIG_FILE)
 
             # Add default config as a fallback
-            default_config_path = os.path.join(
-                get_project_root(), self._DEFAULT_CONFIG_FILE
-            )
+            default_config_path = os.path.join(get_project_root(), self._DEFAULT_CONFIG_FILE)
             if os.path.exists(default_config_path):
                 config_files_to_try.append(default_config_path)
 
@@ -320,9 +290,7 @@ class Settings(BaseSettings):
                             print(f"Config loaded, keys: {', '.join(toml_data.keys())}")
                         toml_settings = flatten_dict(toml_data)
                         if in_test_env:
-                            print(
-                                f"Flattened settings created, length: {len(toml_settings)}"
-                            )
+                            print(f"Flattened settings created, length: {len(toml_settings)}")
                         config_loaded = True
                         break
                 except Exception as e:
@@ -349,7 +317,9 @@ class Settings(BaseSettings):
                 "neo4j__max_connection_pool_size": 50,
                 "neo4j__connection_acquisition_timeout": 60,
                 # Redis settings
-                "redis__uri": os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0",
+                "redis__uri": os.environ.get("REDIS__URI")
+                or os.environ.get("REDIS_URI")
+                or "redis://localhost:6380/0",
                 # OpenAI settings
                 "openai__api_key": "sk-test-key-openai",
                 "openai__endpoint": "https://api.openai.com/v1",
@@ -391,9 +361,7 @@ class Settings(BaseSettings):
                         "timeout": 300,
                         "docker_image": "codestory/blarify:latest",
                     },
-                    "filesystem": {
-                        "ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]
-                    },
+                    "filesystem": {"ignore_patterns": ["node_modules/", ".git/", "__pycache__/"]},
                     "summarizer": {"max_concurrency": 5, "max_tokens_per_file": 8000},
                     "docgrapher": {"enabled": True},
                 },
@@ -442,9 +410,7 @@ class Settings(BaseSettings):
             # Convert flattened settings to nested structure
             nested_settings = unflatten_dict(merged_settings)
             if in_test_env:
-                print(
-                    f"Nested settings top-level keys: {', '.join(nested_settings.keys())}"
-                )
+                print(f"Nested settings top-level keys: {', '.join(nested_settings.keys())}")
 
             # Ensure all required fields exist
             required_fields = [
@@ -487,9 +453,7 @@ class Settings(BaseSettings):
             ]
             for field in required_fields:
                 # Check if the field exists in any form (flat or nested)
-                if not any(
-                    k.startswith(f"{field}__") or k == field for k in merged_settings
-                ):
+                if not any(k.startswith(f"{field}__") or k == field for k in merged_settings):
                     if in_test_env:
                         print(f"Adding missing required field: {field}")
                     merged_settings[field] = {}
@@ -543,10 +507,7 @@ class Settings(BaseSettings):
                     pass
 
             # Load Azure client secret if needed
-            if (
-                self.azure.client_secret is None
-                or not self.azure.client_secret.get_secret_value()
-            ):
+            if self.azure.client_secret is None or not self.azure.client_secret.get_secret_value():
                 try:
                     secret = client.get_secret("azure-client-secret")
                     self.azure.client_secret = SecretStr(secret.value)
@@ -559,15 +520,13 @@ class Settings(BaseSettings):
             print(f"Error loading secrets from KeyVault: {e}")
 
 
-def flatten_dict(
-    d: dict[str, Any], parent_key: str = "", sep: str = "__"
-) -> dict[str, Any]:
+def flatten_dict(d: dict[str, Any], parent_key: str = "", sep: str = "__") -> dict[str, Any]:
     """Flatten nested dictionary with separator in keys.
 
     Example:
         {"neo4j": {"uri": "bolt://localhost:7687"}} -> {"neo4j__uri": "bolt://localhost:7687"}
     """
-    items = []
+    items: list[Any] = []
     for k, v in d.items():
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
         if isinstance(v, dict):

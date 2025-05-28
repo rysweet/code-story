@@ -10,7 +10,7 @@ import time
 import uuid
 from typing import Any
 
-from celery import shared_task
+from celery import shared_task  # type: ignore[import-untyped]
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -32,7 +32,7 @@ class DocumentationGrapherStep(PipelineStep):
     entities and relationships, and links them to code entities.
     """
 
-    def __init__(self):
+    def __init__(self) -> Any:
         """Initialize the DocumentationGrapher step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
@@ -54,12 +54,10 @@ class DocumentationGrapherStep(PipelineStep):
         """
         # Validate repository path
         if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"docgrapher-{uuid.uuid4()}"
+        job_id = f"docgrapher-{uuid.uuid4.uuid4()}"
 
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
@@ -89,9 +87,7 @@ class DocumentationGrapherStep(PipelineStep):
             "config": config,
         }
 
-        logger.info(
-            f"Started DocumentationGrapher job {job_id} for repository: {repository_path}"
-        )
+        logger.info(f"Started DocumentationGrapher job {job_id} for repository: {repository_path}")
 
         return job_id
 
@@ -113,7 +109,7 @@ class DocumentationGrapherStep(PipelineStep):
         """
         if job_id not in self.active_jobs:
             # Check if this is a task ID
-            from celery.result import AsyncResult
+            from celery.result import AsyncResult  # type: ignore[import-untyped]
 
             try:
                 result = AsyncResult(job_id)
@@ -201,7 +197,7 @@ class DocumentationGrapherStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke
+        from celery.task.control import revoke  # type: ignore[import-untyped]
 
         revoke(task_id, terminate=True)
 

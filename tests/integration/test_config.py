@@ -1,6 +1,6 @@
 """Integration test configuration and utilities.
 
-This module provides configuration for the integration tests, including 
+This module provides configuration for the integration tests, including
 test-specific settings overrides.
 """
 

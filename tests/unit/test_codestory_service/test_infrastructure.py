@@ -49,9 +49,7 @@ class TestNeo4jAdapter:
     @pytest.mark.asyncio
     async def test_health_check_unhealthy(self, mock_connector):
         """Test health check returns unhealthy status when connection fails."""
-        mock_connector.check_connection.side_effect = ConnectionError(
-            "Failed to connect"
-        )
+        mock_connector.check_connection.side_effect = ConnectionError("Failed to connect")
         adapter = Neo4jAdapter(connector=mock_connector)
 
         result = await adapter.check_health()
@@ -79,9 +77,7 @@ class TestNeo4jAdapter:
         """Test error handling when executing a Cypher query fails."""
         mock_connector.execute_query.side_effect = QueryError("Invalid query")
 
-        query = CypherQuery(
-            query="INVALID QUERY", parameters={}, query_type=QueryType.READ
-        )
+        query = CypherQuery(query="INVALID QUERY", parameters={}, query_type=QueryType.READ)
 
         with pytest.raises(HTTPException) as exc_info:
             await adapter.execute_cypher_query(query)
@@ -108,9 +104,7 @@ class TestOpenAIAdapter:
         from codestory.llm.models import EmbeddingData, EmbeddingResponse
 
         # Create a mock embedding response with the necessary structure
-        embedding_data = [
-            EmbeddingData(embedding=[0.1, 0.2, 0.3], index=0, object="embedding")
-        ]
+        embedding_data = [EmbeddingData(embedding=[0.1, 0.2, 0.3], index=0, object="embedding")]
         embedding_response = EmbeddingResponse(
             object="list",
             data=embedding_data,
@@ -267,10 +261,7 @@ class TestOpenAIAdapter:
         assert "tenant_id" in result["details"]
         assert result["details"]["tenant_id"] == "12345678-1234-1234-1234-123456789012"
         assert "solution" in result["details"]
-        assert (
-            "--tenant 12345678-1234-1234-1234-123456789012"
-            in result["details"]["solution"]
-        )
+        assert "--tenant 12345678-1234-1234-1234-123456789012" in result["details"]["solution"]
 
     @pytest.mark.asyncio
     async def test_health_check_nginx_404_error(self, mock_client):
@@ -302,9 +293,7 @@ class TestOpenAIAdapter:
         assert result["status"] == "unhealthy"
         assert "details" in result
         assert "message" in result["details"]
-        assert (
-            "Azure OpenAI endpoint returned a 404 error" in result["details"]["message"]
-        )
+        assert "Azure OpenAI endpoint returned a 404 error" in result["details"]["message"]
         assert "error" in result["details"]
         assert "Endpoint not found or unavailable" in result["details"]["error"]
         assert "suggestion" in result["details"]
@@ -317,10 +306,7 @@ class TestOpenAIAdapter:
             result["details"]["required_config"]["AZURE_OPENAI__DEPLOYMENT_ID"]
             == "<your-deployment-id>"
         )
-        assert (
-            result["details"]["required_config"]["AZURE_OPENAI__ENDPOINT"]
-            == "<your-endpoint>"
-        )
+        assert result["details"]["required_config"]["AZURE_OPENAI__ENDPOINT"] == "<your-endpoint>"
 
     @pytest.mark.asyncio
     async def test_create_embeddings_success(self, adapter, mock_client):
@@ -464,57 +450,37 @@ class TestCeleryAdapter:
         assert len(step_configs) == 4, "Should have 4 step configs"
 
         # Filesystem step should have all parameters
-        filesystem_config = next(
-            cfg for cfg in step_configs if cfg["name"] == "filesystem"
-        )
-        assert (
-            "concurrency" in filesystem_config
-        ), "Filesystem should keep concurrency parameter"
+        filesystem_config = next(cfg for cfg in step_configs if cfg["name"] == "filesystem")
+        assert "concurrency" in filesystem_config, "Filesystem should keep concurrency parameter"
         assert (
             "custom_option" in filesystem_config
         ), "Filesystem should keep custom_option parameter"
 
         # Blarify step should not have concurrency parameter
         blarify_config = next(cfg for cfg in step_configs if cfg["name"] == "blarify")
-        assert (
-            "concurrency" not in blarify_config
-        ), "Blarify should not have concurrency parameter"
-        assert (
-            "custom_option" in blarify_config
-        ), "Blarify should keep custom_option parameter"
+        assert "concurrency" not in blarify_config, "Blarify should not have concurrency parameter"
+        assert "custom_option" in blarify_config, "Blarify should keep custom_option parameter"
 
         # Summarizer step should only have safe parameters
-        summarizer_config = next(
-            cfg for cfg in step_configs if cfg["name"] == "summarizer"
-        )
+        summarizer_config = next(cfg for cfg in step_configs if cfg["name"] == "summarizer")
         assert "job_id" in summarizer_config, "Summarizer should keep job_id parameter"
         assert (
             "ignore_patterns" in summarizer_config
         ), "Summarizer should keep ignore_patterns parameter"
-        assert (
-            "timeout" in summarizer_config
-        ), "Summarizer should keep timeout parameter"
-        assert (
-            "incremental" in summarizer_config
-        ), "Summarizer should keep incremental parameter"
+        assert "timeout" in summarizer_config, "Summarizer should keep timeout parameter"
+        assert "incremental" in summarizer_config, "Summarizer should keep incremental parameter"
         assert (
             "custom_option" not in summarizer_config
         ), "Summarizer should not have custom_option parameter"
 
         # Docgrapher step should only have safe parameters
-        docgrapher_config = next(
-            cfg for cfg in step_configs if cfg["name"] == "docgrapher"
-        )
+        docgrapher_config = next(cfg for cfg in step_configs if cfg["name"] == "docgrapher")
         assert "job_id" in docgrapher_config, "Docgrapher should keep job_id parameter"
         assert (
             "ignore_patterns" in docgrapher_config
         ), "Docgrapher should keep ignore_patterns parameter"
-        assert (
-            "timeout" in docgrapher_config
-        ), "Docgrapher should keep timeout parameter"
-        assert (
-            "incremental" in docgrapher_config
-        ), "Docgrapher should keep incremental parameter"
+        assert "timeout" in docgrapher_config, "Docgrapher should keep timeout parameter"
+        assert "incremental" in docgrapher_config, "Docgrapher should keep incremental parameter"
         assert (
             "custom_option" not in docgrapher_config
         ), "Docgrapher should not have custom_option parameter"

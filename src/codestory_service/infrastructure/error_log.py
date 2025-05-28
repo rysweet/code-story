@@ -1,4 +1,5 @@
 """Persistent error logging for Code Story Service."""
+
 import os
 from threading import Lock
 

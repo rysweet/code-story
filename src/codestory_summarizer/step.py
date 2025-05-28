@@ -12,7 +12,7 @@ import time
 import uuid
 from typing import Any
 
-from celery import shared_task
+from celery import shared_task  # type: ignore[import-untyped]
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -60,12 +60,10 @@ class SummarizerStep(PipelineStep):
         """
         # Validate repository path
         if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"summarizer-{uuid.uuid4()}"
+        job_id = f"summarizer-{uuid.uuid4.uuid4()}"
 
         # Extract configuration
         max_concurrency = config.get("max_concurrency", 5)
@@ -95,9 +93,7 @@ class SummarizerStep(PipelineStep):
             "config": config,
         }
 
-        logger.info(
-            f"Started summarizer job {job_id} for repository: {repository_path}"
-        )
+        logger.info(f"Started summarizer job {job_id} for repository: {repository_path}")
 
         return job_id
 
@@ -119,7 +115,7 @@ class SummarizerStep(PipelineStep):
         """
         if job_id not in self.active_jobs:
             # Check if this is a task ID
-            from celery.result import AsyncResult
+            from celery.result import AsyncResult  # type: ignore[import-untyped]
 
             try:
                 result = AsyncResult(job_id)
@@ -207,7 +203,7 @@ class SummarizerStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke
+        from celery.task.control import revoke  # type: ignore[import-untyped]
 
         revoke(task_id, terminate=True)
 
@@ -378,15 +374,11 @@ def run_summarizer(
                     ChatMessage(role=ChatRole.USER, content=prompt),
                 ]
 
-                response = llm_client.chat(
-                    messages=messages, max_tokens=500, temperature=0.1
-                )
+                response = llm_client.chat(messages=messages, max_tokens=500, temperature=0.1)
 
                 # Get summary text from response, handle empty response case
                 have_choices = response.choices and len(response.choices) > 0
-                summary_text = (
-                    response.choices[0].message.content if have_choices else ""
-                )
+                summary_text = response.choices[0].message.content if have_choices else ""
 
                 # Calculate token count safely
                 token_count = 0
@@ -498,9 +490,7 @@ def run_summarizer(
         connector.close()
 
 
-def store_summary(
-    connector: Neo4jConnector, node_id: str, summary: str, node_type: str
-) -> None:
+def store_summary(connector: Neo4jConnector, node_id: str, summary: str, node_type: str) -> None:
     """Store a summary in Neo4j.
 
     Args:
@@ -510,7 +500,7 @@ def store_summary(
         node_type: Type of the node
     """
     # Create summary node
-    summary_id = str(uuid.uuid4())
+    summary_id = str(uuid.uuid4.uuid4())
 
     # Create the Summary node
     summary_query = """
@@ -539,6 +529,4 @@ def store_summary(
     CREATE (n)-[:HAS_SUMMARY]->(s)
     """
 
-    connector.execute_query(
-        link_query, params={"summary_id": summary_id, "node_id": int(node_id)}
-    )
+    connector.execute_query(link_query, params={"summary_id": summary_id, "node_id": int(node_id)})

@@ -103,12 +103,8 @@ def pytest_collection_modifyitems(config, items):
     """
     # Neo4j and Celery tests are now enabled by default
     # They can be disabled with --skip-neo4j and --skip-celery options
-    skip_neo4j = pytest.mark.skip(
-        reason="Tests using Neo4j are disabled with --skip-neo4j"
-    )
-    skip_celery = pytest.mark.skip(
-        reason="Tests using Celery are disabled with --skip-celery"
-    )
+    skip_neo4j = pytest.mark.skip(reason="Tests using Neo4j are disabled with --skip-neo4j")
+    skip_celery = pytest.mark.skip(reason="Tests using Celery are disabled with --skip-celery")
 
     # Skip Neo4j tests if explicitly disabled
     if config.getoption("--skip-neo4j", False):
@@ -133,9 +129,7 @@ def mock_settings():
     # We need to mock get_settings() to return test settings for integration tests
 
     # Create a patch for the get_settings function
-    with patch(
-        "codestory.config.settings.get_settings", return_value=get_test_settings()
-    ):
+    with patch("codestory.config.settings.get_settings", return_value=get_test_settings()):
         # Apply the patch for all tests
         yield
 
@@ -190,9 +184,7 @@ def load_env_vars():
     and ensures that the Neo4j connection settings are available for tests.
     """
     # Load environment variables from .env file
-    env_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
-    )
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
     load_dotenv(env_path)
 
     # Ensure project root is in Python path for proper imports
@@ -249,17 +241,9 @@ def neo4j_connector():
 
     # Get Neo4j connection details from environment variables
     # with fallback to default test values
-    username = (
-        os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
-    )
-    password = (
-        os.environ.get("NEO4J__PASSWORD")
-        or os.environ.get("NEO4J_PASSWORD")
-        or "password"
-    )
-    database = (
-        os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "neo4j"
-    )
+    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
+    password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
+    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "neo4j"
 
     # Use correct Neo4j connection based on environment
     ci_env = os.environ.get("CI") == "true"
@@ -319,9 +303,7 @@ def redis_client():
 
     # Get Redis URI from environment
     redis_uri = (
-        os.environ.get("REDIS__URI")
-        or os.environ.get("REDIS_URI")
-        or "redis://localhost:6380/0"
+        os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"
     )
 
     # Create Redis client
@@ -357,9 +339,7 @@ def celery_app(redis_client):
 
     # Get the Redis URI from environment
     redis_uri = (
-        os.environ.get("REDIS__URI")
-        or os.environ.get("REDIS_URI")
-        or "redis://localhost:6380/0"
+        os.environ.get("REDIS__URI") or os.environ.get("REDIS_URI") or "redis://localhost:6380/0"
     )
 
     # Configure Celery for testing

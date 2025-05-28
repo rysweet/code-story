@@ -27,7 +27,8 @@ def service() -> None:
 
 def docker_image_needs_rebuild(service_name: str = "service") -> bool:
     """
-    Check if the Docker image for the given service needs to be rebuilt by comparing the hash of the Dockerfile and source code.
+    Check if the Docker image for the given service needs to be rebuilt by comparing 
+    the hash of the Dockerfile and source code.
     Returns True if the image is missing or the code has changed since the last build.
     """
     dockerfile = Path(f"Dockerfile.{service_name}")
@@ -49,9 +50,7 @@ def docker_image_needs_rebuild(service_name: str = "service") -> bool:
 
 
 @service.command(name="start", help="Start the Code Story service.")
-@click.option(
-    "--detach", "--detached", is_flag=True, help="Run the service in the background."
-)
+@click.option("--detach", "--detached", is_flag=True, help="Run the service in the background.")
 @click.option("--wait", is_flag=True, help="Wait for the service to start.")
 @click.option(
     "--skip-healthchecks",
@@ -136,13 +135,12 @@ def start_service(
                             ctx.invoke(status)
                             break
                         except ServiceError:
-                            if (
-                                i < max_attempts - 1
-                            ):  # Don't sleep on the last iteration
+                            if i < max_attempts - 1:  # Don't sleep on the last iteration
                                 time.sleep(2)  # Longer sleep between attempts
                             else:
                                 console.print(
-                                    "[yellow]Service health check timed out, but containers might still be starting...[/]"
+                                    "[yellow]Service health check timed out, but containers "
+                                    "might still be starting...[/]"
                                 )
                                 # Continue execution rather than exiting
 
@@ -165,12 +163,8 @@ def start_service(
                 console.print(
                     "  1. Use --skip-healthchecks to start the service without health checks"
                 )
-                console.print(
-                    "  2. Check docker logs for more details about the failure"
-                )
-                console.print(
-                    "\nTrying to show logs for potential unhealthy containers..."
-                )
+                console.print("  2. Check docker logs for more details about the failure")
+                console.print("\nTrying to show logs for potential unhealthy containers...")
 
                 # Try to get logs from potentially unhealthy containers
                 show_unhealthy_container_logs(compose_cmd, compose_file, console)
@@ -226,9 +220,7 @@ def stop_service(ctx: click.Context) -> None:
     is_flag=True,
     help="Run the service in the background after restart.",
 )
-@click.option(
-    "--wait", is_flag=True, help="Wait for the service to restart completely."
-)
+@click.option("--wait", is_flag=True, help="Wait for the service to restart completely.")
 @click.option(
     "--skip-healthchecks",
     "--skip-health-checks",
@@ -329,7 +321,8 @@ def restart_service(
                             time.sleep(2)  # Increased from 1
                         else:
                             console.print(
-                                "[yellow]Service health check timed out, but containers might still be starting...[/]"
+                                "[yellow]Service health check timed out, but containers "
+                                "might still be starting...[/]"
                             )
             else:
                 console.print("[green]Service restart initiated.[/]")
@@ -345,12 +338,8 @@ def restart_service(
                 console.print(
                     "  1. Use --skip-healthchecks to restart the service without health checks"
                 )
-                console.print(
-                    "  2. Try 'codestory service recover' to fix unhealthy containers"
-                )
-                console.print(
-                    "  3. Check docker logs for more details about the failure"
-                )
+                console.print("  2. Try 'codestory service recover' to fix unhealthy containers")
+                console.print("  3. Check docker logs for more details about the failure")
 
                 # Try to show logs for potentially unhealthy containers
                 show_unhealthy_container_logs(compose_cmd, compose_file, console)
@@ -411,9 +400,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             import subprocess
 
             subprocess.run(renewal_cmd, check=True)
-            console.print(
-                "[green]Azure login complete. Injecting tokens into containers..."
-            )
+            console.print("[green]Azure login complete. Injecting tokens into containers...")
             ctx.invoke(renew_azure_auth, tenant=tenant_id, inject=True)
             # After renewal, re-check health
             health = client.check_service_health(auto_fix=False)
@@ -438,9 +425,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 ],
                 check=True,
             )
-            console.print(
-                "[green]Azure login complete. Injecting tokens into containers..."
-            )
+            console.print("[green]Azure login complete. Injecting tokens into containers...")
             ctx.invoke(renew_azure_auth, inject=True)
             health = client.check_service_health(auto_fix=False)
             console.print(
@@ -496,9 +481,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
             # Get details from component data if available
             details = ""
-            if "details" in component_data and isinstance(
-                component_data["details"], dict
-            ):
+            if "details" in component_data and isinstance(component_data["details"], dict):
                 if "message" in component_data["details"]:
                     details = component_data["details"]["message"]
                 elif "error" in component_data["details"]:
@@ -506,9 +489,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 elif component_name.lower() == "celery":
                     # Add specific details for Celery
                     active_workers = component_data["details"].get("active_workers", 0)
-                    registered_tasks = component_data["details"].get(
-                        "registered_tasks", 0
-                    )
+                    registered_tasks = component_data["details"].get("registered_tasks", 0)
                     details = f"Workers: {active_workers}, Tasks: {registered_tasks}"
                 elif component_name.lower() == "redis":
                     # Add specific details for Redis
@@ -525,9 +506,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
     # Add missing important components if they're not in the response
     important_components = {"redis", "celery", "neo4j"}
     existing_components = (
-        set()
-        if "components" not in health
-        else {c.lower() for c in health["components"]}
+        set() if "components" not in health else {c.lower() for c in health["components"]}
     )
 
     for component in important_components - existing_components:
@@ -604,9 +583,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
                     if status_process.returncode == 0:
                         container_status = status_process.stdout.strip()
-                        status_style = (
-                            "green" if container_status == "running" else "yellow"
-                        )
+                        status_style = "green" if container_status == "running" else "yellow"
                     else:
                         container_status = "unknown"
                         status_style = "red"
@@ -657,9 +634,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 )
                 if process.returncode == 0:
                     unhealthy_containers = [
-                        c
-                        for c in process.stdout.strip().split("\n")
-                        if c and c in containers
+                        c for c in process.stdout.strip().split("\n") if c and c in containers
                     ]
             except Exception:
                 pass
@@ -668,9 +643,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 console.print(
                     f"\n[bold red]Warning:[/] The following containers are unhealthy: {', '.join(unhealthy_containers)}"
                 )
-                console.print(
-                    "Use 'codestory service recover' to attempt automatic recovery"
-                )
+                console.print("Use 'codestory service recover' to attempt automatic recovery")
 
     # Provide advice based on status
     if docker_available and containers:
@@ -681,12 +654,8 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             "This might indicate that the service is still starting up or there's an issue with the service container."
         )
         console.print("Suggestions:")
-        console.print(
-            "  1. Wait a bit longer for startup to complete (can take up to 2-3 minutes)"
-        )
-        console.print(
-            "  2. Run 'codestory service recover' to try restarting unhealthy containers"
-        )
+        console.print("  1. Wait a bit longer for startup to complete (can take up to 2-3 minutes)")
+        console.print("  2. Run 'codestory service recover' to try restarting unhealthy containers")
         console.print(
             "  3. Run 'codestory service restart --skip-healthchecks' to restart without health checks"
         )
@@ -769,19 +738,11 @@ def get_docker_compose_command() -> list[str]:
     return ["docker", "compose"]
 
 
-@service.command(
-    name="auth-renew", help="Renew Azure authentication tokens across all containers."
-)
+@service.command(name="auth-renew", help="Renew Azure authentication tokens across all containers.")
 @click.option("--tenant", help="Specify Azure tenant ID.")
-@click.option(
-    "--check", is_flag=True, help="Only check authentication status without renewing."
-)
-@click.option(
-    "--inject", is_flag=True, help="Inject tokens into containers after authentication."
-)
-@click.option(
-    "--restart", is_flag=True, help="Restart containers after token injection."
-)
+@click.option("--check", is_flag=True, help="Only check authentication status without renewing.")
+@click.option("--inject", is_flag=True, help="Inject tokens into containers after authentication.")
+@click.option("--restart", is_flag=True, help="Restart containers after token injection.")
 @click.option(
     "--verbose",
     "-v",
@@ -819,9 +780,7 @@ def renew_azure_auth(
     console.print("[bold]Azure Authentication Renewal[/]")
 
     # Build the command to run the token injection script
-    script_path = os.path.join(
-        os.path.dirname(__file__), "../../../scripts/inject_azure_tokens.py"
-    )
+    script_path = os.path.join(os.path.dirname(__file__), "../../../scripts/inject_azure_tokens.py")
 
     # Check if we can find the script
     if not os.path.exists(script_path):
@@ -829,9 +788,7 @@ def renew_azure_auth(
         try:
             from codestory.config.settings import get_project_root
 
-            script_path = os.path.join(
-                get_project_root(), "scripts/inject_azure_tokens.py"
-            )
+            script_path = os.path.join(get_project_root(), "scripts/inject_azure_tokens.py")
         except:
             # Fallback to absolute path based on current file
             script_path = os.path.abspath(
@@ -888,9 +845,7 @@ def renew_azure_auth(
                             console.print(f"  {line}")
 
             if success:
-                console.print(
-                    "[green]Azure authentication tokens updated successfully.[/]"
-                )
+                console.print("[green]Azure authentication tokens updated successfully.[/]")
             else:
                 sys.exit(1)
 
@@ -935,22 +890,14 @@ def renew_azure_auth(
                         console.print(f"[cyan]{result['login_command']}[/]\n")
 
                         # Add more context from the auth details if available
-                        if "auth_details" in result and isinstance(
-                            result["auth_details"], dict
-                        ):
+                        if "auth_details" in result and isinstance(result["auth_details"], dict):
                             auth_details = result["auth_details"]
                             if "tenant_id" in auth_details:
-                                console.print(
-                                    f"[bold]Tenant ID:[/] {auth_details['tenant_id']}"
-                                )
+                                console.print(f"[bold]Tenant ID:[/] {auth_details['tenant_id']}")
                             if "scope" in auth_details:
-                                console.print(
-                                    f"[bold]Scope:[/] {auth_details['scope']}"
-                                )
+                                console.print(f"[bold]Scope:[/] {auth_details['scope']}")
                             if "tenant_source" in result:
-                                console.print(
-                                    f"[bold]Source:[/] {result['tenant_source']}"
-                                )
+                                console.print(f"[bold]Source:[/] {result['tenant_source']}")
                             console.print("")
 
                         # Run the login command if --verbose is used
@@ -965,18 +912,14 @@ def renew_azure_auth(
                                 console.print("Injecting tokens into containers...")
                                 response = client.session.get(url)
                                 if response.status_code == 200:
-                                    console.print(
-                                        "[green]Token injection completed.[/]"
-                                    )
+                                    console.print("[green]Token injection completed.[/]")
                                 else:
                                     console.print(
                                         f"[yellow]Token injection returned status code {response.status_code}[/]"
                                     )
 
                             except Exception as e:
-                                console.print(
-                                    f"[red]Error during authentication: {e!s}[/]"
-                                )
+                                console.print(f"[red]Error during authentication: {e!s}[/]")
                                 console.print("Please run the command manually.")
 
                     # Check token injection status
@@ -987,24 +930,16 @@ def renew_azure_auth(
                             if status == "success":
                                 console.print("[green]Token injection successful![/]")
                             else:
-                                console.print(
-                                    f"[yellow]Token injection status: {status}[/]"
-                                )
+                                console.print(f"[yellow]Token injection status: {status}[/]")
 
                                 # Show error details if available
                                 if "error" in token_result:
-                                    console.print(
-                                        f"[red]Error: {token_result['error']}[/]"
-                                    )
+                                    console.print(f"[red]Error: {token_result['error']}[/]")
 
                                 # Fallback to manual script execution
-                                console.print(
-                                    "Falling back to direct script execution..."
-                                )
+                                console.print("Falling back to direct script execution...")
 
-                    console.print(
-                        "[green]Authentication renewal process completed via API.[/]"
-                    )
+                    console.print("[green]Authentication renewal process completed via API.[/]")
 
                     # Check OpenAI component status
                     try:
@@ -1012,9 +947,7 @@ def renew_azure_auth(
                         if "components" in health and "openai" in health["components"]:
                             openai_status = health["components"]["openai"].get("status")
                             if openai_status == "healthy":
-                                console.print(
-                                    "[green]OpenAI component is now healthy![/]"
-                                )
+                                console.print("[green]OpenAI component is now healthy![/]")
                             else:
                                 console.print(
                                     f"[yellow]OpenAI component status: {openai_status}[/]"
@@ -1025,9 +958,7 @@ def renew_azure_auth(
                     # Exit early if the API call succeeded
                     return
                 else:
-                    console.print(
-                        f"[yellow]API returned status code {response.status_code}[/]"
-                    )
+                    console.print(f"[yellow]API returned status code {response.status_code}[/]")
                     console.print("Falling back to direct script execution...")
             except Exception as e:
                 console.print(f"[yellow]Could not use API for token renewal: {e!s}[/]")
@@ -1081,28 +1012,18 @@ def renew_azure_auth(
 
                         # Check OpenAI component
                         if "components" in health and "openai" in health["components"]:
-                            openai_status = health["components"]["openai"].get(
-                                "status", "unknown"
-                            )
+                            openai_status = health["components"]["openai"].get("status", "unknown")
                             if openai_status == "healthy":
-                                console.print(
-                                    "[green]OpenAI component is now healthy![/]"
-                                )
+                                console.print("[green]OpenAI component is now healthy![/]")
                             else:
                                 console.print(
                                     f"[yellow]OpenAI component status: {openai_status}[/]"
                                 )
-                                console.print(
-                                    "Token injection might not have fixed all issues."
-                                )
+                                console.print("Token injection might not have fixed all issues.")
                         else:
-                            console.print(
-                                "[yellow]Could not verify OpenAI component health.[/]"
-                            )
+                            console.print("[yellow]Could not verify OpenAI component health.[/]")
                     except Exception as inner_e:
-                        console.print(
-                            f"[yellow]Could not check service health: {inner_e!s}[/]"
-                        )
+                        console.print(f"[yellow]Could not check service health: {inner_e!s}[/]")
                 except Exception as e:
                     console.print(f"[yellow]Error during token injection: {e!s}[/]")
         except Exception as e:
@@ -1111,9 +1032,7 @@ def renew_azure_auth(
 
 
 @service.command(name="recover", help="Recover from unhealthy container state.")
-@click.option(
-    "--force", "-f", is_flag=True, help="Force recovery by removing all containers."
-)
+@click.option("--force", "-f", is_flag=True, help="Force recovery by removing all containers.")
 @click.option(
     "--restart-worker",
     "--restart-workers",
@@ -1121,9 +1040,7 @@ def renew_azure_auth(
     help="Only restart the worker container.",
 )
 @click.pass_context
-def recover_service(
-    ctx: click.Context, force: bool = False, restart_worker: bool = False
-) -> None:
+def recover_service(ctx: click.Context, force: bool = False, restart_worker: bool = False) -> None:
     """
     Recover the service from unhealthy container state.
 
@@ -1191,9 +1108,7 @@ def recover_service(
                 if health_status == "healthy":
                     console.print("[green]Worker container is now healthy![/]")
                 else:
-                    console.print(
-                        f"[yellow]Worker container status: {health_status}[/]"
-                    )
+                    console.print(f"[yellow]Worker container status: {health_status}[/]")
                     console.print("Showing worker logs for debugging:")
                     subprocess.run(["docker", "logs", worker_container], check=False)
             else:
@@ -1231,9 +1146,7 @@ def recover_service(
                             console.print(f"Stopping container: {container}")
                             subprocess.run(["docker", "stop", container], check=True)
                         except Exception as e:
-                            console.print(
-                                f"[red]Could not stop container {container}: {e!s}[/]"
-                            )
+                            console.print(f"[red]Could not stop container {container}: {e!s}[/]")
             except Exception as e:
                 console.print(f"[red]Error stopping containers: {e!s}[/]")
 
@@ -1255,9 +1168,7 @@ def recover_service(
                 console.print(
                     "[green]Service started with health checks disabled via environment variable.[/]"
                 )
-                console.print(
-                    "[yellow]Note: Service may take longer to fully initialize.[/]"
-                )
+                console.print("[yellow]Note: Service may take longer to fully initialize.[/]")
             except subprocess.CalledProcessError as e:
                 console.print(f"[bold red]Error starting service: {e!s}[/]")
 
@@ -1272,16 +1183,12 @@ def recover_service(
                     sys.exit(1)
         else:
             # Targeted recovery for specific unhealthy containers
-            console.print(
-                f"[bold]Found unhealthy containers: {', '.join(unhealthy_containers)}[/]"
-            )
+            console.print(f"[bold]Found unhealthy containers: {', '.join(unhealthy_containers)}[/]")
 
             # Show logs for unhealthy containers
             for container in unhealthy_containers:
                 console.print(f"\n[bold cyan]Logs for {container}:[/]")
-                subprocess.run(
-                    ["docker", "logs", "--tail", "20", container], check=False
-                )
+                subprocess.run(["docker", "logs", "--tail", "20", container], check=False)
 
             # Restart unhealthy containers
             console.print("\n[bold]Attempting to restart unhealthy containers...[/]")
@@ -1316,14 +1223,10 @@ def recover_service(
                     health_status = process.stdout.strip()
                     if health_status != "healthy":
                         all_healthy = False
-                        console.print(
-                            f"[yellow]Container {container} is still {health_status}[/]"
-                        )
+                        console.print(f"[yellow]Container {container} is still {health_status}[/]")
                 else:
                     all_healthy = False
-                    console.print(
-                        f"[yellow]Could not check health status of {container}[/]"
-                    )
+                    console.print(f"[yellow]Could not check health status of {container}[/]")
 
             if all_healthy:
                 console.print("[green bold]All containers are now healthy![/]")
@@ -1339,9 +1242,7 @@ def recover_service(
             client.check_service_health()
             console.print("[green]Service is running correctly.[/]")
         except ServiceError:
-            console.print(
-                "[yellow]Service is not responding despite no unhealthy containers.[/]"
-            )
+            console.print("[yellow]Service is not responding despite no unhealthy containers.[/]")
             console.print("Checking all service containers...")
 
             # List all service containers
@@ -1435,16 +1336,11 @@ def show_unhealthy_container_logs(
                 if "Name" in container_info:
                     container_name = container_info["Name"]
                     # Check if the container is unhealthy
-                    if (
-                        "State" in container_info
-                        and "Health" in container_info["State"]
-                    ):
+                    if "State" in container_info and "Health" in container_info["State"]:
                         health_status = container_info["State"]["Health"].get("Status")
                         if health_status == "unhealthy":
                             unhealthy_containers.append(container_name)
-                            console.print(
-                                f"[red]Container {container_name} is unhealthy.[/]"
-                            )
+                            console.print(f"[red]Container {container_name} is unhealthy.[/]")
 
                             # Show the last few lines of the container logs
                             if "LogPath" in container_info["GraphDriver"]:

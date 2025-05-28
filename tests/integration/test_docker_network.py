@@ -1,7 +1,7 @@
 """Integration tests for Docker container network communication.
 
 This module contains tests that specifically validate the communication between
-containers in the Docker network, ensuring that services can correctly 
+containers in the Docker network, ensuring that services can correctly
 communicate with each other using the service names as hostnames.
 """
 
@@ -52,9 +52,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
 
     finally:
         # Tear down containers but keep logs
-        subprocess.run(
-            ["docker-compose", "logs", "--no-color"], capture_output=True, text=True
-        )
+        subprocess.run(["docker-compose", "logs", "--no-color"], capture_output=True, text=True)
 
         subprocess.run(["docker-compose", "down"], capture_output=True, text=True)
 
@@ -106,9 +104,7 @@ def test_service_to_neo4j_connectivity(docker_compose_project):
     result = exec_in_container(service_container, ["nc", "-z", "-v", "neo4j", "7687"])
 
     # Expected exit code for successful connection
-    assert (
-        result["exit_code"] == 0
-    ), f"Failed to connect to Neo4j bolt port: {result['stderr']}"
+    assert result["exit_code"] == 0, f"Failed to connect to Neo4j bolt port: {result['stderr']}"
 
 
 @pytest.mark.integration
@@ -127,9 +123,7 @@ def test_service_to_redis_connectivity(docker_compose_project):
     )
 
     assert result["exit_code"] == 0, f"Failed to connect to Redis: {result['stderr']}"
-    assert (
-        "PONG" in result["stdout"]
-    ), f"Redis did not respond with PONG: {result['stdout']}"
+    assert "PONG" in result["stdout"], f"Redis did not respond with PONG: {result['stdout']}"
 
 
 @pytest.mark.integration
@@ -143,13 +137,9 @@ def test_health_endpoint_in_container(docker_compose_project):
     service_container = "codestory-service"
 
     # Test internal health endpoint
-    result = exec_in_container(
-        service_container, ["curl", "-s", "localhost:8000/health"]
-    )
+    result = exec_in_container(service_container, ["curl", "-s", "localhost:8000/health"])
 
-    assert (
-        result["exit_code"] == 0
-    ), f"Failed to connect to health endpoint: {result['stderr']}"
+    assert result["exit_code"] == 0, f"Failed to connect to health endpoint: {result['stderr']}"
 
     try:
         health_data = json.loads(result["stdout"])
@@ -187,6 +177,4 @@ def test_external_health_endpoint(docker_compose_project):
                 "status" in health_data
             ), f"Health response missing status field in endpoint {endpoint}"
         except json.JSONDecodeError:
-            pytest.fail(
-                f"Health endpoint {endpoint} did not return valid JSON: {result.stdout}"
-            )
+            pytest.fail(f"Health endpoint {endpoint} did not return valid JSON: {result.stdout}")

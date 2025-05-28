@@ -20,9 +20,7 @@ def patch_workflow(workflow_file):
         content = f.read()
 
     # Add "|| true" to test commands to make them pass regardless of test status
-    content = re.sub(
-        r"(npm test)", r'\1 || echo "Tests completed with some failures"', content
-    )
+    content = re.sub(r"(npm test)", r'\1 || echo "Tests completed with some failures"', content)
 
     content = re.sub(
         r"(poetry run pytest tests/unit -v)",

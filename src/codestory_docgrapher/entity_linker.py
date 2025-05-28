@@ -1,3 +1,4 @@
+from typing import Any
 """Entity linker for linking documentation entities to code entities.
 
 This module provides functionality for linking documentation entities to code
@@ -40,11 +41,9 @@ class EntityLinker:
         self.module_ref_pattern = re.compile(r"(?:^|[^\w/])([\w.]+)(?:$|[^\w])")
 
         # Cache for Neo4j IDs to avoid repeated queries
-        self.entity_cache = {}
+        self.entity_cache: dict[Any, Any] = {}
 
-    def link_entities(
-        self, entities: list[DocumentationEntity]
-    ) -> list[DocumentationRelationship]:
+    def link_entities(self, entities: list[DocumentationEntity]) -> list[DocumentationRelationship]:
         """Link documentation entities to code entities.
 
         Args:
@@ -65,9 +64,7 @@ class EntityLinker:
         )
         return relationships
 
-    def _link_entity(
-        self, entity: DocumentationEntity
-    ) -> list[DocumentationRelationship]:
+    def _link_entity(self, entity: DocumentationEntity) -> list[DocumentationRelationship]:
         """Link a documentation entity to code entities.
 
         Args:
@@ -260,9 +257,7 @@ class EntityLinker:
 
         return results
 
-    def _link_by_location(
-        self, entity: DocumentationEntity
-    ) -> list[DocumentationRelationship]:
+    def _link_by_location(self, entity: DocumentationEntity) -> list[DocumentationRelationship]:
         """Link a documentation entity to code entities based on its location.
 
         This is used for docstrings to link them to their containing entities.
@@ -273,7 +268,7 @@ class EntityLinker:
         Returns:
             List of relationships
         """
-        relationships = []
+relationships: list[Any] = []
 
         # Check if the entity has metadata about its owner
         owner_type = entity.metadata.get("owner_type")

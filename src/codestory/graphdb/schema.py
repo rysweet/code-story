@@ -4,13 +4,10 @@ This module provides functions to initialize and manage the Neo4j database schem
 including constraints, indexes, and vector indexes for embedding search.
 """
 
-
 from .exceptions import SchemaError
 
 # Node label constraints
-FILE_CONSTRAINTS = [
-    "CREATE CONSTRAINT IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE"
-]
+FILE_CONSTRAINTS = ["CREATE CONSTRAINT IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE"]
 
 DIRECTORY_CONSTRAINTS = [
     "CREATE CONSTRAINT IF NOT EXISTS FOR (d:Directory) REQUIRE d.path IS UNIQUE"
@@ -24,9 +21,7 @@ FUNCTION_CONSTRAINTS = [
     "CREATE CONSTRAINT IF NOT EXISTS FOR (f:Function) REQUIRE (f.name, f.module) IS UNIQUE"
 ]
 
-MODULE_CONSTRAINTS = [
-    "CREATE CONSTRAINT IF NOT EXISTS FOR (m:Module) REQUIRE m.name IS UNIQUE"
-]
+MODULE_CONSTRAINTS = ["CREATE CONSTRAINT IF NOT EXISTS FOR (m:Module) REQUIRE m.name IS UNIQUE"]
 
 # Full-text indexes
 FULLTEXT_INDEXES = [
@@ -200,29 +195,17 @@ def initialize_schema(connector, force: bool = False) -> None:
             # Drop all constraints
             connector.execute_query("SHOW CONSTRAINTS", write=False)
             connector.execute_query("DROP CONSTRAINT file_path IF EXISTS", write=True)
-            connector.execute_query(
-                "DROP CONSTRAINT directory_path IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP CONSTRAINT class_name_module IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP CONSTRAINT function_name_module IF EXISTS", write=True
-            )
+            connector.execute_query("DROP CONSTRAINT directory_path IF EXISTS", write=True)
+            connector.execute_query("DROP CONSTRAINT class_name_module IF EXISTS", write=True)
+            connector.execute_query("DROP CONSTRAINT function_name_module IF EXISTS", write=True)
             connector.execute_query("DROP CONSTRAINT module_name IF EXISTS", write=True)
 
             # Drop all indexes
             connector.execute_query("DROP INDEX file_content IF EXISTS", write=True)
             connector.execute_query("DROP INDEX code_name IF EXISTS", write=True)
-            connector.execute_query(
-                "DROP INDEX documentation_content IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP INDEX file_extension_idx IF EXISTS", write=True
-            )
-            connector.execute_query(
-                "DROP INDEX node_created_at_idx IF EXISTS", write=True
-            )
+            connector.execute_query("DROP INDEX documentation_content IF EXISTS", write=True)
+            connector.execute_query("DROP INDEX file_extension_idx IF EXISTS", write=True)
+            connector.execute_query("DROP INDEX node_created_at_idx IF EXISTS", write=True)
         except Exception as e:
             import logging
 
@@ -304,9 +287,7 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
 
         for constraint in schema_elements["constraints"]:
             # Extract constraint label and properties from the new FOR/REQUIRE syntax
-            constraint_parts = (
-                constraint.split("IF NOT EXISTS FOR")[1].split("REQUIRE")[0].strip()
-            )
+            constraint_parts = constraint.split("IF NOT EXISTS FOR")[1].split("REQUIRE")[0].strip()
             constraint_name = constraint_parts
             verification_results["constraints"][constraint_name] = (
                 constraint_name in existing_constraints
@@ -319,9 +300,7 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
                     if len(parts) > 1:
                         # Extract the index name which comes after "INDEX" and before "IF NOT EXISTS"
                         name_part = parts[1].split("IF NOT EXISTS")[0].strip()
-                        verification_results["indexes"][name_part] = (
-                            name_part in existing_indexes
-                        )
+                        verification_results["indexes"][name_part] = name_part in existing_indexes
 
         return verification_results
 

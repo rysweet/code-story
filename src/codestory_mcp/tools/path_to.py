@@ -116,13 +116,9 @@ class PathToTool(BaseTool):
                             {
                                 "element_type": "node",
                                 "id": str(element.id),
-                                "type": element.labels[0]
-                                if element.labels
-                                else "Unknown",
+                                "type": element.labels[0] if element.labels else "Unknown",
                                 "name": element.get("name", ""),
-                                "content": element.get("content", "")[
-                                    :200
-                                ],  # Limit content size
+                                "content": element.get("content", "")[:200],  # Limit content size
                             }
                         )
                     else:  # Relationship
@@ -162,9 +158,7 @@ class PathToTool(BaseTool):
 
         except Exception as e:
             # Log error
-            logger.exception(
-                "Path finding failed", from_id=from_id, to_id=to_id, error=str(e)
-            )
+            logger.exception("Path finding failed", from_id=from_id, to_id=to_id, error=str(e))
 
             # Re-raise as tool error
             if isinstance(e, ToolError):

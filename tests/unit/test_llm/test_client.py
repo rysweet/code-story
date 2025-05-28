@@ -24,8 +24,10 @@ from codestory.llm.models import (
 @pytest.fixture(autouse=True)
 def patch_prometheus_metrics():
     """Patch prometheus metrics to avoid registration conflicts during tests."""
-    with patch("prometheus_client.Counter"), patch("prometheus_client.Gauge"), patch(
-        "prometheus_client.Histogram"
+    with (
+        patch("prometheus_client.Counter"),
+        patch("prometheus_client.Gauge"),
+        patch("prometheus_client.Histogram"),
     ):
         yield
 
@@ -115,13 +117,14 @@ class TestOpenAIClient:
 
     def test_init_missing_credentials(self):
         """Test client initialization with missing credentials."""
-        with patch(
-            "codestory.llm.client.get_settings",
-            side_effect=Exception("No settings"),
-        ), patch("codestory.llm.client.DefaultAzureCredential"), patch(
-            "codestory.llm.client.get_bearer_token_provider"
-        ), pytest.raises(
-            AuthenticationError
+        with (
+            patch(
+                "codestory.llm.client.get_settings",
+                side_effect=Exception("No settings"),
+            ),
+            patch("codestory.llm.client.DefaultAzureCredential"),
+            patch("codestory.llm.client.get_bearer_token_provider"),
+            pytest.raises(AuthenticationError),
         ):
             OpenAIClient()  # No endpoint provided
 
@@ -172,9 +175,7 @@ class TestOpenAIClient:
 
     def test_chat(self, client):
         """Test chat completion."""
-        with patch.object(
-            client._sync_client.chat.completions, "create"
-        ) as mock_create:
+        with patch.object(client._sync_client.chat.completions, "create") as mock_create:
             # Configure the mock response
             mock_response = MagicMock()
             mock_response.model_dump.return_value = {
@@ -202,9 +203,7 @@ class TestOpenAIClient:
 
             # Create messages
             messages = [
-                ChatMessage(
-                    role=ChatRole.SYSTEM, content="You are a helpful assistant."
-                ),
+                ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
                 ChatMessage(role=ChatRole.USER, content="Hello, assistant!"),
             ]
 
@@ -234,9 +233,7 @@ class TestOpenAIClient:
             mock_response = MagicMock()
             mock_response.model_dump.return_value = {
                 "object": "list",
-                "data": [
-                    {"object": "embedding", "embedding": [0.1, 0.2, 0.3], "index": 0}
-                ],
+                "data": [{"object": "embedding", "embedding": [0.1, 0.2, 0.3], "index": 0}],
                 "model": "text-embedding-3-small",
                 "usage": {"prompt_tokens": 8, "total_tokens": 8},
             }
@@ -317,9 +314,7 @@ class TestOpenAIClient:
         future.set_result(mock_response)
 
         # Create a patch for the async client
-        with patch.object(
-            client._async_client.completions, "create", return_value=future
-        ):
+        with patch.object(client._async_client.completions, "create", return_value=future):
             # Call the method
             result = await client.complete_async("Test prompt")
 
@@ -345,12 +340,8 @@ class TestCreateClient:
             patch("codestory.llm.client.get_bearer_token_provider"),
             # Also patch metric decorators to avoid conflicts
             patch("codestory.llm.client.instrument_request", lambda op: lambda f: f),
-            patch(
-                "codestory.llm.client.instrument_async_request", lambda op: lambda f: f
-            ),
-            patch(
-                "codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f
-            ),
+            patch("codestory.llm.client.instrument_async_request", lambda op: lambda f: f),
+            patch("codestory.llm.client.retry_on_openai_errors", lambda **kw: lambda f: f),
             patch(
                 "codestory.llm.client.retry_on_openai_errors_async",
                 lambda **kw: lambda f: f,

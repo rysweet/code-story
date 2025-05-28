@@ -85,9 +85,7 @@ async def get_user_info(
         UserInfo with user details
     """
     if not user:
-        return UserInfo(
-            id="anonymous", name="Anonymous User", roles=[], is_authenticated=False
-        )
+        return UserInfo(id="anonymous", name="Anonymous User", roles=[], is_authenticated=False)
 
     try:
         logger.info(f"Getting info for user: {user.get('name', 'unknown')}")

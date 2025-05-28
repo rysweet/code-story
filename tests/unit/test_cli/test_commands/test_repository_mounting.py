@@ -80,18 +80,12 @@ class TestRepositoryMounting:
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create mocks
-            with patch(
-                "codestory.cli.commands.ingest.is_docker_running"
-            ) as mock_docker:
-                with patch(
-                    "codestory.cli.commands.ingest.is_repo_mounted"
-                ) as mock_mounted:
+            with patch("codestory.cli.commands.ingest.is_docker_running") as mock_docker:
+                with patch("codestory.cli.commands.ingest.is_repo_mounted") as mock_mounted:
                     with patch(
                         "codestory.cli.commands.ingest.create_override_file"
                     ) as mock_create_file:
-                        with patch(
-                            "codestory.cli.commands.ingest.run_command"
-                        ) as mock_run:
+                        with patch("codestory.cli.commands.ingest.run_command") as mock_run:
                             with patch(
                                 "codestory.cli.commands.ingest.wait_for_service"
                             ) as mock_wait:
@@ -105,9 +99,7 @@ class TestRepositoryMounting:
                                     mock_mounted.return_value = True
 
                                     # Call setup_repository_mount
-                                    result = ingest.setup_repository_mount(
-                                        temp_dir, console
-                                    )
+                                    result = ingest.setup_repository_mount(temp_dir, console)
 
                                     # Verify result
                                     assert result is True
@@ -137,9 +129,7 @@ class TestRepositoryMounting:
                                     mock_mounted.side_effect = [False, True]
 
                                     # Call setup_repository_mount
-                                    result = ingest.setup_repository_mount(
-                                        temp_dir, console
-                                    )
+                                    result = ingest.setup_repository_mount(temp_dir, console)
 
                                     # Verify result
                                     assert result is True

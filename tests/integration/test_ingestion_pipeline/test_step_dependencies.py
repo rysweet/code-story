@@ -69,9 +69,7 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
         patch.object(FileSystemStep, "run", autospec=True) as mock_fs_run,
         patch.object(BlarifyStep, "run", autospec=True) as mock_blarify_run,
         patch.object(SummarizerStep, "run", autospec=True) as mock_summarizer_run,
-        patch.object(
-            DocumentationGrapherStep, "run", autospec=True
-        ) as mock_docgrapher_run,
+        patch.object(DocumentationGrapherStep, "run", autospec=True) as mock_docgrapher_run,
     ):
         # Setup side effects to track execution order
         def fs_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
@@ -82,15 +80,11 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
             execution_order.append("blarify")
             return "blarify-job-id"
 
-        def summarizer_side_effect(
-            self: Any, repository_path: str, **kwargs: Any
-        ) -> str:
+        def summarizer_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("summarizer")
             return "summarizer-job-id"
 
-        def docgrapher_side_effect(
-            self: Any, repository_path: str, **kwargs: Any
-        ) -> str:
+        def docgrapher_side_effect(self: Any, repository_path: str, **kwargs: Any) -> str:
             execution_order.append("documentation_grapher")
             return "docgrapher-job-id"
 
@@ -103,9 +97,7 @@ def mock_steps() -> Generator[dict[str, Any], None, None]:
         with (
             patch.object(FileSystemStep, "status", autospec=True) as mock_fs_status,
             patch.object(BlarifyStep, "status", autospec=True) as mock_blarify_status,
-            patch.object(
-                SummarizerStep, "status", autospec=True
-            ) as mock_summarizer_status,
+            patch.object(SummarizerStep, "status", autospec=True) as mock_summarizer_status,
             patch.object(
                 DocumentationGrapherStep, "status", autospec=True
             ) as mock_docgrapher_status,
@@ -232,9 +224,7 @@ def test_step_dependency_resolution(
         elif step_name == "documentation_grapher":
             # Documentation grapher depends on filesystem
             execute_step_with_deps("filesystem")
-            mock_steps["mocks"]["documentation_grapher"](
-                None, repository_path=sample_repo
-            )
+            mock_steps["mocks"]["documentation_grapher"](None, repository_path=sample_repo)
 
     # Execute the target step (which will recursively execute its dependencies)
     execute_step_with_deps(target_step)
@@ -391,9 +381,7 @@ def test_only_necessary_steps_run(
         elif step_name == "documentation_grapher":
             # Documentation grapher depends on filesystem
             execute_step_with_deps("filesystem")
-            mock_steps["mocks"]["documentation_grapher"](
-                None, repository_path=sample_repo
-            )
+            mock_steps["mocks"]["documentation_grapher"](None, repository_path=sample_repo)
             mock_steps["mocks"]["documentation_grapher"].called = True
 
     # Execute only the summarizer step (which will execute its dependencies)
@@ -473,9 +461,7 @@ def test_error_handling_in_dependency_chain():
 
     # Assert that dependencies are not satisfied
     assert deps_satisfied is False, "Dependencies should not be satisfied"
-    assert (
-        failed_dep == "filesystem"
-    ), "Filesystem should be reported as the failing dependency"
+    assert failed_dep == "filesystem", "Filesystem should be reported as the failing dependency"
 
     # Now simulate what the PipelineManager would do - create a failed job for blarify
     # due to the filesystem dependency failure

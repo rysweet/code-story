@@ -222,12 +222,8 @@ class LLMConfiguration(BaseModel):
     """Configuration for resilient LLM operations."""
 
     # Primary configuration
-    mode: LLMMode = Field(
-        default=LLMMode.NORMAL, description="Current LLM operation mode"
-    )
-    provider: LLMProvider = Field(
-        default=LLMProvider.OPENAI, description="LLM provider"
-    )
+    mode: LLMMode = Field(default=LLMMode.NORMAL, description="Current LLM operation mode")
+    provider: LLMProvider = Field(default=LLMProvider.OPENAI, description="LLM provider")
 
     # Fallback configuration
     allow_fallback: bool = Field(
@@ -259,9 +255,11 @@ class LLMConfiguration(BaseModel):
             provider = LLMProvider.OPENAI
 
         # Check for fallback configuration
-        allow_fallback = os.environ.get(
-            "CODESTORY_LLM_ALLOW_FALLBACK", "true"
-        ).lower() in ["true", "1", "yes"]
+        allow_fallback = os.environ.get("CODESTORY_LLM_ALLOW_FALLBACK", "true").lower() in [
+            "true",
+            "1",
+            "yes",
+        ]
         fallback_api_key = os.environ.get("OPENAI__API_KEY", None)
 
         # Note: CODESTORY_NO_MODEL_CHECK is no longer used

@@ -31,9 +31,7 @@ def get_azure_tenant_id_from_environment() -> str | None:
     for env_var in ["AZURE_TENANT_ID", "AZURE_OPENAI__TENANT_ID", "OPENAI__TENANT_ID"]:
         if os.environ.get(env_var):
             tenant_id = os.environ[env_var]
-            logger.info(
-                f"Found tenant ID in environment variable {env_var}: {tenant_id}"
-            )
+            logger.info(f"Found tenant ID in environment variable {env_var}: {tenant_id}")
             return tenant_id
 
     # Check .azure/config file
@@ -121,25 +119,28 @@ class OpenAIAdapter:
         """
         # Log Azure OpenAI configuration details for debugging
         logger.info("=== OpenAI Adapter Initialization ===")
-        
+
         # Log environment variables (without sensitive values)
         endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "NOT_SET")
         deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "NOT_SET")
         api_version = os.environ.get("AZURE_OPENAI__API_VERSION", "NOT_SET")
-        tenant_id = os.environ.get("AZURE_TENANT_ID") or os.environ.get("AZURE_OPENAI__TENANT_ID", "NOT_SET")
-        
+        tenant_id = os.environ.get("AZURE_TENANT_ID") or os.environ.get(
+            "AZURE_OPENAI__TENANT_ID", "NOT_SET"
+        )
+
         logger.info(f"Azure OpenAI Endpoint: {endpoint}")
         logger.info(f"Azure OpenAI Deployment ID: {deployment_id}")
         logger.info(f"Azure OpenAI API Version: {api_version}")
         logger.info(f"Azure Tenant ID: {tenant_id}")
-        
+
         # Check if API key is set (but don't log the actual value)
         api_key = os.environ.get("AZURE_OPENAI__API_KEY") or os.environ.get("OPENAI__API_KEY")
         logger.info(f"API Key configured: {'Yes' if api_key else 'No'}")
-        
+
         # Check Azure CLI authentication status
         try:
             import subprocess
+
             result = subprocess.run(
                 ["az", "account", "show", "--query", "user.name", "-o", "tsv"],
                 capture_output=True,
@@ -152,11 +153,11 @@ class OpenAIAdapter:
                 logger.warning(f"Azure CLI not authenticated: {result.stderr.strip()}")
         except Exception as e:
             logger.warning(f"Could not check Azure CLI status: {e}")
-        
+
         # Check current working directory and container info
         logger.info(f"Current working directory: {os.getcwd()}")
         logger.info(f"Running in container: {'Yes' if os.path.exists('/.dockerenv') else 'No'}")
-        
+
         try:
             # Create or use provided client
             if client is None:
@@ -168,12 +169,12 @@ class OpenAIAdapter:
                 logger.info("Using provided OpenAI client")
                 # Use the provided client
                 self.client = client
-                
+
             # Log client configuration details
             logger.info(f"Chat model: {getattr(self.client, 'chat_model', 'NOT_SET')}")
             logger.info(f"Embedding model: {getattr(self.client, 'embedding_model', 'NOT_SET')}")
             logger.info(f"Reasoning model: {getattr(self.client, 'reasoning_model', 'NOT_SET')}")
-            
+
         except AuthenticationError as e:
             logger.error(f"OpenAI authentication error during initialization: {e!s}")
             # Try to extract tenant info from error
@@ -187,7 +188,7 @@ class OpenAIAdapter:
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e!s}")
             logger.error(f"Error type: {type(e).__name__}")
-            
+
             # Log additional debug info for common issues
             if "404" in str(e):
                 logger.error("404 error suggests endpoint or deployment configuration issue")
@@ -195,7 +196,7 @@ class OpenAIAdapter:
                 logger.error("Authentication error suggests credential or permission issue")
             elif "timeout" in str(e).lower():
                 logger.error("Timeout suggests network connectivity issue")
-                
+
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize OpenAI client: {e!s}",
@@ -239,15 +240,15 @@ class OpenAIAdapter:
             Dictionary containing health information
         """
         logger.info("=== OpenAI Health Check Starting ===")
-        
+
         try:
             client = self.client._async_client
             test_message = "Hello! This is a health check."
             test_model = self.client.chat_model
-            
+
             logger.info(f"Health check using model: {test_model}")
             logger.info(f"Test message: {test_message}")
-            
+
             # Log request details
             request_params = {
                 "model": test_model,
@@ -258,34 +259,32 @@ class OpenAIAdapter:
                 "max_completion_tokens": 1,
             }
             logger.info(f"Request parameters: {request_params}")
-            
+
             # Use model parameter for Azure OpenAI chat completions
             logger.info("Sending health check request to OpenAI API...")
             response = await client.chat.completions.create(**request_params)
-            
+
             logger.info("Health check request completed successfully")
             logger.info(f"Response ID: {getattr(response, 'id', 'N/A')}")
             logger.info(f"Response model: {getattr(response, 'model', 'N/A')}")
-            
+
             # If we get here, the API is healthy
             available_models = [
                 self.client.embedding_model,
                 self.client.chat_model,
                 self.client.reasoning_model,
             ]
-            available_models = [
-                m for m in list(set(available_models)) if m is not None
-            ]
-            
+            available_models = [m for m in list(set(available_models)) if m is not None]
+
             # Determine status: require embedding and chat models at minimum
             if self.client.embedding_model and self.client.chat_model:
                 status = "healthy"
             else:
                 status = "degraded"
-                
+
             logger.info(f"Health check completed with status: {status}")
             logger.info(f"Available models: {available_models}")
-            
+
             result = {
                 "status": status,
                 "details": {
@@ -298,20 +297,21 @@ class OpenAIAdapter:
                     "api_version": getattr(self.client, "api_version", "latest"),
                 },
             }
-            
+
             logger.info(f"Health check result: {result}")
             return result
-            
+
         except Exception as e:
             error_message = str(e)
             logger.error("=== OpenAI Health Check Failed ===")
             logger.error(f"Error type: {type(e).__name__}")
             logger.error(f"Error message: {error_message}")
-            
+
             # Log full stack trace for debugging
             import traceback
+
             logger.error(f"Full traceback: {traceback.format_exc()}")
-            
+
             # Check for 404 errors - this indicates a serious API configuration issue that needs fixing
             if (
                 "<html>" in error_message
@@ -324,11 +324,11 @@ class OpenAIAdapter:
                 deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "NOT SET")
                 endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "NOT SET")
                 api_version = os.environ.get("AZURE_OPENAI__API_VERSION", "NOT SET")
-                
+
                 logger.error(f"Current deployment_id: {deployment_id}")
                 logger.error(f"Current endpoint: {endpoint}")
                 logger.error(f"Current api_version: {api_version}")
-                
+
                 return {
                     "status": "unhealthy",
                     "details": {
@@ -353,21 +353,19 @@ class OpenAIAdapter:
                 or "AADSTS700003" in error_message
             ):
                 logger.error("Azure authentication failure detected")
-                
+
                 tenant_id = get_azure_tenant_id_from_environment()
                 if not tenant_id:
                     tenant_id = extract_tenant_id_from_error(error_message)
-                    
+
                 logger.error(f"Tenant ID for renewal: {tenant_id}")
-                    
-                renewal_cmd = (
-                    "az login --scope https://cognitiveservices.azure.com/.default"
-                )
+
+                renewal_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
                 if tenant_id:
                     renewal_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
-                    
+
                 logger.error(f"Suggested renewal command: {renewal_cmd}")
-                
+
                 return {
                     "status": "unhealthy",
                     "details": {
@@ -379,14 +377,14 @@ class OpenAIAdapter:
                     },
                 }
             else:
-                logger.warning(
-                    f"OpenAI health check failed with unexpected error: {error_message}"
-                )
-                
+                logger.warning(f"OpenAI health check failed with unexpected error: {error_message}")
+
                 # Log additional context for debugging
                 logger.error(f"Client type: {type(self.client)}")
-                logger.error(f"Async client type: {type(getattr(self.client, '_async_client', None))}")
-                
+                logger.error(
+                    f"Async client type: {type(getattr(self.client, '_async_client', None))}"
+                )
+
                 return {
                     "status": "degraded",
                     "details": {

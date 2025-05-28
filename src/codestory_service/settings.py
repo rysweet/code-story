@@ -4,6 +4,7 @@ This module provides a specialized settings class for the service, building
 on the core settings infrastructure.
 """
 
+from typing import Any
 import logging
 
 from pydantic import Field, SecretStr, field_validator
@@ -42,9 +43,7 @@ class ServiceSettings(BaseSettings):
         ["*"],
         description="List of allowed origins for CORS (use ['*'] for development)",
     )
-    cors_allow_credentials: bool = Field(
-        True, description="Allow credentials in CORS requests"
-    )
+    cors_allow_credentials: bool = Field(True, description="Allow credentials in CORS requests")
     cors_allow_methods: list[str] = Field(
         ["*"], description="HTTP methods to allow in CORS requests"
     )
@@ -63,18 +62,12 @@ class ServiceSettings(BaseSettings):
     jwt_expiration: int = Field(3600, description="JWT token expiration in seconds")
 
     # WebSocket Settings
-    websocket_heartbeat: int = Field(
-        30, description="WebSocket heartbeat interval in seconds"
-    )
+    websocket_heartbeat: int = Field(30, description="WebSocket heartbeat interval in seconds")
 
     # Rate Limiting
     rate_limit_enabled: bool = Field(True, description="Enable rate limiting")
-    rate_limit_requests: int = Field(
-        100, description="Number of requests allowed per time window"
-    )
-    rate_limit_window: int = Field(
-        60, description="Time window for rate limiting in seconds"
-    )
+    rate_limit_requests: int = Field(100, description="Number of requests allowed per time window")
+    rate_limit_window: int = Field(60, description="Time window for rate limiting in seconds")
 
     # Prometheus metrics
     metrics_enabled: bool = Field(True, description="Enable Prometheus metrics")
@@ -92,9 +85,7 @@ class ServiceSettings(BaseSettings):
     )
 
     # Response timeouts
-    response_timeout: int = Field(
-        60, description="Maximum time to wait for responses in seconds"
-    )
+    response_timeout: int = Field(60, description="Maximum time to wait for responses in seconds")
 
     # Model config
     model_config = SettingsConfigDict(
@@ -138,7 +129,7 @@ class ServiceSettings(BaseSettings):
         return v
 
 
-def get_core_settings():
+def get_core_settings() -> Any:
     """Get core settings from the main settings module.
 
     Returns:

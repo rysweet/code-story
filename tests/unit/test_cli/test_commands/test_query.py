@@ -25,21 +25,15 @@ class TestQueryCommands:
         assert "explore" in result.output.lower()
         assert "export" in result.output.lower()
 
-    def test_query_run_cypher(
-        self, cli_runner: CliRunner, mock_service_client: MagicMock
-    ) -> None:
+    def test_query_run_cypher(self, cli_runner: CliRunner, mock_service_client: MagicMock) -> None:
         """Test 'query run' command with Cypher query."""
         # Configure mock client with sample Cypher query result
         mock_result = {"records": [{"count": 42}]}
         mock_service_client.execute_query.return_value = mock_result
 
         # Run CLI with query run
-        with patch(
-            "codestory.cli.main.ServiceClient", return_value=mock_service_client
-        ):
-            result = cli_runner.invoke(
-                app, ["query", "run", "MATCH (n) RETURN count(n) as count"]
-            )
+        with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
+            result = cli_runner.invoke(app, ["query", "run", "MATCH (n) RETURN count(n) as count"])
 
             # Check result
             assert result.exit_code == 0
@@ -52,20 +46,14 @@ class TestQueryCommands:
                 "MATCH (n) RETURN count(n) as count", {}
             )
 
-    def test_query_run_mcp(
-        self, cli_runner: CliRunner, mock_service_client: MagicMock
-    ) -> None:
+    def test_query_run_mcp(self, cli_runner: CliRunner, mock_service_client: MagicMock) -> None:
         """Test 'query run' command with MCP tool call."""
         # Configure mock client with sample MCP tool result
-        mock_result = {
-            "results": {"name": "test", "path": "/path/to/test", "type": "class"}
-        }
+        mock_result = {"results": {"name": "test", "path": "/path/to/test", "type": "class"}}
         mock_service_client.execute_query.return_value = mock_result
 
         # Run CLI with query run
-        with patch(
-            "codestory.cli.main.ServiceClient", return_value=mock_service_client
-        ):
+        with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
             result = cli_runner.invoke(app, ["query", "run", "searchGraph('test')"])
 
             # Check result
@@ -75,9 +63,7 @@ class TestQueryCommands:
             assert "/path/to/test" in result.output
 
             # Check client calls
-            mock_service_client.execute_query.assert_called_once_with(
-                "searchGraph('test')", {}
-            )
+            mock_service_client.execute_query.assert_called_once_with("searchGraph('test')", {})
 
     def test_query_run_with_parameters(
         self, cli_runner: CliRunner, mock_service_client: MagicMock
@@ -88,9 +74,7 @@ class TestQueryCommands:
         mock_service_client.execute_query.return_value = mock_result
 
         # Run CLI with query run and parameters
-        with patch(
-            "codestory.cli.main.ServiceClient", return_value=mock_service_client
-        ):
+        with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
             result = cli_runner.invoke(
                 app,
                 [
@@ -118,9 +102,7 @@ class TestQueryCommands:
     ) -> None:
         """Test 'query run' command with different output formats."""
         # Configure mock client
-        mock_result = {
-            "records": [{"name": "test_node", "type": "class", "path": "/path/to/test"}]
-        }
+        mock_result = {"records": [{"name": "test_node", "type": "class", "path": "/path/to/test"}]}
         mock_service_client.execute_query.return_value = mock_result
 
         formats = ["table", "json", "csv", "tree"]
@@ -129,9 +111,7 @@ class TestQueryCommands:
             mock_service_client.execute_query.reset_mock()
 
             # Run CLI with query run and format
-            with patch(
-                "codestory.cli.main.ServiceClient", return_value=mock_service_client
-            ):
+            with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
                 result = cli_runner.invoke(
                     app,
                     [
@@ -168,9 +148,7 @@ class TestQueryCommands:
         mock_service_client.execute_query.return_value = mock_result
 
         # Run CLI with query run and limit
-        with patch(
-            "codestory.cli.main.ServiceClient", return_value=mock_service_client
-        ):
+        with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
             result = cli_runner.invoke(
                 app, ["query", "run", "MATCH (n) RETURN n.id, n.name", "--limit", "3"]
             )
@@ -184,9 +162,7 @@ class TestQueryCommands:
             call_args = mock_service_client.execute_query.call_args
             assert "LIMIT 3" in call_args[0][0]
 
-    def test_query_export(
-        self, cli_runner: CliRunner, mock_service_client: MagicMock
-    ) -> None:
+    def test_query_export(self, cli_runner: CliRunner, mock_service_client: MagicMock) -> None:
         """Test 'query export' command."""
         # Configure mock client
         mock_result = {"records": [{"name": "test_node", "type": "class"}]}
@@ -199,9 +175,7 @@ class TestQueryCommands:
                 temp_file.close()
 
                 # Run CLI with query export
-                with patch(
-                    "codestory.cli.main.ServiceClient", return_value=mock_service_client
-                ):
+                with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
                     result = cli_runner.invoke(
                         app,
                         [
@@ -229,9 +203,7 @@ class TestQueryCommands:
                 # Clean up
                 os.unlink(temp_file.name)
 
-    def test_query_export_csv(
-        self, cli_runner: CliRunner, mock_service_client: MagicMock
-    ) -> None:
+    def test_query_export_csv(self, cli_runner: CliRunner, mock_service_client: MagicMock) -> None:
         """Test 'query export' command with CSV format."""
         # Configure mock client
         mock_result = {
@@ -249,9 +221,7 @@ class TestQueryCommands:
                 temp_file.close()
 
                 # Run CLI with query export
-                with patch(
-                    "codestory.cli.main.ServiceClient", return_value=mock_service_client
-                ):
+                with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
                     result = cli_runner.invoke(
                         app,
                         [
@@ -282,9 +252,7 @@ class TestQueryCommands:
                 # Clean up
                 os.unlink(temp_file.name)
 
-    def test_query_explore(
-        self, cli_runner: CliRunner, mock_service_client: MagicMock
-    ) -> None:
+    def test_query_explore(self, cli_runner: CliRunner, mock_service_client: MagicMock) -> None:
         """Test 'query explore' command."""
         # Configure mock client for several queries
 
@@ -298,17 +266,11 @@ class TestQueryCommands:
         }
 
         # Sample nodes of each type
-        class_nodes = {
-            "records": [{"n": {"name": "TestClass", "path": "/path/to/class"}}]
-        }
+        class_nodes = {"records": [{"n": {"name": "TestClass", "path": "/path/to/class"}}]}
 
-        function_nodes = {
-            "records": [{"n": {"name": "testFunction", "path": "/path/to/function"}}]
-        }
+        function_nodes = {"records": [{"n": {"name": "testFunction", "path": "/path/to/function"}}]}
 
-        module_nodes = {
-            "records": [{"n": {"name": "test_module", "path": "/path/to/module"}}]
-        }
+        module_nodes = {"records": [{"n": {"name": "test_module", "path": "/path/to/module"}}]}
 
         # Relationship types
         rel_types = {
@@ -335,9 +297,7 @@ class TestQueryCommands:
         mock_service_client.execute_query.side_effect = mock_execute_query
 
         # Run CLI with query explore
-        with patch(
-            "codestory.cli.main.ServiceClient", return_value=mock_service_client
-        ):
+        with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
             result = cli_runner.invoke(app, ["query", "explore", "--limit", "1"])
 
             # Check result

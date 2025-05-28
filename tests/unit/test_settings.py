@@ -146,15 +146,11 @@ test_settings = create_test_settings()
 def setup_test_settings():
     """Set up test settings for unit tests."""
     # Create the patch for get_settings
-    settings_patch = patch(
-        "codestory.config.settings.get_settings", return_value=test_settings
-    )
+    settings_patch = patch("codestory.config.settings.get_settings", return_value=test_settings)
     settings_patch.start()
 
     # Also patch Settings.__new__ to return our test settings for direct instantiation
-    new_patch = patch(
-        "codestory.config.settings.Settings.__new__", return_value=test_settings
-    )
+    new_patch = patch("codestory.config.settings.Settings.__new__", return_value=test_settings)
     new_patch.start()
 
     # Set environment variables for tests

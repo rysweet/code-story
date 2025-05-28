@@ -232,12 +232,8 @@ def sample_repo():
 
         # Create some files
         (repo_dir / "README.md").write_text("# Sample Repository")
-        (repo_dir / "src" / "main" / "app.py").write_text(
-            "def main():\n    print('Hello, world!')"
-        )
-        (repo_dir / "src" / "test" / "test_app.py").write_text(
-            "def test_main():\n    assert True"
-        )
+        (repo_dir / "src" / "main" / "app.py").write_text("def main():\n    print('Hello, world!')")
+        (repo_dir / "src" / "test" / "test_app.py").write_text("def test_main():\n    assert True")
         (repo_dir / "docs" / "index.md").write_text("# Documentation")
 
         yield str(repo_dir)
@@ -338,9 +334,7 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
     status = manager.active_jobs[job_id]
 
     # Verify that the job completed successfully
-    assert (
-        status["status"] == StepStatus.COMPLETED
-    ), f"Job failed: {status.get('error')}"
+    assert status["status"] == StepStatus.COMPLETED, f"Job failed: {status.get('error')}"
 
     # Verify that the repository structure was stored in Neo4j
     # Check that a Repository node was created
@@ -351,9 +345,7 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
     assert len(repo_nodes) > 0, "Repository node not found"
 
     # Check that File nodes were created
-    files_result = neo4j_connector.execute_query(
-        "MATCH (f:File) RETURN count(f) as count"
-    )
+    files_result = neo4j_connector.execute_query("MATCH (f:File) RETURN count(f) as count")
     files = files_result[0]
     assert files["count"] > 0, "No file nodes were created"
 
@@ -413,9 +405,7 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
             status = manager.stop(job_id)
 
             # Verify that the job was stopped
-            assert (
-                status["status"] == StepStatus.STOPPED
-            ), f"Job was not stopped: {status}"
+            assert status["status"] == StepStatus.STOPPED, f"Job was not stopped: {status}"
 
             # Apply the status patch
             with patch.object(PipelineManager, "status", mock_status):

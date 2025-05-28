@@ -64,9 +64,7 @@ def test_filesystem_step():
         # Create a mock self object for the bound method
         class MockTask:
             def __init__(self):
-                self.request = type(
-                    "obj", (object,), {"id": f"mock-task-{uuid.uuid4()}"}
-                )
+                self.request = type("obj", (object,), {"id": f"mock-task-{uuid.uuid4()}"})
 
         mock_self = MockTask()
 

@@ -5,9 +5,7 @@ high-quality summaries of file nodes.
 """
 
 
-def get_file_summary_prompt(
-    content: str, context: list[str], max_tokens: int = 8000
-) -> str:
+def get_file_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a file.
 
     Args:
@@ -47,9 +45,7 @@ Summary:
     return prompt
 
 
-def get_config_file_summary_prompt(
-    content: str, context: list[str], max_tokens: int = 8000
-) -> str:
+def get_config_file_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a configuration file.
 
     Args:

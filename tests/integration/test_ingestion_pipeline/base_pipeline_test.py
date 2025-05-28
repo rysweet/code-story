@@ -71,11 +71,7 @@ class BasePipelineTest:
         yield
 
         # Clean up temporary repository
-        if (
-            hasattr(self, "repo_dir")
-            and self.repo_dir
-            and os.path.exists(self.repo_dir)
-        ):
+        if hasattr(self, "repo_dir") and self.repo_dir and os.path.exists(self.repo_dir):
             shutil.rmtree(self.repo_dir)
 
     def create_test_repository(self):

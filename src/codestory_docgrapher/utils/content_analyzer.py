@@ -1,3 +1,4 @@
+from typing import Any
 """Content analyzer for documentation content.
 
 This module provides functionality for analyzing documentation content
@@ -54,9 +55,7 @@ class ContentAnalyzer:
         if entity.type == EntityType.HEADING:
             return self._analyze_heading(content)
         elif entity.type == EntityType.CODE_BLOCK:
-            return self._analyze_code_block(
-                content, entity.metadata.get("language", "")
-            )
+            return self._analyze_code_block(content, entity.metadata.get("language", ""))
         elif entity.type == EntityType.FUNCTION_DESC:
             return self._analyze_function_desc(content)
         elif entity.type == EntityType.CLASS_DESC:
@@ -87,9 +86,7 @@ class ContentAnalyzer:
             section_type = "usage"
         elif any(kw in content.lower() for kw in ["api", "reference", "documentation"]):
             section_type = "api"
-        elif any(
-            kw in content.lower() for kw in ["config", "configuration", "setting"]
-        ):
+        elif any(kw in content.lower() for kw in ["config", "configuration", "setting"]):
             section_type = "configuration"
 
         return {"keywords": keywords, "section_type": section_type}
@@ -305,7 +302,7 @@ class ContentAnalyzer:
         keywords = [w for w in words if w not in stop_words]
 
         # Count word frequency
-        word_counts = {}
+word_counts: dict[Any, Any] = {}
         for word in keywords:
             word_counts[word] = word_counts.get(word, 0) + 1
 
@@ -341,9 +338,7 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(
-                messages=messages, max_tokens=100, temperature=0.0
-            )
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
 
             return response.choices[0].message.content.strip()
         except Exception as e:
@@ -378,9 +373,7 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(
-                messages=messages, max_tokens=100, temperature=0.0
-            )
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
 
             return response.choices[0].message.content.strip()
         except Exception as e:
@@ -415,9 +408,7 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(
-                messages=messages, max_tokens=100, temperature=0.0
-            )
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
 
             return response.choices[0].message.content.strip()
         except Exception as e:

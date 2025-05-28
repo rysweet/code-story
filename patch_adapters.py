@@ -40,9 +40,7 @@ def patch_celery_adapter():
         health = await adapter.check_health()
 
         # Throw an error if it tries to use dummy adapter
-        if health["status"] == "degraded" and "dummy" in str(
-            health["details"].get("message", "")
-        ):
+        if health["status"] == "degraded" and "dummy" in str(health["details"].get("message", "")):
             print("[-] ERROR: Celery adapter is returning a dummy adapter response")
             raise RuntimeError(
                 "Celery adapter is returning a dummy status. Real Celery worker is required"
@@ -66,9 +64,7 @@ def patch_celery_adapter():
                     "status": "healthy",
                     "details": {
                         "active_workers": len(active_workers),
-                        "registered_tasks": sum(
-                            len(tasks) for tasks in registered.values()
-                        ),
+                        "registered_tasks": sum(len(tasks) for tasks in registered.values()),
                         "worker_stats": stats,
                     },
                 }

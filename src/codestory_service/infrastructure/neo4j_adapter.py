@@ -70,9 +70,7 @@ class Neo4jAdapter:
             import asyncio
 
             loop = asyncio.get_event_loop()
-            connection_info = await loop.run_in_executor(
-                None, self.connector.check_connection
-            )
+            connection_info = await loop.run_in_executor(None, self.connector.check_connection)
 
             return {
                 "status": "healthy",
@@ -191,7 +189,7 @@ class Neo4jAdapter:
             # Execute vector search query with synchronous method
             result = self.connector.execute_query(
                 f"""
-                MATCH (n{':' + node_label if node_label != '*' else ''})
+                MATCH (n{":" + node_label if node_label != "*" else ""})
                 WHERE n.embedding IS NOT NULL
                 WITH n, gds.similarity.cosine(n.embedding, $embedding) AS score
                 WHERE score >= $min_score
@@ -254,9 +252,7 @@ class Neo4jAdapter:
                     score=item.get("score", 0.0),
                     content_snippet=content_snippet,
                     properties={
-                        k: v
-                        for k, v in node.items()
-                        if k not in ["id", "name", "path", "filePath"]
+                        k: v for k, v in node.items() if k not in ["id", "name", "path", "filePath"]
                     },
                     path=path,
                 )
@@ -316,11 +312,7 @@ class Neo4jAdapter:
             rel_types = ""
             if path_request.relationship_types:
                 rel_list = "|".join(
-                    [
-                        t.value
-                        for t in path_request.relationship_types
-                        if t.value != "any"
-                    ]
+                    [t.value for t in path_request.relationship_types if t.value != "any"]
                 )
                 if rel_list:
                     rel_types = f":{rel_list}"
@@ -385,11 +377,7 @@ class Neo4jAdapter:
                         path_node = PathNode(
                             id=node.get("id", "unknown"),
                             labels=node.get("labels", []),
-                            properties={
-                                k: v
-                                for k, v in node.items()
-                                if k not in ["id", "labels"]
-                            },
+                            properties={k: v for k, v in node.items() if k not in ["id", "labels"]},
                         )
                         path_nodes.append(path_node)
 
@@ -447,11 +435,9 @@ class DummyNeo4jConnector:
     This allows basic service functionality without Neo4j available.
     """
 
-    def __init__(self):
+    def __init__(self) -> Any:
         """Initialize the dummy connector."""
-        logger.warning(
-            "Using DummyNeo4jConnector - Neo4j functionality will be limited"
-        )
+        logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
 
     def check_connection(self) -> dict[str, Any]:
         """Return dummy connection info."""
@@ -479,7 +465,7 @@ class DummyNeo4jAdapter(Neo4jAdapter):
     This allows basic service functionality without Neo4j being available.
     """
 
-    def __init__(self):
+    def __init__(self) -> Any:
         """Initialize with a dummy connector."""
         self.connector = DummyNeo4jConnector()
 

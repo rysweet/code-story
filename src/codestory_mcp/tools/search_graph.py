@@ -22,9 +22,7 @@ class SearchGraphTool(BaseTool):
     """Tool for searching the code graph using various criteria."""
 
     name = "searchGraph"
-    description = (
-        "Search for nodes in the code graph by name, type, or semantic similarity"
-    )
+    description = "Search for nodes in the code graph by name, type, or semantic similarity"
 
     parameters = {
         "type": "object",
@@ -67,9 +65,7 @@ class SearchGraphTool(BaseTool):
 
         # Validate parameters
         if not query:
-            raise ToolError(
-                "Search query cannot be empty", status_code=status.HTTP_400_BAD_REQUEST
-            )
+            raise ToolError("Search query cannot be empty", status_code=status.HTTP_400_BAD_REQUEST)
 
         if limit < 1:
             raise ToolError(
@@ -102,9 +98,7 @@ class SearchGraphTool(BaseTool):
             }
 
             # Log success
-            logger.info(
-                "Search completed", query=query, result_count=len(response["matches"])
-            )
+            logger.info("Search completed", query=query, result_count=len(response["matches"]))
 
             return response
 

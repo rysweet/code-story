@@ -146,7 +146,7 @@ class OpenAIServiceAdapter:
 
             for i, element in enumerate(path_elements):
                 if element.get("element_type") == "node":
-                    path_description += f"\nNode {i//2 + 1}: {element.get('name', 'Unknown')} (Type: {element.get('type', 'Unknown')})"
+                    path_description += f"\nNode {i // 2 + 1}: {element.get('name', 'Unknown')} (Type: {element.get('type', 'Unknown')})"
                     if "content" in element and len(element["content"]) < 200:
                         path_description += f"\nContent: {element['content'][:200]}..."
                 else:  # relationship
@@ -189,18 +189,14 @@ class OpenAIServiceAdapter:
 
             # Record metrics
             duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "openai_path_explanation", "success", duration
-            )
+            self.metrics.record_service_api_call("openai_path_explanation", "success", duration)
 
             return explanation
 
         except Exception as e:
             # Record metrics
             duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "openai_path_explanation", "error", duration
-            )
+            self.metrics.record_service_api_call("openai_path_explanation", "error", duration)
 
             # Log error
             logger.exception(
@@ -214,9 +210,7 @@ class OpenAIServiceAdapter:
                 status_code=status.HTTP_502_BAD_GATEWAY,
             ) from e
 
-    async def find_similar_code(
-        self, code: str, limit: int = 5
-    ) -> list[dict[str, Any]]:
+    async def find_similar_code(self, code: str, limit: int = 5) -> list[dict[str, Any]]:
         """Find semantically similar code.
 
         Args:
@@ -237,9 +231,7 @@ class OpenAIServiceAdapter:
 
             # Record metrics for embedding creation
             embedding_duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "openai_embedding", "success", embedding_duration
-            )
+            self.metrics.record_service_api_call("openai_embedding", "success", embedding_duration)
 
             # TODO: Implement vector search for similar code
             # This would typically use the embedding to search a vector index
@@ -260,9 +252,7 @@ class OpenAIServiceAdapter:
 
             # Record metrics
             total_duration = time.time() - start_time
-            self.metrics.record_service_api_call(
-                "similar_code", "success", total_duration
-            )
+            self.metrics.record_service_api_call("similar_code", "success", total_duration)
             self.metrics.record_graph_operation("similar_code")
 
             return results

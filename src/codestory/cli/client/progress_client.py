@@ -42,9 +42,7 @@ class ProgressClient:
         self.poll_interval = poll_interval
 
         # Set up Redis connection with smarter fallback options
-        self.console.print(
-            "[dim]Setting up Redis connection for progress tracking...[/]"
-        )
+        self.console.print("[dim]Setting up Redis connection for progress tracking...[/]")
 
         # List of possible Redis URLs to try
         redis_urls = []
@@ -90,24 +88,19 @@ class ProgressClient:
                             redis_urls.insert(2, f"redis://127.0.0.1:{mapped_port}")
 
                             self.console.print(
-                                f"[dim]Detected Docker port mapping: {internal_port} -> {mapped_port}[/]"
+                                f"[dim]Detected Docker port mapping: {internal_port} -> "
+                                f"{mapped_port}[/]"
                             )
                     except Exception as e:
-                        self.console.print(
-                            f"[dim]Could not detect Docker port mapping: {e!s}[/]"
-                        )
+                        self.console.print(f"[dim]Could not detect Docker port mapping: {e!s}[/]")
 
                     # Fallback to standard localhost variants if Docker command didn't work
-                    localhost_url = settings_url.replace(
-                        "redis://redis:", "redis://localhost:"
-                    )
+                    localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
                     redis_urls.append(localhost_url)
                     redis_urls.append(f"redis://127.0.0.1:{internal_port}")
                 except Exception:
                     # Fallback to just replacing the hostname
-                    localhost_url = settings_url.replace(
-                        "redis://redis:", "redis://localhost:"
-                    )
+                    localhost_url = settings_url.replace("redis://redis:", "redis://localhost:")
                     redis_urls.append(localhost_url)
 
                     # Extract port number for additional variants
@@ -135,9 +128,7 @@ class ProgressClient:
         redis_urls = list(dict.fromkeys(redis_urls))
 
         # Log the URLs we're going to try
-        self.console.print(
-            f"[dim]Redis connection URLs to try: {', '.join(redis_urls)}[/]"
-        )
+        self.console.print(f"[dim]Redis connection URLs to try: {', '.join(redis_urls)}[/]")
 
         # Try each URL
         connected = False
@@ -162,15 +153,14 @@ class ProgressClient:
                 connected = True
                 break
             except (redis.RedisError, Exception) as e:
-                self.console.print(
-                    f"[dim]Could not connect to Redis at {url}: {e!s}[/]"
-                )
+                self.console.print(f"[dim]Could not connect to Redis at {url}: {e!s}[/]")
 
         if not connected:
             self.use_redis = False
             self.redis = None
             self.console.print(
-                "[yellow]Warning: Redis not available after trying multiple endpoints, falling back to polling[/]"
+                "[yellow]Warning: Redis not available after trying multiple endpoints, "
+                "falling back to polling[/]"
             )
 
         self._stop_event = threading.Event()
@@ -212,13 +202,9 @@ class ProgressClient:
                     data = json.loads(latest_data)
                     self.callback(data)
                 except (json.JSONDecodeError, TypeError) as e:
-                    self.console.print(
-                        f"[yellow]Warning: Could not parse latest job data: {e}[/]"
-                    )
+                    self.console.print(f"[yellow]Warning: Could not parse latest job data: {e}[/]")
         except Exception as e:
-            self.console.print(
-                f"[yellow]Warning: Could not get latest job data: {e}[/]"
-            )
+            self.console.print(f"[yellow]Warning: Could not get latest job data: {e}[/]")
 
         try:
             for message in pubsub.listen():
@@ -234,9 +220,7 @@ class ProgressClient:
                         if data.get("status") in ("completed", "failed", "cancelled"):
                             break
                     except (json.JSONDecodeError, TypeError) as e:
-                        self.console.print(
-                            f"[yellow]Warning: Could not parse job update: {e}[/]"
-                        )
+                        self.console.print(f"[yellow]Warning: Could not parse job update: {e}[/]")
                 elif message["type"] == "heartbeat":
                     # Handle heartbeat messages
                     pass

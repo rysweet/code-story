@@ -111,9 +111,7 @@ class DocumentFinder:
         """
         return any(pattern.search(path) for pattern in ignore_patterns)
 
-    def _find_standalone_docs(
-        self, ignore_patterns: list[re.Pattern]
-    ) -> list[DocumentationFile]:
+    def _find_standalone_docs(self, ignore_patterns: list[re.Pattern]) -> list[DocumentationFile]:
         """Find standalone documentation files (Markdown, RST, etc.).
 
         Args:
@@ -187,9 +185,7 @@ class DocumentFinder:
 
         return result
 
-    def _find_code_docstrings(
-        self, ignore_patterns: list[re.Pattern]
-    ) -> list[DocumentationFile]:
+    def _find_code_docstrings(self, ignore_patterns: list[re.Pattern]) -> list[DocumentationFile]:
         """Find documentation within code files (docstrings, comments).
 
         Args:

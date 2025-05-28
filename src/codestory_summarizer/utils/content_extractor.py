@@ -81,9 +81,7 @@ class ContentExtractor:
         RETURN COUNT(d) as dir_count
         """
 
-        dir_result = self.connector.execute_query(
-            dir_query, params={"repo_id": int(node.id)}
-        )
+        dir_result = self.connector.execute_query(dir_query, params={"repo_id": int(node.id)})
 
         dir_count = dir_result[0]["dir_count"] if dir_result else 0
 
@@ -93,9 +91,7 @@ class ContentExtractor:
         RETURN COUNT(f) as file_count
         """
 
-        file_result = self.connector.execute_query(
-            file_query, params={"repo_id": int(node.id)}
-        )
+        file_result = self.connector.execute_query(file_query, params={"repo_id": int(node.id)})
 
         file_count = file_result[0]["file_count"] if file_result else 0
 
@@ -106,9 +102,7 @@ class ContentExtractor:
         RETURN d.name as name, d.path as path
         """
 
-        top_dirs = self.connector.execute_query(
-            top_dirs_query, params={"repo_id": int(node.id)}
-        )
+        top_dirs = self.connector.execute_query(top_dirs_query, params={"repo_id": int(node.id)})
 
         top_level_dirs = [f"{d['name']} ({d['path']})" for d in top_dirs]
 
@@ -145,9 +139,7 @@ class ContentExtractor:
         RETURN f.name as name, f.path as path
         """
 
-        files = self.connector.execute_query(
-            files_query, params={"dir_id": int(node.id)}
-        )
+        files = self.connector.execute_query(files_query, params={"dir_id": int(node.id)})
 
         file_list = [f"{f['name']} ({f['path']})" for f in files]
 
@@ -158,9 +150,7 @@ class ContentExtractor:
         RETURN sub.name as name, sub.path as path
         """
 
-        subdirs = self.connector.execute_query(
-            subdirs_query, params={"dir_id": int(node.id)}
-        )
+        subdirs = self.connector.execute_query(subdirs_query, params={"dir_id": int(node.id)})
 
         subdir_list = [f"{d['name']} ({d['path']})" for d in subdirs]
 
@@ -276,9 +266,7 @@ class ContentExtractor:
             RETURN i.name as name, i.path as path
             """
 
-            imports = self.connector.execute_query(
-                imports_query, params={"file_id": int(node.id)}
-            )
+            imports = self.connector.execute_query(imports_query, params={"file_id": int(node.id)})
 
             if imports:
                 import_list = [f"{i['name']} ({i['path']})" for i in imports]
@@ -305,12 +293,8 @@ class ContentExtractor:
         RETURN f.path as file_path, ID(f) as file_id
         """
 
-        file_results = self.connector.execute_query(
-            file_query, params={"class_id": int(node.id)}
-        )
-        file_result = (
-            file_results[0] if file_results and len(file_results) > 0 else None
-        )
+        file_results = self.connector.execute_query(file_query, params={"class_id": int(node.id)})
+        file_result = file_results[0] if file_results and len(file_results) > 0 else None
 
         file_path = file_result.get("file_path") if file_result else None
 
@@ -374,9 +358,7 @@ class ContentExtractor:
         RETURN p.name as name
         """
 
-        parents = self.connector.execute_query(
-            parent_query, params={"class_id": int(node.id)}
-        )
+        parents = self.connector.execute_query(parent_query, params={"class_id": int(node.id)})
 
         parent_classes = [p["name"] for p in parents]
 
@@ -387,9 +369,7 @@ class ContentExtractor:
         RETURN m.name as name
         """
 
-        methods = self.connector.execute_query(
-            method_query, params={"class_id": int(node.id)}
-        )
+        methods = self.connector.execute_query(method_query, params={"class_id": int(node.id)})
 
         method_list = [m["name"] for m in methods]
 
@@ -434,9 +414,7 @@ class ContentExtractor:
         have_results = container_results and len(container_results) > 0
         container_result = container_results[0] if have_results else None
 
-        container_labels = (
-            container_result.get("container_labels", []) if container_result else []
-        )
+        container_labels = container_result.get("container_labels", []) if container_result else []
 
         # Get the file path
         file_path = None
@@ -452,9 +430,7 @@ class ContentExtractor:
             file_results = self.connector.execute_query(
                 file_query, params={"func_id": int(node.id)}
             )
-            file_result = (
-                file_results[0] if file_results and len(file_results) > 0 else None
-            )
+            file_result = file_results[0] if file_results and len(file_results) > 0 else None
 
             if file_result:
                 file_path = file_result.get("file_path")
@@ -472,9 +448,7 @@ class ContentExtractor:
             file_results = self.connector.execute_query(
                 file_query, params={"func_id": int(node.id)}
             )
-            file_result = (
-                file_results[0] if file_results and len(file_results) > 0 else None
-            )
+            file_result = file_results[0] if file_results and len(file_results) > 0 else None
 
             if file_result:
                 file_path = file_result.get("file_path")

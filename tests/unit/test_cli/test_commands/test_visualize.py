@@ -39,9 +39,7 @@ class TestVisualizeCommands:
 
             # Run CLI with visualize generate - no browser
             with patch("codestory.cli.commands.visualize.webbrowser.open") as mock_open:
-                with patch(
-                    "codestory.cli.main.ServiceClient", return_value=mock_service_client
-                ):
+                with patch("codestory.cli.main.ServiceClient", return_value=mock_service_client):
                     result = cli_runner.invoke(
                         app,
                         [
@@ -84,8 +82,9 @@ class TestVisualizeCommands:
             output_path = os.path.join(temp_dir, "viz.html")
 
             # Run CLI with visualize generate with options
-            with patch("codestory.cli.commands.visualize.webbrowser.open"), patch(
-                "codestory.cli.main.ServiceClient", return_value=mock_service_client
+            with (
+                patch("codestory.cli.commands.visualize.webbrowser.open"),
+                patch("codestory.cli.main.ServiceClient", return_value=mock_service_client),
             ):
                 result = cli_runner.invoke(
                     app,
@@ -239,9 +238,7 @@ class TestVisualizeCommands:
                         # Check result - should show service was started and visualization generated
                         assert result.exit_code == 0
                         assert "Starting service automatically" in result.output
-                        assert (
-                            "Visualization generated successfully" in result.output
-                        )
+                        assert "Visualization generated successfully" in result.output
 
                         # Service should have been started
                         mock_popen.assert_called_once()

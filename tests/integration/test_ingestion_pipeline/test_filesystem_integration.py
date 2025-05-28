@@ -231,21 +231,15 @@ def sample_repo():
 
         # Create some files
         (repo_dir / "README.md").write_text("# Sample Repository")
-        (repo_dir / "src" / "main" / "app.py").write_text(
-            "def main():\n    print('Hello, world!')"
-        )
-        (repo_dir / "src" / "test" / "test_app.py").write_text(
-            "def test_main():\n    assert True"
-        )
+        (repo_dir / "src" / "main" / "app.py").write_text("def main():\n    print('Hello, world!')")
+        (repo_dir / "src" / "test" / "test_app.py").write_text("def test_main():\n    assert True")
         (repo_dir / "docs" / "index.md").write_text("# Documentation")
 
         # Add some files that should be ignored
         (repo_dir / ".git").mkdir()
         (repo_dir / ".git" / "config").write_text("# Git config")
         (repo_dir / "src" / "__pycache__").mkdir()
-        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text(
-            "# Bytecode"
-        )
+        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text("# Bytecode")
 
         yield str(repo_dir)
 
@@ -338,9 +332,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     print(f"Job status: {status}")
 
     # Verify the job completed successfully
-    assert (
-        status["status"] == StepStatus.COMPLETED
-    ), f"Job failed: {status.get('error')}"
+    assert status["status"] == StepStatus.COMPLETED, f"Job failed: {status.get('error')}"
 
     # Verify that the repository structure was stored in Neo4j
     # 1. Check that a Repository node was created
@@ -351,9 +343,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     assert repo_query is not None, "Repository node not found"
 
     # 2. Check that Directory nodes were created
-    directories = neo4j_connector.execute_query(
-        "MATCH (d:Directory) RETURN d.path as path"
-    )
+    directories = neo4j_connector.execute_query("MATCH (d:Directory) RETURN d.path as path")
     directory_paths = [record["path"] for record in directories]
 
     # Check for expected directories
@@ -373,9 +363,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     assert "docs/index.md" in file_paths, "docs/index.md file not found"
 
     # 4. Check that ignored patterns were actually ignored
-    git_dir = neo4j_connector.execute_query(
-        "MATCH (d:Directory {path: '.git'}) RETURN d"
-    )
+    git_dir = neo4j_connector.execute_query("MATCH (d:Directory {path: '.git'}) RETURN d")
     assert len(git_dir) == 0, ".git directory was not ignored"
 
     pycache_dir = neo4j_connector.execute_query(
@@ -445,9 +433,7 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
     ), f"Job failed: {initial_status.get('error')}"
 
     # Get the initial file count
-    file_count_query = neo4j_connector.execute_query(
-        "MATCH (f:File) RETURN count(f) as count"
-    )
+    file_count_query = neo4j_connector.execute_query("MATCH (f:File) RETURN count(f) as count")
     initial_file_count = file_count_query[0]["count"]
     print(f"Initial file count: {initial_file_count}")
 
@@ -508,11 +494,7 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
     assert len(new_file) > 0, "New file was not added to the database"
 
     # Verify the file count increased
-    file_count_query = neo4j_connector.execute_query(
-        "MATCH (f:File) RETURN count(f) as count"
-    )
+    file_count_query = neo4j_connector.execute_query("MATCH (f:File) RETURN count(f) as count")
     updated_file_count = file_count_query[0]["count"]
     print(f"Updated file count: {updated_file_count}")
-    assert (
-        updated_file_count > initial_file_count
-    ), "File count did not increase after update"
+    assert updated_file_count > initial_file_count, "File count did not increase after update"

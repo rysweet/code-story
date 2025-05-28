@@ -160,9 +160,10 @@ def test_update_config_invalid_path():
             return name != "invalid"
         return original_hasattr(obj, name)
 
-    with patch(
-        "src.codestory.config.writer.get_settings", return_value=mock_settings
-    ), patch("builtins.hasattr", side_effect=mock_hasattr):
+    with (
+        patch("src.codestory.config.writer.get_settings", return_value=mock_settings),
+        patch("builtins.hasattr", side_effect=mock_hasattr),
+    ):
         # Update a value with an invalid path
         with pytest.raises(ValueError):
             update_config("invalid", "value")
@@ -190,13 +191,12 @@ def test_update_config_persist_env():
 
         # Test with real update_env function and actual file
         # Use pytest monkeypatch to override environment variables
-        with patch(
-            "codestory.config.writer.get_settings", return_value=mock_settings
-        ), patch("codestory.config.writer.refresh_settings"), patch(
-            "codestory.config.writer.get_project_root"
-        ) as mock_root, patch(
-            "codestory.config.writer.update_env"
-        ) as mock_update_env:
+        with (
+            patch("codestory.config.writer.get_settings", return_value=mock_settings),
+            patch("codestory.config.writer.refresh_settings"),
+            patch("codestory.config.writer.get_project_root") as mock_root,
+            patch("codestory.config.writer.update_env") as mock_update_env,
+        ):
             # Set up the mocks
             mock_root.return_value = Path(os.path.dirname(env_file))
 
@@ -225,13 +225,12 @@ def test_update_config_persist_toml():
         mock_settings.neo4j.uri = "bolt://localhost:7687"
 
         # Test with real update_toml function and actual file
-        with patch(
-            "codestory.config.writer.get_settings", return_value=mock_settings
-        ), patch("codestory.config.writer.refresh_settings"), patch(
-            "codestory.config.writer.get_project_root"
-        ) as mock_root, patch(
-            "codestory.config.writer.update_toml"
-        ) as mock_update_toml:
+        with (
+            patch("codestory.config.writer.get_settings", return_value=mock_settings),
+            patch("codestory.config.writer.refresh_settings"),
+            patch("codestory.config.writer.get_project_root") as mock_root,
+            patch("codestory.config.writer.update_toml") as mock_update_toml,
+        ):
             # Set up the mocks
             mock_root.return_value = Path(os.path.dirname(toml_file))
 
@@ -239,9 +238,7 @@ def test_update_config_persist_toml():
             update_config("neo4j.uri", "bolt://neo4j:7687", persist_to="toml")
 
             # Verify update_toml was called with correct args
-            mock_update_toml.assert_called_once_with(
-                "neo4j", "uri", "bolt://neo4j:7687"
-            )
+            mock_update_toml.assert_called_once_with("neo4j", "uri", "bolt://neo4j:7687")
 
     finally:
         # Clean up

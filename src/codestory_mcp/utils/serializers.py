@@ -46,9 +46,11 @@ class NodeSerializer:
             result["path"] = node["path"]
 
         # Add content if available and not explicitly excluded
-        if "content" in node and (
-            not exclude_properties or "content" not in exclude_properties
-        ) and (not include_properties or "content" in include_properties):
+        if (
+            "content" in node
+            and (not exclude_properties or "content" not in exclude_properties)
+            and (not include_properties or "content" in include_properties)
+        ):
             result["content"] = node["content"]
 
         # Add score if provided
@@ -97,15 +99,11 @@ class NodeSerializer:
             if isinstance(item, tuple):
                 node, score = item
                 matches.append(
-                    NodeSerializer.to_dict(
-                        node, score, include_properties, exclude_properties
-                    )
+                    NodeSerializer.to_dict(node, score, include_properties, exclude_properties)
                 )
             else:
                 matches.append(
-                    NodeSerializer.to_dict(
-                        item, None, include_properties, exclude_properties
-                    )
+                    NodeSerializer.to_dict(item, None, include_properties, exclude_properties)
                 )
 
         return {"matches": matches}

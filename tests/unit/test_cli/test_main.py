@@ -100,9 +100,7 @@ class TestCliMain:
 
             with patch("codestory.cli.main.get_settings", return_value=mock_settings):
                 # Run CLI with a real command to ensure ServiceClient is instantiated
-                cli_runner.invoke(
-                    app, ["--service-url", "http://example.com", "ingest", "jobs"]
-                )
+                cli_runner.invoke(app, ["--service-url", "http://example.com", "ingest", "jobs"])
 
                 # Check client initialization
                 mock_client_class.assert_called_once()
@@ -121,9 +119,7 @@ class TestCliMain:
 
             with patch("codestory.cli.main.get_settings", return_value=mock_settings):
                 # Run CLI with a real command to ensure ServiceClient is instantiated
-                cli_runner.invoke(
-                    app, ["--api-key", "test-key", "ingest", "jobs"]
-                )
+                cli_runner.invoke(app, ["--api-key", "test-key", "ingest", "jobs"])
 
                 # Check client initialization
                 mock_client_class.assert_called_once()

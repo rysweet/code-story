@@ -119,11 +119,11 @@ def test_execute_query_with_retry(connector, mock_driver):
     """Test execute_query with retry on transient error."""
     # This test just verifies the retry mechanism works by checking function attributes
 
-    # The Neo4jConnector has the retry logic 
+    # The Neo4jConnector has the retry logic
     # (checking if the retry_on_transient decorator is applied)
     assert hasattr(connector, "execute_query")
 
-    # We can't directly check for __wrapped__ attribute since that might be 
+    # We can't directly check for __wrapped__ attribute since that might be
     # implementation-dependent,
     # but we can verify the connector has the execute_query method
     assert callable(connector.execute_query)
@@ -136,11 +136,10 @@ def test_execute_query_max_retries_exceeded(connector, mock_driver):
     session.execute_read.side_effect = ServiceUnavailable("Database unavailable")
 
     # Mock time.sleep to avoid waiting during tests
-    with patch("time.sleep"):
+    with patch("time.sleep"), pytest.raises(QueryError):
         # The retry decorator is applied to execute_query
         # When called with non-retryable exception it should bubble up as QueryError
-        with pytest.raises(QueryError):
-            connector.execute_query("MATCH (n) RETURN n", retry_count=2)
+        connector.execute_query("MATCH (n) RETURN n", retry_count=2)
 
 
 def test_execute_many(connector, mock_driver):

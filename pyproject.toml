@@ -95,7 +95,6 @@ ignore = [
     "UP006", # Use dict instead of Dict
     "UP007", # Use X | Y for union types
     "UP015", # Unnecessary mode argument
-    "E501",  # Line too long
     "F401",  # Unused imports
     "C420",  # Unnecessary dict comprehension
 ]

@@ -16,7 +16,7 @@ try:
     from importlib.metadata import entry_points
 except ImportError:
     # Fallback for Python < 3.8
-    import pkg_resources
+    import pkg_resources  # type: ignore[import-untyped]
 
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -284,9 +284,7 @@ def find_step_manually(step_name: str) -> type[PipelineStep] | None:
     return None
 
 
-def record_step_metrics(
-    step_name: str, status: StepStatus, duration: float | None = None
-) -> None:
+def record_step_metrics(step_name: str, status: StepStatus, duration: float | None = None) -> None:
     """Record metrics for a pipeline step.
 
     Args:

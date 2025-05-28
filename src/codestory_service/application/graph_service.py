@@ -38,9 +38,7 @@ class GraphService:
     providing high-level methods for the API layer.
     """
 
-    def __init__(
-        self, neo4j_adapter: Neo4jAdapter, openai_adapter: OpenAIAdapter
-    ) -> None:
+    def __init__(self, neo4j_adapter: Neo4jAdapter, openai_adapter: OpenAIAdapter) -> None:
         """Initialize the graph service.
 
         Args:
@@ -177,9 +175,7 @@ class GraphService:
             )
 
             # Execute the search
-            search_result = await self.neo4j.execute_vector_search(
-                vector_query, embeddings[0]
-            )
+            search_result = await self.neo4j.execute_vector_search(vector_query, embeddings[0])
 
             # Retrieve full content for each context item
             context_items = []
@@ -193,11 +189,7 @@ class GraphService:
 
                 node_result = await self.neo4j.execute_cypher_query(node_query)
 
-                if (
-                    node_result.rows
-                    and len(node_result.rows) > 0
-                    and len(node_result.rows[0]) > 0
-                ):
+                if node_result.rows and len(node_result.rows) > 0 and len(node_result.rows[0]) > 0:
                     node = node_result.rows[0][0]  # First column of first row
                     node["score"] = result.score  # Add the relevance score
                     context_items.append(node)
@@ -230,9 +222,7 @@ class GraphService:
             HTTPException: If visualization generation fails
         """
         try:
-            logger.info(
-                f"Generating {request.type} visualization with {request.theme} theme"
-            )
+            logger.info(f"Generating {request.type} visualization with {request.theme} theme")
 
             # Get graph data from Neo4j based on the request parameters
             graph_data = await self._get_graph_data_for_visualization(request)
@@ -1118,9 +1108,7 @@ class GraphService:
 
         return formatted_html
 
-    async def clear_database(
-        self, request: DatabaseClearRequest
-    ) -> DatabaseClearResponse:
+    async def clear_database(self, request: DatabaseClearRequest) -> DatabaseClearResponse:
         """Clear all data from the database.
 
         This is a destructive operation that will delete all nodes and relationships
@@ -1140,9 +1128,7 @@ class GraphService:
             logger.warning("Clearing all data from database")
 
             # Create a delete query to remove all nodes and relationships
-            delete_query = CypherQuery(
-                query="MATCH (n) DETACH DELETE n", query_type="write"
-            )
+            delete_query = CypherQuery(query="MATCH (n) DETACH DELETE n", query_type="write")
 
             # Execute the query
             await self.execute_cypher_query(delete_query)
@@ -1156,9 +1142,7 @@ class GraphService:
                 await self.execute_cypher_query(schema_query)
 
             logger.info("Database successfully cleared")
-            return DatabaseClearResponse(
-                status="success", message="Database successfully cleared"
-            )
+            return DatabaseClearResponse(status="success", message="Database successfully cleared")
 
         except Exception as e:
             logger.error(f"Error clearing database: {e!s}")

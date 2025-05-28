@@ -11,9 +11,7 @@ from collections.abc import Generator
 import pytest
 
 # Set environment variables for tests
-os.environ[
-    "NEO4J_DATABASE"
-] = "testdb"  # Match the database name in docker-compose.test.yml
+os.environ["NEO4J_DATABASE"] = "testdb"  # Match the database name in docker-compose.test.yml
 os.environ["CODESTORY_TEST_ENV"] = "true"
 
 from codestory.graphdb.exceptions import (
@@ -42,19 +40,9 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
         or os.environ.get("NEO4J_URI")
         or f"bolt://localhost:{neo4j_port}"
     )
-    username = (
-        os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
-    )
-    password = (
-        os.environ.get("NEO4J__PASSWORD")
-        or os.environ.get("NEO4J_PASSWORD")
-        or "password"
-    )
-    database = (
-        os.environ.get("NEO4J__DATABASE")
-        or os.environ.get("NEO4J_DATABASE")
-        or "testdb"
-    )
+    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
+    password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
+    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
 
     print(f"Using Neo4j connection: {uri}, database: {database}")
 
@@ -62,9 +50,7 @@ def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
     os.environ["NEO4J_DATABASE"] = database
     os.environ["CODESTORY_TEST_DB"] = database
 
-    connector = Neo4jConnector(
-        uri=uri, username=username, password=password, database=database
-    )
+    connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
 
     try:
         # Clear database before tests
@@ -99,7 +85,7 @@ def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
         name="file.py",
         extension="py",
         size=1024,
-        content="print('hello')"
+        content="print('hello')",
         # Note: not using metadata for now as Neo4j doesn't support nested properties directly
     )
 
@@ -187,9 +173,7 @@ def test_transaction_management(neo4j_connector: Neo4jConnector) -> None:
     assert len(results) == 3
 
     # Verify all nodes were created
-    count_result = neo4j_connector.execute_query(
-        "MATCH (n:Test) RETURN count(n) AS count"
-    )
+    count_result = neo4j_connector.execute_query("MATCH (n:Test) RETURN count(n) AS count")
     assert count_result[0]["count"] == 3
 
 
@@ -209,9 +193,7 @@ def test_transaction_rollback(neo4j_connector: Neo4jConnector) -> None:
         neo4j_connector.execute_many(queries, params_list, write=True)
 
     # Verify no nodes were created (transaction rolled back)
-    count_result = neo4j_connector.execute_query(
-        "MATCH (n:TestRollback) RETURN count(n) AS count"
-    )
+    count_result = neo4j_connector.execute_query("MATCH (n:TestRollback) RETURN count(n) AS count")
     assert count_result[0]["count"] == 0
 
 

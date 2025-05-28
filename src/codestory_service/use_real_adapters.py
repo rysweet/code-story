@@ -43,9 +43,7 @@ def force_real_adapter(create_fn: Callable[..., T]) -> Callable[..., T]:
         except Exception as e:
             # Instead of falling back to a dummy adapter, raise the exception
             # This forces the service to fail if it can't connect to real services
-            logger.error(
-                f"Failed to create real adapter and fallbacks are disabled: {e!s}"
-            )
+            logger.error(f"Failed to create real adapter and fallbacks are disabled: {e!s}")
             raise
 
     return cast("Callable[..., T]", wrapper)
@@ -81,17 +79,13 @@ async def get_real_openai_adapter() -> OpenAIAdapter:
     if health["status"] == "degraded" and "demo" in str(
         health.get("details", {}).get("message", "")
     ):
-        raise RuntimeError(
-            "OpenAI adapter is using demo mode - requires real API credentials"
-        )
+        raise RuntimeError("OpenAI adapter is using demo mode - requires real API credentials")
 
     # Verify adapter is healthy
     if health["status"] != "healthy":
         if health["status"] == "degraded":
             # Degraded is acceptable in some cases - warn but continue
-            logger.warning(
-                "OpenAI adapter is in degraded state but will continue operation"
-            )
+            logger.warning("OpenAI adapter is in degraded state but will continue operation")
             logger.warning(f"Details: {health.get('details', {})}")
         else:
             # Unhealthy means we can't proceed

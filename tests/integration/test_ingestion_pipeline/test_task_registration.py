@@ -4,7 +4,6 @@ These tests verify that tasks are properly registered with the Celery
 application and can be discovered by the worker.
 """
 
-
 import pytest
 
 from codestory.ingestion_pipeline.celery_app import app as celery_app
@@ -61,8 +60,7 @@ def test_run_step_task_name_mapping():
     # Check if the mapping contains the filesystem task with the new naming pattern
     assert "task_name_map" in source, "task_name_map not found in run_step function"
     assert (
-        "filesystem" in source
-        and "codestory_filesystem.step.process_filesystem" in source
+        "filesystem" in source and "codestory_filesystem.step.process_filesystem" in source
     ), "Filesystem task mapping not found in run_step function"
 
 

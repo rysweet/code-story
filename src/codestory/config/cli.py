@@ -1,5 +1,6 @@
 """Command-line interface for configuration management."""
 
+from typing import Any
 import json
 import sys
 
@@ -32,9 +33,7 @@ def get_setting(
     setting_path: str = typer.Argument(
         ..., help="Setting path in dot notation (e.g., 'neo4j.uri')"
     ),
-    format: str = typer.Option(
-        "plain", "--format", "-f", help="Output format (plain, json, yaml)"
-    ),
+    format: str = typer.Option("plain", "--format", "-f", help="Output format (plain, json, yaml)"),
 ):
     """Get a configuration setting value."""
     try:
@@ -82,9 +81,7 @@ def set_setting(
         update_config(setting_path, parsed_value, persist_to=persist_to)
 
         # Print success message
-        console.print(
-            f"[bold green]Success:[/] Updated {setting_path} = {parsed_value}"
-        )
+        console.print(f"[bold green]Success:[/] Updated {setting_path} = {parsed_value}")
 
         if persist_to:
             console.print(f"Change persisted to {persist_to}")
@@ -106,12 +103,8 @@ def set_setting(
 @app.command("list")
 def list_settings(
     section: str
-    | None = typer.Option(
-        None, "--section", "-s", help="Section to list (e.g., 'neo4j')"
-    ),
-    format: str = typer.Option(
-        "table", "--format", "-f", help="Output format (table, json, toml)"
-    ),
+    | None = typer.Option(None, "--section", "-s", help="Section to list (e.g., 'neo4j')"),
+    format: str = typer.Option("table", "--format", "-f", help="Output format (table, json, toml)"),
     include_secrets: bool = typer.Option(
         False, "--include-secrets", help="Include secret values (default: redacted)"
     ),
@@ -161,13 +154,9 @@ def list_settings(
 
 @app.command("export")
 def export_config(
-    format: str = typer.Option(
-        "env", "--format", "-f", help="Output format (env, json, toml)"
-    ),
+    format: str = typer.Option("env", "--format", "-f", help="Output format (env, json, toml)"),
     output: str
-    | None = typer.Option(
-        None, "--output", "-o", help="Output file path (default: stdout)"
-    ),
+    | None = typer.Option(None, "--output", "-o", help="Output file path (default: stdout)"),
     include_secrets: bool = typer.Option(
         False, "--include-secrets", help="Include secret values (default: redacted)"
     ),
@@ -179,9 +168,7 @@ def export_config(
             if not output:
                 console.print(result)
         elif format == "json":
-            result = export_to_json(
-                output_path=output, redact_secrets=not include_secrets
-            )
+            result = export_to_json(output_path=output, redact_secrets=not include_secrets)
             if not output:
                 # Pretty print the JSON
                 parsed = json.loads(result)
@@ -193,9 +180,7 @@ def export_config(
                 )
                 console.print(syntax)
         elif format == "toml":
-            result = export_to_toml(
-                output_path=output, redact_secrets=not include_secrets
-            )
+            result = export_to_toml(output_path=output, redact_secrets=not include_secrets)
             if not output:
                 # Print the TOML
                 syntax = Syntax(result, "toml", theme="monokai", line_numbers=True)
@@ -214,13 +199,11 @@ def export_config(
 
 
 @app.command("refresh")
-def refresh_config():
+def refresh_config() -> Any:
     """Refresh configuration from all sources."""
     try:
         refresh_settings()
-        console.print(
-            "[bold green]Success:[/] Configuration refreshed from all sources"
-        )
+        console.print("[bold green]Success:[/] Configuration refreshed from all sources")
     except Exception as e:
         console.print(f"[bold red]Error:[/] {e!s}")
         sys.exit(1)

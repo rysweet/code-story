@@ -1,5 +1,6 @@
 """Database commands for the Code Story CLI."""
 
+from typing import Any
 import click
 from rich.panel import Panel
 from rich.prompt import Confirm
@@ -12,7 +13,7 @@ from ..client import ServiceError
     help="Manage the graph database.",
     short_help="Manage the graph database",
 )
-def database():
+def database() -> Any:
     """Database commands group."""
     pass
 
@@ -28,7 +29,7 @@ def database():
     help="Force clearing without confirmation.",
 )
 @click.pass_context
-def clear_database(ctx, force: bool):
+def clear_database(ctx, force: bool) -> Any:
     """Clear all data from the Neo4j database.
 
     Args:
@@ -40,7 +41,8 @@ def clear_database(ctx, force: bool):
 
     if not force:
         confirmed = Confirm.ask(
-            "[yellow]Warning:[/yellow] This will delete all nodes and relationships from the database. Continue?",
+            "[yellow]Warning:[/yellow] This will delete all nodes and relationships "
+            "from the database. Continue?",
             default=False,
         )
         if not confirmed:

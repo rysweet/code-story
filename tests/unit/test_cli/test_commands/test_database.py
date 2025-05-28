@@ -64,7 +64,5 @@ def test_clear_database_error(cli_context, mock_client, mock_console):
     assert result.exit_code == 0  # Command completes but shows error
     mock_client.clear_database.assert_called_once_with(confirm=True)
     # Check that error was printed
-    error_calls = [
-        call for call in mock_console.print.call_args_list if "Error" in str(call)
-    ]
+    error_calls = [call for call in mock_console.print.call_args_list if "Error" in str(call)]
     assert len(error_calls) > 0

@@ -85,9 +85,7 @@ class TestEntraValidator:
     @pytest.fixture
     def mock_jwks_client(self):
         """Create a mock JWKS client."""
-        with mock.patch(
-            "codestory_mcp.auth.entra_validator.PyJWKClient"
-        ) as mock_client:
+        with mock.patch("codestory_mcp.auth.entra_validator.PyJWKClient") as mock_client:
             yield mock_client
 
     @pytest.fixture
@@ -130,9 +128,7 @@ class TestEntraValidator:
             claims = await validator.validate_token("test-token")
 
             # Verify key retrieval
-            validator.jwks_client.get_signing_key_from_jwt.assert_called_once_with(
-                "test-token"
-            )
+            validator.jwks_client.get_signing_key_from_jwt.assert_called_once_with("test-token")
 
             # Verify JWT decode
             mock_jwt.decode.assert_called_once_with(
@@ -154,8 +150,8 @@ class TestEntraValidator:
         """Test token validation with JWT error."""
         # Make JWT decode raise an error
         mock_jwt.PyJWTError = Exception
-        validator.jwks_client.get_signing_key_from_jwt.side_effect = (
-            mock_jwt.PyJWTError("Invalid token")
+        validator.jwks_client.get_signing_key_from_jwt.side_effect = mock_jwt.PyJWTError(
+            "Invalid token"
         )
 
         # Verify error handling
@@ -181,9 +177,7 @@ class TestEntraValidator:
     def test_verify_scopes_failure(self, validator):
         """Test scope verification failure."""
         # Mock ScopeManager
-        with mock.patch.object(
-            validator.scope_manager, "has_required_scope", return_value=False
-        ):
+        with mock.patch.object(validator.scope_manager, "has_required_scope", return_value=False):
             # Verify error is raised
             with pytest.raises(AuthorizationError) as excinfo:
                 validator._verify_scopes({"scp": "wrong-scope"})

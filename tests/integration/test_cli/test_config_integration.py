@@ -14,9 +14,7 @@ class TestConfigCommands:
 
     @pytest.mark.integration
     @pytest.mark.require_service
-    def test_config_show(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_config_show(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'config show' command with real configuration."""
         # Show configuration
         result = cli_runner.invoke(app, ["config", "show"])

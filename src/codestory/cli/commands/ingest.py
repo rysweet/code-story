@@ -21,7 +21,7 @@ from ..require_service_available import require_service_available
 
 
 @click.group(help="Ingest a repository into Code Story.")
-def ingest():
+def ingest() -> Any:
     """Command group for ingestion operations."""
     pass
 
@@ -41,7 +41,7 @@ def run_command(command, capture_output=True, shell=True):
         return None
 
 
-def is_docker_running():
+def is_docker_running() -> Any:
     """Check if Docker is running and containers exist."""
     try:
         result = subprocess.run(
@@ -105,7 +105,8 @@ def is_repo_mounted(repo_path, console=None):
                     service,
                     "bash",
                     "-c",
-                    f"test -d {container_path} && ls -la {container_path} | wc -l | grep -v '^[[:space:]]*2[[:space:]]*$'",
+                    f"test -d {container_path} && ls -la {container_path} | wc -l | "
+                    f"grep -v '^[[:space:]]*2[[:space:]]*$'",
                 ],
                 capture_output=True,
                 text=True,
@@ -181,7 +182,8 @@ def is_repo_mounted(repo_path, console=None):
                     )
                     if console:
                         console.print(
-                            f"{service} container /repositories directory contents:\n{inspect_result.stdout}"
+                            f"{service} container /repositories directory contents:\n"
+                            f"{inspect_result.stdout}"
                         )
 
                     # Also check if the directory exists but is empty
@@ -205,7 +207,8 @@ def is_repo_mounted(repo_path, console=None):
                     if "exists" in dir_check.stdout:
                         if console:
                             console.print(
-                                f"Directory {container_path} exists in {service} but appears to be empty."
+                                f"Directory {container_path} exists in {service} but "
+                                f"appears to be empty."
                             )
             except Exception as e:
                 if console:
@@ -245,7 +248,8 @@ def create_override_file(repo_path, console=None):
             f.write(override_content)
         if console:
             console.print(
-                f"[green]Created docker-compose.override.yml with mount configuration for {repo_path}[/]"
+                f"[green]Created docker-compose.override.yml with mount configuration "
+                f"for {repo_path}[/]"
             )
         return True
     except Exception as e:
@@ -305,7 +309,7 @@ def wait_for_service(console=None, max_attempts=30):
 
             if console:
                 console.print(
-                    f"Service status: {health_status} (attempt {attempts+1}/{max_attempts})"
+                    f"Service status: {health_status} (attempt {attempts + 1}/{max_attempts})"
                 )
 
             if health_status == "healthy":
@@ -343,9 +347,7 @@ def setup_repository_mount(repo_path, console=None, force_remount=False):
     # Check if Docker is running
     if not is_docker_running():
         if console:
-            console.print(
-                "[yellow]Starting Docker containers with repository mount...[/]"
-            )
+            console.print("[yellow]Starting Docker containers with repository mount...[/]")
         # Create docker-compose.override.yml with repository mount
         create_override_file(repo_path, console)
         # Start containers with repository mount
@@ -374,9 +376,7 @@ def setup_repository_mount(repo_path, console=None, force_remount=False):
 
     # Restart only the required services with the new configuration
     if console:
-        console.print(
-            "[yellow]Recreating containers with the new mount configuration...[/]"
-        )
+        console.print("[yellow]Recreating containers with the new mount configuration...[/]")
     run_command("docker-compose up -d service worker", capture_output=False)
 
     # Wait for services to be ready
@@ -390,7 +390,8 @@ def setup_repository_mount(repo_path, console=None, force_remount=False):
     if verification:
         if console:
             console.print(
-                f"[green]Successfully verified repository is mounted correctly at {container_path}[/]"
+                f"[green]Successfully verified repository is mounted correctly at "
+                f"{container_path}[/]"
             )
     else:
         if console:
@@ -427,9 +428,7 @@ def setup_repository_mount(repo_path, console=None, force_remount=False):
     default=True,
     help="Automatically mount repository and restart containers if needed.",
 )
-@click.option(
-    "--no-auto-mount", is_flag=True, help="Disable automatic repository mounting."
-)
+@click.option("--no-auto-mount", is_flag=True, help="Disable automatic repository mounting.")
 @click.option(
     "--force-remount",
     is_flag=True,
@@ -483,9 +482,7 @@ def start_ingestion(
     container_path = os.path.join(path_prefix, repo_name)
 
     # Detect if we're likely running against a container
-    is_container = (
-        container or "localhost" in client.base_url or "127.0.0.1" in client.base_url
-    )
+    is_container = container or "localhost" in client.base_url or "127.0.0.1" in client.base_url
 
     # Debug information if requested
     if debug:
@@ -519,9 +516,7 @@ def start_ingestion(
                 text=True,
                 check=False,
             )
-            console.print(
-                f"[dim]  Container /repositories contents: {repo_ls.stdout}[/]"
-            )
+            console.print(f"[dim]  Container /repositories contents: {repo_ls.stdout}[/]")
 
             # Check if target directory exists
             dir_check = subprocess.run(
@@ -541,9 +536,7 @@ def start_ingestion(
                 text=True,
                 check=False,
             )
-            console.print(
-                f"[dim]  Target directory exists: {'exists' in dir_check.stdout}[/]"
-            )
+            console.print(f"[dim]  Target directory exists: {'exists' in dir_check.stdout}[/]")
 
             if "exists" in dir_check.stdout:
                 # Also check contents of the target directory
@@ -560,9 +553,7 @@ def start_ingestion(
                     text=True,
                     check=False,
                 )
-                console.print(
-                    f"[dim]  Target directory contents: {container_ls.stdout}[/]"
-                )
+                console.print(f"[dim]  Target directory contents: {container_ls.stdout}[/]")
         except Exception as e:
             console.print(f"[dim]  Error checking /repositories: {e}[/]")
 
@@ -571,16 +562,12 @@ def start_ingestion(
         console.print("Checking if repository is properly mounted...")
 
         if force_remount:
-            console.print(
-                "[yellow]Force remount requested. Remounting repository...[/]"
-            )
+            console.print("[yellow]Force remount requested. Remounting repository...[/]")
             setup_repository_mount(local_path, console, force_remount=True)
         else:
             # Check if repository is already mounted properly
             if not is_repo_mounted(local_path, console):
-                console.print(
-                    "[yellow]Repository not mounted in container. Setting up mount...[/]"
-                )
+                console.print("[yellow]Repository not mounted in container. Setting up mount...[/]")
 
                 # Show what's currently in /repositories to help debug
                 try:
@@ -602,9 +589,7 @@ def start_ingestion(
                         style="dim",
                     )
                 except Exception as e:
-                    console.print(
-                        f"[dim]Could not check /repositories: {e}[/]", style="dim"
-                    )
+                    console.print(f"[dim]Could not check /repositories: {e}[/]", style="dim")
 
                 # Set up the repository mount
                 setup_repository_mount(local_path, console)
@@ -627,20 +612,16 @@ def start_ingestion(
                     check=False,
                 )
 
-                if (
-                    verify_check.returncode == 0
-                    and len(verify_check.stdout.strip()) > 0
-                ):
-                    console.print(
-                        f"[green]Repository successfully mounted at {container_path}![/]"
-                    )
+                if verify_check.returncode == 0 and len(verify_check.stdout.strip()) > 0:
+                    console.print(f"[green]Repository successfully mounted at {container_path}![/]")
                     console.print(
                         f"[dim]Directory contents:\n{verify_check.stdout}[/]",
                         style="dim",
                     )
                 else:
                     console.print(
-                        "[yellow]Warning: Repository mount could not be verified. Continuing anyway...[/]"
+                        "[yellow]Warning: Repository mount could not be verified. "
+                        "Continuing anyway...[/]"
                     )
                     # Show what's in /repositories after mount attempt
                     try:
@@ -658,7 +639,8 @@ def start_ingestion(
                             check=False,
                         )
                         console.print(
-                            f"[dim]/repositories contents after mount attempt:\n{ls_result.stdout}[/]",
+                            f"[dim]/repositories contents after mount attempt:\n"
+                            f"{ls_result.stdout}[/]",
                             style="dim",
                         )
                     except Exception:
@@ -670,9 +652,7 @@ def start_ingestion(
 
     # Path mapping logic
     if is_container:
-        console.print(
-            "Docker deployment detected. Mapping local path to container path:"
-        )
+        console.print("Docker deployment detected. Mapping local path to container path:")
         console.print(f"  Local path:     [cyan]{local_path}[/]")
         console.print(f"  Container path: [cyan]{container_path}[/]")
 
@@ -688,9 +668,7 @@ def start_ingestion(
         job_id = response.get("job_id")
 
         if not job_id:
-            console.print(
-                "[bold red]Error:[/] Failed to start ingestion job - no job ID returned."
-            )
+            console.print("[bold red]Error:[/] Failed to start ingestion job - no job ID returned.")
             return
     except Exception as e:
         console.print(f"[bold red]Error:[/] {e!s}")
@@ -699,13 +677,12 @@ def start_ingestion(
             console.print("\n[yellow]Troubleshooting Suggestions:[/]")
             console.print("1. Make sure your repository is properly mounted:")
             console.print(
-                f'   - Try with force remount: [bold]codestory ingest start "{local_path}" --force-remount[/]'
+                f'   - Try with force remount: [bold]codestory ingest start "{local_path}" '
+                f"--force-remount[/]"
             )
             console.print("2. Or manually mount your repository:")
             console.print(f'   - Run: [bold]export REPOSITORY_PATH="{local_path}"[/]')
-            console.print(
-                "   - Run: [bold]docker-compose down && docker-compose up -d[/]"
-            )
+            console.print("   - Run: [bold]docker-compose down && docker-compose up -d[/]")
             console.print(
                 "3. For detailed instructions, see: [bold]docs/deployment/repository_mounting.md[/]"
             )
@@ -805,9 +782,7 @@ def list_jobs(ctx: click.Context) -> None:
             from datetime import datetime
 
             try:
-                created_at = datetime.fromtimestamp(created_at).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                created_at = datetime.fromtimestamp(created_at).strftime("%Y-%m-%d %H:%M:%S")
             except (ValueError, TypeError, OverflowError):
                 created_at = str(created_at)
         else:
@@ -878,9 +853,7 @@ def mount_repository(
     repo_name = os.path.basename(local_path)
     container_path = f"/repositories/{repo_name}"
 
-    console.print(
-        f"Mounting repository: [cyan]{local_path}[/] to [cyan]{container_path}[/]"
-    )
+    console.print(f"Mounting repository: [cyan]{local_path}[/] to [cyan]{container_path}[/]")
 
     # Show debug info if requested
     if debug:
@@ -909,9 +882,7 @@ def mount_repository(
                     text=True,
                     check=False,
                 )
-                console.print(
-                    f"[dim]  Current /repositories contents:\n{ls_result.stdout}[/]"
-                )
+                console.print(f"[dim]  Current /repositories contents:\n{ls_result.stdout}[/]")
             except Exception as e:
                 console.print(f"[dim]  Could not check /repositories: {e}[/]")
 
@@ -954,9 +925,7 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
         TextColumn("[bold green]{task.fields[status]}"),
     )
 
-    overall_task = progress.add_task(
-        "[bold]Overall Progress", total=100, status="Initializing..."
-    )
+    overall_task = progress.add_task("[bold]Overall Progress", total=100, status="Initializing...")
     step_tasks = {}
 
     # Function to update progress
@@ -1039,9 +1008,7 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
         console=console,
         settings=ctx.obj["settings"],
         # Explicitly get Redis URL from settings if available
-        redis_url=ctx.obj["settings"].redis.uri
-        if hasattr(ctx.obj["settings"], "redis")
-        else None,
+        redis_url=ctx.obj["settings"].redis.uri if hasattr(ctx.obj["settings"], "redis") else None,
     )
 
     # Start tracking progress

@@ -110,13 +110,9 @@ retry:
             MATCH (r:Repository {path: $repo_path})
             RETURN count(r) as repo_count
             """
-            result = self.neo4j_connector.execute_query(
-                query, params={"repo_path": empty_repo_dir}
-            )
+            result = self.neo4j_connector.execute_query(query, params={"repo_path": empty_repo_dir})
 
-            assert (
-                result[0]["repo_count"] == 1
-            ), "Repository node not found for empty repo"
+            assert result[0]["repo_count"] == 1, "Repository node not found for empty repo"
 
             # Verify there are no file nodes
             file_query = "MATCH (f:File) RETURN count(f) as count"

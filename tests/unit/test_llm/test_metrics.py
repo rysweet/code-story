@@ -12,10 +12,11 @@ from codestory.llm.metrics import OperationType
 @pytest.fixture(autouse=True)
 def mock_all_metrics_objects():
     """Mock all Prometheus metrics objects before any module imports."""
-    with patch("prometheus_client.Counter") as mock_counter, patch(
-        "prometheus_client.Gauge"
-    ) as mock_gauge, patch("prometheus_client.Histogram") as mock_histogram, patch(
-        "prometheus_client.registry.REGISTRY._names_to_collectors", {}
+    with (
+        patch("prometheus_client.Counter") as mock_counter,
+        patch("prometheus_client.Gauge") as mock_gauge,
+        patch("prometheus_client.Histogram") as mock_histogram,
+        patch("prometheus_client.registry.REGISTRY._names_to_collectors", {}),
     ):
         # Configure the mocks to behave like the real counters
         mock_labels = MagicMock()
@@ -87,9 +88,7 @@ class TestMetricsFunctions:
             )
             mock_count_labels.return_value.inc.assert_called_once()
 
-            mock_duration_labels.assert_called_once_with(
-                operation="chat", model="gpt-4o"
-            )
+            mock_duration_labels.assert_called_once_with(operation="chat", model="gpt-4o")
             mock_duration_labels.return_value.observe.assert_called_once_with(1.5)
 
     def test_record_request_with_tokens(self, mock_all_metrics_objects):
@@ -182,9 +181,7 @@ class TestMetricsFunctions:
             record_retry(operation=OperationType.COMPLETION, model="gpt-4o")
 
             # Verify retry was recorded
-            mock_retry_labels.assert_called_once_with(
-                operation="completion", model="gpt-4o"
-            )
+            mock_retry_labels.assert_called_once_with(operation="completion", model="gpt-4o")
             mock_retry_labels.return_value.inc.assert_called_once()
 
 
@@ -266,9 +263,7 @@ class TestInstrumentRequestDecorator:
             mock_function.assert_called_once()
 
             # Verify the current requests counter was incremented and decremented
-            mock_current.assert_called_with(
-                operation="embedding", model="text-embedding-3-small"
-            )
+            mock_current.assert_called_with(operation="embedding", model="text-embedding-3-small")
             mock_current.return_value.inc.assert_called_once()
             mock_current.return_value.dec.assert_called_once()
 
@@ -303,9 +298,7 @@ class TestInstrumentAsyncRequestDecorator:
         # Configure the mock to work with await
         async def mock_coro(*args, **kwargs):
             return MagicMock(
-                usage=MagicMock(
-                    prompt_tokens=100, completion_tokens=50, total_tokens=150
-                )
+                usage=MagicMock(prompt_tokens=100, completion_tokens=50, total_tokens=150)
             )
 
         mock_function.side_effect = mock_coro
@@ -360,9 +353,7 @@ class TestInstrumentAsyncRequestDecorator:
         mock_function.side_effect = mock_coro
 
         # Apply the decorator
-        decorated_function = instrument_async_request(OperationType.EMBEDDING)(
-            mock_function
-        )
+        decorated_function = instrument_async_request(OperationType.EMBEDDING)(mock_function)
 
         # Patch the metrics functions
         with (
@@ -382,9 +373,7 @@ class TestInstrumentAsyncRequestDecorator:
             mock_function.assert_called_once()
 
             # Verify the current requests counter was incremented and decremented
-            mock_current.assert_called_with(
-                operation="embedding", model="text-embedding-3-small"
-            )
+            mock_current.assert_called_with(operation="embedding", model="text-embedding-3-small")
             mock_current.return_value.inc.assert_called_once()
             mock_current.return_value.dec.assert_called_once()
 

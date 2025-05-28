@@ -164,9 +164,7 @@ class TestGraphModels:
     def test_cypher_query_validation(self):
         """Test that CypherQuery validates inputs correctly."""
         # Valid query
-        valid_query = CypherQuery(
-            query="MATCH (n) RETURN n LIMIT 10", parameters={"limit": 10}
-        )
+        valid_query = CypherQuery(query="MATCH (n) RETURN n LIMIT 10", parameters={"limit": 10})
         assert valid_query.query == "MATCH (n) RETURN n LIMIT 10"
         assert valid_query.parameters == {"limit": 10}
 
@@ -195,9 +193,7 @@ class TestGraphModels:
     def test_path_request_validation(self):
         """Test that PathRequest validates inputs correctly."""
         # Valid request
-        valid_request = PathRequest(
-            start_node_id="node1", end_node_id="node2", max_depth=5
-        )
+        valid_request = PathRequest(start_node_id="node1", end_node_id="node2", max_depth=5)
         assert valid_request.start_node_id == "node1"
         assert valid_request.end_node_id == "node2"
         assert valid_request.max_depth == 5

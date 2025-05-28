@@ -123,9 +123,7 @@ class MCPMetrics:
         """
         self.active_connections.labels(protocol=protocol).inc(count)
 
-    def record_service_api_call(
-        self, endpoint: str, status: str, duration: float
-    ) -> None:
+    def record_service_api_call(self, endpoint: str, status: str, duration: float) -> None:
         """Record a call to the Code Story service API.
 
         Args:

@@ -11,9 +11,9 @@ import uuid
 from typing import Any
 
 import docker
-from celery import current_app, shared_task
-from celery.app.control import Control
-from celery.result import AsyncResult
+from celery import current_app, shared_task  # type: ignore[import-untyped]
+from celery.app.control import Control  # type: ignore[import-untyped]
+from celery.result import AsyncResult  # type: ignore[import-untyped]
 from docker.errors import DockerException
 
 from codestory.config.settings import get_settings
@@ -56,9 +56,7 @@ class BlarifyStep(PipelineStep):
             self.docker_client.ping()
             logger.info("Docker client initialized successfully")
         except DockerException as e:
-            logger.warning(
-                f"Docker client initialization failed: {e}. Will use Celery task."
-            )
+            logger.warning(f"Docker client initialization failed: {e}. Will use Celery task.")
             self.docker_client = None
 
     def run(self, repository_path: str, **config: Any) -> str:
@@ -79,12 +77,10 @@ class BlarifyStep(PipelineStep):
         """
         # Validate repository path
         if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"blarify-{uuid.uuid4()}"
+        job_id = f"blarify-{uuid.uuid4.uuid4()}"
 
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
@@ -348,9 +344,7 @@ class BlarifyStep(PipelineStep):
                         all=True, filters={"name": container_name}
                     )
                     if not containers:
-                        logger.info(
-                            f"Verified container {container_name} is stopped/removed"
-                        )
+                        logger.info(f"Verified container {container_name} is stopped/removed")
                         break
 
                     # Container still exists, wait and retry
@@ -473,14 +467,10 @@ def run_blarify(
         neo4j_port = "7689"  # Default mapped port in docker-compose.yml
         alt_host = f"host.docker.internal:{neo4j_port}"
         logger.info(f"Using Docker DNS with host.docker.internal: {alt_host}")
-        neo4j_connection = (
-            f"neo4j://{neo4j_username}:{neo4j_password}@{alt_host}/{neo4j_database}"
-        )
+        neo4j_connection = f"neo4j://{neo4j_username}:{neo4j_password}@{alt_host}/{neo4j_database}"
     else:
         # Use the configured host directly
-        neo4j_connection = (
-            f"neo4j://{neo4j_username}:{neo4j_password}@{host}/{neo4j_database}"
-        )
+        neo4j_connection = f"neo4j://{neo4j_username}:{neo4j_password}@{host}/{neo4j_database}"
 
     try:
         # Try to use Docker directly
@@ -488,9 +478,7 @@ def run_blarify(
 
         # Make sure the repository path exists
         if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Check if we're running inside Docker and modify paths accordingly
         container_repository_path = repository_path
@@ -504,11 +492,7 @@ def run_blarify(
                 for host_path, container_path in os.environ.get(
                     "CODESTORY_MOUNT_MAPPINGS", ""
                 ).split(";"):
-                    if (
-                        host_path
-                        and container_path
-                        and repository_path.startswith(host_path)
-                    ):
+                    if host_path and container_path and repository_path.startswith(host_path):
                         container_repository_path = repository_path.replace(
                             host_path, container_path, 1
                         )
@@ -524,18 +508,12 @@ def run_blarify(
         try:
             running_containers = client.containers.list()
             for container in running_containers:
-                if (
-                    container.name == "codestory-worker"
-                    or container.name == "codestory-service"
-                ):
+                if container.name == "codestory-worker" or container.name == "codestory-service":
                     logger.info(f"Found existing container: {container.name}")
                     # Check if the repository is mounted in this container
                     container_info = container.attrs
                     for mount in container_info.get("Mounts", []):
-                        if (
-                            mount["Type"] == "bind"
-                            and mount["Source"] == repository_path
-                        ):
+                        if mount["Type"] == "bind" and mount["Source"] == repository_path:
                             # Repository is already mounted, use the container path
                             container_repository_path = mount["Destination"]
                             logger.info(
@@ -559,9 +537,7 @@ def run_blarify(
             client.images.pull(docker_image)
             logger.info(f"Pulled Docker image: {docker_image}")
         except DockerException as e:
-            logger.warning(
-                f"Failed to pull Docker image: {e}. Assuming it exists locally."
-            )
+            logger.warning(f"Failed to pull Docker image: {e}. Assuming it exists locally.")
 
         # Update status
         self.update_state(
@@ -609,9 +585,7 @@ def run_blarify(
         # Initialize progress at 20%
         progress = 20.0
         last_activity_time = time.time()
-        max_inactivity = (
-            300  # Maximum inactivity before considering timeout (5 minutes)
-        )
+        max_inactivity = 300  # Maximum inactivity before considering timeout (5 minutes)
 
         # Stream logs and track progress
         for log_line in container.logs(stream=True, follow=True):
@@ -624,9 +598,7 @@ def run_blarify(
                 # Extract progress information if available
                 if "Progress:" in log_line:
                     try:
-                        progress_str = (
-                            log_line.split("Progress:")[1].strip().split("%")[0]
-                        )
+                        progress_str = log_line.split("Progress:")[1].strip().split("%")[0]
                         parsed_progress = float(progress_str)
                         # Scale progress from 20% to 90%
                         progress = 20.0 + (parsed_progress * 0.7)
@@ -657,9 +629,7 @@ def run_blarify(
                     # Attempt to stop the container gracefully
                     try:
                         container.stop(timeout=10)
-                        logger.info(
-                            f"Stopped container {container.id} due to inactivity timeout"
-                        )
+                        logger.info(f"Stopped container {container.id} due to inactivity timeout")
                     except Exception as e:
                         logger.warning(f"Error stopping container: {e}")
 
@@ -713,9 +683,7 @@ def run_blarify(
                         password=settings.neo4j.password.get_secret_value(),
                         database=settings.neo4j.database,
                     )
-                    logger.info(
-                        f"Connected to Neo4j using localhost override: {localhost_uri}"
-                    )
+                    logger.info(f"Connected to Neo4j using localhost override: {localhost_uri}")
                 except Exception as e:
                     logger.warning(
                         f"Failed to connect to Neo4j using localhost: {e}, falling back to original URI"
@@ -736,9 +704,9 @@ def run_blarify(
                 )
 
             # Check for AST nodes
-            ast_count = connector.execute_query(
-                "MATCH (n:AST) RETURN count(n) as count"
-            )[0].get("count", 0)
+            ast_count = connector.execute_query("MATCH (n:AST) RETURN count(n) as count")[0].get(
+                "count", 0
+            )
 
         except Exception as e:
             logger.warning(f"Error connecting to Neo4j for verification: {e}")

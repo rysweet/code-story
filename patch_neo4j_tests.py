@@ -19,8 +19,7 @@ def fix_file(file_path):
     # From: "bolt://localhost:" + (os.environ.get("CI") == "true" and "7687" or "7688")"
     # To: f"bolt://localhost:{neo4j_port}"
     pattern1 = (
-        r'"bolt://localhost:" \+ \(os\.environ\.get\("CI"\) == "true" and "7687" '
-        r'or "7688"\)"'
+        r'"bolt://localhost:" \+ \(os\.environ\.get\("CI"\) == "true" and "7687" ' r'or "7688"\)"'
     )
     replacement1 = 'f"bolt://localhost:{neo4j_port}"'
 

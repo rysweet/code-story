@@ -142,7 +142,7 @@ def tool_executor(func: Callable) -> Callable:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> Any:
     """Application lifespan handler.
 
     This context manager handles startup and shutdown events.
@@ -231,7 +231,7 @@ def create_app() -> FastAPI:
         description="Get a list of available tools and their schemas",
     )
     async def get_tools(
-        user: dict[str, Any] = Depends(get_current_user)
+        user: dict[str, Any] = Depends(get_current_user),
     ) -> dict[str, list[dict[str, Any]]]:
         """Get a list of available tools and their schemas.
 
@@ -273,9 +273,7 @@ def create_app() -> FastAPI:
 
     # Add custom error handler
     @app.exception_handler(Exception)
-    async def generic_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """Handle generic exceptions.
 
         Args:

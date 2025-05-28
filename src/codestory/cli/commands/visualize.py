@@ -25,14 +25,12 @@ if TYPE_CHECKING:
 
 
 @click.group(help="Generate and manage visualizations of the Code Story graph.")
-def visualize():
+def visualize() -> Any:
     """Command group for visualization operations."""
     pass
 
 
-@visualize.command(
-    name="generate", help="Generate a visualization of the Code Story graph."
-)
+@visualize.command(name="generate", help="Generate a visualization of the Code Story graph.")
 @click.option(
     "--output",
     "-o",
@@ -155,9 +153,7 @@ def generate(
                     output_path = os.path.abspath(f"codestory-graph-{timestamp}.html")
 
                 # Ensure directory exists
-                os.makedirs(
-                    os.path.dirname(os.path.abspath(output_path)), exist_ok=True
-                )
+                os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
                 # Write visualization to file
                 with open(output_path, "w") as f:
@@ -188,9 +184,7 @@ def generate(
             webbrowser.open(f"file://{output_path}")
             console.print("[dim]Visualization opened in browser...[/]")
         else:
-            console.print(
-                "\nTo view the visualization, open the HTML file in a web browser."
-            )
+            console.print("\nTo view the visualization, open the HTML file in a web browser.")
             console.print(f"Or run: [cyan]open {output_path}[/]")
 
 

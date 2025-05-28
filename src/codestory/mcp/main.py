@@ -1,5 +1,6 @@
 """Main entry point for the Model Context Protocol service."""
 
+from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -23,13 +24,13 @@ app.add_middleware(
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Any:
     """Health check endpoint."""
     return {"status": "healthy"}
 
 
 @app.get("/")
-async def root():
+async def root() -> Any:
     """Root endpoint."""
     return {
         "name": f"{settings.project_name}-mcp",

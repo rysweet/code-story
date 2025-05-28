@@ -9,10 +9,10 @@ This module provides a centralized configuration system with the following featu
 
 Usage:
     from codestory.config import get_settings
-    
+
     settings = get_settings()
     neo4j_uri = settings.neo4j.uri
-    
+
     # Update a setting
     from codestory.config import update_config
     update_config("neo4j.uri", "bolt://neo4j:7687", persist_to="env")

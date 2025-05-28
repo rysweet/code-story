@@ -1,3 +1,4 @@
+from typing import Any
 """Knowledge graph builder for documentation entities and relationships.
 
 This module provides functionality for building a knowledge graph of
@@ -76,9 +77,7 @@ class KnowledgeGraph:
         relationships = self.entity_linker.link_entities(entities)
         self.add_relationships(relationships)
 
-        logger.info(
-            f"Linked {len(relationships)} documentation entities to code entities"
-        )
+        logger.info(f"Linked {len(relationships)} documentation entities to code entities")
 
     def store_in_neo4j(self) -> None:
         """Store the graph in Neo4j.
@@ -144,9 +143,7 @@ class KnowledgeGraph:
             if result:
                 logger.debug(f"Created Documentation node for {document.path}")
             else:
-                logger.warning(
-                    f"Failed to create Documentation node for {document.path}"
-                )
+                logger.warning(f"Failed to create Documentation node for {document.path}")
 
     def _create_entity_nodes(self) -> None:
         """Create Neo4j nodes for documentation entities."""
@@ -191,9 +188,7 @@ class KnowledgeGraph:
             if result:
                 logger.debug(f"Created DocumentationEntity node for {entity.id}")
             else:
-                logger.warning(
-                    f"Failed to create DocumentationEntity node for {entity.id}"
-                )
+                logger.warning(f"Failed to create DocumentationEntity node for {entity.id}")
 
     def _create_relationships(self) -> None:
         """Create Neo4j relationships between entities."""
@@ -206,15 +201,13 @@ class KnowledgeGraph:
                 RelationType.PART_OF,
             ]:
                 # These relationships are between documentation entities
-                query = (
-                    f"""
+                query = f"""
                 MATCH (s:DocumentationEntity {{id: $source_id}})
                 MATCH (t:DocumentationEntity {{id: $target_id}})
                 MERGE (s)-[r:{rel.type.value}]->(t)
                 SET r += $properties
                 RETURN ID(r) as id
                 """
-                )
 
                 result = self.connector.run_query(
                     query,
@@ -237,15 +230,13 @@ class KnowledgeGraph:
 
             elif rel.type in [RelationType.DESCRIBES, RelationType.REFERENCES]:
                 # These relationships are between documentation entities and code entities
-                query = (
-                    f"""
+                query = f"""
                 MATCH (s:DocumentationEntity {{id: $source_id}})
                 MATCH (c) WHERE ID(c) = $target_id
                 MERGE (s)-[r:{rel.type.value}]->(c)
                 SET r += $properties
                 RETURN ID(r) as id
                 """
-                )
 
                 result = self.connector.run_query(
                     query,
@@ -286,7 +277,7 @@ class KnowledgeGraph:
         Returns:
             Dict mapping entity types to counts
         """
-        counts = {}
+counts: dict[Any, Any] = {}
         for entity in self.graph.entities.values():
             type_name = entity.type.value
             counts[type_name] = counts.get(type_name, 0) + 1
@@ -298,7 +289,7 @@ class KnowledgeGraph:
         Returns:
             Dict mapping relationship types to counts
         """
-        counts = {}
+counts: dict[Any, Any] = {}
         for rel in self.graph.relationships.values():
             type_name = rel.type.value
             counts[type_name] = counts.get(type_name, 0) + 1

@@ -46,9 +46,7 @@ if PROMETHEUS_AVAILABLE:
     # and only define them if they don't
     try:
         # Try to get the metric from the registry
-        QUERY_DURATION = REGISTRY.get_sample_value(
-            f"{METRIC_PREFIX}_query_duration_seconds_count"
-        )
+        QUERY_DURATION = REGISTRY.get_sample_value(f"{METRIC_PREFIX}_query_duration_seconds_count")
         # If we get here, the metric exists, so reuse it instead of creating a new one
         from prometheus_client import metrics
 
@@ -72,7 +70,7 @@ if PROMETHEUS_AVAILABLE:
                 def observe(self, value, **kwargs):
                     pass
 
-                def time(self):
+                def time(self) -> Any:
                     class DummyTimer:
                         def __enter__(self):
                             return self

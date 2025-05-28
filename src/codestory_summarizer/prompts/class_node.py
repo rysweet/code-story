@@ -5,9 +5,7 @@ high-quality summaries of class nodes.
 """
 
 
-def get_class_summary_prompt(
-    content: str, context: list[str], max_tokens: int = 8000
-) -> str:
+def get_class_summary_prompt(content: str, context: list[str], max_tokens: int = 8000) -> str:
     """Generate a prompt for summarizing a class.
 
     Args:

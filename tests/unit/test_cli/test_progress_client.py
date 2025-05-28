@@ -38,9 +38,7 @@ class TestProgressClient:
             assert client.channel == "codestory:ingestion:progress:test-123"
 
             # Check Redis initialization
-            mock_redis.assert_called_once_with(
-                "redis://localhost:6379", socket_timeout=2.0
-            )
+            mock_redis.assert_called_once_with("redis://localhost:6379", socket_timeout=2.0)
 
     def test_init_without_redis(self) -> None:
         """Test initialization with Redis unavailable."""
@@ -74,9 +72,7 @@ class TestProgressClient:
             assert console.print.call_count > 0
 
             # Check that the first message is about setting up Redis
-            assert (
-                "Setting up Redis connection" in console.print.call_args_list[0][0][0]
-            )
+            assert "Setting up Redis connection" in console.print.call_args_list[0][0][0]
 
             # Check that the last message is a warning about falling back to polling
             last_call = console.print.call_args_list[-1][0][0]
@@ -89,12 +85,13 @@ class TestProgressClient:
         mock_pubsub = MagicMock()
         mock_redis.pubsub.return_value = mock_pubsub
 
-        with patch(
-            "codestory.cli.client.progress_client.redis.from_url",
-            return_value=mock_redis,
-        ), patch(
-            "codestory.cli.client.progress_client.threading.Thread"
-        ) as mock_thread_class:
+        with (
+            patch(
+                "codestory.cli.client.progress_client.redis.from_url",
+                return_value=mock_redis,
+            ),
+            patch("codestory.cli.client.progress_client.threading.Thread") as mock_thread_class,
+        ):
             # Create mock thread
             mock_thread = MagicMock()
             mock_thread_class.return_value = mock_thread
@@ -114,9 +111,7 @@ class TestProgressClient:
             client.start()
 
             # Check thread creation and start
-            mock_thread_class.assert_called_once_with(
-                target=client._subscribe_redis
-            )
+            mock_thread_class.assert_called_once_with(target=client._subscribe_redis)
             mock_thread.start.assert_called_once()
 
             # Stop tracking
@@ -170,9 +165,7 @@ class TestProgressClient:
             client._subscribe_redis()
 
             # Check pubsub usage
-            mock_pubsub.subscribe.assert_called_once_with(
-                "codestory:ingestion:progress:test-123"
-            )
+            mock_pubsub.subscribe.assert_called_once_with("codestory:ingestion:progress:test-123")
             mock_pubsub.unsubscribe.assert_called_once()
             mock_pubsub.close.assert_called_once()
 
@@ -181,9 +174,7 @@ class TestProgressClient:
 
     def test_poll_http(self) -> None:
         """Test HTTP polling."""
-        with patch(
-            "codestory.cli.client.service_client.ServiceClient"
-        ) as mock_client_class:
+        with patch("codestory.cli.client.service_client.ServiceClient") as mock_client_class:
             # Create mock client
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client

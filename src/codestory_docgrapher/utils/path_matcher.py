@@ -1,3 +1,4 @@
+from typing import Any
 """Path matcher for resolving references to filesystem paths.
 
 This module provides functionality for matching references in documentation
@@ -28,7 +29,7 @@ class PathMatcher:
         """
         self.connector = connector
         self.repository_path = repository_path
-        self.path_cache = {}
+        self.path_cache: dict[Any, Any] = {}
 
         # Load repository structure for faster matching
         self._load_repository_structure()

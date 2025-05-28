@@ -43,9 +43,7 @@ def get_summary_prompt(
             max_tokens=max_tokens,
         )
     elif node_type == NodeType.CLASS:
-        return get_class_summary_prompt(
-            content=content, context=context, max_tokens=max_tokens
-        )
+        return get_class_summary_prompt(content=content, context=context, max_tokens=max_tokens)
     elif node_type in (NodeType.FUNCTION, NodeType.METHOD):
         return get_function_summary_prompt(
             content=content,

@@ -40,21 +40,20 @@ class TestAutoMount:
 
     def test_container_detection(self, cli_runner, cli_context):
         """Test that Docker container deployment is detected correctly."""
-        with patch(
-            "codestory.cli.require_service_available.require_service_available",
-            return_value=None,
-        ), tempfile.TemporaryDirectory() as repo_path:
+        with (
+            patch(
+                "codestory.cli.require_service_available.require_service_available",
+                return_value=None,
+            ),
+            tempfile.TemporaryDirectory() as repo_path,
+        ):
             cli_context["client"].base_url = "http://localhost:8000/v1"
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value.stdout = "codestory-service"
                 mock_run.return_value.returncode = 0
-                with patch(
-                    "codestory.cli.commands.ingest.os.path.exists"
-                ) as mock_exists:
+                with patch("codestory.cli.commands.ingest.os.path.exists") as mock_exists:
                     mock_exists.return_value = False
-                    with patch.object(
-                        cli_context["client"], "start_ingestion"
-                    ) as mock_start:
+                    with patch.object(cli_context["client"], "start_ingestion") as mock_start:
                         mock_start.return_value = {"job_id": "test-job-id"}
                         # Use CLI runner to invoke the command
                         result = cli_runner.invoke(
@@ -72,10 +71,13 @@ class TestAutoMount:
 
     def test_auto_mount_execution(self, cli_runner, cli_context):
         """Test that auto_mount.py is executed when repository is not mounted."""
-        with patch(
-            "codestory.cli.require_service_available.require_service_available",
-            return_value=None,
-        ), tempfile.TemporaryDirectory() as repo_path:
+        with (
+            patch(
+                "codestory.cli.require_service_available.require_service_available",
+                return_value=None,
+            ),
+            tempfile.TemporaryDirectory() as repo_path,
+        ):
             cli_context["client"].base_url = "http://localhost:8000/v1"
             with patch("subprocess.run") as mock_run:
                 mock_run.side_effect = [
@@ -85,32 +87,27 @@ class TestAutoMount:
                 ]
                 os.path.join(
                     os.path.dirname(
-                        os.path.dirname(
-                            os.path.dirname(
-                                os.path.dirname(os.path.dirname(__file__))
-                            )
-                        )
+                        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
                     ),
                     "scripts",
                     "auto_mount.py",
                 )
-                with patch(
-                    "codestory.cli.commands.ingest.os.path.exists"
-                ) as mock_exists:
+                with patch("codestory.cli.commands.ingest.os.path.exists") as mock_exists:
                     mock_exists.return_value = True
-                    with patch("sys.executable", new="python"), patch(
-                        "codestory.cli.commands.ingest.is_repo_mounted",
-                        return_value=True,
-                    ), patch(
-                        "codestory.cli.commands.ingest.setup_repository_mount",
-                        return_value=True,
-                    ), patch.object(
-                        cli_context["client"], "start_ingestion"
-                    ) as mock_start:
+                    with (
+                        patch("sys.executable", new="python"),
+                        patch(
+                            "codestory.cli.commands.ingest.is_repo_mounted",
+                            return_value=True,
+                        ),
+                        patch(
+                            "codestory.cli.commands.ingest.setup_repository_mount",
+                            return_value=True,
+                        ),
+                        patch.object(cli_context["client"], "start_ingestion") as mock_start,
+                    ):
                         mock_start.return_value = {"job_id": "test-job-id"}
-                        with patch(
-                            "codestory.cli.commands.ingest._show_progress"
-                        ) as mock_progress:
+                        with patch("codestory.cli.commands.ingest._show_progress") as mock_progress:
                             mock_progress.return_value = None
                             result = cli_runner.invoke(
                                 ingest,
@@ -127,25 +124,25 @@ class TestAutoMount:
                             assert result.exit_code == 0
                             args, kwargs = mock_start.call_args
                             assert kwargs == {}
-                            repo_name = os.path.basename(
-                                os.path.abspath(repo_path)
-                            )
-                            expected_container_path = (
-                                f"/repositories/{repo_name}"
-                            )
+                            repo_name = os.path.basename(os.path.abspath(repo_path))
+                            expected_container_path = f"/repositories/{repo_name}"
                             assert args[0] == expected_container_path
                             assert len(args) == 1
 
     def test_no_auto_mount(self, cli_runner, cli_context):
         """Test that --no-auto-mount flag disables auto mounting."""
-        with patch(
-            "codestory.cli.require_service_available.require_service_available",
-            return_value=None,
-        ), tempfile.TemporaryDirectory() as repo_path:
+        with (
+            patch(
+                "codestory.cli.require_service_available.require_service_available",
+                return_value=None,
+            ),
+            tempfile.TemporaryDirectory() as repo_path,
+        ):
             cli_context["client"].base_url = "http://localhost:8000/v1"
-            with patch("subprocess.run") as mock_run, patch.object(
-                cli_context["client"], "start_ingestion"
-            ) as mock_start:
+            with (
+                patch("subprocess.run") as mock_run,
+                patch.object(cli_context["client"], "start_ingestion") as mock_start,
+            ):
                 mock_start.return_value = {"job_id": "test-job-id"}
                 result = cli_runner.invoke(
                     ingest,
@@ -163,14 +160,18 @@ class TestAutoMount:
 
     def test_non_docker_deployment(self, cli_runner, cli_context):
         """Test behavior with non-Docker deployment."""
-        with patch(
-            "codestory.cli.require_service_available.require_service_available",
-            return_value=None,
-        ), tempfile.TemporaryDirectory() as repo_path:
+        with (
+            patch(
+                "codestory.cli.require_service_available.require_service_available",
+                return_value=None,
+            ),
+            tempfile.TemporaryDirectory() as repo_path,
+        ):
             cli_context["client"].base_url = "https://remote-server.com/v1"
-            with patch("subprocess.run") as mock_run, patch.object(
-                cli_context["client"], "start_ingestion"
-            ) as mock_start:
+            with (
+                patch("subprocess.run") as mock_run,
+                patch.object(cli_context["client"], "start_ingestion") as mock_start,
+            ):
                 mock_start.return_value = {"job_id": "test-job-id"}
                 result = cli_runner.invoke(
                     ingest,
@@ -191,18 +192,20 @@ class TestAutoMountFlags:
 
     def test_auto_mount_flag(self, cli_runner, cli_context):
         """Test that --auto-mount flag works as expected."""
-        with patch(
-            "codestory.cli.require_service_available.require_service_available",
-            return_value=None,
-        ), tempfile.TemporaryDirectory() as repo_path:
+        with (
+            patch(
+                "codestory.cli.require_service_available.require_service_available",
+                return_value=None,
+            ),
+            tempfile.TemporaryDirectory() as repo_path,
+        ):
             cli_context["client"].base_url = "http://localhost:8000/v1"
-            with patch("subprocess.run"), patch.object(
-                cli_context["client"], "start_ingestion"
-            ) as mock_start:
+            with (
+                patch("subprocess.run"),
+                patch.object(cli_context["client"], "start_ingestion") as mock_start,
+            ):
                 mock_start.return_value = {"job_id": "test-job-id"}
-                with patch(
-                    "codestory.cli.commands.ingest._show_progress"
-                ) as mock_progress:
+                with patch("codestory.cli.commands.ingest._show_progress") as mock_progress:
                     mock_progress.return_value = None
                     result = cli_runner.invoke(
                         ingest,
@@ -227,18 +230,20 @@ class TestAutoMountFlags:
 
     def test_no_auto_mount_flag(self, cli_runner, cli_context):
         """Test that --no-auto-mount flag works as expected."""
-        with patch(
-            "codestory.cli.require_service_available.require_service_available",
-            return_value=None,
-        ), tempfile.TemporaryDirectory() as repo_path:
+        with (
+            patch(
+                "codestory.cli.require_service_available.require_service_available",
+                return_value=None,
+            ),
+            tempfile.TemporaryDirectory() as repo_path,
+        ):
             cli_context["client"].base_url = "http://localhost:8000/v1"
-            with patch("subprocess.run"), patch.object(
-                cli_context["client"], "start_ingestion"
-            ) as mock_start:
+            with (
+                patch("subprocess.run"),
+                patch.object(cli_context["client"], "start_ingestion") as mock_start,
+            ):
                 mock_start.return_value = {"job_id": "test-job-id"}
-                with patch(
-                    "codestory.cli.commands.ingest._show_progress"
-                ) as mock_progress:
+                with patch("codestory.cli.commands.ingest._show_progress") as mock_progress:
                     mock_progress.return_value = None
                     result = cli_runner.invoke(
                         ingest,

@@ -13,9 +13,7 @@ from codestory.cli.main import app
 class TestQueryCommands:
     """Integration tests for query-related CLI commands."""
 
-    def test_query_help(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_query_help(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query --help' command."""
         # Run CLI with query --help
         result = cli_runner.invoke(app, ["query", "--help"])
@@ -27,9 +25,7 @@ class TestQueryCommands:
         assert "explore" in result.output.lower()
         assert "export" in result.output.lower()
 
-    def test_query_run_cypher(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_query_run_cypher(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query run' command with simple Cypher query."""
         # Run a simple query
         result = cli_runner.invoke(
@@ -87,9 +83,7 @@ class TestQueryCommands:
         assert result.exit_code == 0
         assert "limit=3" in result.output.lower()
 
-    def test_query_export(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_query_export(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query export' command."""
         output_file = "test_export.json"
 
@@ -117,9 +111,7 @@ class TestQueryCommands:
             if os.path.exists(output_file):
                 os.remove(output_file)
 
-    def test_query_explore(
-        self, cli_runner: CliRunner, running_service: dict[str, Any]
-    ) -> None:
+    def test_query_explore(self, cli_runner: CliRunner, running_service: dict[str, Any]) -> None:
         """Test 'query explore' command."""
         # Run query explore with small limit to speed up test
         result = cli_runner.invoke(app, ["query", "explore", "--limit", "2"])

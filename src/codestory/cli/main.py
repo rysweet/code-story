@@ -3,7 +3,7 @@
 import sys
 
 import click
-from click_didyoumean import DYMGroup
+from click_didyoumean import DYMGroup  # type: ignore[import-untyped]
 
 # Import rich_click if available, otherwise create a stub with click
 rich_click_module = None
@@ -72,16 +72,11 @@ class CodeStoryCommandGroup(DYMGroup):
                     similar = [
                         cmd
                         for cmd in commands
-                        if (
-                            cmd.startswith(cmd_name[:1])
-                            or cmd_name.lower() in cmd.lower()
-                        )
+                        if (cmd.startswith(cmd_name[:1]) or cmd_name.lower() in cmd.lower())
                     ]
 
                     if similar:
-                        error_msg += (
-                            f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
-                        )
+                        error_msg += f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
 
             # Show the error with custom formatting
             click.echo(f"Error: {error_msg}", err=True)
@@ -109,9 +104,7 @@ class CodeStoryCommandGroup(DYMGroup):
     envvar="CODESTORY_API_KEY",
 )
 @click.pass_context
-def app(
-    ctx: click.Context, service_url: str | None = None, api_key: str | None = None
-) -> None:
+def app(ctx: click.Context, service_url: str | None = None, api_key: str | None = None) -> None:
     """
     Code Story CLI application.
 
@@ -124,9 +117,7 @@ def app(
     # Create service client
     settings = get_settings()
 
-    base_url = (
-        service_url if service_url else f"http://localhost:{settings.service.port}/v1"
-    )
+    base_url = service_url if service_url else f"http://localhost:{settings.service.port}/v1"
 
     client = ServiceClient(
         base_url=base_url,
@@ -181,16 +172,10 @@ def register_commands() -> None:
     # Enhanced aliases for better suggestions and direct command access
     # Add common top-level commands as direct aliases
     app.add_command(service.status, name="status")  # Direct alias for "service status"
-    app.add_command(
-        service.start_service, name="start"
-    )  # Direct alias for "service start"
-    app.add_command(
-        service.stop_service, name="stop"
-    )  # Direct alias for "service stop"
+    app.add_command(service.start_service, name="start")  # Direct alias for "service start"
+    app.add_command(service.stop_service, name="stop")  # Direct alias for "service stop"
     app.add_command(config.show_config, name="show")  # Direct alias for "config show"
-    app.add_command(
-        database.clear_database, name="clear"
-    )  # Direct alias for "database clear"
+    app.add_command(database.clear_database, name="clear")  # Direct alias for "database clear"
 
 
 # Register commands after app is defined
@@ -234,8 +219,7 @@ def _wrap_click_command(cmd):
                         if (
                             cmd.startswith(cmd_name[:1])
                             or any(  # Starts with same letter
-                                cmd_name == alias
-                                for alias in ["status", "start", "stop", "config"]
+                                cmd_name == alias for alias in ["status", "start", "stop", "config"]
                             )
                             or cmd_name.lower()  # Common aliases
                             in cmd.lower()  # Contains the text
@@ -244,15 +228,10 @@ def _wrap_click_command(cmd):
 
                     # Add suggestions if not already provided by DYMGroup
                     if similar and "Did you mean" not in error_msg:
-                        error_msg += (
-                            f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
-                        )
+                        error_msg += f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
 
             # For invalid option errors, provide more context
-            elif (
-                "no such option" in error_msg.lower()
-                or "invalid value" in error_msg.lower()
-            ):
+            elif "no such option" in error_msg.lower() or "invalid value" in error_msg.lower():
                 if ctx and ctx.command:
                     # We already have the help text above, but we could add more specific hints here
                     pass
@@ -318,17 +297,14 @@ def main() -> None:
                         cmd.startswith(cmd_name[:1])
                         or cmd_name.lower() in cmd.lower()  # Starts with same letter
                         or any(  # Contains the text
-                            cmd_name == alias
-                            for alias in ["status", "start", "stop", "config"]
+                            cmd_name == alias for alias in ["status", "start", "stop", "config"]
                         )  # Common aliases
                     )
                 ]
 
                 # Add suggestions separately
                 if similar and "Did you mean" not in error_msg:
-                    suggestions = (
-                        f"\nDid you mean one of these?\n    {', '.join(similar)}"
-                    )
+                    suggestions = f"\nDid you mean one of these?\n    {', '.join(similar)}"
 
         # Display in the requested order: 1) error, 2) suggestions, 3) help
         console.print(f"[bold red]Error:[/] {error_msg}")

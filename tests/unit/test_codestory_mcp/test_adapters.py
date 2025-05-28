@@ -117,9 +117,7 @@ class TestGraphServiceAdapter:
     @pytest.fixture
     def mock_metrics(self):
         """Create a mock metrics object."""
-        with mock.patch(
-            "codestory_mcp.adapters.graph_service.get_metrics"
-        ) as mock_get_metrics:
+        with mock.patch("codestory_mcp.adapters.graph_service.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
             mock_get_metrics.return_value = metrics
             yield metrics
@@ -189,9 +187,7 @@ class TestGraphServiceAdapter:
         mock_client.post.return_value = future
 
         # Execute search
-        results = await adapter.search(
-            query="test", node_types=["Class", "Function"], limit=10
-        )
+        results = await adapter.search(query="test", node_types=["Class", "Function"], limit=10)
 
         # Verify request
         mock_client.post.assert_called_once_with(
@@ -236,9 +232,7 @@ class TestGraphServiceAdapter:
 
         # Verify metrics
         mock_metrics.record_service_api_call.assert_called_once()
-        assert (
-            mock_metrics.record_service_api_call.call_args[0][0] == "/v1/query/search"
-        )
+        assert mock_metrics.record_service_api_call.call_args[0][0] == "/v1/query/search"
         assert mock_metrics.record_service_api_call.call_args[0][1] == "error"
 
     @pytest.mark.asyncio
@@ -260,9 +254,7 @@ class TestGraphServiceAdapter:
 
         # Verify metrics
         mock_metrics.record_service_api_call.assert_called_once()
-        assert (
-            mock_metrics.record_service_api_call.call_args[0][0] == "/v1/query/search"
-        )
+        assert mock_metrics.record_service_api_call.call_args[0][0] == "/v1/query/search"
         assert mock_metrics.record_service_api_call.call_args[0][1] == "error"
 
     @pytest.mark.asyncio
@@ -325,10 +317,7 @@ class TestGraphServiceAdapter:
 
         # Verify metrics
         mock_metrics.record_service_api_call.assert_called_once()
-        assert (
-            mock_metrics.record_service_api_call.call_args[0][0]
-            == "/v1/query/node/nonexistent"
-        )
+        assert mock_metrics.record_service_api_call.call_args[0][0] == "/v1/query/node/nonexistent"
         assert mock_metrics.record_service_api_call.call_args[0][1] == "error"
 
     @pytest.mark.asyncio
@@ -372,9 +361,7 @@ class TestGraphServiceAdapter:
         mock_client.post.return_value = future
 
         # Execute find_paths
-        paths = await adapter.find_paths(
-            from_id="node-123", to_id="node-456", max_paths=3
-        )
+        paths = await adapter.find_paths(from_id="node-123", to_id="node-456", max_paths=3)
 
         # Verify request
         mock_client.post.assert_called_once_with(
@@ -416,9 +403,7 @@ class TestOpenAIServiceAdapter:
     @pytest.fixture
     def mock_client(self):
         """Create a mock OpenAI client."""
-        with mock.patch(
-            "codestory_mcp.adapters.openai_service.OpenAIClient"
-        ) as mock_client_cls:
+        with mock.patch("codestory_mcp.adapters.openai_service.OpenAIClient") as mock_client_cls:
             client = mock.Mock()
             mock_client_cls.return_value = client
             yield client
@@ -426,9 +411,7 @@ class TestOpenAIServiceAdapter:
     @pytest.fixture
     def mock_metrics(self):
         """Create a mock metrics object."""
-        with mock.patch(
-            "codestory_mcp.adapters.openai_service.get_metrics"
-        ) as mock_get_metrics:
+        with mock.patch("codestory_mcp.adapters.openai_service.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
             mock_get_metrics.return_value = metrics
             yield metrics
@@ -454,9 +437,7 @@ class TestOpenAIServiceAdapter:
         assert adapter.metrics is mock_metrics
 
     @pytest.mark.asyncio
-    async def test_generate_code_summary_success(
-        self, adapter, mock_client, mock_metrics
-    ):
+    async def test_generate_code_summary_success(self, adapter, mock_client, mock_metrics):
         """Test successful code summary generation."""
         # Mock response
         response = mock.Mock()
@@ -497,9 +478,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == "success"
 
     @pytest.mark.asyncio
-    async def test_generate_code_summary_error(
-        self, adapter, mock_client, mock_metrics
-    ):
+    async def test_generate_code_summary_error(self, adapter, mock_client, mock_metrics):
         """Test code summary generation with error."""
         # Mock error
         future = asyncio.Future()
@@ -521,9 +500,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == "error"
 
     @pytest.mark.asyncio
-    async def test_generate_path_explanation_success(
-        self, adapter, mock_client, mock_metrics
-    ):
+    async def test_generate_path_explanation_success(self, adapter, mock_client, mock_metrics):
         """Test successful path explanation generation."""
         # Mock response
         response = mock.Mock()
@@ -578,10 +555,7 @@ class TestOpenAIServiceAdapter:
 
         # Verify metrics
         mock_metrics.record_service_api_call.assert_called_once()
-        assert (
-            mock_metrics.record_service_api_call.call_args[0][0]
-            == "openai_path_explanation"
-        )
+        assert mock_metrics.record_service_api_call.call_args[0][0] == "openai_path_explanation"
         assert mock_metrics.record_service_api_call.call_args[0][1] == "success"
 
     @pytest.mark.asyncio
@@ -606,14 +580,8 @@ class TestOpenAIServiceAdapter:
 
         # Verify metrics
         assert mock_metrics.record_service_api_call.call_count == 2
-        assert (
-            mock_metrics.record_service_api_call.call_args_list[0][0][0]
-            == "openai_embedding"
-        )
-        assert (
-            mock_metrics.record_service_api_call.call_args_list[1][0][0]
-            == "similar_code"
-        )
+        assert mock_metrics.record_service_api_call.call_args_list[0][0][0] == "openai_embedding"
+        assert mock_metrics.record_service_api_call.call_args_list[1][0][0] == "similar_code"
         assert mock_metrics.record_graph_operation.called
 
     def test_get_openai_service_singleton(self):

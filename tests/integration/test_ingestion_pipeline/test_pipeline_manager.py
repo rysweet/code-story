@@ -85,9 +85,7 @@ class TestPipelineManager:
                     with self._lock:
                         for step in remaining_steps:
                             self.steps_status[step] = "failed"
-                            self.steps_errors[
-                                step
-                            ] = "Dependency cycle or missing dependencies"
+                            self.steps_errors[step] = "Dependency cycle or missing dependencies"
                     break
 
                 # Run each step that's ready
@@ -102,9 +100,7 @@ class TestPipelineManager:
                             raise ValueError(f"Step {step_name} not found")
 
                         # Execute the step - call the actual run method
-                        print(
-                            f"Running step {step_name} using parameters: {self.job_parameters}"
-                        )
+                        print(f"Running step {step_name} using parameters: {self.job_parameters}")
                         job_id = step_instance.run(
                             repository_path=self.job_parameters["repo_path"],
                             **self.job_parameters,
@@ -158,14 +154,10 @@ class TestPipelineManager:
                         self.steps_errors[step] = f"Pipeline error: {e!s}"
             self._job_complete.set()
 
-    def _propagate_failure(
-        self, failed_step: str, remaining_steps: set[str], error: str
-    ) -> None:
+    def _propagate_failure(self, failed_step: str, remaining_steps: set[str], error: str) -> None:
         """Mark all steps that depend on the failed step as failed."""
         dependent_steps = [
-            step
-            for step in remaining_steps
-            if failed_step in self.dependency_graph[step]
+            step for step in remaining_steps if failed_step in self.dependency_graph[step]
         ]
 
         for step in dependent_steps:
@@ -212,12 +204,8 @@ class TestPipelineManager:
             return {"status": "not_found"}
 
         with self._lock:
-            all_completed = all(
-                status == "completed" for status in self.steps_status.values()
-            )
-            any_failed = any(
-                status == "failed" for status in self.steps_status.values()
-            )
+            all_completed = all(status == "completed" for status in self.steps_status.values())
+            any_failed = any(status == "failed" for status in self.steps_status.values())
 
             if any_failed:
                 job_status = "failed"

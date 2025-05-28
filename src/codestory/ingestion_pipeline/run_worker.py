@@ -1,5 +1,6 @@
 """Entry point for running the Celery worker."""
 
+from typing import Any
 import logging
 import os
 import sys
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def main():
+def main() -> Any:
     """Run the Celery worker with the appropriate configuration."""
     try:
         # Log configuration

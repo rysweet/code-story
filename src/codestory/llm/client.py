@@ -19,9 +19,7 @@ try:
     AZURE_IDENTITY_AVAILABLE = True
 except ImportError:
     logger = logging.getLogger(__name__)
-    logger.warning(
-        "azure.identity not found. Azure AD authentication will not be available."
-    )
+    logger.warning("azure.identity not found. Azure AD authentication will not be available.")
     AZURE_IDENTITY_AVAILABLE = False
 
 from ..config.settings import get_settings
@@ -156,9 +154,7 @@ class OpenAIClient:
 
                         # Try to automatically log in to the required tenant
                         try:
-                            logger.info(
-                                f"Attempting automatic Azure login to tenant {tenant_id}"
-                            )
+                            logger.info(f"Attempting automatic Azure login to tenant {tenant_id}")
                             login_cmd = [
                                 "az",
                                 "login",
@@ -167,9 +163,7 @@ class OpenAIClient:
                                 "--use-device-code",
                             ]
                             if "CODESTORY_AUTH_SCOPE" in os.environ:
-                                login_cmd.extend(
-                                    ["--scope", os.environ["CODESTORY_AUTH_SCOPE"]]
-                                )
+                                login_cmd.extend(["--scope", os.environ["CODESTORY_AUTH_SCOPE"]])
                             else:
                                 login_cmd.extend(
                                     [
@@ -211,9 +205,7 @@ class OpenAIClient:
 
                                             # Display the auth info prominently in logs
                                             logger.warning("=" * 80)
-                                            logger.warning(
-                                                "AZURE AUTHENTICATION REQUIRED"
-                                            )
+                                            logger.warning("AZURE AUTHENTICATION REQUIRED")
                                             logger.warning("-" * 80)
                                             logger.warning(f"Visit: {auth_url}")
                                             logger.warning(f"Enter code: {auth_code}")
@@ -245,12 +237,8 @@ class OpenAIClient:
                                         "You may need to run 'az login' manually in a terminal"
                                     )
                         except Exception as login_err:
-                            logger.warning(
-                                f"Automatic Azure login attempt failed: {login_err}"
-                            )
-                            logger.warning(
-                                "You may need to run 'az login' manually in a terminal"
-                            )
+                            logger.warning(f"Automatic Azure login attempt failed: {login_err}")
+                            logger.warning("You may need to run 'az login' manually in a terminal")
 
                 except Exception as e:
                     logger.warning(f"Failed to check Azure tenant: {e}")
@@ -282,28 +270,30 @@ class OpenAIClient:
 
         # Add Azure AD authentication if available
         if AZURE_IDENTITY_AVAILABLE:
-            logger.info("Azure identity available - attempting DefaultAzureCredential authentication")
+            logger.info(
+                "Azure identity available - attempting DefaultAzureCredential authentication"
+            )
             try:
                 logger.info("Creating DefaultAzureCredential...")
                 # Create the credential - DefaultAzureCredential doesn't accept tenant_id directly
                 credential = DefaultAzureCredential()
                 logger.info("DefaultAzureCredential created successfully")
-                
+
                 # Test the credential by getting a token
                 logger.info("Testing credential by requesting token...")
                 token_provider = get_bearer_token_provider(
                     credential, "https://cognitiveservices.azure.com/.default"
                 )
                 logger.info("Token provider created successfully")
-                
+
                 client_params["azure_ad_token_provider"] = token_provider
                 logger.info("Added token provider to client parameters")
-                
+
             except Exception as e:
                 logger.warning(f"Failed to initialize Azure AD authentication: {e}")
                 logger.warning(f"Error type: {type(e).__name__}")
                 logger.warning("Falling back to API key authentication...")
-                
+
                 # Continue without Azure AD authentication - try API key fallback
                 logger.info("Attempting to get API key from settings...")
                 try:
@@ -331,9 +321,7 @@ class OpenAIClient:
                 api_key = getattr(settings.openai, "api_key", None)
                 if api_key:
                     # Convert SecretStr to string if needed
-                    if hasattr(api_key, "get_secret_value") and callable(
-                        api_key.get_secret_value
-                    ):
+                    if hasattr(api_key, "get_secret_value") and callable(api_key.get_secret_value):
                         client_params["api_key"] = api_key.get_secret_value()
                         logger.info("Using API key authentication")
                     else:
@@ -345,17 +333,23 @@ class OpenAIClient:
                 logger.error(f"Failed to get API key from settings: {e}")
 
         # Log final client parameters (without sensitive data)
-        safe_params = {k: v for k, v in client_params.items() if k not in ["api_key", "azure_ad_token_provider"]}
+        safe_params = {
+            k: v
+            for k, v in client_params.items()
+            if k not in ["api_key", "azure_ad_token_provider"]
+        }
         logger.info(f"Final client parameters (sanitized): {safe_params}")
-        logger.info(f"Authentication method: {'Azure AD' if 'azure_ad_token_provider' in client_params else 'API Key'}")
+        logger.info(
+            f"Authentication method: {'Azure AD' if 'azure_ad_token_provider' in client_params else 'API Key'}"
+        )
 
         # Create the Azure OpenAI clients (sync and async)
         logger.info("Creating Azure OpenAI clients...")
-        
+
         # Get deployment ID from environment or settings
         deployment_id = deployment_id_env or self.chat_model
         logger.info(f"Using deployment ID: {deployment_id}")
-        
+
         azure_openai_kwargs = {
             "azure_endpoint": client_params.get("azure_endpoint"),
             "azure_deployment": deployment_id,  # This is the key fix - use azure_deployment
@@ -403,50 +397,54 @@ class OpenAIClient:
                 request_data.pop(key)
 
         return model_name, request_data
-    
+
     def _is_reasoning_model(self, model: str) -> bool:
         """Check if the model is a reasoning model that requires special parameter handling.
-        
+
         Args:
             model: Model name to check
-            
+
         Returns:
             True if this is a reasoning model, False otherwise
         """
         reasoning_models = ["o1", "o1-preview", "o1-mini"]
         return any(reasoning_model in model.lower() for reasoning_model in reasoning_models)
-    
-    def _adjust_params_for_reasoning_model(self, params: dict[str, Any], model: str) -> dict[str, Any]:
+
+    def _adjust_params_for_reasoning_model(
+        self, params: dict[str, Any], model: str
+    ) -> dict[str, Any]:
         """Adjust parameters for reasoning models.
-        
+
         Reasoning models like o1 require different parameters:
         - Use max_completion_tokens instead of max_tokens
         - Do not support temperature parameter
-        
+
         Args:
             params: Original parameters
             model: Model name
-            
+
         Returns:
             Adjusted parameters for reasoning models
         """
         if not self._is_reasoning_model(model):
             return params
-            
+
         adjusted_params = params.copy()
-        
+
         # Convert max_tokens to max_completion_tokens for reasoning models
         if "max_tokens" in adjusted_params:
             max_tokens_value = adjusted_params.pop("max_tokens")
             if max_tokens_value is not None:
                 adjusted_params["max_completion_tokens"] = max_tokens_value
-                logger.info(f"Converted max_tokens to max_completion_tokens for reasoning model: {model}")
-        
+                logger.info(
+                    f"Converted max_tokens to max_completion_tokens for reasoning model: {model}"
+                )
+
         # Remove temperature parameter for reasoning models
         if "temperature" in adjusted_params:
             adjusted_params.pop("temperature")
             logger.info(f"Removed temperature parameter for reasoning model: {model}")
-            
+
         return adjusted_params
 
     @instrument_request(operation=OperationType.COMPLETION)
@@ -498,15 +496,13 @@ class OpenAIClient:
                 prompt=prompt,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                **request_data
+                **request_data,
             )
             return CompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
             logger.error(f"Invalid completion request: {message}")
-            raise InvalidRequestError(
-                f"Invalid request parameters: {message}", cause=e
-            ) from e
+            raise InvalidRequestError(f"Invalid request parameters: {message}", cause=e) from e
         except Exception as e:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
@@ -559,33 +555,29 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-            
+
             # Adjust parameters for reasoning models
             request_data = self._adjust_params_for_reasoning_model(request_data, model_name)
-            
+
             # Prepare the API call parameters - model_name should be the deployment name for Azure
             api_call_params = {
                 "model": model_name,
                 "messages": [m.model_dump() for m in messages],
-                **request_data  # This contains adjusted parameters for the model type
+                **request_data,  # This contains adjusted parameters for the model type
             }
-            
+
             response = self._sync_client.chat.completions.create(**api_call_params)
             return ChatCompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
             logger.error(f"Invalid chat request: {message}")
-            raise InvalidRequestError(
-                f"Invalid request parameters: {message}", cause=e
-            ) from e
+            raise InvalidRequestError(f"Invalid request parameters: {message}", cause=e) from e
         except Exception as e:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
                 logger.error(f"Unexpected error in chat: {e!s}")
-                raise OpenAIError(
-                    f"Error generating chat completion: {e!s}", cause=e
-                ) from e
+                raise OpenAIError(f"Error generating chat completion: {e!s}", cause=e) from e
             raise
 
     @instrument_request(operation=OperationType.EMBEDDING)
@@ -626,15 +618,13 @@ class OpenAIClient:
             response = self._sync_client.embeddings.create(
                 model=model_name,  # Use model instead of deployment_name
                 input=texts,
-                **request_data
+                **request_data,
             )
             return EmbeddingResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
             logger.error(f"Invalid embedding request: {message}")
-            raise InvalidRequestError(
-                f"Invalid request parameters: {message}", cause=e
-            ) from e
+            raise InvalidRequestError(f"Invalid request parameters: {message}", cause=e) from e
         except Exception as e:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
@@ -692,15 +682,13 @@ class OpenAIClient:
                 prompt=prompt,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                **request_data
+                **request_data,
             )
             return CompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
             logger.error(f"Invalid completion request: {message}")
-            raise InvalidRequestError(
-                f"Invalid request parameters: {message}", cause=e
-            ) from e
+            raise InvalidRequestError(f"Invalid request parameters: {message}", cause=e) from e
         except Exception as e:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
@@ -753,33 +741,29 @@ class OpenAIClient:
             # Make API request
             # Extract model name and prepare request data
             model_name, request_data = self._prepare_request_data(request)
-            
+
             # Adjust parameters for reasoning models
             request_data = self._adjust_params_for_reasoning_model(request_data, model_name)
-            
+
             # Prepare the API call parameters - model_name should be the deployment name for Azure
             api_call_params = {
                 "model": model_name,
                 "messages": [m.model_dump() for m in messages],
-                **request_data  # This contains adjusted parameters for the model type
+                **request_data,  # This contains adjusted parameters for the model type
             }
-            
+
             response = await self._async_client.chat.completions.create(**api_call_params)
             return ChatCompletionResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
             logger.error(f"Invalid chat request: {message}")
-            raise InvalidRequestError(
-                f"Invalid request parameters: {message}", cause=e
-            ) from e
+            raise InvalidRequestError(f"Invalid request parameters: {message}", cause=e) from e
         except Exception as e:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface
             if not isinstance(e, OpenAIError):
                 logger.error(f"Unexpected error in async chat: {e!s}")
-                raise OpenAIError(
-                    f"Error generating chat completion: {e!s}", cause=e
-                ) from e
+                raise OpenAIError(f"Error generating chat completion: {e!s}", cause=e) from e
             raise
 
     @instrument_async_request(operation=OperationType.EMBEDDING)
@@ -820,15 +804,13 @@ class OpenAIClient:
             response = await self._async_client.embeddings.create(
                 model=model_name,  # Use model instead of deployment_name
                 input=texts,
-                **request_data
+                **request_data,
             )
             return EmbeddingResponse.model_validate(response.model_dump())
         except openai.BadRequestError as e:
             message = str(e)
             logger.error(f"Invalid embedding request: {message}")
-            raise InvalidRequestError(
-                f"Invalid request parameters: {message}", cause=e
-            ) from e
+            raise InvalidRequestError(f"Invalid request parameters: {message}", cause=e) from e
         except Exception as e:
             # The retry decorator will handle most errors, but we need to catch and convert
             # any that slip through to maintain a consistent interface

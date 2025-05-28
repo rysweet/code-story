@@ -67,13 +67,11 @@ def mock_step_progress() -> Generator[dict[str, Any], None, None]:
     }
 
     # Create patches for all step status methods to simulate progress
-    with patch.object(
-        FileSystemStep, "status", autospec=True
-    ) as mock_fs_status, patch.object(
-        BlarifyStep, "status", autospec=True
-    ) as mock_blarify_status, patch.object(
-        SummarizerStep, "status", autospec=True
-    ) as mock_summarizer_status:
+    with (
+        patch.object(FileSystemStep, "status", autospec=True) as mock_fs_status,
+        patch.object(BlarifyStep, "status", autospec=True) as mock_blarify_status,
+        patch.object(SummarizerStep, "status", autospec=True) as mock_summarizer_status,
+    ):
         # Define progress sequences for each step
         fs_progress = [
             {"status": StepStatus.RUNNING, "progress": 0, "message": "Starting..."},
@@ -127,9 +125,7 @@ def mock_step_progress() -> Generator[dict[str, Any], None, None]:
 
         # Create side effect functions to return progress values in sequence
         def fs_side_effect(self: Any, job_id: str) -> dict[str, Any]:
-            progress = fs_progress[
-                min(len(progress_updates["filesystem"]), len(fs_progress) - 1)
-            ]
+            progress = fs_progress[min(len(progress_updates["filesystem"]), len(fs_progress) - 1)]
             progress_updates["filesystem"].append(progress)
             return progress
 
@@ -166,9 +162,7 @@ def mock_step_progress() -> Generator[dict[str, Any], None, None]:
 def pipeline_manager() -> Generator[PipelineManager, None, None]:
     """Create a pipeline manager with mock step implementations."""
     # Mock the orchestrate_pipeline task
-    with patch(
-        "codestory.ingestion_pipeline.tasks.orchestrate_pipeline"
-    ) as mock_orchestrate:
+    with patch("codestory.ingestion_pipeline.tasks.orchestrate_pipeline") as mock_orchestrate:
         # Set up a return value that includes job_id and status
         mock_orchestrate.return_value = {
             "status": StepStatus.RUNNING,
@@ -194,9 +188,7 @@ def pipeline_manager() -> Generator[PipelineManager, None, None]:
         yield manager
 
 
-def test_step_progress_reporting(
-    sample_repo: str, mock_step_progress: dict[str, Any]
-) -> None:
+def test_step_progress_reporting(sample_repo: str, mock_step_progress: dict[str, Any]) -> None:
     """Test that individual steps correctly report progress."""
     # Create step instances
     fs_step = FileSystemStep()
@@ -204,9 +196,11 @@ def test_step_progress_reporting(
     summarizer_step = SummarizerStep()
 
     # Run each step (the actual implementation is mocked)
-    with patch.object(FileSystemStep, "run", return_value="fs-job-id"), patch.object(
-        BlarifyStep, "run", return_value="blarify-job-id"
-    ), patch.object(SummarizerStep, "run", return_value="summarizer-job-id"):
+    with (
+        patch.object(FileSystemStep, "run", return_value="fs-job-id"),
+        patch.object(BlarifyStep, "run", return_value="blarify-job-id"),
+        patch.object(SummarizerStep, "run", return_value="summarizer-job-id"),
+    ):
         fs_job_id = fs_step.run(repository_path=sample_repo)
         blarify_job_id = blarify_step.run(repository_path=sample_repo)
         summarizer_job_id = summarizer_step.run(repository_path=sample_repo)
@@ -241,14 +235,10 @@ def test_step_progress_reporting(
         assert (
             updates[-1]["status"] == StepStatus.COMPLETED
         ), f"{step_name} final status should be COMPLETED"
-        assert (
-            updates[-1]["progress"] == 100
-        ), f"{step_name} final progress should be 100%"
+        assert updates[-1]["progress"] == 100, f"{step_name} final progress should be 100%"
 
 
-def test_pipeline_overall_progress(
-    sample_repo: str, pipeline_manager: PipelineManager
-) -> None:
+def test_pipeline_overall_progress(sample_repo: str, pipeline_manager: PipelineManager) -> None:
     """Test that the pipeline manager correctly calculates overall progress."""
     # Create status sequences for three steps
     fs_statuses = [
@@ -321,9 +311,7 @@ def test_pipeline_overall_progress(
                 active_weight_sum += summarizer_weight
 
             # Calculate progress as a percentage of active steps
-            overall_progress = (
-                active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
-            )
+            overall_progress = active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
 
         # Determine overall status
         if all(
@@ -332,8 +320,7 @@ def test_pipeline_overall_progress(
         ):
             overall_status = StepStatus.COMPLETED
         elif any(
-            s["status"] == StepStatus.FAILED
-            for s in [fs_status, blarify_status, summarizer_status]
+            s["status"] == StepStatus.FAILED for s in [fs_status, blarify_status, summarizer_status]
         ):
             overall_status = StepStatus.FAILED
         elif any(
@@ -375,15 +362,9 @@ def test_pipeline_overall_progress(
         # Verify that status includes the right fields
         assert "progress" in status, "Pipeline status should include progress"
         assert "steps" in status, "Pipeline status should include steps"
-        assert (
-            "filesystem" in status["steps"]
-        ), "Pipeline status should include filesystem step"
-        assert (
-            "blarify" in status["steps"]
-        ), "Pipeline status should include blarify step"
-        assert (
-            "summarizer" in status["steps"]
-        ), "Pipeline status should include summarizer step"
+        assert "filesystem" in status["steps"], "Pipeline status should include filesystem step"
+        assert "blarify" in status["steps"], "Pipeline status should include blarify step"
+        assert "summarizer" in status["steps"], "Pipeline status should include summarizer step"
 
     # Verify that overall progress increased
     assert (
@@ -434,8 +415,9 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
         return "blarify-failed-job"
 
     # Patch both the run and status methods
-    with patch.object(BlarifyStep, "run", mock_run), patch.object(
-        BlarifyStep, "status", mock_status
+    with (
+        patch.object(BlarifyStep, "run", mock_run),
+        patch.object(BlarifyStep, "status", mock_status),
     ):
         # Run the step
         job_id = blarify_step.run(repository_path=sample_repo)
@@ -452,9 +434,7 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
 
         # Verify final status is FAILED
         final_status = statuses[2]
-        assert (
-            final_status["status"] == StepStatus.FAILED
-        ), "Final status should be FAILED"
+        assert final_status["status"] == StepStatus.FAILED, "Final status should be FAILED"
         assert "error" in final_status, "Failed status should include error message"
         assert (
             final_status["error"] == "Container execution failed"
@@ -466,9 +446,7 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
         ), "Progress should be the last reported value before failure"
 
 
-def test_progress_with_parallel_steps(
-    sample_repo: str, pipeline_manager: PipelineManager
-) -> None:
+def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: PipelineManager) -> None:
     """Test that progress is correctly tracked when steps are running in parallel."""
     # Create status sequences for parallel-running steps
     # In this scenario, filesystem and blarify are running concurrently
@@ -544,9 +522,7 @@ def test_progress_with_parallel_steps(
                 active_weight_sum += summarizer_weight
 
             # Calculate progress as a percentage of active steps
-            overall_progress = (
-                active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
-            )
+            overall_progress = active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
 
         # Determine overall status
         if all(
@@ -555,8 +531,7 @@ def test_progress_with_parallel_steps(
         ):
             overall_status = StepStatus.COMPLETED
         elif any(
-            s["status"] == StepStatus.FAILED
-            for s in [fs_status, blarify_status, summarizer_status]
+            s["status"] == StepStatus.FAILED for s in [fs_status, blarify_status, summarizer_status]
         ):
             overall_status = StepStatus.FAILED
         elif any(
@@ -598,12 +573,9 @@ def test_progress_with_parallel_steps(
     # Expected progress = (25 * 0.33 + 20 * 0.33) / (0.33 + 0.33) ≈ 22.5% for first check
     # Expected progress increases with each check
     expected_progress = [
-        (0.0 * fs_weight + 0.0 * blarify_weight)
-        / (fs_weight + blarify_weight),  # Initial progress
-        (25.0 * fs_weight + 20.0 * blarify_weight)
-        / (fs_weight + blarify_weight),  # Second check
-        (50.0 * fs_weight + 40.0 * blarify_weight)
-        / (fs_weight + blarify_weight),  # Third check
+        (0.0 * fs_weight + 0.0 * blarify_weight) / (fs_weight + blarify_weight),  # Initial progress
+        (25.0 * fs_weight + 20.0 * blarify_weight) / (fs_weight + blarify_weight),  # Second check
+        (50.0 * fs_weight + 40.0 * blarify_weight) / (fs_weight + blarify_weight),  # Third check
         # Fourth check includes all three steps
         (75.0 * fs_weight + 80.0 * blarify_weight + 50.0 * summarizer_weight)
         / (fs_weight + blarify_weight + summarizer_weight),
@@ -704,8 +676,9 @@ def test_nonlinear_progress_reporting(sample_repo: str) -> None:
         return "summarizer-nonlinear-job"
 
     # Patch both the run and status methods
-    with patch.object(SummarizerStep, "run", mock_run), patch.object(
-        SummarizerStep, "status", mock_status
+    with (
+        patch.object(SummarizerStep, "run", mock_run),
+        patch.object(SummarizerStep, "status", mock_status),
     ):
         # Run the step
         job_id = summarizer_step.run(repository_path=sample_repo)
@@ -730,9 +703,7 @@ def test_nonlinear_progress_reporting(sample_repo: str) -> None:
 
         # Verify completion
         final_status = statuses[-1]
-        assert (
-            final_status["status"] == StepStatus.COMPLETED
-        ), "Final status should be COMPLETED"
+        assert final_status["status"] == StepStatus.COMPLETED, "Final status should be COMPLETED"
         assert final_status["progress"] == 100, "Final progress should be 100%"
 
         # Verify progress is monotonically increasing or staying the same

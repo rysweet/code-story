@@ -15,9 +15,7 @@ class TestServiceClient:
 
     def test_init_with_default_values(self) -> None:
         """Test initialization with default values."""
-        with patch(
-            "codestory.cli.client.service_client.get_settings"
-        ) as mock_get_settings:
+        with patch("codestory.cli.client.service_client.get_settings") as mock_get_settings:
             # Create mock settings
             mock_settings = MagicMock()
             mock_service = MagicMock()
@@ -66,9 +64,7 @@ class TestServiceClient:
 
     def test_api_key_from_settings(self) -> None:
         """Test getting API key from settings."""
-        with patch(
-            "codestory.cli.client.service_client.get_settings"
-        ) as mock_get_settings:
+        with patch("codestory.cli.client.service_client.get_settings") as mock_get_settings:
             # Create mock settings with API key as SecretStr
             mock_settings = MagicMock()
             mock_service = MagicMock()
@@ -208,9 +204,7 @@ class TestServiceClient:
 
         # Verify result
         assert result == {"app_name": "code-story"}
-        client.client.get.assert_called_once_with(
-            "/config", params={"include_sensitive": "true"}
-        )
+        client.client.get.assert_called_once_with("/config", params={"include_sensitive": "true"})
 
     def test_update_config(self) -> None:
         """Test updating configuration."""
@@ -295,9 +289,7 @@ class TestServiceClient:
         # Verify execute_query was called twice
         assert client.execute_query.call_count == 2
         # First call should be to delete all nodes
-        client.execute_query.assert_any_call(
-            query="MATCH (n) DETACH DELETE n", query_type="write"
-        )
+        client.execute_query.assert_any_call(query="MATCH (n) DETACH DELETE n", query_type="write")
         # Second call should be to re-initialize schema
         client.execute_query.assert_any_call(
             query="CALL apoc.schema.assert({}, {})", query_type="write"
@@ -333,9 +325,7 @@ class TestServiceClient:
         # Create client
         client = ServiceClient()
         client.execute_query = MagicMock()
-        client.execute_query.side_effect = ServiceError(
-            "Query execution failed: 403 Forbidden"
-        )
+        client.execute_query.side_effect = ServiceError("Query execution failed: 403 Forbidden")
         client.console = MagicMock()
 
         # Call clear_database

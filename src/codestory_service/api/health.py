@@ -44,9 +44,7 @@ class HealthReport(BaseModel):
     status: Literal["healthy", "degraded", "unhealthy"] = Field(
         ..., description="Overall health status of the service"
     )
-    timestamp: str = Field(
-        ..., description="Timestamp of the health check in ISO format"
-    )
+    timestamp: str = Field(..., description="Timestamp of the health check in ISO format")
     version: str = Field(..., description="Service version")
     uptime: int = Field(..., description="Service uptime in seconds")
     components: dict[str, ComponentHealth] = Field(
@@ -59,9 +57,7 @@ class HealthReport(BaseModel):
 
 # Track service start time
 SERVICE_START_TIME = time.time()
-SERVICE_VERSION = (
-    "0.1.0"  # Would be loaded from package metadata in a real implementation
-)
+SERVICE_VERSION = "0.1.0"  # Would be loaded from package metadata in a real implementation
 
 
 @router.get(
@@ -116,7 +112,9 @@ async def health_check(
         )
 
         logger.info(f"Health check completed. Overall status: {health_report.status}")
-        logger.info(f"Component statuses: {[(name, comp.status) for name, comp in health_report.components.items()]}")
+        logger.info(
+            f"Component statuses: {[(name, comp.status) for name, comp in health_report.components.items()]}"
+        )
 
         # Attach any errors to the report
         if error_package:
@@ -129,11 +127,13 @@ async def health_check(
             and health_report.components.get("openai")
             and health_report.components["openai"].status == "unhealthy"
         ):
-            logger.info("Auto-fix requested and OpenAI is unhealthy - checking for Azure auth issues...")
+            logger.info(
+                "Auto-fix requested and OpenAI is unhealthy - checking for Azure auth issues..."
+            )
             openai_details = health_report.components["openai"].details or {}
             error_str = str(openai_details.get("error", ""))
             error_type = str(openai_details.get("type", ""))
-            
+
             logger.info(f"OpenAI error details: {openai_details}")
             logger.info(f"Error string: {error_str}")
             logger.info(f"Error type: {error_type}")
@@ -170,9 +170,7 @@ async def health_check(
                     # Update the health report with renewal attempt information
                     if not health_report.components["openai"].details:
                         health_report.components["openai"].details = {}
-                    health_report.components["openai"].details[
-                        "renewal_attempted"
-                    ] = True
+                    health_report.components["openai"].details["renewal_attempted"] = True
                     health_report.components["openai"].details["renewal_error"] = str(e)
 
         return health_report
@@ -231,14 +229,11 @@ async def health_check(
 )
 async def auth_renew(
     openai: OpenAIAdapter = Depends(get_openai_adapter),
-    tenant_id: str
-    | None = Query(None, description="Optional Azure tenant ID for authentication"),
+    tenant_id: str | None = Query(None, description="Optional Azure tenant ID for authentication"),
     inject_into_containers: bool = Query(
         True, description="Inject tokens into containers after authentication"
     ),
-    restart_containers: bool = Query(
-        False, description="Restart containers after token injection"
-    ),
+    restart_containers: bool = Query(False, description="Restart containers after token injection"),
 ) -> dict[str, Any]:
     """Renew Azure authentication tokens.
 
@@ -279,9 +274,7 @@ async def auth_renew(
             for env_var in env_vars:
                 if os.environ.get(env_var):
                     tenant_id = os.environ[env_var]
-                    logger.info(
-                        f"Using tenant ID from environment variable {env_var}: {tenant_id}"
-                    )
+                    logger.info(f"Using tenant ID from environment variable {env_var}: {tenant_id}")
                     break
 
             # If not found in env vars, try to get from settings
@@ -293,13 +286,9 @@ async def auth_renew(
 
                 # Try to get tenant ID from OpenAI settings
                 try:
-                    tenant_id = getattr(
-                        getattr(settings, "openai", None), "tenant_id", None
-                    )
+                    tenant_id = getattr(getattr(settings, "openai", None), "tenant_id", None)
                     if tenant_id:
-                        logger.info(
-                            f"Using tenant ID from service settings (openai): {tenant_id}"
-                        )
+                        logger.info(f"Using tenant ID from service settings (openai): {tenant_id}")
                 except Exception:
                     pass
 
@@ -313,9 +302,7 @@ async def auth_renew(
                             getattr(core_settings, "openai", None), "tenant_id", None
                         )
                         if tenant_id:
-                            logger.info(
-                                f"Using tenant ID from core settings (openai): {tenant_id}"
-                            )
+                            logger.info(f"Using tenant ID from core settings (openai): {tenant_id}")
 
                         # Try Azure settings if OpenAI settings don't have it
                         if not tenant_id:
@@ -327,17 +314,12 @@ async def auth_renew(
                                     f"Using tenant ID from core settings (azure): {tenant_id}"
                                 )
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to get tenant ID from core settings: {e}"
-                        )
+                        logger.warning(f"Failed to get tenant ID from core settings: {e}")
 
             # If still not found, try to extract from Azure error message
             if not tenant_id:
                 health_status = await openai.check_health()
-                if (
-                    isinstance(health_status, dict)
-                    and health_status.get("status") == "unhealthy"
-                ):
+                if isinstance(health_status, dict) and health_status.get("status") == "unhealthy":
                     details = health_status.get("details", {})
                     error_str = str(details.get("error", ""))
 
@@ -356,9 +338,7 @@ async def auth_renew(
                         tenant_match = re.search(pattern, error_str)
                         if tenant_match:
                             tenant_id = tenant_match.group(1)
-                            logger.info(
-                                f"Extracted tenant ID from error message: {tenant_id}"
-                            )
+                            logger.info(f"Extracted tenant ID from error message: {tenant_id}")
                             break
 
             # If still not found, try Azure CLI
@@ -384,7 +364,9 @@ async def auth_renew(
 
     # Construct the login command for display
     if tenant_id:
-        login_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
+        login_cmd = (
+            f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
+        )
     else:
         login_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
 
@@ -407,9 +389,7 @@ async def auth_renew(
             "auto_inject": inject_into_containers,
         }
     else:
-        response[
-            "auth_message"
-        ] = "No tenant ID found in configuration, using default login"
+        response["auth_message"] = "No tenant ID found in configuration, using default login"
 
     # Check if tokens need to be injected into containers
     if inject_into_containers:
@@ -421,9 +401,7 @@ async def auth_renew(
 
             # Find the script path relative to the current file
             script_path = (
-                Path(__file__).parent.parent.parent.parent
-                / "scripts"
-                / "inject_azure_tokens.py"
+                Path(__file__).parent.parent.parent.parent / "scripts" / "inject_azure_tokens.py"
             )
 
             if not script_path.exists():
@@ -462,9 +440,7 @@ async def auth_renew(
                         self.stderr = stderr
 
                 try:
-                    stdout, stderr = await asyncio.wait_for(
-                        proc.communicate(), timeout=30
-                    )
+                    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
                     injection_result_code = proc.returncode
                     injection_stdout = stdout.decode("utf-8") if stdout else ""
                     injection_stderr = stderr.decode("utf-8") if stderr else ""
@@ -537,9 +513,7 @@ async def _health_check_impl(
             result = await asyncio.wait_for(check_func(), timeout=timeout_seconds)
             return result
         except TimeoutError:
-            logger.error(
-                f"{component_name} health check timed out after {timeout_seconds} seconds"
-            )
+            logger.error(f"{component_name} health check timed out after {timeout_seconds} seconds")
             return {
                 "status": "unhealthy",
                 "details": {
@@ -567,16 +541,14 @@ async def _health_check_impl(
     neo4j_health, celery_health, openai_health = await asyncio.gather(*tasks)
 
     # Check Redis health with timeout
-    async def check_redis_health():
+    async def check_redis_health() -> Any:
         settings = get_service_settings()
         redis_host = getattr(settings, "redis_host", "redis")
         redis_port = getattr(settings, "redis_port", 6379)
         redis_db = getattr(settings, "redis_db", 0)
 
         # Log Redis connection details for debugging
-        logger.info(
-            f"Attempting to connect to Redis at {redis_host}:{redis_port}/{redis_db}"
-        )
+        logger.info(f"Attempting to connect to Redis at {redis_host}:{redis_port}/{redis_db}")
 
         # Create Redis client with socket timeout
         redis_client = redis.Redis(
@@ -665,9 +637,7 @@ async def _health_check_impl(
         overall_status = "healthy"
 
     # Ensure overall_status is a valid literal
-    overall_status_literal = cast(
-        "Literal['healthy', 'degraded', 'unhealthy']", overall_status
-    )
+    overall_status_literal = cast("Literal['healthy', 'degraded', 'unhealthy']", overall_status)
 
     return HealthReport(
         status=overall_status_literal,

@@ -62,9 +62,7 @@ class CeleryAdapter:
                 "status": "healthy",
                 "details": {
                     "active_workers": len(active_workers) if active_workers else 0,
-                    "registered_tasks": len(registered_workers)
-                    if registered_workers
-                    else 0,
+                    "registered_tasks": len(registered_workers) if registered_workers else 0,
                 },
             }
         except Exception as e:
@@ -108,7 +106,7 @@ class CeleryAdapter:
             # Generate a job_id
             import uuid
 
-            job_id = str(uuid.uuid4())
+            job_id = str(uuid.uuid4.uuid4())
 
             # Create step configs
             step_configs = []
@@ -129,9 +127,7 @@ class CeleryAdapter:
                     if step_name == "blarify":
                         # Blarify step doesn't use certain parameters
                         filtered_options = {
-                            k: v
-                            for k, v in request.options.items()
-                            if k not in ["concurrency"]
+                            k: v for k, v in request.options.items() if k not in ["concurrency"]
                         }
                         step_config.update(filtered_options)
                         logger.debug(
@@ -414,9 +410,7 @@ async def get_celery_adapter() -> CeleryAdapter:
         if celery_health["status"] == "healthy":
             return adapter
         # If not healthy, raise an exception
-        error_msg = celery_health["details"].get(
-            "error", "No active Celery workers found"
-        )
+        error_msg = celery_health["details"].get("error", "No active Celery workers found")
         logger.error(f"Celery adapter not healthy: {error_msg}")
         raise RuntimeError(f"Celery component unhealthy: {error_msg}")
     except Exception as e:

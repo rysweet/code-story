@@ -34,9 +34,7 @@ def query() -> None:
     help="Output format for the query results.",
 )
 @click.option("--output", "-o", type=click.Path(), help="Save results to a file.")
-@click.option(
-    "--param", "-p", multiple=True, help="Query parameters in KEY=VALUE format."
-)
+@click.option("--param", "-p", multiple=True, help="Query parameters in KEY=VALUE format.")
 @click.option("--color/--no-color", default=True, help="Enable/disable colored output.")
 @click.option("--limit", "-n", type=int, help="Limit number of results.")
 @click.pass_context
@@ -80,27 +78,19 @@ def run_query(
         "cypher"
         if query_string.strip()
         .upper()
-        .startswith(
-            ("MATCH", "CREATE", "MERGE", "RETURN", "DELETE", "REMOVE", "SET", "WITH")
-        )
+        .startswith(("MATCH", "CREATE", "MERGE", "RETURN", "DELETE", "REMOVE", "SET", "WITH"))
         else "mcp"
     )
 
     # Execute query
     if not output:  # Only show query text when not outputting to file
-        console.print(
-            f"Executing [magenta]{query_type}[/] query: [cyan]{query_string}[/]"
-        )
+        console.print(f"Executing [magenta]{query_type}[/] query: [cyan]{query_string}[/]")
         if parameters:
             console.print(f"With parameters: [blue]{parameters}[/]")
 
     try:
         # Add limit to Cypher query if specified and is a Cypher query
-        if (
-            limit is not None
-            and query_type == "cypher"
-            and "LIMIT" not in query_string.upper()
-        ):
+        if limit is not None and query_type == "cypher" and "LIMIT" not in query_string.upper():
             # Simple regex-free approach - might need improvement for complex queries
             if "RETURN" in query_string:
                 parts = query_string.split("RETURN")
@@ -225,10 +215,12 @@ def explore_query(ctx: click.Context, limit: int = 10) -> None:
             '* [cyan]codestory query run "MATCH (n:Class) RETURN n.name, n.path LIMIT 5"[/]'
         )
         console.print(
-            '* [cyan]codestory query run "MATCH (n)-[r:IMPORTS]->(m) RETURN n.name, m.name LIMIT 5"[/]'
+            '* [cyan]codestory query run "MATCH (n)-[r:IMPORTS]->(m) '
+            'RETURN n.name, m.name LIMIT 5"[/]'
         )
         console.print(
-            "* [cyan]codestory query run \"MATCH (n:Function) WHERE n.name CONTAINS 'main' RETURN n LIMIT 5\"[/]"
+            "* [cyan]codestory query run \"MATCH (n:Function) WHERE n.name CONTAINS "
+            "'main' RETURN n LIMIT 5\"[/]"
         )
 
     except ServiceError as e:
@@ -245,9 +237,7 @@ def explore_query(ctx: click.Context, limit: int = 10) -> None:
     default="json",
     help="Output format.",
 )
-@click.option(
-    "--param", "-p", multiple=True, help="Query parameters in KEY=VALUE format."
-)
+@click.option("--param", "-p", multiple=True, help="Query parameters in KEY=VALUE format.")
 @click.pass_context
 def export_query(
     ctx: click.Context,
@@ -280,9 +270,7 @@ def export_query(
                 return
 
     try:
-        console.print(
-            f"Executing query and exporting results to [cyan]{output_path}[/]..."
-        )
+        console.print(f"Executing query and exporting results to [cyan]{output_path}[/]...")
         result = client.execute_query(query_string, parameters)
 
         with open(output_path, "w") as f:
@@ -294,9 +282,7 @@ def export_query(
         # Print summary
         if "records" in result:
             record_count = len(result["records"])
-            console.print(
-                f"[green]{record_count} record(s) exported to [cyan]{output_path}[/]"
-            )
+            console.print(f"[green]{record_count} record(s) exported to [cyan]{output_path}[/]")
 
     except ServiceError as e:
         console.print(f"[bold red]Export failed:[/] {e!s}")
@@ -325,9 +311,7 @@ def _display_query_result(
         records = result["records"]
 
         if not records:
-            console.print(
-                "[yellow]No results found.[/]" if color else "No results found."
-            )
+            console.print("[yellow]No results found.[/]" if color else "No results found.")
             return
 
         # Apply limit if specified
@@ -343,9 +327,7 @@ def _display_query_result(
         columns = list(records[0].keys())
 
         # Create table
-        table = Table(
-            "Query Results", highlight=color, border_style="cyan" if color else None
-        )
+        table = Table("Query Results", highlight=color, border_style="cyan" if color else None)
 
         for column in columns:
             table.add_column(column, style="cyan" if color else None)
@@ -365,12 +347,11 @@ def _display_query_result(
         if truncated:
             if color:
                 console.print(
-                    f"[green]{len(records)} of {total_records} record(s) shown[/] ([yellow]limit={limit}[/])"
+                    f"[green]{len(records)} of {total_records} record(s) shown[/] "
+                    f"([yellow]limit={limit}[/])"
                 )
             else:
-                console.print(
-                    f"{len(records)} of {total_records} record(s) shown (limit={limit})"
-                )
+                console.print(f"{len(records)} of {total_records} record(s) shown (limit={limit})")
         else:
             if color:
                 console.print(f"[green]{total_records} record(s) returned[/]")
@@ -386,9 +367,7 @@ def _display_query_result(
             if limit is not None and len(results) > limit:
                 results = results[:limit]
                 if color:
-                    console.print(
-                        f"[yellow]Showing {limit} of {len(results)} results[/]"
-                    )
+                    console.print(f"[yellow]Showing {limit} of {len(results)} results[/]")
                 else:
                     console.print(f"Showing {limit} of {len(results)} results")
 
@@ -420,9 +399,7 @@ def _display_query_result(
         console.print(json.dumps(result, indent=2))
 
 
-def _display_results_as_tree(
-    console: Console, result: dict[str, Any], color: bool = True
-) -> None:
+def _display_results_as_tree(console: Console, result: dict[str, Any], color: bool = True) -> None:
     """
     Display query results as a tree.
 
@@ -438,9 +415,7 @@ def _display_results_as_tree(
         records = result["records"]
 
         if not records:
-            console.print(
-                "[yellow]No results found.[/]" if color else "No results found."
-            )
+            console.print("[yellow]No results found.[/]" if color else "No results found.")
             return
 
         tree = Tree("Query Results", style="bold cyan" if color else None)

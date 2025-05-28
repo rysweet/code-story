@@ -30,9 +30,7 @@ from codestory_summarizer.step import SummarizerStep
 
 
 # Custom implementation of process_filesystem that directly uses the neo4j_connector
-def custom_process_filesystem(
-    repository_path, job_id, neo4j_connector, ignore_patterns=None
-):
+def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_patterns=None):
     """Custom implementation of process_filesystem for testing."""
     print(
         f"*** TEST_DEBUG: Running custom_process_filesystem for test_summarizer_integration with {job_id} ***"
@@ -245,9 +243,7 @@ def mock_llm_client():
                 choices=[
                     ChatCompletionResponseChoice(
                         index=0,
-                        message=ChatMessage(
-                            role=ChatRole.ASSISTANT, content=summary_text
-                        ),
+                        message=ChatMessage(role=ChatRole.ASSISTANT, content=summary_text),
                         finish_reason="stop",
                     )
                 ],
@@ -342,9 +338,7 @@ Welcome to the documentation for the sample repository.
         (repo_dir / ".git").mkdir()
         (repo_dir / ".git" / "config").write_text("# Git config")
         (repo_dir / "src" / "__pycache__").mkdir()
-        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text(
-            "# Bytecode"
-        )
+        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text("# Bytecode")
 
         yield str(repo_dir)
 
@@ -384,9 +378,7 @@ def initialized_repo(sample_repo, neo4j_connector):
     )
 
     # Verify that the step completed successfully
-    assert (
-        result["status"] == StepStatus.COMPLETED
-    ), f"FileSystemStep failed: {result.get('error')}"
+    assert result["status"] == StepStatus.COMPLETED, f"FileSystemStep failed: {result.get('error')}"
 
     # Simulate AST nodes by adding some Class and Function nodes manually
     # In a real scenario, these would be created by the Blarify step
@@ -395,9 +387,7 @@ def initialized_repo(sample_repo, neo4j_connector):
     app_file_results = neo4j_connector.execute_query(
         "MATCH (f:File {path: 'src/main/app.py'}) RETURN ID(f) as id"
     )
-    app_file = (
-        app_file_results[0] if app_file_results and len(app_file_results) > 0 else None
-    )
+    app_file = app_file_results[0] if app_file_results and len(app_file_results) > 0 else None
 
     if app_file:
         app_file_id = app_file["id"]
@@ -418,9 +408,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         class_results = neo4j_connector.execute_query(
             class_query, params={"file_id": app_file_id}, write=True
         )
-        class_result = (
-            class_results[0] if class_results and len(class_results) > 0 else None
-        )
+        class_result = class_results[0] if class_results and len(class_results) > 0 else None
 
         class_id = class_result["id"]
 
@@ -449,9 +437,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         ]
 
         for query in method_queries:
-            neo4j_connector.execute_query(
-                query, params={"class_id": class_id}, write=True
-            )
+            neo4j_connector.execute_query(query, params={"class_id": class_id}, write=True)
 
         # Add a Function node for main
         main_query = """
@@ -465,9 +451,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         CREATE (file)-[:CONTAINS]->(f)
         """
 
-        neo4j_connector.execute_query(
-            main_query, params={"file_id": app_file_id}, write=True
-        )
+        neo4j_connector.execute_query(main_query, params={"file_id": app_file_id}, write=True)
 
     # Return the sample repository path
     return sample_repo
@@ -652,18 +636,12 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         status = step.active_jobs[job_id]
 
         # Verify that the step completed successfully
-        assert (
-            status["status"] == StepStatus.COMPLETED
-        ), f"Step failed: {status.get('error')}"
+        assert status["status"] == StepStatus.COMPLETED, f"Step failed: {status.get('error')}"
 
     # Verify that summaries were created in Neo4j
     # 1. Count the number of Summary nodes
-    summary_result = neo4j_connector.execute_query(
-        "MATCH (s:Summary) RETURN COUNT(s) as count"
-    )
-    summary_count = (
-        summary_result[0]["count"] if summary_result and len(summary_result) > 0 else 0
-    )
+    summary_result = neo4j_connector.execute_query("MATCH (s:Summary) RETURN COUNT(s) as count")
+    summary_count = summary_result[0]["count"] if summary_result and len(summary_result) > 0 else 0
 
     # We should have summaries for:
     # - The repository
@@ -688,9 +666,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         else 0
     )
 
-    assert (
-        file_summaries >= 4
-    ), f"Expected summaries for at least 4 files, got {file_summaries}"
+    assert file_summaries >= 4, f"Expected summaries for at least 4 files, got {file_summaries}"
 
     # 3. Check that directory nodes have summaries
     dir_summaries_result = neo4j_connector.execute_query(
@@ -705,9 +681,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         else 0
     )
 
-    assert (
-        dir_summaries >= 4
-    ), f"Expected summaries for at least 4 directories, got {dir_summaries}"
+    assert dir_summaries >= 4, f"Expected summaries for at least 4 directories, got {dir_summaries}"
 
     # 4. Check that class nodes have summaries
     class_summaries_result = neo4j_connector.execute_query(
@@ -722,9 +696,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
         else 0
     )
 
-    assert (
-        class_summaries >= 1
-    ), f"Expected summaries for at least 1 class, got {class_summaries}"
+    assert class_summaries >= 1, f"Expected summaries for at least 1 class, got {class_summaries}"
 
     # 5. Check that method nodes have summaries
     method_summaries_result = neo4j_connector.execute_query(
@@ -783,9 +755,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 
 
 @pytest.mark.integration
-def test_summarizer_step_ingestion_update(
-    initialized_repo, neo4j_connector, mock_llm_client
-):
+def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, mock_llm_client):
     """Test that the summarizer step can update summaries for a modified repository."""
     # Create a direct run function that doesn't use Celery
     import uuid
@@ -979,18 +949,14 @@ def new_function():
     new_file_check = neo4j_connector.execute_query(
         "MATCH (f:File {path: 'src/main/new_module.py'}) RETURN f LIMIT 1"
     )
-    assert (
-        new_file_check and len(new_file_check) > 0
-    ), "New file was not added to the database"
+    assert new_file_check and len(new_file_check) > 0, "New file was not added to the database"
 
     # Add a Function node for the new file
     new_file_id_result = neo4j_connector.execute_query(
         "MATCH (f:File {path: 'src/main/new_module.py'}) RETURN ID(f) as id"
     )
     new_file_id = (
-        new_file_id_result[0]["id"]
-        if new_file_id_result and len(new_file_id_result) > 0
-        else None
+        new_file_id_result[0]["id"] if new_file_id_result and len(new_file_id_result) > 0 else None
     )
     assert new_file_id is not None, "Could not get ID for the new file"
 
@@ -1020,9 +986,7 @@ def new_function():
         status = step.active_jobs[job_id]
 
         # Verify that the update completed successfully
-        assert (
-            status["status"] == StepStatus.COMPLETED
-        ), f"Update failed: {status.get('error')}"
+        assert status["status"] == StepStatus.COMPLETED, f"Update failed: {status.get('error')}"
 
     # Verify that new summaries were created
     updated_summary_result = neo4j_connector.execute_query(

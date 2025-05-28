@@ -48,9 +48,7 @@ def get_config(
     if include_sensitive:
         user_roles = user.get("roles", [])
         if "admin" not in user_roles:
-            logger.warning(
-                f"User {user.get('name')} attempted to view sensitive config values"
-            )
+            logger.warning(f"User {user.get('name')} attempted to view sensitive config values")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Viewing sensitive configuration values requires admin role",

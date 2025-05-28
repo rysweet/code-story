@@ -25,9 +25,7 @@ else:
 
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ[
-    "NEO4J__DATABASE"
-] = "testdb"  # Use the test database name from docker-compose.test.yml
+os.environ["NEO4J__DATABASE"] = "testdb"  # Use the test database name from docker-compose.test.yml
 
 import contextlib
 
@@ -115,9 +113,7 @@ def neo4j_connector():
         uri = "bolt://neo4j:7687"
     else:
         # In local environment, use port mapping from docker-compose.test.yml for tests
-        neo4j_port = (
-            "7687" if ci_env else "7688"
-        )  # Port mapped in docker-compose.test.yml
+        neo4j_port = "7687" if ci_env else "7688"  # Port mapped in docker-compose.test.yml
         uri = f"bolt://localhost:{neo4j_port}"
 
     print(f"Using Neo4j URI: {uri}")
@@ -336,9 +332,7 @@ def blarify_celery_app(celery_app):
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_blarify_step_run(
-    sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app
-):
+def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app):
     """Test that the Blarify step can process a repository and create AST nodes in Neo4j."""
     # Get the Celery app from the fixture
 
@@ -351,12 +345,10 @@ def test_blarify_step_run(
     neo4j_connector.execute_query("MATCH (n:Repository) DETACH DELETE n", write=True)
 
     # Verify there are no AST nodes before we start
-    initial_ast_count = neo4j_connector.execute_query(
-        "MATCH (n:AST) RETURN count(n) as count"
-    )[0].get("count", 0)
-    assert (
-        initial_ast_count == 0
-    ), f"Expected no AST nodes at start, found {initial_ast_count}"
+    initial_ast_count = neo4j_connector.execute_query("MATCH (n:AST) RETURN count(n) as count")[
+        0
+    ].get("count", 0)
+    assert initial_ast_count == 0, f"Expected no AST nodes at start, found {initial_ast_count}"
 
     # Create test AST nodes directly in Neo4j to verify connectivity
     try:
@@ -379,22 +371,20 @@ def test_blarify_step_run(
         )
 
         # Verify AST nodes were created
-        ast_count = neo4j_connector.execute_query(
-            "MATCH (n:AST) RETURN count(n) as count"
-        )[0].get("count", 0)
+        ast_count = neo4j_connector.execute_query("MATCH (n:AST) RETURN count(n) as count")[0].get(
+            "count", 0
+        )
 
         print(f"Created {ast_count} AST nodes directly in Neo4j")
         assert ast_count > 0, "Expected AST nodes to be created during test setup"
 
         # Also check for repository node
-        repo_count = neo4j_connector.execute_query(
-            "MATCH (r:Repository) RETURN count(r) as count"
-        )[0].get("count", 0)
+        repo_count = neo4j_connector.execute_query("MATCH (r:Repository) RETURN count(r) as count")[
+            0
+        ].get("count", 0)
 
         print(f"Created {repo_count} Repository nodes directly in Neo4j")
-        assert (
-            repo_count > 0
-        ), "Expected Repository nodes to be created during test setup"
+        assert repo_count > 0, "Expected Repository nodes to be created during test setup"
 
         # Get sample of AST nodes for verification
         ast_nodes = neo4j_connector.execute_query(
@@ -404,15 +394,9 @@ def test_blarify_step_run(
 
         # Validate node properties
         for node in ast_nodes:
-            assert (
-                "n.name" in node
-            ), f"Expected AST node to have 'name' property, got: {node}"
-            assert (
-                "n.type" in node
-            ), f"Expected AST node to have 'type' property, got: {node}"
-            assert (
-                "n.path" in node
-            ), f"Expected AST node to have 'path' property, got: {node}"
+            assert "n.name" in node, f"Expected AST node to have 'name' property, got: {node}"
+            assert "n.type" in node, f"Expected AST node to have 'type' property, got: {node}"
+            assert "n.path" in node, f"Expected AST node to have 'path' property, got: {node}"
 
         print("Direct Neo4j node creation successful - Neo4j is working correctly")
 
@@ -451,9 +435,7 @@ def test_blarify_step_run(
 
         # Verify we get a job ID back
         assert job_id is not None
-        assert isinstance(
-            job_id, str
-        ), f"Expected job_id to be a string, got {type(job_id)}"
+        assert isinstance(job_id, str), f"Expected job_id to be a string, got {type(job_id)}"
 
         # Verify job exists in active_jobs
         assert (
@@ -471,9 +453,7 @@ def test_blarify_step_run(
         last_status = None
         check_interval = 5  # Check every 5 seconds
 
-        print(
-            f"Using timeout of {timeout} seconds and check interval of {check_interval} seconds"
-        )
+        print(f"Using timeout of {timeout} seconds and check interval of {check_interval} seconds")
 
         while time.time() - start_time < timeout:
             job_status = step.status(job_id)
@@ -505,9 +485,7 @@ def test_blarify_step_run(
                         filters={"name": container_name}
                     )
                     if not containers:
-                        print(
-                            f"Container {container_name} is not running, stopping test"
-                        )
+                        print(f"Container {container_name} is not running, stopping test")
                         break
                 except Exception as e:
                     print(f"Error checking container status: {e}")
@@ -519,25 +497,21 @@ def test_blarify_step_run(
         print(f"Final job status: {job_status}")
 
         # Verify status response format
-        assert isinstance(
-            job_status, dict
-        ), f"Expected status to be a dict, got {type(job_status)}"
+        assert isinstance(job_status, dict), f"Expected status to be a dict, got {type(job_status)}"
         assert (
             "status" in job_status
         ), f"Expected 'status' key in job_status, got keys: {job_status.keys()}"
 
         # Check if there are AST nodes in Neo4j
-        ast_count = neo4j_connector.execute_query(
-            "MATCH (n:AST) RETURN count(n) as count"
-        )[0].get("count", 0)
+        ast_count = neo4j_connector.execute_query("MATCH (n:AST) RETURN count(n) as count")[0].get(
+            "count", 0
+        )
 
         print(f"Found {ast_count} AST nodes in Neo4j")
 
         # If the job completed successfully, there should be AST nodes
         if job_status["status"] == StepStatus.COMPLETED:
-            assert (
-                ast_count > 0
-            ), "Expected at least one AST node to be created in Neo4j"
+            assert ast_count > 0, "Expected at least one AST node to be created in Neo4j"
 
             # Also test for repository node
             repo_count = neo4j_connector.execute_query(
@@ -545,9 +519,7 @@ def test_blarify_step_run(
             )[0].get("count", 0)
 
             print(f"Found {repo_count} Repository nodes in Neo4j")
-            assert (
-                repo_count > 0
-            ), "Expected at least one Repository node to be created in Neo4j"
+            assert repo_count > 0, "Expected at least one Repository node to be created in Neo4j"
 
             # Check that AST nodes have expected properties
             ast_nodes = neo4j_connector.execute_query(
@@ -557,15 +529,9 @@ def test_blarify_step_run(
 
             # Validate that AST nodes have the expected properties
             for node in ast_nodes:
-                assert (
-                    "n.name" in node
-                ), f"Expected AST node to have 'name' property, got: {node}"
-                assert (
-                    "n.type" in node
-                ), f"Expected AST node to have 'type' property, got: {node}"
-                assert (
-                    "n.path" in node
-                ), f"Expected AST node to have 'path' property, got: {node}"
+                assert "n.name" in node, f"Expected AST node to have 'name' property, got: {node}"
+                assert "n.type" in node, f"Expected AST node to have 'type' property, got: {node}"
+                assert "n.path" in node, f"Expected AST node to have 'path' property, got: {node}"
         else:
             print(
                 f"BlarifyStep execution failed, but this might be due to known Docker socket issue. Error: {job_status.get('error', '')}"
@@ -573,9 +539,7 @@ def test_blarify_step_run(
 
             # If we have AST nodes from the direct Docker test, we'll consider this test successful anyway
             if ast_count > 0:
-                print(
-                    "Integration test passing on direct Docker connectivity test results"
-                )
+                print("Integration test passing on direct Docker connectivity test results")
             else:
                 pytest.skip(
                     "Docker daemon socket issue detected, valid BlarifyStep test not possible"
@@ -599,9 +563,7 @@ def test_blarify_step_run(
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_blarify_step_stop(
-    sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app
-):
+def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app):
     """Test that the Blarify step can be stopped mid-process."""
     # Get the Celery app from the fixture
 
@@ -645,9 +607,7 @@ def test_blarify_step_stop(
 
         # Verify we get a job ID back
         assert job_id is not None
-        assert isinstance(
-            job_id, str
-        ), f"Expected job_id to be a string, got {type(job_id)}"
+        assert isinstance(job_id, str), f"Expected job_id to be a string, got {type(job_id)}"
 
         # Verify job exists in active_jobs
         assert (
@@ -714,9 +674,7 @@ def test_blarify_step_stop(
                             all=True, filters={"name": container_name}
                         )
                         if containers:
-                            print(
-                                f"Container still exists, forcing removal: {containers}"
-                            )
+                            print(f"Container still exists, forcing removal: {containers}")
                             for container in containers:
                                 try:
                                     container.stop(timeout=1)
@@ -741,9 +699,9 @@ def test_blarify_step_stop(
 
         # If the job completed before we could stop it, check if Neo4j has AST nodes
         if final_status["status"] == StepStatus.COMPLETED:
-            ast_count = neo4j_connector.execute_query(
-                "MATCH (n:AST) RETURN count(n) as count"
-            )[0].get("count", 0)
+            ast_count = neo4j_connector.execute_query("MATCH (n:AST) RETURN count(n) as count")[
+                0
+            ].get("count", 0)
 
             print(f"Job completed before stop. Found {ast_count} AST nodes in Neo4j")
 

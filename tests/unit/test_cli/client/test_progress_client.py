@@ -103,13 +103,8 @@ class TestProgressClient:
                 )
 
                 # Check that mapped URLs were tried
-                assert (
-                    mock_redis_from_url.call_args_list[0][0][0] == "redis://redis:6379"
-                )
-                assert (
-                    mock_redis_from_url.call_args_list[1][0][0]
-                    == "redis://localhost:6389"
-                )
+                assert mock_redis_from_url.call_args_list[0][0][0] == "redis://redis:6379"
+                assert mock_redis_from_url.call_args_list[1][0][0] == "redis://localhost:6389"
 
                 # Check connection status
                 assert client.use_redis is True
@@ -136,9 +131,7 @@ class TestProgressClient:
             )
 
             # Check that explicit URL was tried first
-            mock_redis_from_url.assert_called_with(
-                "redis://explicit:1234", socket_timeout=2.0
-            )
+            mock_redis_from_url.assert_called_with("redis://explicit:1234", socket_timeout=2.0)
 
             # Check connection status
             assert client.use_redis is True
