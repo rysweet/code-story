@@ -170,7 +170,7 @@ class TestOpenAIClient:
             # Verify the mock was called with correct args
             mock_create.assert_called_once()
             call_args = mock_create.call_args[1]
-            assert call_args["deployment_name"] == "gpt-4o"  # Default reasoning model
+            assert call_args["model"] == "gpt-4o"  # Default reasoning model
             assert call_args["prompt"] == "Test prompt"
 
     def test_chat(self, client):
@@ -223,7 +223,7 @@ class TestOpenAIClient:
             # Verify the mock was called with correct args
             mock_create.assert_called_once()
             call_args = mock_create.call_args[1]
-            assert call_args["deployment_name"] == "gpt-4o"  # Default chat model
+            assert call_args["model"] == "gpt-4o"  # Default chat model
             assert len(call_args["messages"]) == 2
 
     def test_embed(self, client):
@@ -253,7 +253,7 @@ class TestOpenAIClient:
             # Verify the mock was called with correct args
             mock_create.assert_called_once()
             call_args = mock_create.call_args[1]
-            assert call_args["deployment_name"] == "text-embedding-3-small"
+            assert call_args["model"] == "text-embedding-3-small"
             assert call_args["input"] == ["Test text"]
 
     def test_error_handling_complete(self):

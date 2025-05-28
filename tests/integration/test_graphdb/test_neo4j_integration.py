@@ -1,73 +1,15 @@
 """Integration tests for Neo4j connector using a test container."""
 
 import os
-
-# Determine Neo4j port based on CI environment
-ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
 import time
-from collections.abc import Generator
 
 import pytest
-
-# Set environment variables for tests
-os.environ["NEO4J_DATABASE"] = "testdb"  # Match the database name in docker-compose.test.yml
-os.environ["CODESTORY_TEST_ENV"] = "true"
 
 from codestory.graphdb.exceptions import (
     TransactionError,
 )
 from codestory.graphdb.models import DirectoryNode, FileNode
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from codestory.graphdb.schema import initialize_schema
-
-# We don't skip these tests anymore as conftest.py ensures environment variables are set
-# If the test container is not running, the tests will fail with connection error
-# which is more informative than skipping
-
-
-@pytest.fixture
-def neo4j_connector() -> Generator[Neo4jConnector, None, None]:
-    """Create a Neo4j connector for testing with a test container."""
-    # Skip all these tests in CI environment since we're having port configuration issues
-    if os.environ.get("CI") == "true":
-        pytest.skip("Skipping Neo4j integration tests in CI environment")
-
-    # Use either NEO4J_URI or NEO4J__URI from environment (double underscore is for Settings)
-    # CI environment uses 7687, local docker-compose.test.yml uses 7688
-    uri = (
-        os.environ.get("NEO4J__URI")
-        or os.environ.get("NEO4J_URI")
-        or f"bolt://localhost:{neo4j_port}"
-    )
-    username = os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
-    password = os.environ.get("NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
-    database = os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "testdb"
-
-    print(f"Using Neo4j connection: {uri}, database: {database}")
-
-    # Set environment variables for test
-    os.environ["NEO4J_DATABASE"] = database
-    os.environ["CODESTORY_TEST_DB"] = database
-
-    connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
-
-    try:
-        # Clear database before tests
-        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
-
-        # Initialize schema with force=True to clear any existing constraints/indexes
-        initialize_schema(connector, force=True)
-
-        yield connector
-    finally:
-        # Clean up after tests
-        try:
-            connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
-        except Exception:
-            # Ignore cleanup errors
-            pass
-        connector.close()
 
 
 def test_connection(neo4j_connector: Neo4jConnector) -> None:

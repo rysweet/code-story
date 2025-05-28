@@ -1,8 +1,8 @@
 """Celery worker configuration for code ingestion tasks."""
 
-from celery import Celery  # type: ignore[import-untyped]
+from celery import Celery
 
-from codestory.config.settings import get_settings  # type: ignore[import-untyped]
+from codestory.config.settings import get_settings
 
 settings = get_settings()
 

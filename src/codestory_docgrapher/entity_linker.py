@@ -9,7 +9,7 @@ entities in the Neo4j database.
 import logging
 import re
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 from .models import DocumentationEntity, DocumentationRelationship, RelationType
 from .utils.path_matcher import PathMatcher

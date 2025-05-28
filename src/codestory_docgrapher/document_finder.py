@@ -11,7 +11,7 @@ import logging
 import os
 import re
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
+from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 from .models import DocumentationFile, DocumentType
 

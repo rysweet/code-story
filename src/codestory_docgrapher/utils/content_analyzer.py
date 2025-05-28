@@ -9,8 +9,8 @@ to extract entities, relationships, and other information.
 import logging
 import re
 
-from codestory.llm.client import create_client  # type: ignore[import-untyped]
-from codestory.llm.models import ChatMessage, ChatRole  # type: ignore[import-untyped]
+from codestory.llm.client import create_client
+from codestory.llm.models import ChatMessage, ChatRole
 
 from ..models import DocumentationEntity, EntityType
 

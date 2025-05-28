@@ -141,9 +141,24 @@ class TestOpenAIAdapter:
         mock_models = mock.MagicMock()
         mock_models.list = mock_list
 
+        # Mock chat completions for health check
+        mock_completion_response = mock.MagicMock()
+        mock_completion_response.choices = [mock.MagicMock()]
+        mock_completion_response.choices[0].message = mock.MagicMock()
+        mock_completion_response.choices[0].message.content = "Hello"
+
+        async def mock_chat_create(**kwargs):
+            return mock_completion_response
+
+        mock_chat = mock.MagicMock()
+        mock_completions = mock.MagicMock()
+        mock_completions.create = mock_chat_create
+        mock_chat.completions = mock_completions
+
         mock_async_client = mock.MagicMock()
         mock_async_client.embeddings = mock_embeddings
         mock_async_client.models = mock_models
+        mock_async_client.chat = mock_chat
 
         client._async_client = mock_async_client
         return client

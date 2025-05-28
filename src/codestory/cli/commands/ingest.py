@@ -935,7 +935,7 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
         # Handle different response formats (service API vs Celery/Redis format)
         # Format conversion for Redis PubSub messages
         if "job_id" in data and "step" in data:
-            from codestory.ingestion_pipeline.step import StepStatus  # type: ignore[import-untyped]
+            from codestory.ingestion_pipeline.step import StepStatus
 
             # This is a JobProgressEvent from Redis
             overall_status = data.get("status", StepStatus.RUNNING).lower()

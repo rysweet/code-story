@@ -10,8 +10,8 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.ingestion_pipeline.celery_app import app as celery_app  # type: ignore[import-untyped]
-from codestory.ingestion_pipeline.tasks import (  # type: ignore[import-untyped]
+from codestory.ingestion_pipeline.celery_app import app as celery_app
+from codestory.ingestion_pipeline.tasks import (
     orchestrate_pipeline as run_ingestion_pipeline,
 )
 
@@ -206,12 +206,7 @@ job_id=job_id,
                     source=None,
                     source_type=None,
                     branch=None,
-                    created_at=int(time.time(  # type: ignore[call-arg]
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                )),  # We don't know the exact time
+                    created_at=int(time.time()),  # We don't know the exact time
                     updated_at=int(time.time()),
                     started_at=None,
                     completed_at=None,
@@ -234,15 +229,7 @@ job_id=job_id,
                 return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.RUNNING,
-                    created_at=info.get("created_at", int(time.time(  # type: ignore[call-arg]
-                    source=None,
-                    source_type=None,
-                    branch=None,
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                ))),
+                    created_at=info.get("created_at", int(time.time())),
                     updated_at=int(time.time()),
                     progress=progress,
                     current_step=current_step,
@@ -257,15 +244,7 @@ job_id=job_id,
                 return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.COMPLETED,
-                    created_at=result.get("created_at", int(time.time(  # type: ignore[call-arg]
-                    source=None,
-                    source_type=None,
-                    branch=None,
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                ) - 60)),
+                    created_at=result.get("created_at", int(time.time()) - 60),
                     updated_at=int(time.time()),
                     progress=100.0,
                     current_step="Completed",
@@ -278,15 +257,7 @@ job_id=job_id,
                 return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.FAILED,
-                    created_at=int(time.time(  # type: ignore[call-arg]
-                    source=None,
-                    source_type=None,
-                    branch=None,
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                ) - 60),  # Estimate
+                    created_at=int(time.time()) - 60,  # Estimate
                     updated_at=int(time.time()),
                     progress=0.0,
                     current_step="Failed",
@@ -299,15 +270,7 @@ job_id=job_id,
                 return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                     status=JobStatus.CANCELLED,
-                    created_at=int(time.time(  # type: ignore[call-arg]
-                    source=None,
-                    source_type=None,
-                    branch=None,
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                ) - 60),  # Estimate
+                    created_at=int(time.time()) - 60,  # Estimate
                     updated_at=int(time.time()),
                     progress=0.0,
                     current_step="Cancelled",
@@ -320,15 +283,7 @@ job_id=job_id,
             return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                 status=JobStatus.UNKNOWN,
-                created_at=int(time.time(  # type: ignore[call-arg]
-                    source=None,
-                    source_type=None,
-                    branch=None,
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                ) - 60),  # Estimate
+                created_at=int(time.time()) - 60,  # Estimate
                 updated_at=int(time.time()),
                 progress=0.0,
                 current_step=task.state,
@@ -394,15 +349,7 @@ job_id=job_id,
             return IngestionJob(  # type: ignore[call-arg]
 job_id=job_id,
                 status=JobStatus.CANCELLING,
-                created_at=int(time.time(  # type: ignore[call-arg]
-                    source=None,
-                    source_type=None,
-                    branch=None,
-                    started_at=None,
-                    completed_at=None,
-                    duration=None,
-                    steps=None,
-                ) - 60),  # Estimate
+                created_at=int(time.time()) - 60,  # Estimate
                 updated_at=int(time.time()),
                 progress=0.0,
                 current_step="Cancelling",

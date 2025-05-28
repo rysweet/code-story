@@ -190,6 +190,7 @@ class Settings(BaseSettings):
         "with natural-language summaries",
         description="Application description",
     )
+    environment: str = Field("development", description="Application environment")
     log_level: str = Field("INFO", description="Logging level")
 
     # Authentication
@@ -309,6 +310,13 @@ class Settings(BaseSettings):
             # Provide default settings for tests if no config file is found
             print("No test configuration found. Using default test settings.")
             toml_settings = {
+                # Core settings
+                "app_name": "code-story-test",
+                "version": "0.1.0",
+                "description": "Test environment",
+                "environment": "testing",
+                "log_level": "DEBUG",
+                "auth_enabled": False,
                 # Neo4j settings
                 "neo4j__uri": "bolt://localhost:7687",
                 "neo4j__username": "neo4j",

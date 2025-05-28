@@ -699,7 +699,7 @@ def find_docker_compose_file() -> str | None:
 
     # Then try looking in the project root
     try:
-        from codestory.config.settings import get_project_root  # type: ignore[import-untyped]
+        from codestory.config.settings import get_project_root
 
         project_root = get_project_root()
         for filename in compose_file_names:

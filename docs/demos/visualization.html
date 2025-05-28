@@ -92,6 +92,26 @@
             margin-right: 8px;
         }
         
+        .legend-color-file {
+            background-color: var(--node-color-file);
+        }
+        
+        .legend-color-directory {
+            background-color: var(--node-color-directory);
+        }
+        
+        .legend-color-function {
+            background-color: var(--node-color-function);
+        }
+        
+        .legend-color-class {
+            background-color: var(--node-color-class);
+        }
+        
+        .legend-color-module {
+            background-color: var(--node-color-module);
+        }
+        
         .node {
             cursor: pointer;
         }
@@ -169,23 +189,23 @@
             <div class="legend">
                 <h3>Node Types</h3>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--node-color-file)"></div>
+                    <div class="legend-color legend-color-file"></div>
                     <div>File</div>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--node-color-directory)"></div>
+                    <div class="legend-color legend-color-directory"></div>
                     <div>Directory</div>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--node-color-function)"></div>
+                    <div class="legend-color legend-color-function"></div>
                     <div>Function</div>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--node-color-class)"></div>
+                    <div class="legend-color legend-color-class"></div>
                     <div>Class</div>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: var(--node-color-module)"></div>
+                    <div class="legend-color legend-color-module"></div>
                     <div>Module</div>
                 </div>
             </div>

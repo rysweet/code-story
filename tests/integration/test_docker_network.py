@@ -25,18 +25,31 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         Dictionary with Docker Compose project information
     """
     try:
-        # Start containers
+        # Start containers using test compose file
         result = subprocess.run(
-            ["docker-compose", "up", "-d"], capture_output=True, text=True, check=True
+            ["docker-compose", "-f", "docker-compose.test.yml", "up", "-d"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=300  # 5 minutes timeout
         )
         print(f"Docker Compose started: {result.stdout}")
 
-        # Give services time to start (this could be made more intelligent with health checks)
-        time.sleep(10)
+        # Wait for services to be healthy
+        print("Waiting for services to be healthy...")
+        health_check_result = subprocess.run(
+            ["docker-compose", "-f", "docker-compose.test.yml", "ps"],
+            capture_output=True,
+            text=True
+        )
+        print(f"Service status: {health_check_result.stdout}")
+        
+        # Give additional time for services to fully initialize
+        time.sleep(30)
 
         # Get container info
         result = subprocess.run(
-            ["docker-compose", "ps", "--format", "json"],
+            ["docker-compose", "-f", "docker-compose.test.yml", "ps", "--format", "json"],
             capture_output=True,
             text=True,
             check=True,
@@ -50,11 +63,20 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
 
         yield {"containers": containers}
 
+    except subprocess.TimeoutExpired:
+        print("Timeout starting Docker containers")
+        raise
     finally:
         # Tear down containers but keep logs
-        subprocess.run(["docker-compose", "logs", "--no-color"], capture_output=True, text=True)
+        subprocess.run(
+            ["docker-compose", "-f", "docker-compose.test.yml", "logs", "--no-color"],
+            capture_output=True, text=True
+        )
 
-        subprocess.run(["docker-compose", "down"], capture_output=True, text=True)
+        subprocess.run(
+            ["docker-compose", "-f", "docker-compose.test.yml", "down"],
+            capture_output=True, text=True
+        )
 
 
 def exec_in_container(container_name: str, command: list[str]) -> dict[str, Any]:

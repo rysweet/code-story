@@ -12,9 +12,9 @@ import structlog
 from fastapi import status
 from neo4j.graph import Node, Relationship
 
-from codestory_mcp.tools.base import ToolError  # type: ignore[import-untyped]
-from codestory_mcp.utils.config import get_mcp_settings  # type: ignore[import-untyped]
-from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
+from codestory_mcp.tools.base import ToolError
+from codestory_mcp.utils.config import get_mcp_settings
+from codestory_mcp.utils.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 

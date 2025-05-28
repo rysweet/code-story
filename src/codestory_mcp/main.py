@@ -8,10 +8,10 @@ import sys
 
 import structlog
 
-from codestory_mcp.server import run_server  # type: ignore[import-untyped]
+from codestory_mcp.server import run_server
 
 # Import all tools to register them
-from codestory_mcp.utils.config import get_mcp_settings  # type: ignore[import-untyped]
+from codestory_mcp.utils.config import get_mcp_settings
 
 
 def setup_logging() -> None:

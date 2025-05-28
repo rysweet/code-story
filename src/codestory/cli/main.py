@@ -5,7 +5,7 @@ from typing import Any
 import sys
 
 import click
-from click_didyoumean import DYMGroup  # type: ignore[import-untyped]
+from click_didyoumean import DYMGroup
 
 # Import rich_click if available, otherwise create a stub with click
 rich_click_module = None
@@ -26,7 +26,7 @@ except ImportError:
     rich_click_module = _click_for_rich
 from rich.console import Console
 
-from codestory.config import get_settings  # type: ignore[import-untyped]
+from codestory.config import get_settings
 
 from .client import ServiceClient, ServiceError
 

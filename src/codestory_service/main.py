@@ -156,7 +156,7 @@ def create_app() -> FastAPI:
         """Legacy endpoint for generating graph visualization."""
         try:
             # Convert string params to enum values
-            from codestory_service.domain.graph import (  # type: ignore[import-untyped]
+            from codestory_service.domain.graph import (
                 VisualizationRequest,
                 VisualizationTheme,
                 VisualizationType,
@@ -218,7 +218,7 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
 
-    from codestory.config.settings import get_settings  # type: ignore[import-untyped]
+    from codestory.config.settings import get_settings
 
     core_settings = get_settings()
     host = core_settings.service.host
