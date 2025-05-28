@@ -33,21 +33,21 @@ F = TypeVar("F", bound=Callable[..., Any])
 logger = logging.getLogger(__name__)
 
 
-def get_retry_after(retry_state: RetryCallState) -> float:
+def get_retry_after(retry_state: RetryCallState) -> float | None:
     """Get retry-after time from the exception.
 
     Args:
         retry_state: Current retry state
 
     Returns:
-        Time to wait before retrying in seconds
+        Time to wait before retrying in seconds, or None if no retry_after is specified
     """
     exception = retry_state.outcome.exception()  # type: ignore[union-attr]
     if exception is not None and hasattr(exception, "retry_after") and exception.retry_after is not None:
         return float(min(exception.retry_after, 60))  # Cap at 60 seconds
 
-    # Default to using exponential backoff - return a default value
-    return 1.0
+    # Return None when no retry_after is specified to allow exponential backoff to handle timing
+    return None
 
 
 def before_retry_callback(retry_state: RetryCallState) -> None:
