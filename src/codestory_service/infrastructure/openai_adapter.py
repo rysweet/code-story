@@ -183,7 +183,7 @@ class OpenAIAdapter:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"OpenAI authentication error: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e!s}")
             logger.error(f"Error type: {type(e).__name__}")
@@ -199,7 +199,7 @@ class OpenAIAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize OpenAI client: {e!s}",
-            )
+            ) from e
 
     async def create_embeddings(self, texts: list[str]) -> list[list[float]]:
         """Create embeddings for a list of texts.
@@ -224,13 +224,13 @@ class OpenAIAdapter:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,  # Match the expected code in tests
                 detail=f"OpenAI authentication error: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to create embeddings: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create embeddings: {e!s}",
-            )
+            ) from e
 
     async def check_health(self) -> dict[str, Any]:
         """Check OpenAI API health.

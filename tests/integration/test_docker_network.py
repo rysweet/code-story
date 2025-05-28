@@ -70,7 +70,7 @@ def exec_in_container(container_name: str, command: list[str]) -> dict[str, Any]
         Dictionary with exit_code, stdout, and stderr
     """
     result = subprocess.run(
-        ["docker", "exec", container_name] + command, capture_output=True, text=True
+        ["docker", "exec", container_name, *command], capture_output=True, text=True
     )
 
     return {

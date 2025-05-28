@@ -158,7 +158,7 @@ def load_pipeline_config(config_path: str | Path) -> dict[str, Any]:
         with open(config_path) as f:
             config = yaml.safe_load(f)
     except yaml.YAMLError as e:
-        raise ValueError(f"Invalid YAML in pipeline configuration: {e}")
+        raise ValueError(f"Invalid YAML in pipeline configuration: {e}") from e
 
     # Validate the configuration
     if not isinstance(config, dict):

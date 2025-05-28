@@ -146,13 +146,13 @@ class Neo4jAdapter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Query execution failed: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error in query execution: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {e!s}",
-            )
+            ) from e
 
     async def execute_vector_search(
         self, query_model: VectorQuery, embedding: list[float]
@@ -276,13 +276,13 @@ class Neo4jAdapter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Vector search failed: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error in vector search: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {e!s}",
-            )
+            ) from e
 
     async def find_path(self, path_request: PathRequest) -> PathResult:
         """Find paths between nodes.
@@ -432,13 +432,13 @@ class Neo4jAdapter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Path finding failed: {e!s}",
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error in path finding: {e!s}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {e!s}",
-            )
+            ) from e
 
 
 class DummyNeo4jConnector:

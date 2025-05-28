@@ -32,29 +32,27 @@ class TestIngestCommands:
         """Test 'ingest start' command."""
         mock_service_client.start_ingestion.return_value = {"job_id": "test-123"}
         mock_service_client.base_url = "http://localhost:8000/v1"
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "codestory.cli.commands.ingest._show_progress"
+        ), patch(
+            "codestory.cli.main.ServiceClient", return_value=mock_service_client
+        ):
             with patch(
-                "codestory.cli.commands.ingest._show_progress"
-            ) as mock_show_progress:
-                with patch(
-                    "codestory.cli.main.ServiceClient", return_value=mock_service_client
-                ):
-                    with patch(
-                        "codestory.cli.commands.ingest.setup_repository_mount",
-                        return_value=True,
-                    ), patch(
-                        "codestory.cli.commands.ingest.wait_for_service",
-                        return_value=True,
-                    ):
-                        result = cli_runner.invoke(app, ["ingest", "start", temp_dir])
-                    assert result.exit_code == 0
-                    assert "Starting ingestion" in result.output
-                    assert "test-123" in result.output
-                    mock_service_client.start_ingestion.assert_called_once()
-                    path_arg = mock_service_client.start_ingestion.call_args[0][0]
-                    repo_name = os.path.basename(os.path.abspath(temp_dir))
-                    expected_container_path = f"/repositories/{repo_name}"
-                    assert path_arg == expected_container_path
+                "codestory.cli.commands.ingest.setup_repository_mount",
+                return_value=True,
+            ), patch(
+                "codestory.cli.commands.ingest.wait_for_service",
+                return_value=True,
+            ):
+                result = cli_runner.invoke(app, ["ingest", "start", temp_dir])
+            assert result.exit_code == 0
+            assert "Starting ingestion" in result.output
+            assert "test-123" in result.output
+            mock_service_client.start_ingestion.assert_called_once()
+            path_arg = mock_service_client.start_ingestion.call_args[0][0]
+            repo_name = os.path.basename(os.path.abspath(temp_dir))
+            expected_container_path = f"/repositories/{repo_name}"
+            assert path_arg == expected_container_path
 
     def test_ingest_start_no_progress(
         self, cli_runner: CliRunner, mock_service_client: MagicMock
@@ -62,27 +60,25 @@ class TestIngestCommands:
         """Test 'ingest start --no-progress' command."""
         mock_service_client.start_ingestion.return_value = {"job_id": "test-123"}
         mock_service_client.base_url = "http://localhost:8000/v1"
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "codestory.cli.commands.ingest._show_progress"
+        ) as mock_show_progress:
             with patch(
-                "codestory.cli.commands.ingest._show_progress"
-            ) as mock_show_progress:
-                with patch(
-                    "codestory.cli.main.ServiceClient", return_value=mock_service_client
-                ):
-                    with patch(
-                        "codestory.cli.commands.ingest.setup_repository_mount",
-                        return_value=True,
-                    ), patch(
-                        "codestory.cli.commands.ingest.wait_for_service",
-                        return_value=True,
-                    ):
-                        result = cli_runner.invoke(
-                            app, ["ingest", "start", temp_dir, "--no-progress"]
-                        )
-                assert result.exit_code == 0
-                assert "Starting ingestion" in result.output
-                assert "test-123" in result.output
-                mock_show_progress.assert_not_called()
+                "codestory.cli.main.ServiceClient", return_value=mock_service_client
+            ), patch(
+                "codestory.cli.commands.ingest.setup_repository_mount",
+                return_value=True,
+            ), patch(
+                "codestory.cli.commands.ingest.wait_for_service",
+                return_value=True,
+            ):
+                result = cli_runner.invoke(
+                    app, ["ingest", "start", temp_dir, "--no-progress"]
+                )
+            assert result.exit_code == 0
+            assert "Starting ingestion" in result.output
+            assert "test-123" in result.output
+            mock_show_progress.assert_not_called()
 
     def test_ingest_start_error(
         self, cli_runner: CliRunner, mock_service_client: MagicMock
@@ -93,14 +89,13 @@ class TestIngestCommands:
         with tempfile.TemporaryDirectory() as temp_dir:
             with patch(
                 "codestory.cli.main.ServiceClient", return_value=mock_service_client
+            ), patch(
+                "codestory.cli.commands.ingest.setup_repository_mount",
+                return_value=True,
+            ), patch(
+                "codestory.cli.commands.ingest.wait_for_service", return_value=True
             ):
-                with patch(
-                    "codestory.cli.commands.ingest.setup_repository_mount",
-                    return_value=True,
-                ), patch(
-                    "codestory.cli.commands.ingest.wait_for_service", return_value=True
-                ):
-                    result = cli_runner.invoke(app, ["ingest", "start", temp_dir])
+                result = cli_runner.invoke(app, ["ingest", "start", temp_dir])
             assert result.exit_code == 0
             assert "Error" in result.output
 

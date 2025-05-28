@@ -34,9 +34,9 @@ class TestIngestCommands:
         assert "Starting ingestion" in result.output
 
         # Extract job ID from output
-        job_id_line = [
+        job_id_line = next(
             line for line in result.output.splitlines() if "Job ID:" in line
-        ][0]
+        )
         job_id = job_id_line.split("Job ID:")[1].strip()
         assert job_id
 

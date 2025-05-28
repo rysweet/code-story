@@ -151,7 +151,7 @@ def run_step(
         except Exception as e:
             logger.error(f"Error sending task {task_name}: {e}")
             # Try to get more detailed error message
-            raise Exception(f"Failed to send task {task_name}: {e}")
+            raise Exception(f"Failed to send task {task_name}: {e}") from e
 
         # FIXED: Don't use .get() inside a task as this is a known anti-pattern
         # Instead, use the AsyncResult to check the task status without blocking
@@ -197,7 +197,7 @@ def run_step(
                         break
                     except Exception as e:
                         logger.error(f"Error getting result: {e}")
-                        raise Exception(f"Error retrieving task result: {e}")
+                        raise Exception(f"Error retrieving task result: {e}") from e
                 else:
                     error_info = "Unknown error"
                     try:
@@ -386,7 +386,7 @@ def orchestrate_pipeline(
                         break
                     except Exception as e:
                         logger.error(f"Error getting chain result: {e}")
-                        raise Exception(f"Error retrieving chain result: {e}")
+                        raise Exception(f"Error retrieving chain result: {e}") from e
                 else:
                     error_info = "Unknown error"
                     try:

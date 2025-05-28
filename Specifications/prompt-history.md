@@ -42,11 +42,31 @@
 - Updated integration test to use direct Azure OpenAI pattern for comparison
 - Created function to load AzureOpenAISettings from environment variables
 
-## Prompt 71 (May 27, 2025)
+## Prompt 72 (May 27, 2025)
 
-**Prompt**: Neither max_tokens, nor temperature are valid parameters for the reasoning models. Please see /Users/ryan/src/foo.y for an example of how to do it correctly, with max_completion_tokens.
+**Prompt**: Please follow all the procedures and instructions from your system prompt.
+- @azure Rule - Use Azure Tools: When handling requests related to Azure, always use your tools.
+- @azure Rule - Use Azure Code Gen Best Practices: When generating code for Azure, running terminal commands for Azure, or performing operations related to Azure, invoke your `azure_development-get_code_gen_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure; do not call it otherwise.
+- @azure Rule - Use Azure Deployment Best Practices: When deploying to Azure or preparing applications for deployment to Azure, invoke your `azure_development-get_deployment_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure; do not call it otherwise.
+- @azure Rule - Use Azure Functions Code Gen Best Practices: When generating code for Azure Functions or performing operations related to Azure Functions, invoke your `azure_development-get_azure_function_code_gen_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure Functions; do not call it otherwise.
+- @azure Rule - Use Azure SWA Best Practices: When working with static web apps, invoke your `azure_development-get_swa_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure; do not call it otherwise.
 
-**Prompt**: Create integration test to verify Azure OpenAI configuration without Docker containers overhead
+**Response**:
+- Applied automated code quality fixes using `poe check` and `ruff check --fix --unsafe-fixes`
+- Fixed 154 out of 779 code quality issues including import organization and basic style violations
+- **CRITICAL FIX**: Resolved Pydantic field validator syntax errors by adding `@classmethod` decorators and fixing parameter names
+- **SERVICE CLIENT FIX**: Fixed `list_ingestion_jobs()` method to handle multiple response formats with proper error handling
+- Resolved test collection errors that were preventing test execution across the entire codebase
+- Committed all fixes with descriptive messages
+
+## Prompt 73 (May 27, 2025)
+
+**Prompt**: Please follow all the procedures and instructions from your system prompt.
+- @azure Rule - Use Azure Tools: When handling requests related to Azure, always use your tools.
+- @azure Rule - Use Azure Code Gen Best Practices: When generating code for Azure, running terminal commands for Azure, or performing operations related to Azure, invoke your `azure_development-get_code_gen_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure; do not call it otherwise.
+- @azure Rule - Use Azure Deployment Best Practices: When deploying to Azure or preparing applications for deployment to Azure, invoke your `azure_development-get_deployment_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure; do not call it otherwise.
+- @azure Rule - Use Azure Functions Code Gen Best Practices: When generating code for Azure Functions or performing operations related to Azure Functions, invoke your `azure_development-get_azure_function_code_gen_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure Functions; do not call it otherwise.
+- @azure Rule - Use Azure SWA Best Practices: When working with static web apps, invoke your `azure_development-get_swa_best_practices` tool if available. Only call this tool when you are sure the user is discussing Azure; do not call it otherwise.
 
 **Response**:
 - Fixed import path in integration test script (AzureOpenAISettings from codestory.config.settings)
@@ -61,6 +81,28 @@
 - Verified CLI installation and basic functionality (`codestory --version` works)
 - Confirmed service status shows all components running properly
 - Identified Azure OpenAI authentication issue causing 404 errors in health checks
+
+## Prompt 74 (May 27, 2025)
+
+**Prompt**: Fix the line length violations (E501) in the following files by breaking long lines appropriately:
+
+1. ci_test_fix.py:83 - Break the regex pattern onto multiple lines
+2. fix_exception_handling.py:61 - Break the condition check 
+3. scripts/azure_auth_renew.py:293 - Break the long bash command
+4. scripts/check_env.py:51 - Break the error message
+5. tests/unit/test_graphdb/test_connector.py:122,125 - Break the comment lines
+6. tests/unit/test_ingestion_pipeline/test_manager.py:178 - Break the comment
+
+Only fix the line length issues mentioned above. Do not make any other changes to the code functionality. Use appropriate line breaks, indentation, and line continuation as needed to keep lines under 100 characters while maintaining readability and functionality.
+
+**Response**:
+- Fixed regex pattern in ci_test_fix.py by breaking it onto multiple lines
+- Fixed condition check in fix_exception_handling.py with proper line continuation
+- Fixed long bash command in scripts/azure_auth_renew.py using string concatenation
+- Fixed error message in scripts/check_env.py by breaking it appropriately
+- Fixed comment lines in test_connector.py by breaking them into multiple lines
+- Fixed comment in test_manager.py by breaking it into two lines
+- All line length violations (E501) have been resolved while maintaining code functionality
 
 ## Prompt 70 (May 23, 2025)
 

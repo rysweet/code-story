@@ -99,20 +99,20 @@ class MSALValidator:
                     token, self.jwt_secret, algorithms=[self.jwt_algorithm]
                 )
                 return claims
-            except jwt.ExpiredSignatureError:
+            except jwt.ExpiredSignatureError as err:
                 logger.warning("Token has expired")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token has expired",
                     headers={"WWW-Authenticate": "Bearer"},
-                )
+                ) from err
             except jwt.InvalidTokenError as e:
                 logger.warning(f"Invalid token: {e!s}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=f"Invalid token: {e!s}",
                     headers={"WWW-Authenticate": "Bearer"},
-                )
+                ) from e
 
         # Production mode with full MSAL validation
         # This is just a placeholder - in a real implementation, we would use
@@ -176,7 +176,7 @@ class MSALValidator:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create token: {e!s}",
-            )
+            ) from e
 
 
 async def get_msal_validator() -> MSALValidator:

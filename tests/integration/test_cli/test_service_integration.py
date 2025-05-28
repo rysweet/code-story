@@ -53,7 +53,7 @@ class TestServiceCommands:
         # This test is a bit tricky because it actually tries to open a browser
         # We'll just check that the command runs without errors
         with pytest.raises(SystemExit) as exc_info:
-            result = cli_runner.invoke(app, ["ui", "open"], catch_exceptions=False)
+            cli_runner.invoke(app, ["ui", "open"], catch_exceptions=False)
 
         # It might exit to launch the browser
         assert exc_info.value.code in [0, None]
@@ -68,7 +68,7 @@ class TestServiceCommands:
         # First make sure service is stopped
         try:
             subprocess.run(
-                CLI_CMD + ["service", "stop"],
+                [*CLI_CMD, "service", "stop"],
                 check=False,
                 capture_output=True,
                 text=True,
@@ -81,7 +81,7 @@ class TestServiceCommands:
 
         # Start the service
         start_result = subprocess.run(
-            CLI_CMD + ["service", "start", "--detach"],
+            [*CLI_CMD, "service", "start", "--detach"],
             check=False,
             capture_output=True,
             text=True,
@@ -96,7 +96,7 @@ class TestServiceCommands:
 
         # Check status
         status_result = subprocess.run(
-            CLI_CMD + ["service", "status"],
+            [*CLI_CMD, "service", "status"],
             check=False,
             capture_output=True,
             text=True,
@@ -109,7 +109,7 @@ class TestServiceCommands:
 
         # Now stop the service
         stop_result = subprocess.run(
-            CLI_CMD + ["service", "stop"],
+            [*CLI_CMD, "service", "stop"],
             check=False,
             capture_output=True,
             text=True,

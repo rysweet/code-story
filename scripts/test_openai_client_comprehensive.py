@@ -185,7 +185,7 @@ def test_error_handling(client: OpenAIClient) -> None:
             [ChatMessage(role=ChatRole.USER, content="Hello")],
             model="non-existent-model",
         )
-        assert False, "Expected InvalidRequestError"
+        raise AssertionError("Expected InvalidRequestError")
     except InvalidRequestError as e:
         print(f"Correctly caught InvalidRequestError: {e}")
 

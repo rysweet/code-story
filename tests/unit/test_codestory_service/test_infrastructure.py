@@ -336,7 +336,6 @@ class TestOpenAIAdapter:
         """Test error handling when creating embeddings fails."""
 
         # Configure the mock to raise an AuthenticationError
-        from codestory.llm.exceptions import AuthenticationError
 
         mock_client.embed_async.side_effect = AuthenticationError("Invalid API key")
 

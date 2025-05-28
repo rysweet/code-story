@@ -103,10 +103,10 @@ class EntraValidator:
 
         except jwt.PyJWTError as e:
             logger.warning("Token validation failed", error=str(e))
-            raise AuthenticationError(f"Token validation failed: {e!s}")
+            raise AuthenticationError(f"Token validation failed: {e!s}") from e
         except Exception as e:
             logger.exception("Unexpected error during token validation")
-            raise AuthenticationError(f"Token validation failed: {e!s}")
+            raise AuthenticationError(f"Token validation failed: {e!s}") from e
 
     def _verify_scopes(self, claims: dict[str, Any]) -> None:
         """Verify the token contains required scopes.

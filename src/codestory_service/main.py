@@ -29,7 +29,7 @@ except Exception as e:
     logging.error(
         "Service requires all components to be available for proper operation"
     )
-    raise RuntimeError(f"Failed to initialize required adapters: {e!s}")
+    raise RuntimeError(f"Failed to initialize required adapters: {e!s}") from e
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -200,7 +200,7 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error generating visualization: {e!s}",
-            )
+            ) from e
 
     app.include_router(legacy_viz_router)
 

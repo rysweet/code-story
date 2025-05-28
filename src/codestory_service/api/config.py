@@ -70,7 +70,7 @@ def get_config(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting configuration: {e!s}",
-        )
+        ) from e
 
 
 @router.patch(
@@ -107,7 +107,7 @@ async def update_config(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating configuration: {e!s}",
-        )
+        ) from e
 
 
 @router.get(
@@ -140,4 +140,4 @@ def get_config_schema(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting configuration schema: {e!s}",
-        )
+        ) from e

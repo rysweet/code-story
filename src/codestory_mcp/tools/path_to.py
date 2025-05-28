@@ -173,4 +173,4 @@ class PathToTool(BaseTool):
             raise ToolError(
                 f"Path finding failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            ) from e

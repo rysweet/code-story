@@ -139,4 +139,4 @@ class SummarizeNodeTool(BaseTool):
             raise ToolError(
                 f"Node summarization failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            ) from e

@@ -184,11 +184,11 @@ class ServiceClient:
                 self.console.print(
                     f"[dim]Server connection failed: {connect_err!s}[/]", style="dim"
                 )
-                raise ServiceError(f"Health check failed: {connect_err!s}")
+                raise ServiceError(f"Health check failed: {connect_err!s}") from connect_err
 
             # For normal operation outside of tests, give a helpful message and service partial data
             self.console.print(f"[dim]Health check failed: {e!s}[/]", style="dim")
-            raise ServiceError(f"Health check failed: {e!s}")
+            raise ServiceError(f"Health check failed: {e!s}") from e
 
     def _check_for_azure_auth_issues(self, health_data: dict[str, Any]) -> None:
         """
@@ -414,7 +414,7 @@ class ServiceClient:
                     f"\n     - {abs_repository_path}:/repositories/{repo_name}"
                 )
 
-            raise ServiceError(f"Failed to start ingestion: {error_detail}")
+            raise ServiceError(f"Failed to start ingestion: {error_detail}") from None
 
     def get_ingestion_status(self, job_id: str) -> dict[str, Any]:
         """
@@ -432,7 +432,7 @@ class ServiceClient:
             data = response.json()
             return self._handle_error_package(data)
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to get ingestion status: {e!s}")
+            raise ServiceError(f"Failed to get ingestion status: {e!s}") from e
 
     def stop_ingestion(self, job_id: str) -> dict[str, Any]:
         """
@@ -450,7 +450,7 @@ class ServiceClient:
             data = response.json()
             return self._handle_error_package(data)
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to stop ingestion: {e!s}")
+            raise ServiceError(f"Failed to stop ingestion: {e!s}") from e
 
     def list_ingestion_jobs(self) -> list[dict[str, Any]]:
         """
@@ -463,14 +463,37 @@ class ServiceClient:
             response = self.client.get("/ingest")
             response.raise_for_status()
             data = response.json()
+            
             # handle list wrapper
             if isinstance(data, dict) and "error_package" in data:
                 data = self._handle_error_package(data)
-            return data
+            
+            # Handle different response formats
+            if isinstance(data, dict):
+                # Standard format with 'items' field
+                if "items" in data:
+                    return data["items"]
+                # Legacy format with 'jobs' field  
+                elif "jobs" in data:
+                    return data["jobs"]
+                # Single job format (check if it has job_id)
+                elif "job_id" in data:
+                    # Special case for mock service
+                    if data.get("job_id") == "jobs" and self.console:
+                        self.console.print("[yellow]Warning: Mock service detected[/yellow]")
+                    return [data]
+                # Invalid format
+                else:
+                    raise ServiceError("Invalid response format: Response does not contain expected job data structure with 'items', 'jobs', or single job data")
+            elif isinstance(data, list):
+                return data
+            else:
+                raise ServiceError(f"Unexpected response format: {type(data)}")
+                
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to list ingestion jobs: {e!s}")
+            raise ServiceError(f"Failed to list ingestion jobs: {e!s}") from e
         except (KeyError, json.JSONDecodeError) as e:
-            raise ServiceError(f"Invalid response format: {e!s}")
+            raise ServiceError(f"Invalid response format: {e!s}") from e
 
     def execute_query(
         self,
@@ -539,7 +562,7 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Query execution failed: {e!s}")
+            raise ServiceError(f"Query execution failed: {e!s}") from e
 
     def ask_question(self, question: str) -> dict[str, Any]:
         """
@@ -560,7 +583,7 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to ask question: {e!s}")
+            raise ServiceError(f"Failed to ask question: {e!s}") from e
 
     def get_config(self, include_sensitive: bool = False) -> dict[str, Any]:
         """
@@ -581,7 +604,7 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to get configuration: {e!s}")
+            raise ServiceError(f"Failed to get configuration: {e!s}") from e
 
     def update_config(self, updates: dict[str, Any]) -> dict[str, Any]:
         """
@@ -598,7 +621,7 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to update configuration: {e!s}")
+            raise ServiceError(f"Failed to update configuration: {e!s}") from e
 
     def start_service(self) -> dict[str, Any]:
         """
@@ -612,7 +635,7 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to start service: {e!s}")
+            raise ServiceError(f"Failed to start service: {e!s}") from e
 
     def stop_service(self) -> dict[str, Any]:
         """
@@ -626,7 +649,7 @@ class ServiceClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            raise ServiceError(f"Failed to stop service: {e!s}")
+            raise ServiceError(f"Failed to stop service: {e!s}") from e
 
     def get_service_status(self, renew_auth: bool = False) -> dict[str, Any]:
         """Query the health endpoint and return the status of the Code Story service and its dependencies."""
@@ -751,7 +774,7 @@ class ServiceClient:
         except Exception as e:
             if isinstance(e, ServiceError):
                 raise e
-            raise ServiceError(f"Failed to generate visualization: {e!s}")
+            raise ServiceError(f"Failed to generate visualization: {e!s}") from e
 
     def open_ui(self) -> None:
         """Open the GUI in the default web browser."""
@@ -814,11 +837,11 @@ class ServiceClient:
                 raise ServiceError(
                     f"Azure authentication renewal failed due to Azure CLI installation issue: {error_detail}\n"
                     "Try updating or reinstalling Azure CLI with: brew update && brew upgrade azure-cli"
-                )
+                ) from None
             else:
                 raise ServiceError(
                     f"Azure authentication renewal failed: {error_detail}"
-                )
+                ) from None
 
     def clear_database(self, confirm: bool = False) -> dict[str, Any]:
         """
@@ -865,10 +888,10 @@ class ServiceClient:
             if "403" in error_message or "forbidden" in error_message.lower():
                 raise ServiceError(
                     "Administrative privileges required to clear database"
-                )
-            raise ServiceError(f"Failed to clear database: {error_message}")
+                ) from e
+            raise ServiceError(f"Failed to clear database: {error_message}") from e
         except Exception as e:
-            raise ServiceError(f"Failed to clear database: {e!s}")
+            raise ServiceError(f"Failed to clear database: {e!s}") from e
 
 
 class ServiceError(Exception):

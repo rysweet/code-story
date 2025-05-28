@@ -185,7 +185,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to start ingestion: {e!s}",
-            )
+            ) from e
 
     async def get_job_status(self, job_id: str) -> IngestionJob:
         """Get the status of an ingestion job.
@@ -294,7 +294,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get job status: {e!s}",
-            )
+            ) from e
 
     async def cancel_job(self, job_id: str) -> IngestionJob:
         """Cancel an ingestion job.
@@ -353,7 +353,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to cancel job: {e!s}",
-            )
+            ) from e
 
     async def list_jobs(
         self, status: list[JobStatus] | None = None, limit: int = 10, offset: int = 0
@@ -388,7 +388,7 @@ class CeleryAdapter:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to list jobs: {e!s}",
-            )
+            ) from e
 
 
 # DummyCeleryAdapter has been removed as Celery is now a required component
@@ -422,4 +422,4 @@ async def get_celery_adapter() -> CeleryAdapter:
     except Exception as e:
         # Log the error and fail
         logger.error(f"Failed to create Celery adapter: {e!s}")
-        raise RuntimeError(f"Celery component required but unavailable: {e!s}")
+        raise RuntimeError(f"Celery component required but unavailable: {e!s}") from e

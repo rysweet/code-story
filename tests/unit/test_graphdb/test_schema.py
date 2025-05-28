@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from codestory.graphdb.exceptions import SchemaError
 from codestory.graphdb.schema import (
     create_custom_vector_index,

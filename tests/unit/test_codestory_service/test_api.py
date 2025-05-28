@@ -252,7 +252,7 @@ class TestConfigAPI:
 
         # Call with admin user should work
         admin_user = {"roles": ["admin"]}
-        result = config.get_config(
+        config.get_config(
             include_sensitive=True, config_service=mock_service, user=admin_user
         )
 
@@ -734,7 +734,7 @@ class TestHealthAPI:
             call_count += 1
 
             if call_count > 1:  # Only time out on the second call (auto-fix attempt)
-                raise asyncio.TimeoutError("Operation timed out")
+                raise TimeoutError("Operation timed out")
             return await coro
 
         monkeypatch.setattr(asyncio, "wait_for", mock_wait_for_with_timeout)

@@ -3,6 +3,7 @@
 This module contains tests for the application services used in the service.
 """
 
+import contextlib
 from unittest import mock
 
 import pytest
@@ -424,10 +425,8 @@ class TestIngestionService:
                 # Then simulate a connection error
                 raise Exception("Connection closed")
             except Exception as e:
-                try:
+                with contextlib.suppress(Exception):
                     await websocket.close(code=1011, reason=str(e))
-                except Exception:
-                    pass
 
         # Replace the method with our test version
         service.subscribe_to_progress = test_subscribe

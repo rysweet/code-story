@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-"""
-Script to directly run the filesystem integration test.
-"""
+"""Script to directly run the filesystem integration test."""
 
 import os
 import sys
@@ -13,7 +11,6 @@ from pathlib import Path
 current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, current_dir)
 
-from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_filesystem.step import FileSystemStep
@@ -62,7 +59,7 @@ def run_test():
             neo4j_connector = Neo4jConnector(
                 uri="bolt://localhost:"
                 + (
-                    os.environ.get("CI") == "true" and "7687" or "7688"
+                    (os.environ.get("CI") == "true" and "7687") or "7688"
                 ),  # Port defined in docker-compose.test.yml
                 username="neo4j",
                 password="password",
@@ -74,12 +71,12 @@ def run_test():
                 neo4j_connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
                 print("Successfully connected to Neo4j and cleared the database")
             except Exception as e:
-                print(f"Failed to connect to Neo4j: {str(e)}")
+                print(f"Failed to connect to Neo4j: {e!s}")
                 return
 
             # Create the step
             step = FileSystemStep()
-            print(f"Step created")
+            print("Step created")
 
             # Print configuration for debugging
             print(f"Neo4j URI: {neo4j_connector.uri}")
@@ -88,6 +85,7 @@ def run_test():
 
             # Check if Celery worker is running and get detailed information
             from celery.app.control import Control
+
             from codestory.ingestion_pipeline.celery_app import app
 
             control = Control(app)
@@ -109,7 +107,7 @@ def run_test():
                 # Check if our specific task is registered
                 all_tasks = []
                 registered = i.registered() or {}
-                for worker, tasks in registered.items():
+                for _worker, tasks in registered.items():
                     all_tasks.extend(tasks)
 
                 task_name = "filesystem.run"

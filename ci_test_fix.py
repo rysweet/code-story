@@ -80,8 +80,9 @@ def neo4j_env():
     # Replace the existing function with our fixed version
     content = re.sub(
         (
-            r'@pytest\.fixture\(scope="session"\)\ndef neo4j_env\(\):.*?os\.environ\["NEO4J_URI"\] = '
-            r'"bolt://localhost:7688"\s+os\.environ\["NEO4J__URI"\] = "bolt://localhost:7688"'
+            r'@pytest\.fixture\(scope="session"\)\ndef neo4j_env\(\):.*?'
+            r'os\.environ\["NEO4J_URI"\] = "bolt://localhost:7688"\s+'
+            r'os\.environ\["NEO4J__URI"\] = "bolt://localhost:7688"'
         ),
         neo4j_env_fix,
         content,

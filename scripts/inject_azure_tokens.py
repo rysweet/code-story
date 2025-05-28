@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Azure Token Injection Utility
+Azure Token Injection Utility.
 
 This script injects Azure authentication tokens from the host system into running
 Code Story containers. It's used as part of the authentication renewal process
@@ -60,8 +60,7 @@ def check_docker_available() -> bool:
     try:
         result = subprocess.run(
             ["docker", "--version"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
             text=True,
         )
@@ -77,8 +76,7 @@ def get_running_containers() -> list[str]:
     try:
         result = subprocess.run(
             ["docker", "ps", "--format", "{{.Names}}"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
             text=True,
         )
@@ -171,8 +169,7 @@ def check_token_validity() -> tuple[bool, str | None]:
     try:
         result = subprocess.run(
             ["az", "account", "get-access-token", "--output", "json"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
 
@@ -197,8 +194,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         # First check if the container exists and is running
         container_check = subprocess.run(
             ["docker", "container", "inspect", container_name],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
 
         if container_check.returncode != 0:
@@ -250,7 +246,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         ]
 
         mkdir_result = subprocess.run(
-            mkdir_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            mkdir_cmd, capture_output=True, text=True
         )
 
         if mkdir_result.returncode != 0:
@@ -268,7 +264,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         ]
 
         result = subprocess.run(
-            copy_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            copy_cmd, capture_output=True, text=True
         )
 
         if result.returncode != 0:
@@ -288,7 +284,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         ]
 
         verify_result = subprocess.run(
-            verify_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            verify_cmd, capture_output=True, text=True
         )
 
         if verify_result.returncode != 0 or not verify_result.stdout.strip():
@@ -310,7 +306,7 @@ def inject_tokens_into_container(container_name: str) -> bool:
         ]
 
         appuser_result = subprocess.run(
-            appuser_copy_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            appuser_copy_cmd, capture_output=True, text=True
         )
 
         if appuser_result.returncode != 0:
@@ -342,8 +338,7 @@ def restart_container(container_name: str) -> bool:
                 "{{.State.Status}}",
                 container_name,
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
 
@@ -363,8 +358,7 @@ def restart_container(container_name: str) -> bool:
             )
             start_result = subprocess.run(
                 ["docker", "start", container_name],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
             )
 
@@ -378,8 +372,7 @@ def restart_container(container_name: str) -> bool:
         # Container is running, restart it
         result = subprocess.run(
             ["docker", "restart", container_name],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
 
@@ -396,8 +389,7 @@ def restart_container(container_name: str) -> bool:
                     "{{.State.Status}}",
                     container_name,
                 ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
             )
 
@@ -427,8 +419,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
         try:
             az_version = subprocess.run(
                 ["az", "--version"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
             )
 
@@ -489,7 +480,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
         print("A browser window should open for you to log in...")
 
         result = subprocess.run(
-            login_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            login_cmd, capture_output=True, text=True
         )
 
         if result.returncode == 0:
@@ -505,8 +496,7 @@ def authenticate_with_azure(tenant_id: str | None = None) -> bool:
             try:
                 verify_result = subprocess.run(
                     verify_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    capture_output=True,
                     text=True,
                 )
 
@@ -618,10 +608,7 @@ def main():
     # We'll always display the login command, but won't run it automatically unless requested
     if not tokens_valid:
         # Build the login command to show
-        if tenant_id:
-            login_cmd = f"az login --tenant {tenant_id}"
-        else:
-            login_cmd = "az login"
+        login_cmd = f"az login --tenant {tenant_id}" if tenant_id else "az login"
 
         # Add scope if needed
         login_cmd += " --scope https://cognitiveservices.azure.com/.default"
@@ -680,8 +667,7 @@ def main():
                 for attempt in range(max_attempts):
                     result = subprocess.run(
                         health_check_cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        capture_output=True,
                         text=True,
                     )
 

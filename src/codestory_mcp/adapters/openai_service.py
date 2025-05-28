@@ -121,7 +121,7 @@ class OpenAIServiceAdapter:
             raise ToolError(
                 f"Code summarization failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
-            )
+            ) from e
 
     async def generate_path_explanation(
         self, path_elements: list[dict[str, Any]], max_tokens: int = 300
@@ -212,7 +212,7 @@ class OpenAIServiceAdapter:
             raise ToolError(
                 f"Path explanation failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
-            )
+            ) from e
 
     async def find_similar_code(
         self, code: str, limit: int = 5
@@ -282,7 +282,7 @@ class OpenAIServiceAdapter:
             raise ToolError(
                 f"Similar code search failed: {e!s}",
                 status_code=status.HTTP_502_BAD_GATEWAY,
-            )
+            ) from e
 
 
 @lru_cache

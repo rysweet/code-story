@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Run the test directly without using pytest's collection."""
 
-import sys
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -57,7 +57,7 @@ def create_neo4j_connector():
     connector = Neo4jConnector(
         uri="bolt://localhost:"
         + (
-            os.environ.get("CI") == "true" and "7687" or "7688"
+            (os.environ.get("CI") == "true" and "7687") or "7688"
         ),  # Port defined in docker-compose.test.yml
         username="neo4j",
         password="password",
@@ -69,7 +69,7 @@ def create_neo4j_connector():
         connector.execute_query("MATCH (n) DETACH DELETE n", write=True, params={})
         print("Successfully connected to Neo4j and cleared the database")
     except Exception as e:
-        print(f"Failed to connect to Neo4j: {str(e)}")
+        print(f"Failed to connect to Neo4j: {e!s}")
         raise
 
     return connector

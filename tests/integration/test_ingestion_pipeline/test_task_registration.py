@@ -30,7 +30,6 @@ def test_filesystem_task_registration():
 def test_filesystem_task_routing():
     """Test that the filesystem task is routed to the correct queue."""
     # Get the routing configuration for the task
-    task_name = "codestory_filesystem.step.process_filesystem"
     routes = celery_app.conf.task_routes or {}
 
     # Directly check if our pattern exists in the routes

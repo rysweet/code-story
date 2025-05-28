@@ -256,7 +256,7 @@ class Neo4jConnector:
                         raise ConnectionError(
                             f"Failed to load settings and missing required connection parameters: {e!s}",
                             cause=e,
-                        )
+                        ) from e
 
             # Initialize driver
             self.driver = GraphDatabase.driver(
@@ -287,7 +287,7 @@ class Neo4jConnector:
                 f"Failed to connect to Neo4j: {e!s}",
                 uri=self.uri,
                 cause=e,
-            )
+            ) from e
 
     def close(self) -> None:
         """Close all connections in the pool."""
@@ -376,7 +376,7 @@ class Neo4jConnector:
                 query=query,
                 parameters=params,
                 cause=e,
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error executing query: {e!s}")
             raise QueryError(
@@ -384,7 +384,7 @@ class Neo4jConnector:
                 query=query,
                 parameters=params,
                 cause=e,
-            )
+            ) from e
 
     @instrument_query(query_type=QueryType.WRITE)
     @retry_on_transient()
@@ -452,7 +452,7 @@ class Neo4jConnector:
                 f"Transaction failed: {e!s}",
                 operation="execute_many",
                 cause=e,
-            )
+            ) from e
         except Exception as e:
             record_transaction(success=False)
             logger.error(f"Unexpected error in transaction: {e!s}")
@@ -460,7 +460,7 @@ class Neo4jConnector:
                 f"Unexpected error: {e!s}",
                 operation="execute_many",
                 cause=e,
-            )
+            ) from e
 
     def _transaction_function(
         self, tx, query: str, params: dict[str, Any]
@@ -513,7 +513,7 @@ class Neo4jConnector:
                 f"Schema initialization failed: {e!s}",
                 operation="initialize_schema",
                 cause=e,
-            )
+            ) from e
 
     @instrument_query(query_type=QueryType.SCHEMA)
     def create_vector_index(
@@ -549,7 +549,7 @@ class Neo4jConnector:
                 property=property_name,
                 dimensions=dimensions,
                 similarity=similarity,
-            )
+            ) from e
 
     def create_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
         """Create a node in the Neo4j database.
@@ -683,7 +683,7 @@ class Neo4jConnector:
                 query=f"vector_search({node_label}, {property_name})",
                 parameters={"limit": limit, "cutoff": similarity_cutoff},
                 cause=e,
-            )
+            ) from e
 
     def check_connection(self) -> dict[str, Any]:
         """Check if database is accessible and return basic info.
@@ -719,7 +719,7 @@ class Neo4jConnector:
                 f"Connection check failed: {e!s}",
                 uri=self.uri,
                 cause=e,
-            )
+            ) from e
 
     async def execute_query_async(
         self,
@@ -836,7 +836,7 @@ class Neo4jConnector:
                 f"Transaction failed: {e!s}",
                 operation="with_transaction",
                 cause=e,
-            )
+            ) from e
         except Exception as e:
             record_transaction(success=False)
             logger.error(f"Unexpected error in transaction: {e!s}")
@@ -844,7 +844,7 @@ class Neo4jConnector:
                 f"Unexpected error: {e!s}",
                 operation="with_transaction",
                 cause=e,
-            )
+            ) from e
 
     def get_session(self):
         """Get a Neo4j session for direct operations.
@@ -873,4 +873,4 @@ class Neo4jConnector:
                 f"Failed to create Neo4j session: {e!s}",
                 uri=self.uri,
                 cause=e,
-            )
+            ) from e

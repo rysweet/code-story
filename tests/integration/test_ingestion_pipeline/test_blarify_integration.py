@@ -29,6 +29,8 @@ os.environ[
     "NEO4J__DATABASE"
 ] = "testdb"  # Use the test database name from docker-compose.test.yml
 
+import contextlib
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_blarify.step import BlarifyStep
@@ -142,10 +144,8 @@ def neo4j_connector():
         pytest.fail(f"Could not connect to Neo4j: {e}")
     finally:
         # Close the connection
-        try:
+        with contextlib.suppress(Exception):
             connector.close()
-        except Exception:
-            pass
 
 
 @pytest.fixture
@@ -341,7 +341,6 @@ def test_blarify_step_run(
 ):
     """Test that the Blarify step can process a repository and create AST nodes in Neo4j."""
     # Get the Celery app from the fixture
-    celery_app = blarify_celery_app
 
     # Get the Blarify image from the fixture (either real or our mock)
     blarify_image = ensure_blarify_image
@@ -605,7 +604,6 @@ def test_blarify_step_stop(
 ):
     """Test that the Blarify step can be stopped mid-process."""
     # Get the Celery app from the fixture
-    celery_app = blarify_celery_app
 
     # Get the Blarify image from the fixture
     blarify_image = ensure_blarify_image

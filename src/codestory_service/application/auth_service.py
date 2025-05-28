@@ -96,7 +96,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Login failed: {e!s}",
-            )
+            ) from e
 
     async def get_user_info(self, claims: dict[str, Any]) -> UserInfo:
         """Get information about the current user.

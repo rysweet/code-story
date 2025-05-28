@@ -440,15 +440,14 @@ def test_error_handling_in_dependency_chain():
     def check_dependencies(step_name, repo_path):
         # Get the dependencies for this step from the config
         dependencies = []
-        if "dependencies" in manager.config:
-            if step_name in manager.config["dependencies"]:
-                dependencies = manager.config["dependencies"][step_name]
+        if "dependencies" in manager.config and step_name in manager.config["dependencies"]:
+            dependencies = manager.config["dependencies"][step_name]
 
         # Check each dependency to see if it completed successfully
         for dep_name in dependencies:
             dep_job_found = False
             # Look for a job for this dependency
-            for job_id, job_info in manager.active_jobs.items():
+            for _job_id, job_info in manager.active_jobs.items():
                 if (
                     job_info.get("step_name") == dep_name
                     and job_info.get("repository_path") == repo_path

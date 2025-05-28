@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import openai
 import pytest
+
 from codestory.llm.backoff import (
     before_retry_callback,
     get_retry_after,

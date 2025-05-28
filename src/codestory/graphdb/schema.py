@@ -162,7 +162,7 @@ def create_custom_vector_index(
             cause=e,
             label=label,
             property=property_name,
-        )
+        ) from e
 
     # Create the vector index
     query = get_vector_index_query(label, property_name, dimensions, similarity)
@@ -181,7 +181,7 @@ def create_custom_vector_index(
             property=property_name,
             dimensions=dimensions,
             similarity=similarity,
-        )
+        ) from e
 
 
 def initialize_schema(connector, force: bool = False) -> None:
@@ -267,7 +267,7 @@ def initialize_schema(connector, force: bool = False) -> None:
                 "error_type": type(e).__name__,
                 "error_message": str(e),
             }
-            raise SchemaError("Failed to initialize schema", details=details, cause=e)
+            raise SchemaError("Failed to initialize schema", details=details, cause=e) from e
 
 
 def verify_schema(connector) -> dict[str, dict[str, bool]]:
@@ -326,4 +326,4 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
         return verification_results
 
     except Exception as e:
-        raise SchemaError("Failed to verify schema", operation="verify_schema", cause=e)
+        raise SchemaError("Failed to verify schema", operation="verify_schema", cause=e) from e

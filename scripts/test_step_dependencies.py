@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-"""
-Script to test pipeline step dependencies and execution order.
-"""
+"""Script to test pipeline step dependencies and execution order."""
 
 import os
 import sys
@@ -279,7 +277,7 @@ def test_summarizer_dependencies():
         original_prepare = manager._prepare_step_configs
 
         def prepare_with_deps(*args, **kwargs):
-            configs = original_prepare(*args, **kwargs)
+            original_prepare(*args, **kwargs)
             # Make sure dependencies are resolved
             return [{"name": "filesystem"}, {"name": "blarify"}, {"name": "summarizer"}]
 
@@ -341,7 +339,7 @@ def test_documentation_grapher_dependencies():
         original_prepare = manager._prepare_step_configs
 
         def prepare_with_deps(*args, **kwargs):
-            configs = original_prepare(*args, **kwargs)
+            original_prepare(*args, **kwargs)
             # Make sure dependencies are resolved
             return [{"name": "filesystem"}, {"name": "documentation_grapher"}]
 

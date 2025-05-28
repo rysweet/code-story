@@ -119,4 +119,4 @@ class SearchGraphTool(BaseTool):
             raise ToolError(
                 f"Search failed: {e!s}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            ) from e

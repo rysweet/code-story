@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Azure Authentication Renewal Script
+Azure Authentication Renewal Script.
 
 This script detects Azure authentication issues and automatically renews authentication tokens.
 It can also inject the tokens into Docker containers running the Code Story service.
@@ -290,7 +290,8 @@ def inject_azure_tokens_into_container(container_name: str) -> bool:
                         container_name,
                         "bash",
                         "-c",
-                        "cd / && tar -xf /tmp/azure_tokens.tar && chmod -R 700 /.azure && rm /tmp/azure_tokens.tar",
+                        ("cd / && tar -xf /tmp/azure_tokens.tar && "
+                         "chmod -R 700 /.azure && rm /tmp/azure_tokens.tar"),
                     ],
                     check=True,
                 )

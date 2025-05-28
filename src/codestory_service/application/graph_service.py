@@ -74,7 +74,7 @@ class GraphService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error executing query: {e!s}",
-            )
+            ) from e
 
     async def execute_vector_search(self, query: VectorQuery) -> VectorResult:
         """Execute a vector similarity search.
@@ -111,7 +111,7 @@ class GraphService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error executing vector search: {e!s}",
-            )
+            ) from e
 
     async def find_path(self, path_request: PathRequest) -> PathResult:
         """Find paths between nodes in the graph.
@@ -140,7 +140,7 @@ class GraphService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error finding paths: {e!s}",
-            )
+            ) from e
 
     async def answer_question(self, request: AskRequest) -> AskAnswer:
         """Answer a natural language question about the codebase.
@@ -215,7 +215,7 @@ class GraphService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error answering question: {e!s}",
-            )
+            ) from e
 
     async def generate_visualization(self, request: VisualizationRequest) -> str:
         """Generate an interactive HTML visualization of the code graph.
@@ -249,7 +249,7 @@ class GraphService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error generating visualization: {e!s}",
-            )
+            ) from e
 
     async def _get_graph_data_for_visualization(
         self, request: VisualizationRequest
@@ -1167,7 +1167,7 @@ class GraphService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error clearing database: {e!s}",
-            )
+            ) from e
 
 
 async def get_graph_service(

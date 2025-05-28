@@ -60,7 +60,7 @@ async def start_service(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start service: {e!s}",
-        )
+        ) from e
 
 
 @router.post(
@@ -102,4 +102,4 @@ async def stop_service(user: dict = Depends(require_role(["admin"]))) -> dict[st
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to stop service: {e!s}",
-        )
+        ) from e

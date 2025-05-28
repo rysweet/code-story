@@ -131,17 +131,16 @@ def test_settings_override_from_env(mock_env):
             "OPENAI__EMBEDDING_MODEL": "text-embedding-3-large",
         },
         clear=False,
+    ), patch(
+        "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
+    ), patch(
+        "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
+        return_value=None,
     ):
-        with patch(
-            "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
-        ), patch(
-            "src.codestory.config.settings.Settings._load_secrets_from_keyvault",
-            return_value=None,
-        ):
-            settings = Settings()
-            assert settings.neo4j.uri == "bolt://neo4j:7687"
-            assert settings.service.port == 9000
-            assert settings.openai.embedding_model == "text-embedding-3-large"
+        settings = Settings()
+        assert settings.neo4j.uri == "bolt://neo4j:7687"
+        assert settings.service.port == 9000
+        assert settings.openai.embedding_model == "text-embedding-3-large"
 
 
 def test_get_settings_cache():
@@ -443,7 +442,7 @@ def test_settings_with_azure_keyvault(mock_env):
     # when keyvault_name is set
 
     # Mock the import that would happen in KeyVault integration
-    with patch("importlib.import_module") as mock_import, patch(
+    with patch("importlib.import_module"), patch(
         "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
     ):
         # Create settings with KeyVault name

@@ -334,7 +334,7 @@ class ConfigService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to update configuration: {e!s}",
-            )
+            ) from e
 
     def _validate_config_patch(self, patch: ConfigPatch) -> ConfigValidationResult:
         """Validate a configuration patch.

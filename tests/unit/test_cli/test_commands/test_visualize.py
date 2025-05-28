@@ -84,38 +84,37 @@ class TestVisualizeCommands:
             output_path = os.path.join(temp_dir, "viz.html")
 
             # Run CLI with visualize generate with options
-            with patch("codestory.cli.commands.visualize.webbrowser.open") as mock_open:
-                with patch(
-                    "codestory.cli.main.ServiceClient", return_value=mock_service_client
-                ):
-                    result = cli_runner.invoke(
-                        app,
-                        [
-                            "visualize",
-                            "generate",
-                            "--output",
-                            output_path,
-                            "--no-browser",
-                            "--type",
-                            "hierarchy",
-                            "--theme",
-                            "dark",
-                            "--title",
-                            "Test Visualization",
-                        ],
-                    )
+            with patch("codestory.cli.commands.visualize.webbrowser.open"), patch(
+                "codestory.cli.main.ServiceClient", return_value=mock_service_client
+            ):
+                result = cli_runner.invoke(
+                    app,
+                    [
+                        "visualize",
+                        "generate",
+                        "--output",
+                        output_path,
+                        "--no-browser",
+                        "--type",
+                        "hierarchy",
+                        "--theme",
+                        "dark",
+                        "--title",
+                        "Test Visualization",
+                    ],
+                )
 
-                    # Check result
-                    assert result.exit_code == 0
-                    assert "Type: hierarchy" in result.output
-                    assert "Theme: dark" in result.output
+                # Check result
+                assert result.exit_code == 0
+                assert "Type: hierarchy" in result.output
+                assert "Theme: dark" in result.output
 
-                    # Check client calls with parameters
-                    mock_service_client.generate_visualization.assert_called_once()
-                    params = mock_service_client.generate_visualization.call_args[0][0]
-                    assert params.get("type") == "hierarchy"
-                    assert params.get("theme") == "dark"
-                    assert params.get("title") == "Test Visualization"
+                # Check client calls with parameters
+                mock_service_client.generate_visualization.assert_called_once()
+                params = mock_service_client.generate_visualization.call_args[0][0]
+                assert params.get("type") == "hierarchy"
+                assert params.get("theme") == "dark"
+                assert params.get("title") == "Test Visualization"
 
     def test_visualize_list(self, cli_runner: CliRunner) -> None:
         """Test 'visualize list' command with mock files."""
@@ -215,36 +214,35 @@ class TestVisualizeCommands:
             output_path = os.path.join(temp_dir, "viz.html")
 
             # Mock subprocess and time to simulate starting the service
-            with patch("subprocess.Popen") as mock_popen:
-                with patch("time.sleep"):
-                    # Setup mock process
-                    mock_process = MagicMock()
-                    mock_popen.return_value = mock_process
+            with patch("subprocess.Popen") as mock_popen, patch("time.sleep"):
+                # Setup mock process
+                mock_process = MagicMock()
+                mock_popen.return_value = mock_process
 
-                    # Mock webrowser to prevent opening
-                    with patch("codestory.cli.commands.visualize.webbrowser.open"):
-                        with patch(
-                            "codestory.cli.main.ServiceClient",
-                            return_value=mock_service_client,
-                        ):
-                            result = cli_runner.invoke(
-                                app,
-                                [
-                                    "visualize",
-                                    "generate",
-                                    "--output",
-                                    output_path,
-                                    "--no-browser",
-                                ],
-                            )
+                # Mock webrowser to prevent opening
+                with patch("codestory.cli.commands.visualize.webbrowser.open"):
+                    with patch(
+                        "codestory.cli.main.ServiceClient",
+                        return_value=mock_service_client,
+                    ):
+                        result = cli_runner.invoke(
+                            app,
+                            [
+                                "visualize",
+                                "generate",
+                                "--output",
+                                output_path,
+                                "--no-browser",
+                            ],
+                        )
 
-                            # Check result - should show service was started and visualization generated
-                            assert result.exit_code == 0
-                            assert "Starting service automatically" in result.output
-                            assert (
-                                "Visualization generated successfully" in result.output
-                            )
+                        # Check result - should show service was started and visualization generated
+                        assert result.exit_code == 0
+                        assert "Starting service automatically" in result.output
+                        assert (
+                            "Visualization generated successfully" in result.output
+                        )
 
-                            # Service should have been started
-                            mock_popen.assert_called_once()
-                            mock_service_client.generate_visualization.call_count >= 2
+                        # Service should have been started
+                        mock_popen.assert_called_once()
+                        mock_service_client.generate_visualization.call_count >= 2

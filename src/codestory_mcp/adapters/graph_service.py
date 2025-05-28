@@ -120,7 +120,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(
                 endpoint, "error", time.time() - start_time
             )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def find_node(self, node_id: str) -> Node:
         """Find a node by ID.
@@ -191,7 +191,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(
                 endpoint, "error", time.time() - start_time
             )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def find_paths(
         self, from_id: str, to_id: str, max_paths: int = 3
@@ -287,7 +287,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(
                 endpoint, "error", time.time() - start_time
             )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def execute_cypher(
         self, query: str, parameters: dict[str, Any] | None = None
@@ -350,7 +350,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(
                 endpoint, "error", time.time() - start_time
             )
-            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
+            raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def close(self) -> None:
         """Close the HTTP client."""

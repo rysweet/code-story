@@ -94,7 +94,7 @@ class TestRepositoryMounting:
 
         # Create container with a known mount point for testing
         container_name = "codestory-mount-test"
-        repo_name = os.path.basename(temp_repository)
+        os.path.basename(temp_repository)
         container_path = "/test-mount"
 
         # Try to stop any existing container first

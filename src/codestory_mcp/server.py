@@ -73,7 +73,7 @@ async def get_current_user(request: Request) -> dict[str, Any]:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid authentication token: {e!s}",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
 
 # Tool execution wrapper
@@ -115,18 +115,18 @@ def tool_executor(func: Callable) -> Callable:
             metrics.record_tool_call(tool_name, "success", duration)
 
             return result
-        except KeyError:
+        except KeyError as err:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tool not found: {tool_name}",
-            )
+            ) from err
         except ToolError as e:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise HTTPException(
                 status_code=e.status_code,
                 detail=e.message,
-            )
+            ) from e
         except HTTPException:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise
@@ -136,7 +136,7 @@ def tool_executor(func: Callable) -> Callable:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Tool execution error: {e!s}",
-            )
+            ) from e
 
     return wrapper
 

@@ -92,39 +92,38 @@ class TestProgressClient:
         with patch(
             "codestory.cli.client.progress_client.redis.from_url",
             return_value=mock_redis,
-        ):
-            with patch(
-                "codestory.cli.client.progress_client.threading.Thread"
-            ) as mock_thread_class:
-                # Create mock thread
-                mock_thread = MagicMock()
-                mock_thread_class.return_value = mock_thread
+        ), patch(
+            "codestory.cli.client.progress_client.threading.Thread"
+        ) as mock_thread_class:
+            # Create mock thread
+            mock_thread = MagicMock()
+            mock_thread_class.return_value = mock_thread
 
-                # Create mock settings
-                mock_settings = MagicMock()
-                mock_settings.redis.uri = "redis://localhost:6379"
+            # Create mock settings
+            mock_settings = MagicMock()
+            mock_settings.redis.uri = "redis://localhost:6379"
 
-                # Create client
-                client = ProgressClient(
-                    job_id="test-123",
-                    callback=MagicMock(),
-                    settings=mock_settings,
-                )
+            # Create client
+            client = ProgressClient(
+                job_id="test-123",
+                callback=MagicMock(),
+                settings=mock_settings,
+            )
 
-                # Start tracking
-                client.start()
+            # Start tracking
+            client.start()
 
-                # Check thread creation and start
-                mock_thread_class.assert_called_once_with(
-                    target=client._subscribe_redis
-                )
-                mock_thread.start.assert_called_once()
+            # Check thread creation and start
+            mock_thread_class.assert_called_once_with(
+                target=client._subscribe_redis
+            )
+            mock_thread.start.assert_called_once()
 
-                # Stop tracking
-                with patch.object(client._stop_event, "set") as mock_set:
-                    client.stop()
-                    mock_set.assert_called_once()
-                    mock_thread.join.assert_called_once()
+            # Stop tracking
+            with patch.object(client._stop_event, "set") as mock_set:
+                client.stop()
+                mock_set.assert_called_once()
+                mock_thread.join.assert_called_once()
 
     def test_subscribe_redis(self) -> None:
         """Test Redis subscription."""

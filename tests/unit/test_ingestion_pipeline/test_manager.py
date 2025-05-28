@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 
@@ -174,7 +175,8 @@ class TestPipelineManager:
 
                 manager = PipelineManager(config_path=config_file)
 
-                # We need to specifically mock the _get_step_class method to make it return None for blarify
+                # We need to specifically mock the _get_step_class method to make it 
+                # return None for blarify
                 with patch.object(
                     manager,
                     "_get_step_class",

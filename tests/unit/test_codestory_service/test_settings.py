@@ -94,7 +94,7 @@ def test_service_settings_cors_origins_validation():
 
         with mock.patch.dict(os.environ, env_vars):
             with mock.patch("codestory_service.settings.logger") as mock_logger:
-                settings = ServiceSettings()
+                ServiceSettings()
 
                 # Check that a warning was logged
                 mock_logger.warning.assert_called_once()

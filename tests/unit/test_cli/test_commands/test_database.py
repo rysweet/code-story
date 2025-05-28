@@ -1,11 +1,12 @@
 """Unit tests for the database CLI commands."""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from click.testing import CliRunner
 
-from codestory.cli.commands.database import database, clear_database
 from codestory.cli.client import ServiceError
+from codestory.cli.commands.database import clear_database, database
 
 
 @pytest.fixture

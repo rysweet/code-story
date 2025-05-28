@@ -168,7 +168,7 @@ def initialized_repo(sample_repo, neo4j_connector):
         }
 
         # Create and initialize the filesystem step
-        step = FileSystemStep()
+        FileSystemStep()
 
         # Instead of actually running the step with Celery, we'll directly create
         # the filesystem nodes in Neo4j that the step would normally create

@@ -62,7 +62,7 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Login failed: {e!s}",
-        )
+        ) from e
 
 
 @router.get(
@@ -97,4 +97,4 @@ async def get_user_info(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting user info: {e!s}",
-        )
+        ) from e

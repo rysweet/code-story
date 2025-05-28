@@ -48,7 +48,8 @@ def check_env_vars():
         if not hasattr(settings, "openai"):
             print("\n❌ ERROR: OpenAI settings are missing!")
             print(
-                "Please check your .env file and make sure OpenAI settings are properly configured.\n"
+                "Please check your .env file and make sure OpenAI settings are "
+                "properly configured.\n"
             )
             return False
 

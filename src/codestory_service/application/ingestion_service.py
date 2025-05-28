@@ -204,7 +204,7 @@ class IngestionService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to start ingestion: {e!s}",
-            )
+            ) from e
 
     async def get_job_status(self, job_id: str) -> IngestionJob:
         """Get the status of an ingestion job.
@@ -232,7 +232,7 @@ class IngestionService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get job status: {e!s}",
-            )
+            ) from e
 
     async def cancel_job(self, job_id: str) -> IngestionJob:
         """Cancel an ingestion job.
@@ -275,7 +275,7 @@ class IngestionService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to cancel job: {e!s}",
-            )
+            ) from e
 
     async def list_jobs(
         self,
@@ -324,7 +324,7 @@ class IngestionService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to list jobs: {e!s}",
-            )
+            ) from e
 
 
 async def get_ingestion_service(

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from neo4j.exceptions import ServiceUnavailable
 
-from codestory.graphdb.exceptions import TransactionError
+from codestory.graphdb.exceptions import QueryError, TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
@@ -119,10 +119,12 @@ def test_execute_query_with_retry(connector, mock_driver):
     """Test execute_query with retry on transient error."""
     # This test just verifies the retry mechanism works by checking function attributes
 
-    # The Neo4jConnector has the retry logic (checking if the retry_on_transient decorator is applied)
+    # The Neo4jConnector has the retry logic 
+    # (checking if the retry_on_transient decorator is applied)
     assert hasattr(connector, "execute_query")
 
-    # We can't directly check for __wrapped__ attribute since that might be implementation-dependent,
+    # We can't directly check for __wrapped__ attribute since that might be 
+    # implementation-dependent,
     # but we can verify the connector has the execute_query method
     assert callable(connector.execute_query)
 

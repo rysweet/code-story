@@ -145,7 +145,7 @@ def custom_process_filesystem(
             dir_path = os.path.relpath(current_dir, repository_path)
             if dir_path == ".":
                 # This is the repository root
-                dir_id = repo_id
+                pass
             else:
                 dir_properties = {
                     "name": os.path.basename(current_dir),
@@ -161,7 +161,7 @@ def custom_process_filesystem(
                 dir_result = neo4j_connector.execute_query(
                     dir_query, params={"props": dir_properties}, write=True
                 )
-                dir_id = dir_result[0]["id"] if dir_result else None
+                dir_result[0]["id"] if dir_result else None
 
                 # Link to parent directory
                 parent_path = os.path.dirname(dir_path)
@@ -219,7 +219,7 @@ def custom_process_filesystem(
                 file_result = neo4j_connector.execute_query(
                     file_query, params={"props": file_properties}, write=True
                 )
-                file_id = file_result[0]["id"] if file_result else None
+                file_result[0]["id"] if file_result else None
 
                 # Link to directory
                 if dir_path == ".":
