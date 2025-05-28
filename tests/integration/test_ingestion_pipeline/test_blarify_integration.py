@@ -31,7 +31,7 @@ import contextlib
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
-from codestory_blarify.step import BlarifyStep
+from codestory_blarify.step import DEFAULT_CONTAINER_NAME_PREFIX, BlarifyStep
 
 # Mark these tests as integration tests
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
@@ -534,10 +534,12 @@ def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, bl
                 assert "n.path" in node, f"Expected AST node to have 'path' property, got: {node}"
         else:
             print(
-                f"BlarifyStep execution failed, but this might be due to known Docker socket issue. Error: {job_status.get('error', '')}"
+                f"BlarifyStep execution failed, but this might be due to known Docker socket "
+                f"issue. Error: {job_status.get('error', '')}"
             )
 
-            # If we have AST nodes from the direct Docker test, we'll consider this test successful anyway
+            # If we have AST nodes from the direct Docker test, we'll consider this test 
+            # successful anyway
             if ast_count > 0:
                 print("Integration test passing on direct Docker connectivity test results")
             else:

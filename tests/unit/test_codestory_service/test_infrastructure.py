@@ -228,7 +228,8 @@ class TestOpenAIAdapter:
         # Make models.list raise an authentication error with tenant ID pattern
         azure_error = Exception(
             "DefaultAzureCredential failed to retrieve a token from the included credentials. "
-            "DefaultAzureCredential authentication failed for tenant '12345678-1234-1234-1234-123456789012'. "
+            "DefaultAzureCredential authentication failed for tenant "
+            "'12345678-1234-1234-1234-123456789012'. "
             "AzureCliCredential authentication failed: AADSTS700003."
         )
 

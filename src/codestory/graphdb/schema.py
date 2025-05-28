@@ -1,3 +1,5 @@
+from typing import Any
+
 """Neo4j schema definitions and initialization.
 
 This module provides functions to initialize and manage the Neo4j database schema,
@@ -112,7 +114,7 @@ def get_schema_initialization_queries() -> list[str]:
     schema_elements = get_all_schema_elements()
 
     # Flatten all queries into a single list
-    initialization_queries = []
+    initialization_queries: list[Any] = []
     for _element_type, queries in schema_elements.items():
         initialization_queries.extend(queries)
 
@@ -276,7 +278,7 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
 
         # Verify each schema element
         schema_elements = get_all_schema_elements()
-        verification_results = {
+        verification_results: Any = {
             "constraints": {},
             "indexes": {},
             "vector_indexes": {},
@@ -298,7 +300,8 @@ def verify_schema(connector) -> dict[str, dict[str, bool]]:
                 if "INDEX" in index and "IF NOT EXISTS" in index:
                     parts = index.split("INDEX")
                     if len(parts) > 1:
-                        # Extract the index name which comes after "INDEX" and before "IF NOT EXISTS"
+                        # Extract the index name which comes after "INDEX" and before 
+                        # "IF NOT EXISTS"
                         name_part = parts[1].split("IF NOT EXISTS")[0].strip()
                         verification_results["indexes"][name_part] = name_part in existing_indexes
 

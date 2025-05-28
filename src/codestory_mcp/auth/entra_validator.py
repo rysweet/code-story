@@ -43,12 +43,14 @@ class AuthorizationError(Exception):
 class EntraValidator:
     """JWT token validator for Microsoft Entra ID."""
 
-    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None):
+    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None) -> None:
         """Initialize the validator.
 
         Args:
             tenant_id: Microsoft Entra ID tenant ID
             audience: Expected audience claim
+            scope_manager: Optional scope manager instance
+            jwks_client: Optional JWKS client instance
         """
         self.tenant_id = tenant_id
         self.audience = audience
@@ -124,7 +126,7 @@ class EntraValidator:
         elif isinstance(raw_scopes, list):
             scopes = raw_scopes
         else:
-            scopes = []
+            scopes: list[Any] = []
 
         # Check scopes against required scopes
         if not self.scope_manager.has_required_scope(scopes):

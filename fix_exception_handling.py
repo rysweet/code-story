@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 
-def get_b904_issues():
+def get_b904_issues() -> list[str]:
     """Get all B904 issues from ruff."""
     try:
         result = subprocess.run(
@@ -34,7 +34,7 @@ def get_b904_issues():
         return []
 
 
-def fix_exception_handling(file_path: str, line_num: int):
+def fix_exception_handling(file_path: str, line_num: int) -> None:
     """Fix a specific B904 issue in a file."""
     try:
         with open(file_path) as f:
@@ -86,7 +86,7 @@ def fix_exception_handling(file_path: str, line_num: int):
         return False
 
 
-def main():
+def main() -> None:
     """Main function to fix all B904 issues."""
     print("Finding B904 exception handling issues...")
     issues = get_b904_issues()

@@ -1,4 +1,5 @@
 from typing import Any
+
 """Content analyzer for documentation content.
 
 This module provides functionality for analyzing documentation content
@@ -111,7 +112,7 @@ class ContentAnalyzer:
             is_example = True
 
         # Extract imports/dependencies
-        dependencies = []
+        dependencies: list[Any] = []
         if language in ["python", "py"]:
             for line in lines:
                 if re.match(r"^import\s+|^from\s+\w+\s+import", line.strip()):
@@ -122,7 +123,7 @@ class ContentAnalyzer:
                     dependencies.append(line.strip())
 
         # Extract function/class definitions
-        definitions = []
+        definitions: list[Any] = []
         if language in ["python", "py"]:
             for line in lines:
                 if re.match(r"^def\s+\w+|^class\s+\w+", line.strip()):
@@ -154,21 +155,21 @@ class ContentAnalyzer:
         """
         # Extract parameter descriptions
         param_pattern = re.compile(r"@param|:param|Parameters:|Args:|Arguments:")
-        params = []
+        params: list[Any] = []
         for line in content.split("\n"):
             if param_pattern.search(line):
                 params.append(line.strip())
 
         # Extract return descriptions
         return_pattern = re.compile(r"@return|:return|Returns:|Return:")
-        returns = []
+        returns: list[Any] = []
         for line in content.split("\n"):
             if return_pattern.search(line):
                 returns.append(line.strip())
 
         # Extract raises/exceptions
         raises_pattern = re.compile(r"@raises|:raises|Raises:|Exceptions:|:except")
-        raises = []
+        raises: list[Any] = []
         for line in content.split("\n"):
             if raises_pattern.search(line):
                 raises.append(line.strip())
@@ -196,14 +197,14 @@ class ContentAnalyzer:
         """
         # Extract method descriptions
         method_pattern = re.compile(r"@method|:method|Methods:|Method:")
-        methods = []
+        methods: list[Any] = []
         for line in content.split("\n"):
             if method_pattern.search(line):
                 methods.append(line.strip())
 
         # Extract attribute descriptions
         attr_pattern = re.compile(r"@attribute|:attribute|Attributes:|Attribute:")
-        attributes = []
+        attributes: list[Any] = []
         for line in content.split("\n"):
             if attr_pattern.search(line):
                 attributes.append(line.strip())
@@ -226,14 +227,14 @@ class ContentAnalyzer:
         """
         # Extract exported classes
         class_pattern = re.compile(r"@class|:class|Classes:|Class:")
-        classes = []
+        classes: list[Any] = []
         for line in content.split("\n"):
             if class_pattern.search(line):
                 classes.append(line.strip())
 
         # Extract exported functions
         func_pattern = re.compile(r"@function|:function|Functions:|Function:")
-        functions = []
+        functions: list[Any] = []
         for line in content.split("\n"):
             if func_pattern.search(line):
                 functions.append(line.strip())
@@ -255,7 +256,7 @@ class ContentAnalyzer:
             Dict with analysis results
         """
         # Extract API references
-        api_refs = []
+        api_refs: list[Any] = []
         for match in self.api_reference_pattern.finditer(content):
             api_refs.append(match.group(1))
 
@@ -302,7 +303,7 @@ class ContentAnalyzer:
         keywords = [w for w in words if w not in stop_words]
 
         # Count word frequency
-word_counts: dict[Any, Any] = {}
+        word_counts: dict[Any, Any] = {}
         for word in keywords:
             word_counts[word] = word_counts.get(word, 0) + 1
 

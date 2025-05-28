@@ -20,6 +20,9 @@ from codestory.llm.exceptions import (
 # Set up logging
 logger = logging.getLogger(__name__)
 
+# Global singleton instance
+_openai_adapter_instance: "OpenAIAdapter | None" = None
+
 
 def get_azure_tenant_id_from_environment() -> str | None:
     """Get Azure tenant ID from environment variables or config files.
@@ -312,14 +315,16 @@ class OpenAIAdapter:
 
             logger.error(f"Full traceback: {traceback.format_exc()}")
 
-            # Check for 404 errors - this indicates a serious API configuration issue that needs fixing
+            # Check for 404 errors - this indicates a serious API configuration issue 
+            # that needs fixing
             if (
                 "<html>" in error_message
                 and "404 Not Found" in error_message
                 and "nginx" in error_message
             ):
                 logger.error(
-                    "Received nginx 404 error when accessing Azure OpenAI API. This indicates a serious endpoint configuration issue."
+                    "Received nginx 404 error when accessing Azure OpenAI API. "
+                    "This indicates a serious endpoint configuration issue."
                 )
                 deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "NOT SET")
                 endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "NOT SET")
@@ -344,7 +349,10 @@ class OpenAIAdapter:
                             "AZURE_OPENAI__ENDPOINT": "<your-endpoint>",
                             "AZURE_OPENAI__API_VERSION": "<your-api-version>",
                         },
-                        "suggestion": "Set all required Azure OpenAI environment variables. No default endpoint is provided.",
+                        "suggestion": (
+                            "Set all required Azure OpenAI environment variables. "
+                            "No default endpoint is provided."
+                        ),
                     },
                 }
             # Check for Azure authentication errors
@@ -373,7 +381,9 @@ class OpenAIAdapter:
                         "type": "AuthenticationError",
                         "tenant_id": tenant_id,
                         "solution": f"Run: {renewal_cmd}",
-                        "hint": "You can use our CLI for manual renewal: codestory service auth-renew",
+                        "hint": (
+                            "You can use our CLI for manual renewal: codestory service auth-renew"
+                        ),
                     },
                 }
             else:
@@ -398,6 +408,6 @@ class OpenAIAdapter:
 def get_openai_adapter() -> "OpenAIAdapter":
     """Factory function to get a singleton OpenAIAdapter instance."""
     global _openai_adapter_instance
-    if "_openai_adapter_instance" not in globals():
+    if _openai_adapter_instance is None:
         _openai_adapter_instance = OpenAIAdapter()
     return _openai_adapter_instance

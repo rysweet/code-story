@@ -3,18 +3,17 @@
 Script to systematically fix mypy type annotation errors.
 """
 
-import ast
 import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Tuple, Set
+
 
 class MypyErrorFixer:
-    def __init__(self, src_dir: str):
+    def __init__(self, src_dir: str) -> None:
         self.src_dir = Path(src_dir)
-        
-    def run_mypy(self) -> List[str]:
+
+    def run_mypy(self) -> list[str]:
         """Run mypy and return list of error lines."""
         try:
             result = subprocess.run(
@@ -27,15 +26,15 @@ class MypyErrorFixer:
         except Exception as e:
             print(f"Error running mypy: {e}")
             return []
-    
-    def parse_errors(self, error_lines: List[str]) -> Dict[str, List[Tuple[int, str, str]]]:
+
+    def parse_errors(self, error_lines: list[str]) -> dict[str, list[tuple[int, str, str]]]:
         """Parse mypy errors into file -> [(line_num, error_type, message)]."""
-        errors_by_file = {}
-        
+        errors_by_file: dict[str, list[tuple[int, str, str]]] = {}
+
         for line in error_lines:
             if not line.strip() or ': error:' not in line:
                 continue
-                
+
             # Pattern: src/path/file.py:123: error: Message [error-code]
             match = re.match(r'^([^:]+):(\d+): error: (.+?) \[([^\]]+)\]', line)
             if match:
@@ -43,17 +42,17 @@ class MypyErrorFixer:
                 if file_path not in errors_by_file:
                     errors_by_file[file_path] = []
                 errors_by_file[file_path].append((int(line_num), error_code, message))
-        
+
         return errors_by_file
     
-    def install_missing_stubs(self):
+    def install_missing_stubs(self) -> None:
         """Install missing stub packages."""
         stubs_to_install = [
             "types-PyYAML",
-            "types-setuptools", 
+            "types-setuptools",
             "types-docker"
         ]
-        
+
         for stub in stubs_to_install:
             try:
                 subprocess.run(["pip", "install", stub], check=True)
@@ -61,10 +60,10 @@ class MypyErrorFixer:
             except subprocess.CalledProcessError:
                 print(f"Failed to install {stub}")
     
-    def fix_no_untyped_def_errors(self, file_path: str, errors: List[Tuple[int, str, str]]):
+    def fix_no_untyped_def_errors(self, file_path: str, errors: list[tuple[int, str, str]]) -> None:
         """Fix no-untyped-def errors by adding type annotations."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 lines = f.readlines()
             
             modified = False
@@ -141,10 +140,10 @@ class MypyErrorFixer:
         except Exception as e:
             print(f"Error fixing {file_path}: {e}")
     
-    def fix_var_annotated_errors(self, file_path: str, errors: List[Tuple[int, str, str]]):
+    def fix_var_annotated_errors(self, file_path: str, errors: list[tuple[int, str, str]]) -> None:
         """Fix var-annotated errors by adding type hints."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 lines = f.readlines()
             
             modified = False
@@ -212,10 +211,10 @@ class MypyErrorFixer:
         except Exception as e:
             print(f"Error fixing {file_path}: {e}")
 
-    def fix_import_untyped_errors(self, file_path: str, errors: List[Tuple[int, str, str]]):
+    def fix_import_untyped_errors(self, file_path: str, errors: list[tuple[int, str, str]]) -> None:
         """Fix import-untyped errors by adding type: ignore comments."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 lines = f.readlines()
             
             modified = False
@@ -243,10 +242,10 @@ class MypyErrorFixer:
         except Exception as e:
             print(f"Error fixing {file_path}: {e}")
 
-    def fix_simple_issues(self, file_path: str, errors: List[Tuple[int, str, str]]):
+    def fix_simple_issues(self, file_path: str, errors: list[tuple[int, str, str]]) -> None:
         """Fix simple/obvious type issues."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
             
             original_content = content
@@ -286,19 +285,19 @@ class MypyErrorFixer:
         except Exception as e:
             print(f"Error fixing {file_path}: {e}")
 
-    def run_fixes(self):
+    def run_fixes(self) -> None:
         """Run all fixes systematically."""
         print("Installing missing stub packages...")
         self.install_missing_stubs()
         
         print("\nRunning mypy to get current errors...")
         error_lines = self.run_mypy()
-        errors_by_file = self.parse_errors(error_lines)
+        errors_by_file: dict[str, list[tuple[int, str, str]]] = self.parse_errors(error_lines)
         
         print(f"Found errors in {len(errors_by_file)} files")
         
         # Prioritize fixes by error type
-        error_type_counts = {}
+        error_type_counts: dict[str, int] = {}
         for file_errors in errors_by_file.values():
             for _, error_code, _ in file_errors:
                 error_type_counts[error_code] = error_type_counts.get(error_code, 0) + 1

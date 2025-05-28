@@ -148,8 +148,9 @@ class OpenAIClient:
                     # If we're not logged in or tenant doesn't match, remind user
                     if show_result.returncode != 0 or current_tenant != tenant_id:
                         logger.warning(
-                            f"Currently logged into tenant '{current_tenant}', but need tenant '{tenant_id}'. "
-                            f"Attempting to run 'az login --tenant {tenant_id}' automatically"
+                            f"Currently logged into tenant '{current_tenant}', but need "
+                            f"tenant '{tenant_id}'. Attempting to run 'az login --tenant "
+                            f"{tenant_id}' automatically"
                         )
 
                         # Try to automatically log in to the required tenant
@@ -224,10 +225,12 @@ class OpenAIClient:
                                         "Azure CLI appears to have an installation issue"
                                     )
                                     logger.warning(
-                                        "You may need to reinstall or update the Azure CLI with 'brew update && brew upgrade azure-cli'"
+                                        "You may need to reinstall or update the Azure CLI with "
+                                        "'brew update && brew upgrade azure-cli'"
                                     )
                                     logger.warning(
-                                        f"Then run 'az login --tenant {tenant_id}' manually in a terminal"
+                                        f"Then run 'az login --tenant {tenant_id}' manually "
+                                        f"in a terminal"
                                     )
                                 else:
                                     logger.warning(
@@ -339,9 +342,8 @@ class OpenAIClient:
             if k not in ["api_key", "azure_ad_token_provider"]
         }
         logger.info(f"Final client parameters (sanitized): {safe_params}")
-        logger.info(
-            f"Authentication method: {'Azure AD' if 'azure_ad_token_provider' in client_params else 'API Key'}"
-        )
+        auth_method = 'Azure AD' if 'azure_ad_token_provider' in client_params else 'API Key'
+        logger.info(f"Authentication method: {auth_method}")
 
         # Create the Azure OpenAI clients (sync and async)
         logger.info("Creating Azure OpenAI clients...")
@@ -375,7 +377,7 @@ class OpenAIClient:
                 logger.error("Authentication error during client creation - check credentials")
             raise
 
-    def _prepare_request_data(self, request):
+    def _prepare_request_data(self, request) -> None:
         """Extract model name and prepare request data, removing internal parameters.
 
         Args:

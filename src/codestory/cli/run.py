@@ -7,8 +7,8 @@ It imports the main function from the main module and calls it if the script
 is run directly.
 """
 
-from typing import Any
 import sys
+from typing import Any
 
 from codestory.cli.main import main
 

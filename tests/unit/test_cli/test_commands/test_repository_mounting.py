@@ -125,7 +125,8 @@ class TestRepositoryMounting:
                                     mock_wait.return_value = True
                                     mock_config.return_value = True
 
-                                    # Mock is_repo_mounted to return False first, then True for verification
+                                    # Mock is_repo_mounted to return False first, then True for 
+                                    # verification
                                     mock_mounted.side_effect = [False, True]
 
                                     # Call setup_repository_mount

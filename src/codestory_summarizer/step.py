@@ -9,10 +9,10 @@ import json
 import logging
 import os
 import time
-import uuid
 from typing import Any
+from uuid import uuid4
 
-from celery import shared_task  # type: ignore[import-untyped]
+from celery import shared_task
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -63,7 +63,7 @@ class SummarizerStep(PipelineStep):
             raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"summarizer-{uuid.uuid4.uuid4()}"
+        job_id = f"summarizer-{uuid4()}"
 
         # Extract configuration
         max_concurrency = config.get("max_concurrency", 5)
@@ -115,7 +115,7 @@ class SummarizerStep(PipelineStep):
         """
         if job_id not in self.active_jobs:
             # Check if this is a task ID
-            from celery.result import AsyncResult  # type: ignore[import-untyped]
+            from celery.result import AsyncResult
 
             try:
                 result = AsyncResult(job_id)
@@ -128,7 +128,8 @@ class SummarizerStep(PipelineStep):
                     return {
                         "status": StepStatus.COMPLETED,
                         "message": "Task completed successfully",
-                        "result": result.result,  # Fixed: Use result directly instead of blocking get()
+                        "result": result.result,  # Fixed: Use result directly instead of 
+                                                  # blocking get()
                     }
                 elif result.state == "FAILURE":
                     return {
@@ -203,7 +204,7 @@ class SummarizerStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke  # type: ignore[import-untyped]
+        from celery.task.control import revoke
 
         revoke(task_id, terminate=True)
 
@@ -339,7 +340,7 @@ def run_summarizer(
                 context = content_info.get("context", [])
 
                 # Get child summaries for higher-level nodes
-                child_summaries = []
+                child_summaries: list[Any] = []
 
                 for dep_id in node_data.dependents:
                     if dep_id in summary_store:
@@ -500,7 +501,7 @@ def store_summary(connector: Neo4jConnector, node_id: str, summary: str, node_ty
         node_type: Type of the node
     """
     # Create summary node
-    summary_id = str(uuid.uuid4.uuid4())
+    summary_id = str(uuid4())
 
     # Create the Summary node
     summary_query = """

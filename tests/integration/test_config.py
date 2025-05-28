@@ -37,12 +37,7 @@ def get_test_settings() -> Settings:
     neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
 
     # Determine URI based on environment
-    if docker_env:
-        # In Docker environment, use container service name
-        neo4j_uri = "bolt://neo4j:7687"
-    else:
-        # Otherwise use localhost with mapped port
-        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+    neo4j_uri = "bolt://neo4j:7687" if docker_env else f"bolt://localhost:{neo4j_port}"
 
     neo4j = Neo4jSettings(
         uri=neo4j_uri,
@@ -52,12 +47,7 @@ def get_test_settings() -> Settings:
     )
 
     # Define redis test settings based on environment
-    if docker_env:
-        # In Docker environment, use container service name
-        redis_uri = "redis://redis:6379/0"
-    else:
-        # Otherwise use localhost with mapped port
-        redis_uri = "redis://localhost:6389/0"  # Port mapped in docker-compose.yml
+    redis_uri = "redis://redis:6379/0" if docker_env else "redis://localhost:6389/0"
 
     redis = RedisSettings(
         uri=redis_uri,

@@ -114,7 +114,8 @@ class ProgressTracker:
         remaining = self.get_estimated_remaining_time()
 
         message = (
-            f"Progress: {progress:.1f}% ({self.graph.completed_count}/{self.graph.total_count} nodes) | "
+            f"Progress: {progress:.1f}% "
+            f"({self.graph.completed_count}/{self.graph.total_count} nodes) | "
             f"Elapsed: {_format_time(elapsed)}"
         )
 

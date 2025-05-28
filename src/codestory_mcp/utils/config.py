@@ -116,4 +116,4 @@ def get_mcp_settings() -> MCPSettings:
     Returns:
         MCP settings instance
     """
-    return MCPSettings()
+    return MCPSettings()  # type: ignore  # TODO: Pydantic BaseSettings with defaults

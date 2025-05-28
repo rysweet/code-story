@@ -622,7 +622,10 @@ class TestHealthAPI:
             {
                 "status": "unhealthy",
                 "details": {
-                    "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
+                    "error": (
+                        "DefaultAzureCredential failed to retrieve a token from the included "
+                        "credentials"
+                    ),
                     "type": "AuthenticationError",
                     "solution": "az login --tenant abcd1234 --scope https://cognitiveservices.azure.com/.default",
                 },
@@ -675,7 +678,10 @@ class TestHealthAPI:
             {
                 "status": "unhealthy",
                 "details": {
-                    "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
+                    "error": (
+                        "DefaultAzureCredential failed to retrieve a token from the included "
+                        "credentials"
+                    ),
                     "type": "AuthenticationError",
                     "tenant_id": "12345678-1234-1234-1234-123456789012",
                 },
@@ -737,7 +743,10 @@ class TestHealthAPI:
         openai.check_health.return_value = {
             "status": "unhealthy",
             "details": {
-                "error": "DefaultAzureCredential failed to retrieve a token from the included credentials",
+                "error": (
+                    "DefaultAzureCredential failed to retrieve a token from the included "
+                    "credentials"
+                ),
                 "type": "AuthenticationError",
                 "solution": "az login --scope https://cognitiveservices.azure.com/.default",
             },

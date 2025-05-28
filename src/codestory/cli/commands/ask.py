@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 @click.option("--json", "output_json", is_flag=True, help="Output raw JSON.")
 @click.pass_context
 def ask(ctx: click.Context, question: str, output_json: bool = False) -> None:
+    """Ask a question to the Code Story system."""
     require_service_available()
 
     """

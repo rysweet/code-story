@@ -29,7 +29,7 @@ def setup_gui():
 
         response = requests.get("http://localhost:5173")
         is_running = response.status_code == 200
-    except:
+    except Exception:
         pass
 
     if not is_running:
@@ -51,7 +51,7 @@ def setup_gui():
                 response = requests.get("http://localhost:5173")
                 if response.status_code == 200:
                     break
-            except:
+            except Exception:
                 pass
 
             time.sleep(2)

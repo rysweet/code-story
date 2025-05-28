@@ -172,3 +172,12 @@
 # Created and ran integration test to verify Azure OpenAI configuration without Docker overhead
 # Identified that Azure authentication works but deployment 'o1' returns 404 nginx error
 # This confirms the issue is with the Azure OpenAI deployment configuration, not the client code
+
+## May 27, 2025 (Prompt 36 - E501 Line Length Violations Fix)
+
+- `ruff check --select=E501 | head -20` - Check current E501 violations to continue fixing
+- `ruff check --select=E501 | wc -l` - Count total remaining E501 violations
+- `cd /Users/ryan/src/msec/code-story && sed -n '420p' src/codestory_filesystem/step.py | wc -c` - Check exact character count of line 420
+- `grep -c "^## Prompt" /Users/ryan/src/msec/code-story/Specifications/prompt-history.md` - Count total prompts to determine next prompt number
+- `find /Users/ryan/src/msec/code-story -name "*.md" -path "*/docs/*" | head -10` - List documentation files
+- `grep -rn "TODO\|FIXME\|HACK\|BUG" /Users/ryan/src/msec/code-story/src --include="*.py" | head -20` - Find TODO/FIXME comments using grep

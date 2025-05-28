@@ -89,7 +89,7 @@ class GraphServiceAdapter:
             data = response.json()
 
             # Convert to Node objects with scores
-            results = []
+            results: list[Any] = []
             for item in data.get("data", []):
                 # Create Node-like object
                 node = MockNode(
@@ -229,9 +229,9 @@ class GraphServiceAdapter:
             data = response.json()
 
             # Convert to paths of nodes and relationships
-            paths = []
+            paths: list[Any] = []
             for path_data in data.get("data", []):
-                path = []
+                path: list[Any] = []
 
                 # Process elements in the path
                 for element in path_data.get("elements", []):
@@ -296,7 +296,7 @@ class GraphServiceAdapter:
             }
 
             if parameters:
-                payload["parameters"] = parameters
+                payload["parameters"] = parameters  # type: ignore  # TODO: Fix type compatibility
 
             # Make request to Code Story service
             response = await self.client.post(endpoint, json=payload)

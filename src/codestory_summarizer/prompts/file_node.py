@@ -20,7 +20,8 @@ def get_file_summary_prompt(content: str, context: list[str], max_tokens: int = 
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert code summarizer. Analyze the following file and write a comprehensive summary.
+    prompt = f"""You are an expert code summarizer. Analyze the following file and write a 
+comprehensive summary.
 
 File information:
 {chr(10).join(context)}
@@ -37,7 +38,9 @@ Your task is to:
 4. Note any important patterns, algorithms, or techniques used
 5. Mention the tech stack or frameworks being utilized
 
-Your summary should be concise, technical, and informative. Aim for 3-5 paragraphs (depending on complexity). Focus on explaining WHAT the code does, WHY it exists, and HOW it accomplishes its purpose.
+Your summary should be concise, technical, and informative. Aim for 3-5 paragraphs (depending on 
+complexity). Focus on explaining WHAT the code does, WHY it exists, and HOW it accomplishes 
+its purpose.
 
 Summary:
 """
@@ -60,7 +63,8 @@ def get_config_file_summary_prompt(content: str, context: list[str], max_tokens:
     if len(content) > max_tokens * 4:
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert at analyzing configuration files. Analyze the following configuration file and write a comprehensive summary.
+    prompt = f"""You are an expert at analyzing configuration files. Analyze the following 
+configuration file and write a comprehensive summary.
 
 File information:
 {chr(10).join(context)}
@@ -77,7 +81,8 @@ Your task is to:
 4. Note any environment-specific settings or variables
 5. Identify any security-relevant configurations
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT is being configured, WHY these settings matter, and HOW they impact the system.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT is being 
+configured, WHY these settings matter, and HOW they impact the system.
 
 Summary:
 """

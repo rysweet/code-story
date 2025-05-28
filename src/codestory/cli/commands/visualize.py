@@ -258,7 +258,8 @@ def viz_help(ctx: click.Context) -> None:
 
     ## Visualization Types
 
-    - **Force** (default): A force-directed graph where nodes repel each other and edges act like springs.
+    - **Force** (default): A force-directed graph where nodes repel each other 
+      and edges act like springs.
       Best for showing relationships between components.
 
     - **Hierarchy**: A tree-like visualization showing inheritance and containment relationships.

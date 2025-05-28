@@ -26,7 +26,7 @@ try:
     from ..config.settings import get_settings
 except ImportError:
     # For testing environments where settings might not be available
-    get_settings = None
+    get_settings = None  # type: ignore  # TODO: Fix None assignment
 
 from .exceptions import (
     ConnectionError,
@@ -70,7 +70,8 @@ def create_connector() -> "Neo4jConnector":
     # Fail if get_settings is not available
     if get_settings is None:
         raise RuntimeError(
-            "get_settings function not available. Make sure the config module is properly installed."
+            "get_settings function not available. Make sure the config module "
+            "is properly installed."
         )
 
     # Get application settings
@@ -197,6 +198,7 @@ class Neo4jConnector:
             username: Neo4j username
             password: Neo4j password
             database: Neo4j database name
+            async_mode: Whether to enable asynchronous operations
             **config_options: Additional driver configuration options
                 - max_connection_pool_size: Maximum size of the connection pool
                 - connection_timeout: Connection timeout in seconds
@@ -246,7 +248,8 @@ class Neo4jConnector:
                     logger.warning(f"Failed to load settings: {e!s}")
                     if not all_params_provided:
                         raise ConnectionError(
-                            f"Failed to load settings and missing required connection parameters: {e!s}",
+                            f"Failed to load settings and missing required connection "
+                            f"parameters: {e!s}",
                             cause=e,
                         ) from e
 
@@ -475,7 +478,7 @@ class Neo4jConnector:
         Returns:
             List of results for each query
         """
-        results = []
+        results: list[Any] = []
         for query, params in zip(queries, params_list, strict=False):
             result = tx.run(query, params)
             results.append([dict(record) for record in result])

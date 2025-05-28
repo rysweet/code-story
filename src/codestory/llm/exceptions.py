@@ -46,7 +46,7 @@ class RateLimitError(OpenAIError):
         self,
         message: str,
         retry_after: int | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize RateLimitError.
 
@@ -85,7 +85,7 @@ class ContextLengthError(InvalidRequestError):
         message: str,
         max_tokens: int | None = None,
         input_tokens: int | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize ContextLengthError.
 

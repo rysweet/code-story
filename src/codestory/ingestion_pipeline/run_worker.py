@@ -1,9 +1,9 @@
 """Entry point for running the Celery worker."""
 
-from typing import Any
 import logging
 import os
 import sys
+from typing import Any
 
 from ..config.settings import get_settings
 

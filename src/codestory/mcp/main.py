@@ -1,6 +1,7 @@
 """Main entry point for the Model Context Protocol service."""
 
 from typing import Any
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

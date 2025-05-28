@@ -24,7 +24,8 @@ def get_directory_summary_prompt(
     """
     if child_summaries is None:
         child_summaries = []
-    prompt = f"""You are an expert software architect. Analyze the following directory and write a comprehensive summary.
+    prompt = f"""You are an expert software architect. Analyze the following directory and write a 
+comprehensive summary.
 
 Directory information:
 {chr(10).join(context)}
@@ -44,7 +45,8 @@ Directory information:
 4. Describe how this directory fits into the larger project structure
 5. Note any important conventions, patterns, or organization strategies
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the directory contains, WHY it exists, and HOW it contributes to the overall project architecture.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the directory 
+contains, WHY it exists, and HOW it contributes to the overall project architecture.
 
 Summary:
 """

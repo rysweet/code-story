@@ -80,7 +80,8 @@ def get_summary_prompt(
         )
     else:
         # Generic prompt for other node types
-        prompt = f"""You are an expert code summarizer. Analyze the following code and write a comprehensive summary.
+        prompt = f"""You are an expert code summarizer. Analyze the following code and write a 
+comprehensive summary.
 
 Information:
 {chr(10).join(context)}
@@ -90,7 +91,8 @@ Content:
 {content}
 ```
 
-Your task is to provide a concise, technical summary of what this code does, why it exists, and how it works.
+Your task is to provide a concise, technical summary of what this code does, why it exists, 
+and how it works.
 
 Summary:
 """

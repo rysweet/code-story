@@ -28,7 +28,8 @@ def get_module_summary_prompt(
     if len(content) > max_tokens * 4:  # Rough estimate: 4 chars per token
         content = content[: max_tokens * 4] + "\n...[content truncated due to length]"
 
-    prompt = f"""You are an expert code architect. Analyze the following module and write a comprehensive summary.
+    prompt = f"""You are an expert code architect. Analyze the following module and write a 
+comprehensive summary.
 
 Module information:
 {chr(10).join(context)}
@@ -53,7 +54,8 @@ Your task is to:
 4. Describe any important patterns or design principles implemented
 5. Note the module's role in the larger codebase architecture
 
-Your summary should be concise, technical, and informative. Focus on explaining WHAT the module does, WHY it exists, and HOW it should be used.
+Your summary should be concise, technical, and informative. Focus on explaining WHAT the module 
+does, WHY it exists, and HOW it should be used.
 
 Summary:
 """

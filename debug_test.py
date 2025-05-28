@@ -11,7 +11,7 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 # These imports must come after sys.path modification
-from codestory.llm.models import ChatCompletionRequest, ChatMessage, ChatRole  # noqa: E402
+from codestory.llm.models import ChatCompletionRequest, ChatMessage, ChatRole
 
 load_dotenv()
 

@@ -10,7 +10,7 @@ import re
 import sys
 
 
-def patch_workflow(workflow_file):
+def patch_workflow(workflow_file: str) -> bool:
     """Patch the GitHub workflow file to make tests pass."""
     if not os.path.exists(workflow_file):
         print(f"Error: Workflow file {workflow_file} does not exist.")

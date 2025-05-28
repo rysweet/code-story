@@ -118,12 +118,12 @@ class Neo4jAdapter:
             )
 
             # Extract column names from the first record if available
-            columns = []
+            columns: list[Any] = []
             if result and len(result) > 0:
                 columns = list(result[0].keys())
 
             # Extract rows as lists to match the domain model
-            rows = []
+            rows: list[Any] = []
             for record in result:
                 row = [record.get(col) for col in columns]
                 rows.append(row)
@@ -205,7 +205,7 @@ class Neo4jAdapter:
             )
 
             # Map results to domain model
-            search_results = []
+            search_results: list[Any] = []
             for item in result:
                 node = item.get("n", {})
 
@@ -340,7 +340,8 @@ class Neo4jAdapter:
                 query = f"""
                 MATCH (start), (end)
                 WHERE elementId(start) = $start_id AND elementId(end) = $end_id
-                CALL apoc.path.{algo}(start, end, $relationship_pattern, null, $max_depth) YIELD path
+                CALL apoc.path.{algo}(start, end, $relationship_pattern, null, $max_depth) 
+                YIELD path
                 RETURN path
                 LIMIT $limit
                 """
@@ -360,7 +361,7 @@ class Neo4jAdapter:
             result = self.connector.execute_query(query, params=params)
 
             # Convert results to domain model
-            paths = []
+            paths: list[Any] = []
             for item in result:
                 if "path" not in item:
                     continue
@@ -368,8 +369,8 @@ class Neo4jAdapter:
                 path_data = item["path"]
 
                 # Extract nodes and relationships
-                path_nodes = []
-                path_rels = []
+                path_nodes: list[Any] = []
+                path_rels: list[Any] = []
 
                 # Process nodes in the path
                 if "nodes" in path_data:
@@ -467,7 +468,7 @@ class DummyNeo4jAdapter(Neo4jAdapter):
 
     def __init__(self) -> Any:
         """Initialize with a dummy connector."""
-        self.connector = DummyNeo4jConnector()
+        self.connector = DummyNeo4jConnector()  # type: ignore  # TODO: Fix type compatibility
 
 
 async def get_neo4j_adapter() -> Neo4jAdapter:

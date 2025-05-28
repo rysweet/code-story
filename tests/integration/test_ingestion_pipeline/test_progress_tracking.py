@@ -592,7 +592,10 @@ def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: Pipeli
         # Verify progress is calculated correctly for parallel steps
         assert (
             abs(progress_readings[i] - expected_progress[i]) < 0.1
-        ), f"Progress at step {i} should be {expected_progress[i]:.1f}%, got {progress_readings[i]:.1f}%"
+        ), (
+            f"Progress at step {i} should be {expected_progress[i]:.1f}%, "
+            f"got {progress_readings[i]:.1f}%"
+        )
 
         # Check step statuses
         if i < 3:  # First three checks

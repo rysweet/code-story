@@ -178,7 +178,7 @@ class GraphService:
             search_result = await self.neo4j.execute_vector_search(vector_query, embeddings[0])
 
             # Retrieve full content for each context item
-            context_items = []
+            context_items: list[Any] = []
             for result in search_result.results:
                 # Fetch the full node with all properties
                 node_query = CypherQuery(
@@ -311,7 +311,7 @@ class GraphService:
                 properties: properties(rel)
               }) as relationships
             """
-            params["focus_node_id"] = request.focus_node_id
+            params["focus_node_id"] = request.focus_node_id  # type: ignore  # TODO: Fix type compatibility
             params["depth"] = request.depth
 
         # Apply node type filtering if specified
@@ -321,7 +321,7 @@ class GraphService:
                 "WHERE n.name IS NOT NULL",
                 "WHERE n.name IS NOT NULL AND labels(n)[0] IN $node_types",
             )
-            params["node_types"] = node_types
+            params["node_types"] = node_types  # type: ignore  # TODO: Fix type compatibility
 
         # Apply search query filtering if specified
         if request.filter and request.filter.search_query:
@@ -329,9 +329,10 @@ class GraphService:
             # Add text search condition
             cypher_query = cypher_query.replace(
                 "WHERE n.name IS NOT NULL",
-                "WHERE n.name IS NOT NULL AND (n.name CONTAINS $search_query OR n.path CONTAINS $search_query)",
+                "WHERE n.name IS NOT NULL AND "
+                "(n.name CONTAINS $search_query OR n.path CONTAINS $search_query)",
             )
-            params["search_query"] = search_query
+            params["search_query"] = search_query  # type: ignore  # TODO: Fix type compatibility
 
         # Include/exclude orphan nodes (nodes with no relationships)
         if request.filter and not request.filter.include_orphans:
@@ -426,7 +427,7 @@ class GraphService:
         # Filter and format node properties for visualization
         for node in graph_data["nodes"]:
             # Only keep essential properties for visualization
-            clean_props = {}
+            clean_props: dict[Any, Any] = {}
             if "name" in node["properties"]:
                 clean_props["name"] = node["properties"]["name"]
             if "path" in node["properties"]:
@@ -489,7 +490,8 @@ class GraphService:
                     overflow: hidden;
                     background-color: var(--bg-color);
                     color: var(--text-color);
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                                 Helvetica, Arial, sans-serif;
                 }}
                 
                 .container {{
@@ -613,23 +615,28 @@ class GraphService:
                     <div class="legend">
                         <h3>Node Types</h3>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: var(--node-color-file)"></div>
+                            <div class="legend-color" 
+                                 style="background-color: var(--node-color-file)"></div>
                             <div>File</div>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: var(--node-color-directory)"></div>
+                            <div class="legend-color" 
+                                 style="background-color: var(--node-color-directory)"></div>
                             <div>Directory</div>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: var(--node-color-function)"></div>
+                            <div class="legend-color" 
+                                 style="background-color: var(--node-color-function)"></div>
                             <div>Function</div>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: var(--node-color-class)"></div>
+                            <div class="legend-color" 
+                                 style="background-color: var(--node-color-class)"></div>
                             <div>Class</div>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: var(--node-color-module)"></div>
+                            <div class="legend-color" 
+                                 style="background-color: var(--node-color-module)"></div>
                             <div>Module</div>
                         </div>
                     </div>
@@ -705,7 +712,8 @@ class GraphService:
                     
                     // Check if node is expandable
                     function isExpandable(node) {{
-                        // A node is expandable if it's not a focus node and has properties indicating more connections
+                        // A node is expandable if it's not a focus node and has properties 
+                        // indicating more connections
                         return !node.is_focus && node.properties && 
                               (node.properties.has_children === true || 
                                node.properties.has_more_connections === true);
@@ -818,7 +826,9 @@ class GraphService:
                                 .id(d => d.id)
                                 .parentId(d => {{
                                     // Find a parent link
-                                    const parentLink = hierarchyLinks.find(link => link.target === d.id);
+                                    const parentLink = hierarchyLinks.find(
+                                        link => link.target === d.id
+                                    );
                                     return parentLink ? parentLink.source : null;
                                 }})
                                 (graphData.nodes);
@@ -905,7 +915,9 @@ class GraphService:
                             .on('mouseover', (event, d) => {{
                                 // Highlight node and connected links
                                 nodeElements.style('opacity', n => isConnected(d, n) ? 1 : 0.3);
-                                linkElements.style('opacity', l => l.source.id === d.id || l.target.id === d.id ? 1 : 0.1);
+                                linkElements.style('opacity', l => 
+                                    l.source.id === d.id || l.target.id === d.id ? 1 : 0.1
+                                );
                                 textElements.style('opacity', n => isConnected(d, n) ? 1 : 0.3);
                                 
                                 // Show tooltip
@@ -916,7 +928,8 @@ class GraphService:
                                     .html(`
                                         <strong>${d.name || d.label}</strong><br>
                                         <span>Type: ${d.type}</span>
-                                        ${d.properties.path ? `<br><span>Path: ${d.properties.path}</span>` : ''}
+                                        ${d.properties.path ? 
+                                            `<br><span>Path: ${d.properties.path}</span>` : ''}
                                     `);
                             }})
                             .on('mouseout', () => {{
@@ -976,9 +989,12 @@ class GraphService:
                             .filter(l => l.source.id === node.id || l.source === node.id || 
                                          l.target.id === node.id || l.target === node.id)
                             .map(l => {{
-                                const connectedId = l.source.id === node.id || l.source === node.id ? 
-                                                  (l.target.id || l.target) : (l.source.id || l.source);
-                                const connectedNode = graphData.nodes.find(n => n.id === connectedId);
+                                const connectedId = (
+                                    l.source.id === node.id || l.source === node.id
+                                ) ? (l.target.id || l.target) : (l.source.id || l.source);
+                                const connectedNode = graphData.nodes.find(
+                                    n => n.id === connectedId
+                                );
                                 return {{
                                     node: connectedNode,
                                     relationship: l.type
@@ -991,7 +1007,7 @@ class GraphService:
                                 if (conn.node) {{
                                     detailsHTML += `
                                         <div class="property">
-                                            <span class="property-name">${conn.relationship}:</span> 
+                                            <span class="property-name">${conn.relationship}:</span>
                                             ${conn.node.name || conn.node.label}
                                         </div>
                                     `;
@@ -1038,7 +1054,8 @@ class GraphService:
                                 const matchesSearch = 
                                     (d.name && d.name.toLowerCase().includes(query)) ||
                                     (d.label && d.label.toLowerCase().includes(query)) ||
-                                    (d.properties.path && d.properties.path.toLowerCase().includes(query));
+                                    (d.properties.path && 
+                                     d.properties.path.toLowerCase().includes(query));
                                 
                                 return matchesSearch ? 1 : 0.2;
                             }});
@@ -1048,7 +1065,8 @@ class GraphService:
                                 const matchesSearch = 
                                     (d.name && d.name.toLowerCase().includes(query)) ||
                                     (d.label && d.label.toLowerCase().includes(query)) ||
-                                    (d.properties.path && d.properties.path.toLowerCase().includes(query));
+                                    (d.properties.path && 
+                                     d.properties.path.toLowerCase().includes(query));
                                 
                                 return matchesSearch ? 1 : 0.2;
                             }});

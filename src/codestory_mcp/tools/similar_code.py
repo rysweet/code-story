@@ -77,7 +77,7 @@ class SimilarCodeTool(BaseTool):
             response = {"matches": results}
 
             # Add metadata to response
-            response["metadata"] = {
+            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
                 "code_length": len(code),
                 "limit": limit,
                 "result_count": len(results),

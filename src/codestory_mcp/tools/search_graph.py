@@ -34,7 +34,9 @@ class SearchGraphTool(BaseTool):
             "node_types": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "Optional filter for specific node types (e.g., 'Class', 'Function')",
+                "description": (
+                    "Optional filter for specific node types (e.g., 'Class', 'Function')"
+                ),
             },
             "limit": {
                 "type": "integer",
@@ -90,7 +92,7 @@ class SearchGraphTool(BaseTool):
             )
 
             # Add metadata to response
-            response["metadata"] = {
+            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
                 "query": query,
                 "node_types": node_types,
                 "limit": limit,

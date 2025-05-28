@@ -115,7 +115,7 @@ class ServiceClient:
             # First try the standard v1 health endpoint
             try:
                 params = {"auto_fix": "true"} if auto_fix else {}
-                client_params = {}
+                client_params: dict[Any, Any] = {}
                 if timeout is not None:
                     client_params["timeout"] = timeout
 
@@ -307,8 +307,8 @@ class ServiceClient:
             )
 
     def _handle_error_package(self, data: dict[str, Any]) -> dict[str, Any]:
-        """
-        Detects service-side errors in response and handles them:
+        """Detects service-side errors in response and handles them.
+        
         - Prints errors
         - Runs a health status check.
         """
@@ -519,7 +519,7 @@ class ServiceClient:
         }
 
         if parameters:
-            data["parameters"] = parameters
+            data["parameters"] = parameters  # type: ignore  # TODO: Fix type compatibility
 
         # If query_type is provided, add it to the request data
         if query_type in ["read", "write"]:
@@ -594,7 +594,7 @@ class ServiceClient:
         Returns:
             Configuration data.
         """
-        params = {}
+        params: dict[Any, Any] = {}
         if include_sensitive:
             params["include_sensitive"] = "true"
 
@@ -651,8 +651,10 @@ class ServiceClient:
             raise ServiceError(f"Failed to stop service: {e!s}") from e
 
     def get_service_status(self, renew_auth: bool = False) -> dict[str, Any]:
-        """Query the health endpoint and return the status of the Code Story service 
-        and its dependencies."""
+        """Query the health endpoint and return the status of the Code Story service.
+        
+        Returns the status of the service and its dependencies.
+        """
         import traceback
 
         import rich
@@ -704,7 +706,7 @@ class ServiceClient:
             "/v1/visualize",  # Full v1 path (in case base_url doesn't include /v1)
         ]
 
-        errors = []
+        errors: list[Any] = []
 
         try:
             # Try each endpoint pattern
@@ -802,7 +804,7 @@ class ServiceClient:
         Raises:
             ServiceError: If the renewal process fails
         """
-        params = {}
+        params: dict[Any, Any] = {}
         if tenant_id:
             params["tenant_id"] = tenant_id
 

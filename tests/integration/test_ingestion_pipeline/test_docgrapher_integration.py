@@ -340,7 +340,17 @@ def mock_llm_client():
                 ChatResponseChoice(
                     message=ChatResponseMessage(
                         role=ChatRole.ASSISTANT,
-                        content='{"topics": ["API", "sample class", "initialization", "greeting"], "entities": [{"name": "SampleClass", "type": "class", "description": "A sample class with methods."}, {"name": "__init__", "type": "method", "description": "Initializes with a name."}, {"name": "greet", "type": "method", "description": "Returns a greeting."}, {"name": "main", "type": "function", "description": "Main entry point for the application."}]}',
+                        content=(
+                            '{"topics": ["API", "sample class", "initialization", "greeting"], '
+                            '"entities": [{"name": "SampleClass", "type": "class", '
+                            '"description": "A sample class with methods."}, '
+                            '{"name": "__init__", "type": "method", '
+                            '"description": "Initializes with a name."}, '
+                            '{"name": "greet", "type": "method", '
+                            '"description": "Returns a greeting."}, '
+                            '{"name": "main", "type": "function", '
+                            '"description": "Main entry point for the application."}]}'
+                        ),
                     ),
                     finish_reason="stop",
                     index=0,

@@ -104,12 +104,12 @@ class CeleryAdapter:
             repository_path = request.source
 
             # Generate a job_id
-            import uuid
+            from uuid import uuid4
 
-            job_id = str(uuid.uuid4.uuid4())
+            job_id = str(uuid4())
 
             # Create step configs
-            step_configs = []
+            step_configs: list[Any] = []
             if request.steps:
                 for step_name in request.steps:
                     step_configs.append({"name": step_name})
@@ -201,10 +201,22 @@ class CeleryAdapter:
 
             if task.state == "PENDING":
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.PENDING,
-                    created_at=int(time.time()),  # We don't know the exact time
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    created_at=int(time.time(
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                )),  # We don't know the exact time
                     updated_at=int(time.time()),
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
                     progress=0.0,
                     current_step="Waiting to start",
                     message="Task is waiting for execution",
@@ -220,9 +232,17 @@ class CeleryAdapter:
                 message = info.get("message", "Task is in progress")
 
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.RUNNING,
-                    created_at=info.get("created_at", int(time.time())),
+                    created_at=info.get("created_at", int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ))),
                     updated_at=int(time.time()),
                     progress=progress,
                     current_step=current_step,
@@ -235,9 +255,17 @@ class CeleryAdapter:
                 result = task.result or {}
 
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.COMPLETED,
-                    created_at=result.get("created_at", int(time.time() - 60)),
+                    created_at=result.get("created_at", int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60)),
                     updated_at=int(time.time()),
                     progress=100.0,
                     current_step="Completed",
@@ -248,9 +276,17 @@ class CeleryAdapter:
 
             if task.state == "FAILURE":
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.FAILED,
-                    created_at=int(time.time() - 60),  # Estimate
+                    created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                     updated_at=int(time.time()),
                     progress=0.0,
                     current_step="Failed",
@@ -261,9 +297,17 @@ class CeleryAdapter:
 
             if task.state == "REVOKED":
                 return IngestionJob(
-                    job_id=job_id,
+job_id=job_id,
                     status=JobStatus.CANCELLED,
-                    created_at=int(time.time() - 60),  # Estimate
+                    created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                     updated_at=int(time.time()),
                     progress=0.0,
                     current_step="Cancelled",
@@ -274,9 +318,17 @@ class CeleryAdapter:
 
             # Default case for unknown state
             return IngestionJob(
-                job_id=job_id,
+job_id=job_id,
                 status=JobStatus.UNKNOWN,
-                created_at=int(time.time() - 60),  # Estimate
+                created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                 updated_at=int(time.time()),
                 progress=0.0,
                 current_step=task.state,
@@ -319,6 +371,13 @@ class CeleryAdapter:
                 return IngestionJob(
                     job_id=job_id,
                     status=status_map.get(task.state, JobStatus.UNKNOWN),
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
                     created_at=int(time.time() - 60),  # Estimate
                     updated_at=int(time.time()),
                     progress=100.0 if task.state == "SUCCESS" else 0.0,
@@ -333,9 +392,17 @@ class CeleryAdapter:
 
             # Return updated job status
             return IngestionJob(
-                job_id=job_id,
+job_id=job_id,
                 status=JobStatus.CANCELLING,
-                created_at=int(time.time() - 60),  # Estimate
+                created_at=int(time.time(
+                    source=None,
+                    source_type=None,
+                    branch=None,
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
+                ) - 60),  # Estimate
                 updated_at=int(time.time()),
                 progress=0.0,
                 current_step="Cancelling",

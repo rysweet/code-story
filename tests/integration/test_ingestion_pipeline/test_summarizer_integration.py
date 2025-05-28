@@ -33,7 +33,8 @@ from codestory_summarizer.step import SummarizerStep
 def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_patterns=None):
     """Custom implementation of process_filesystem for testing."""
     print(
-        f"*** TEST_DEBUG: Running custom_process_filesystem for test_summarizer_integration with {job_id} ***"
+        f"*** TEST_DEBUG: Running custom_process_filesystem for test_summarizer_integration "
+        f"with {job_id} ***"
     )
     print(f"Repository path: {repository_path}")
     print(f"Ignore patterns: {ignore_patterns}")
@@ -232,7 +233,10 @@ def mock_llm_client():
                     node_type = "repository"
 
             # Generate a mock summary based on the node type
-            summary_text = f"This is a generated summary for a {node_type}. It explains what the code does and why it exists."
+            summary_text = (
+                f"This is a generated summary for a {node_type}. "
+                "It explains what the code does and why it exists."
+            )
 
             # Create a mock response
             mock_response = ChatCompletionResponse(
@@ -495,7 +499,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a repository. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a repository. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -517,7 +522,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a directory. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a directory. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -539,7 +545,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a file. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a file. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -561,7 +568,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a class. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a class. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -583,7 +591,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a function. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a function. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -605,7 +614,8 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a function. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a function. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -791,7 +801,8 @@ def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, moc
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a repository. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a repository. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -813,7 +824,8 @@ def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, moc
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a file. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a file. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -854,7 +866,8 @@ def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, moc
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a NEW file. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a NEW file. It explains what the code '
+                          'does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -875,7 +888,8 @@ def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, moc
             neo4j_connector.execute_query(
                 """
                 CREATE (s:Summary {
-                    text: 'This is a generated summary for a NEW function. It explains what the code does and why it exists.',
+                    text: 'This is a generated summary for a NEW function. It explains what '
+                          'the code does and why it exists.',
                     created_at: datetime()
                 })
                 WITH s
@@ -1001,7 +1015,10 @@ def new_function():
     # We should have at least one new summary for the new file
     assert (
         updated_summary_count > initial_summary_count
-    ), f"Expected more summaries after update, but got {updated_summary_count} (was {initial_summary_count})"
+    ), (
+        f"Expected more summaries after update, but got {updated_summary_count} "
+        f"(was {initial_summary_count})"
+    )
 
     # Check that the new file has a summary
     new_file_summary_result = neo4j_connector.execute_query(

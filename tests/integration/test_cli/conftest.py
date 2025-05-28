@@ -203,7 +203,8 @@ def running_service(request) -> Generator[dict[str, Any], None, None]:
                         break
                     else:
                         print(
-                            f"Waiting for Redis to be healthy (attempt {i + 1}/30)... Status: {result.stdout.strip()}"
+                            f"Waiting for Redis to be healthy (attempt {i + 1}/30)... "
+                            f"Status: {result.stdout.strip()}"
                         )
                 except Exception as e:
                     print(f"Error checking Redis health: {e}")

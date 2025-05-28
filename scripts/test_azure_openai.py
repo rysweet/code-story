@@ -22,6 +22,7 @@ from codestory.llm.models import ChatMessage, ChatRole
 
 
 def main():
+    """Test Azure OpenAI client configuration and connectivity."""
     print("Testing Azure OpenAI client...")
 
     # Login hint

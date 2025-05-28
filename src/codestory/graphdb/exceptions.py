@@ -34,7 +34,7 @@ class ExportError(Neo4jError):
         format: str | None = None,
         path: str | None = None,
         cause: Exception | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize ExportError.
 
@@ -59,7 +59,7 @@ class ConnectionError(Neo4jError):
     """Error establishing connection to Neo4j."""
 
     def __init__(
-        self, message: str, uri: str | None = None, cause: Exception | None = None, **kwargs
+        self, message: str, uri: str | None = None, cause: Exception | None = None, **kwargs: Any
     ) -> None:
         """Initialize ConnectionError.
 
@@ -83,7 +83,7 @@ class QueryError(Neo4jError):
         query: str | None = None,
         parameters: dict[str, Any] | None = None,
         cause: Exception | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize QueryError.
 
@@ -97,7 +97,7 @@ class QueryError(Neo4jError):
         # Redact sensitive parameters like passwords
         safe_params = None
         if parameters:
-            safe_params = {}
+            safe_params: dict[Any, Any] = {}
             for k, v in parameters.items():
                 if any(sensitive in k.lower() for sensitive in ["password", "secret", "key"]):
                     safe_params[k] = "********"  # Redact sensitive values
@@ -118,7 +118,7 @@ class SchemaError(Neo4jError):
     """Error with graph schema operation."""
 
     def __init__(
-        self, message: str, operation: str | None = None, cause: Exception | None = None, **kwargs
+        self, message: str, operation: str | None = None, cause: Exception | None = None, **kwargs: Any
     ) -> None:
         """Initialize SchemaError.
 
@@ -141,7 +141,7 @@ class TransactionError(Neo4jError):
     """Error in transaction management."""
 
     def __init__(
-        self, message: str, operation: str | None = None, cause: Exception | None = None, **kwargs
+        self, message: str, operation: str | None = None, cause: Exception | None = None, **kwargs: Any
     ) -> None:
         """Initialize TransactionError.
 

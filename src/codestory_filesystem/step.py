@@ -10,7 +10,7 @@ import time
 import traceback
 from typing import Any
 
-from celery import shared_task  # type: ignore[import-untyped]
+from celery import shared_task
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -175,7 +175,7 @@ class FileSystemStep(PipelineStep):
             log_debug(f"Celery task initial status: {task.status}", job_id)
 
             # Try to get task info
-            from celery.result import AsyncResult  # type: ignore[import-untyped]
+            from celery.result import AsyncResult
 
             result = AsyncResult(task.id, app=celery_app)
             log_debug(f"Celery AsyncResult state: {result.state}", job_id)
@@ -191,7 +191,8 @@ class FileSystemStep(PipelineStep):
             }
 
             log_info(
-                f"Successfully initiated filesystem step job {job_id} for repository {repository_path}",
+                f"Successfully initiated filesystem step job {job_id} for "
+                f"repository {repository_path}",
                 job_id,
             )
             return job_id
@@ -259,7 +260,10 @@ class FileSystemStep(PipelineStep):
                         dir_count = task_result.get("dir_count", 0)
                         duration = task_result.get("duration", 0)
 
-                        status_msg = f"Processed {file_count} files and {dir_count} directories in {duration:.2f} seconds"
+                        status_msg = (
+                            f"Processed {file_count} files and {dir_count} directories "
+                            f"in {duration:.2f} seconds"
+                        )
                         log_info(status_msg, job_id)
 
                         status_info.update(
@@ -413,7 +417,9 @@ class FileSystemStep(PipelineStep):
                 job_info.update(
                     {
                         "status": StepStatus.CANCELLED,
-                        "message": f"Job {job_id} marked as cancelled, but encountered error: {e!s}",
+                        "message": (
+                            f"Job {job_id} marked as cancelled, but encountered error: {e!s}"
+                        ),
                         "error": str(e),
                     }
                 )
@@ -489,7 +495,8 @@ def process_filesystem(
     log_info(f"Starting filesystem processing task for repository: {repository_path}", job_id)
     log_debug(f"Task ID: {task_id}", job_id)
     log_debug(
-        f"Configuration: ignore_patterns={ignore_patterns}, max_depth={max_depth}, include_extensions={include_extensions}",
+        f"Configuration: ignore_patterns={ignore_patterns}, "
+        f"max_depth={max_depth}, include_extensions={include_extensions}",
         job_id,
     )
 
@@ -539,7 +546,7 @@ def process_filesystem(
 
     # Try multiple Neo4j connection configurations
     neo4j = None
-    errors = []
+    errors: list[Any] = []
 
     # Get settings for the default configuration
     settings = get_settings()
@@ -699,7 +706,8 @@ def process_filesystem(
         # Process the repository
         log_info(f"Starting filesystem traversal for repository: {repository_path}", job_id)
         log_debug(
-            f"Repository validation: exists={os.path.exists(repository_path)}, is_dir={os.path.isdir(repository_path)}",
+            f"Repository validation: exists={os.path.exists(repository_path)}, "
+            f"is_dir={os.path.isdir(repository_path)}",
             job_id,
         )
 
@@ -740,7 +748,7 @@ def process_filesystem(
                     continue
 
             # Filter directories based on ignore patterns
-            dirs_to_remove = []
+            dirs_to_remove: list[Any] = []
             for d in dirs:
                 if any(
                     d.startswith(pat.rstrip("/")) or d == pat.rstrip("/")
@@ -755,7 +763,8 @@ def process_filesystem(
 
             if dirs_to_remove:
                 log_info(
-                    f"Filtered {len(dirs_to_remove)} directories in {rel_path} due to ignore patterns",
+                    f"Filtered {len(dirs_to_remove)} directories in {rel_path} "
+                    "due to ignore patterns",
                     job_id,
                 )
 
@@ -843,7 +852,8 @@ def process_filesystem(
                     dir_linking_time = dir_linking_end - dir_linking_start
                     dir_timing_stats["dir_linking"] += dir_linking_time
                     log_debug(
-                        f"Directory relationship created in {dir_linking_time:.3f}s: {rel_dir_path}",
+                        f"Directory relationship created in {dir_linking_time:.3f}s: "
+                        f"{rel_dir_path}",
                         job_id,
                     )
 
@@ -864,8 +874,10 @@ def process_filesystem(
 
                     # Always report directory creation
                     dir_progress_msg = (
-                        f"Created directory {dir_count}/{total_dirs_estimate} ({progress_percent:.1f}%): {rel_dir_path} "
-                        f"Avg times - node: {avg_dir_node_time:.3f}s, linking: {avg_dir_linking_time:.3f}s"
+                        f"Created directory {dir_count}/{total_dirs_estimate} "
+                        f"({progress_percent:.1f}%): {rel_dir_path} "
+                        f"Avg times - node: {avg_dir_node_time:.3f}s, "
+                        f"linking: {avg_dir_linking_time:.3f}s"
                     )
                     log_info(dir_progress_msg, job_id)
 
@@ -1095,7 +1107,8 @@ def process_filesystem(
             # Log summary for this directory
             if files_processed > 0 or files_skipped > 0:
                 log_debug(
-                    f"Directory {rel_dir_path} processed: {files_processed} files created, {files_skipped} files skipped",
+                    f"Directory {rel_dir_path} processed: {files_processed} files created, "
+                    f"{files_skipped} files skipped",
                     job_id,
                 )
 
@@ -1172,9 +1185,11 @@ def process_filesystem(
             f"Total Duration: {duration:.2f}s\n"
             f"Directory Operations ({dir_count} dirs):\n"
             f"  - Total: {overall_timing_stats['directory_operations']['total']:.2f}s\n"
-            f"  - Node creation: {overall_timing_stats['directory_operations']['node_creation']:.2f}s\n"
+            f"  - Node creation: "
+            f"{overall_timing_stats['directory_operations']['node_creation']:.2f}s\n"
             f"  - Linking: {overall_timing_stats['directory_operations']['linking']:.2f}s\n"
-            f"  - Avg per directory: {overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s\n"
+            f"  - Avg per directory: "
+            f"{overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s\n"
             f"File Operations ({file_count} files):\n"
             f"  - Total: {overall_timing_stats['file_operations']['total']:.2f}s\n"
             f"  - Metadata: {overall_timing_stats['file_operations']['metadata']:.2f}s\n"
@@ -1182,9 +1197,12 @@ def process_filesystem(
             f"  - Linking: {overall_timing_stats['file_operations']['linking']:.2f}s\n"
             f"  - Avg per file: {overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"
             f"Neo4j Operations:\n"
-            f"  - Node creation total: {overall_timing_stats['neo4j_operations']['node_creation']:.2f}s\n"
-            f"  - Relationship creation total: {overall_timing_stats['neo4j_operations']['relationship_creation']:.2f}s\n"
-            f"  - Avg operation time: {overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"
+            f"  - Node creation total: "
+            f"{overall_timing_stats['neo4j_operations']['node_creation']:.2f}s\n"
+            f"  - Relationship creation total: "
+            f"{overall_timing_stats['neo4j_operations']['relationship_creation']:.2f}s\n"
+            f"  - Avg operation time: "
+            f"{overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"
         )
 
         log_info(f"Performance Analysis:\n{detailed_timing}", job_id)
@@ -1235,9 +1253,12 @@ def process_filesystem(
         completion_msg = (
             f"Completed filesystem processing for {repository_path}:\n"
             f"- {file_count} files, {dir_count} directories in {duration:.2f} seconds\n"
-            f"- Average Neo4j operation time: {overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"
-            f"- Average file processing time: {overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"
-            f"- Average directory processing time: {overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s"
+            f"- Average Neo4j operation time: "
+            f"{overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"
+            f"- Average file processing time: "
+            f"{overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"
+            f"- Average directory processing time: "
+            f"{overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s"
         )
         log_info(completion_msg, job_id)
 

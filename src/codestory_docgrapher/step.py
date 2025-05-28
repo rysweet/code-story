@@ -7,10 +7,10 @@ a knowledge graph of documentation and links it to code entities.
 import logging
 import os
 import time
-import uuid
 from typing import Any
+from uuid import uuid4
 
-from celery import shared_task  # type: ignore[import-untyped]
+from celery import shared_task
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -57,7 +57,7 @@ class DocumentationGrapherStep(PipelineStep):
             raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"docgrapher-{uuid.uuid4.uuid4()}"
+        job_id = f"docgrapher-{uuid4()}"
 
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
@@ -109,7 +109,7 @@ class DocumentationGrapherStep(PipelineStep):
         """
         if job_id not in self.active_jobs:
             # Check if this is a task ID
-            from celery.result import AsyncResult  # type: ignore[import-untyped]
+            from celery.result import AsyncResult
 
             try:
                 result = AsyncResult(job_id)
@@ -122,7 +122,8 @@ class DocumentationGrapherStep(PipelineStep):
                     return {
                         "status": StepStatus.COMPLETED,
                         "message": "Task completed successfully",
-                        "result": result.result,  # Fixed: Use result directly instead of blocking get()
+                        "result": result.result,  # Fixed: Use result directly instead of 
+                                                  # blocking get()
                     }
                 elif result.state == "FAILURE":
                     return {
@@ -197,7 +198,7 @@ class DocumentationGrapherStep(PipelineStep):
         task_id = job_info["task_id"]
 
         # Revoke the task
-        from celery.task.control import revoke  # type: ignore[import-untyped]
+        from celery.task.control import revoke
 
         revoke(task_id, terminate=True)
 

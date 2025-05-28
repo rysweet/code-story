@@ -36,7 +36,7 @@ def setup_mcp():
     try:
         response = requests.get("http://localhost:8080/ping")
         is_running = response.status_code == 200
-    except:
+    except Exception:
         pass
 
     if not is_running:
@@ -56,7 +56,7 @@ def setup_mcp():
                 response = requests.get("http://localhost:8080/ping")
                 if response.status_code == 200:
                     break
-            except:
+            except Exception:
                 pass
 
             time.sleep(2)

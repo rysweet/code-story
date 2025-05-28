@@ -78,7 +78,8 @@ class OpenAIServiceAdapter:
                     ChatMessage(
                         role="user",
                         content=(
-                            "Please summarize what this code does, its main purpose, and how it works."
+                            "Please summarize what this code does, its main purpose, "
+                            "and how it works."
                         ),
                     )
                 )
@@ -146,7 +147,10 @@ class OpenAIServiceAdapter:
 
             for i, element in enumerate(path_elements):
                 if element.get("element_type") == "node":
-                    path_description += f"\nNode {i // 2 + 1}: {element.get('name', 'Unknown')} (Type: {element.get('type', 'Unknown')})"
+                    path_description += (
+                        f"\nNode {i // 2 + 1}: {element.get('name', 'Unknown')} "
+                        f"(Type: {element.get('type', 'Unknown')})"
+                    )
                     if "content" in element and len(element["content"]) < 200:
                         path_description += f"\nContent: {element['content'][:200]}..."
                 else:  # relationship
@@ -157,9 +161,10 @@ class OpenAIServiceAdapter:
                 ChatMessage(
                     role="system",
                     content=(
-                        "You are a helpful assistant that explains relationships between code elements. "
-                        "Based on the path between code elements, explain how they are related "
-                        "and what this relationship means for the codebase."
+                        "You are a helpful assistant that explains relationships "
+                        "between code elements. Based on the path between code elements, "
+                        "explain how they are related and what this relationship means "
+                        "for the codebase."
                     ),
                 ),
                 ChatMessage(

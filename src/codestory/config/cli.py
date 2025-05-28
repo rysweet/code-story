@@ -1,8 +1,8 @@
 """Command-line interface for configuration management."""
 
-from typing import Any
 import json
 import sys
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -87,7 +87,8 @@ def set_setting(
             console.print(f"Change persisted to {persist_to}")
         else:
             console.print(
-                "[yellow]Note:[/] Change is in-memory only and will be lost when the application restarts"
+                "[yellow]Note:[/] Change is in-memory only and will be lost "
+                "when the application restarts"
             )
 
     except ConfigurationError as e:

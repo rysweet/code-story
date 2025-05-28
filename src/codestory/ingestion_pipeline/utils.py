@@ -27,12 +27,14 @@ logger = logging.getLogger(__name__)
 
 
 # Helper functions to get or create metrics (avoids duplicate registration)
-def _get_or_create_counter(name, description, labels=None):
+def _get_or_create_counter(
+    name: str, description: str, counter_labels: list[str] | None = None
+) -> Any:
     try:
         # Always pass an empty list if labels is None
-        if labels is None:
-            labels = []
-        return Counter(name, description, labels)
+        if counter_labels is None:
+            counter_labels = []
+        return Counter(name, description, counter_labels)
     except ValueError:
         # If already registered, get existing collector
         from prometheus_client import REGISTRY
@@ -43,23 +45,28 @@ def _get_or_create_counter(name, description, labels=None):
 
         # Return a no-op counter if we can't find or create the real one
         class NoOpCounter:
-            def labels(self, **kwargs):
+            def labels(self, **kwargs: Any) -> Any:
                 return self
 
-            def inc(self, amount=1):
+            def inc(self, amount: int = 1) -> Any:
                 pass
 
         return NoOpCounter()
 
 
-def _get_or_create_histogram(name, description, labels=None, buckets=None):
+def _get_or_create_histogram(
+    name: str,
+    description: str,
+    hist_labels: list[str] | None = None,
+    buckets: tuple[float, ...] | None = None,
+) -> Any:
     if buckets is None:
         buckets = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
     try:
         # Always pass an empty list if labels is None
-        if labels is None:
-            labels = []
-        return Histogram(name, description, labels, buckets=buckets)
+        if hist_labels is None:
+            hist_labels = []
+        return Histogram(name, description, hist_labels, buckets=buckets)
     except ValueError:
         # If already registered, get existing collector
         from prometheus_client import REGISTRY
@@ -70,21 +77,23 @@ def _get_or_create_histogram(name, description, labels=None, buckets=None):
 
         # Return a no-op histogram if we can't find or create the real one
         class NoOpHistogram:
-            def labels(self, **kwargs):
+            def labels(self, **kwargs: Any) -> Any:
                 return self
 
-            def observe(self, amount):
+            def observe(self, amount: float) -> Any:
                 pass
 
         return NoOpHistogram()
 
 
-def _get_or_create_gauge(name, description, labels=None):
+def _get_or_create_gauge(
+    name: str, description: str, gauge_labels: list[str] | None = None
+) -> Any:
     try:
         # Always pass an empty list if labels is None
-        if labels is None:
-            labels = []
-        return Gauge(name, description, labels)
+        if gauge_labels is None:
+            gauge_labels = []
+        return Gauge(name, description, gauge_labels)
     except ValueError:
         # If already registered, get existing collector
         from prometheus_client import REGISTRY
@@ -95,16 +104,16 @@ def _get_or_create_gauge(name, description, labels=None):
 
         # Return a no-op gauge if we can't find or create the real one
         class NoOpGauge:
-            def inc(self, amount=1):
+            def inc(self, amount: int = 1) -> None:
                 pass
 
-            def dec(self, amount=1):
+            def dec(self, amount: int = 1) -> Any:
                 pass
 
-            def set(self, value):
+            def set(self, value: float) -> Any:
                 pass
 
-            def labels(self, **kwargs):
+            def labels(self, **kwargs: Any) -> Any:
                 return self
 
         return NoOpGauge()
@@ -197,7 +206,7 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
     Returns:
         Dict[str, Type[PipelineStep]]: Dictionary mapping step names to step classes
     """
-    steps = {}
+    steps: dict[Any, Any] = {}
     entry_point_group = "codestory.pipeline.steps"
 
     try:
@@ -219,7 +228,8 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
                 # Validate that it's a PipelineStep subclass
                 if not issubclass(step_class, PipelineStep):
                     logger.warning(
-                        f"Entry point {step_name} does not provide a PipelineStep subclass, skipping"
+                        f"Entry point {step_name} does not provide a PipelineStep "
+                        f"subclass, skipping"
                     )
                     continue
 
@@ -234,7 +244,8 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
                 # Validate that it's a PipelineStep subclass
                 if not issubclass(step_class, PipelineStep):
                     logger.warning(
-                        f"Entry point {step_name} does not provide a PipelineStep subclass, skipping"
+                        f"Entry point {step_name} does not provide a PipelineStep "
+                        f"subclass, skipping"
                     )
                     continue
 

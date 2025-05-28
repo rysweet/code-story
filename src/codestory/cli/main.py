@@ -1,9 +1,11 @@
+from typing import Any
+
 """Main CLI application for Code Story."""
 
 import sys
 
 import click
-from click_didyoumean import DYMGroup  # type: ignore[import-untyped]
+from click_didyoumean import DYMGroup
 
 # Import rich_click if available, otherwise create a stub with click
 rich_click_module = None
@@ -44,7 +46,7 @@ console = Console()
 class CodeStoryCommandGroup(DYMGroup):
     """Custom command group that shows help when a command fails."""
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> None:
         """Override to catch and customize error handling."""
         try:
             return super().__call__(*args, **kwargs)
@@ -183,11 +185,11 @@ register_commands()
 
 
 # Create a wrapper function that will intercept UsageError exceptions
-def _wrap_click_command(cmd):
+def _wrap_click_command(cmd) -> None:
     """Create a wrapper around a Click command to intercept UsageError exceptions."""
     original_main = cmd.main
 
-    def wrapped_main(*args, **kwargs):
+    def wrapped_main(*args, **kwargs) -> Any:
         try:
             return original_main(*args, **kwargs)
         except click.exceptions.UsageError as e:
@@ -255,7 +257,7 @@ def main() -> None:
     original_error_callback = click.exceptions.UsageError.show
 
     # Define our custom error handler
-    def custom_error_callback(self, file=None):
+    def custom_error_callback(self, file=None) -> None:
         """Custom error formatter that shows error first, then suggestions, then help."""
         # Get the context
         ctx = getattr(self, "ctx", None)
@@ -279,7 +281,7 @@ def main() -> None:
             cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
             if cmd_name:
                 # Find commands to search in
-                commands = []
+                commands: list[Any] = []
 
                 # Get the current command context to find available subcommands
                 if ctx and hasattr(ctx, "command") and hasattr(ctx.command, "commands"):

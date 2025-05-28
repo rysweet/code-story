@@ -1,3 +1,5 @@
+from typing import Any
+
 """Service commands for the Code Story CLI."""
 
 import hashlib
@@ -26,9 +28,9 @@ def service() -> None:
 
 
 def docker_image_needs_rebuild(service_name: str = "service") -> bool:
-    """
-    Check if the Docker image for the given service needs to be rebuilt by comparing 
-    the hash of the Dockerfile and source code.
+    """Check if the Docker image for the given service needs to be rebuilt.
+    
+    Compares the hash of the Dockerfile and source code.
     Returns True if the image is missing or the code has changed since the last build.
     """
     dockerfile = Path(f"Dockerfile.{service_name}")
@@ -364,10 +366,10 @@ def restart_service(
 )
 @click.pass_context
 def status(ctx: click.Context, renew_auth: bool = False) -> None:
-    """
-    Show the status of the Code Story service.
+    """Show the status of the Code Story service.
 
     Args:
+        ctx: The Click context object.
         renew_auth: If True, automatically renew Azure credentials if needed.
     """
     client: ServiceClient = ctx.obj["client"]
@@ -436,7 +438,8 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
     if auto_renew:
         console.print(
-            "[yellow]Azure credentials expired or renewal requested. Attempting automatic renewal...[/yellow]"
+            "[yellow]Azure credentials expired or renewal requested. "
+            "Attempting automatic renewal...[/yellow]"
         )
         # Call the CLI auth-renew command (in-process)
         ctx.invoke(renew_azure_auth)
@@ -518,8 +521,10 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
     # Print table and service info
     console.print(table)
+    version = health.get('version', 'unknown')
+    uptime = health.get('uptime', 0)
     console.print(
-        f"[green]Service is running.[/] Version: {health.get('version', 'unknown')}, Uptime: {health.get('uptime', 0)} seconds"
+        f"[green]Service is running.[/] Version: {version}, Uptime: {uptime} seconds"
     )
 
     # Check Docker container status regardless of API health
@@ -617,9 +622,9 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             console.print(container_table)
 
             # Check if any containers are unhealthy
-            unhealthy_containers = []
+            unhealthy_containers: list[Any] = []
             try:
-                process = subprocess.run(
+                process = subprocess.run(  # type: ignore  # TODO: Fix type compatibility
                     [
                         "docker",
                         "ps",
@@ -641,23 +646,29 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
             if unhealthy_containers:
                 console.print(
-                    f"\n[bold red]Warning:[/] The following containers are unhealthy: {', '.join(unhealthy_containers)}"
+                    f"\n[bold red]Warning:[/] The following containers are unhealthy: "
+                    f"{', '.join(unhealthy_containers)}"
                 )
-                console.print("Use 'codestory service recover' to attempt automatic recovery")
+                console.print(
+                    "Use 'codestory service recover' to attempt automatic recovery"
+                )
 
     # Provide advice based on status
     if docker_available and containers:
         console.print(
-            "\n[yellow]The service containers are running but the API is not responding.[/]"
+            "\n[yellow]The service containers are running but the API is not "
+            "responding.[/]"
         )
         console.print(
-            "This might indicate that the service is still starting up or there's an issue with the service container."
+            "This might indicate that the service is still starting up or there's "
+            "an issue with the service container."
         )
         console.print("Suggestions:")
         console.print("  1. Wait a bit longer for startup to complete (can take up to 2-3 minutes)")
         console.print("  2. Run 'codestory service recover' to try restarting unhealthy containers")
         console.print(
-            "  3. Run 'codestory service restart --skip-healthchecks' to restart without health checks"
+            "  3. Run 'codestory service restart --skip-healthchecks' to restart "
+            "without health checks"
         )
         console.print("  4. Check container logs with 'docker logs codestory-service'")
         sys.exit(1)
@@ -758,8 +769,7 @@ def renew_azure_auth(
     restart: bool = False,
     verbose: bool = False,
 ) -> None:
-    """
-    Renew Azure authentication tokens across all containers.
+    """Renew Azure authentication tokens across all containers.
 
     This command will:
     1. Check if there are Azure authentication issues
@@ -768,6 +778,7 @@ def renew_azure_auth(
     4. Optionally restart containers to ensure they use the new tokens
 
     Args:
+        ctx: The Click context object.
         tenant: Optional tenant ID to use for login
         check: Only check auth status without renewing
         inject: Inject tokens into containers after authentication
@@ -789,7 +800,7 @@ def renew_azure_auth(
             from codestory.config.settings import get_project_root
 
             script_path = os.path.join(get_project_root(), "scripts/inject_azure_tokens.py")
-        except:
+        except Exception:
             # Fallback to absolute path based on current file
             script_path = os.path.abspath(
                 os.path.join(
@@ -821,7 +832,7 @@ def renew_azure_auth(
                 success = process.returncode == 0
             else:
                 # Capture output
-                process = subprocess.run(
+                process = subprocess.run(  # type: ignore  # TODO: Fix type compatibility
                     cmd,
                     check=False,
                     capture_output=True,
@@ -865,7 +876,7 @@ def renew_azure_auth(
 
                 # Build the URL with query parameters
                 url = f"{client.base_url}/auth-renew"
-                params = []
+                params: list[Any] = []
                 if tenant:
                     params.append(f"tenant_id={tenant}")
                 if restart:
@@ -915,7 +926,8 @@ def renew_azure_auth(
                                     console.print("[green]Token injection completed.[/]")
                                 else:
                                     console.print(
-                                        f"[yellow]Token injection returned status code {response.status_code}[/]"
+                                        f"[yellow]Token injection returned status code "
+                                        f"{response.status_code}[/]"
                                     )
 
                             except Exception as e:
@@ -952,7 +964,7 @@ def renew_azure_auth(
                                 console.print(
                                     f"[yellow]OpenAI component status: {openai_status}[/]"
                                 )
-                    except:
+                    except Exception:
                         pass
 
                     # Exit early if the API call succeeded
@@ -970,7 +982,7 @@ def renew_azure_auth(
             if os.path.exists(script_path):
                 try:
                     os.chmod(script_path, 0o755)  # Make executable
-                except:
+                except Exception:
                     pass  # Ignore permission errors
 
             # Run the script with the appropriate arguments
@@ -978,7 +990,7 @@ def renew_azure_auth(
                 process = subprocess.run(cmd, check=False)
                 success = process.returncode == 0
             else:
-                process = subprocess.run(
+                process = subprocess.run(  # type: ignore  # TODO: Fix type compatibility
                     cmd,
                     check=False,
                     capture_output=True,
@@ -1064,7 +1076,7 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
     compose_cmd = get_docker_compose_command()
 
     # Identify unhealthy containers
-    unhealthy_containers = []
+    unhealthy_containers: list[Any] = []
     try:
         process = subprocess.run(
             ["docker", "ps", "--filter", "health=unhealthy", "--format", "{{.Names}}"],
@@ -1166,7 +1178,8 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
             try:
                 subprocess.run(cmd, check=True, env=env)
                 console.print(
-                    "[green]Service started with health checks disabled via environment variable.[/]"
+                    "[green]Service started with health checks disabled via "
+                    "environment variable.[/]"
                 )
                 console.print("[yellow]Note: Service may take longer to fully initialize.[/]")
             except subprocess.CalledProcessError as e:
@@ -1232,7 +1245,8 @@ def recover_service(ctx: click.Context, force: bool = False, restart_worker: boo
                 console.print("[green bold]All containers are now healthy![/]")
             else:
                 console.print(
-                    "[yellow]Some containers are still not healthy. Consider using --force to perform a full recovery.[/]"
+                    "[yellow]Some containers are still not healthy. Consider using "
+                    "--force to perform a full recovery.[/]"
                 )
     else:
         console.print("[green]No unhealthy containers found.[/]")
@@ -1325,7 +1339,7 @@ def show_unhealthy_container_logs(
 
         # Parse the output to find containers
         container_lines = process.stdout.strip().split("\n")
-        unhealthy_containers = []
+        unhealthy_containers: list[Any] = []
 
         # Try to parse each line as JSON
         import json

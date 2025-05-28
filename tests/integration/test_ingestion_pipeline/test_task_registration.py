@@ -79,4 +79,7 @@ def test_step_class_task_delegation():
     ), "current_app.send_task not found in FileSystemStep.run method"
     assert (
         "codestory_filesystem.step.process_filesystem" in source
-    ), "Task name 'codestory_filesystem.step.process_filesystem' not found in FileSystemStep.run method"
+    ), (
+        "Task name 'codestory_filesystem.step.process_filesystem' not found in "
+        "FileSystemStep.run method"
+    )

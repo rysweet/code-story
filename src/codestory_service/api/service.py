@@ -22,7 +22,10 @@ router = APIRouter(prefix="/v1/service", tags=["service"])
 @router.post(
     "/start",
     summary="Start service",
-    description="Start the Code Story service and its dependencies. Only available in development mode.",
+    description=(
+        "Start the Code Story service and its dependencies. "
+        "Only available in development mode."
+    ),
 )
 async def start_service(
     user: dict = Depends(require_role(["admin"])),
@@ -66,7 +69,10 @@ async def start_service(
 @router.post(
     "/stop",
     summary="Stop service",
-    description="Stop the Code Story service and its dependencies. Only available in development mode.",
+    description=(
+        "Stop the Code Story service and its dependencies. "
+        "Only available in development mode."
+    ),
 )
 async def stop_service(user: dict = Depends(require_role(["admin"]))) -> dict[str, str]:
     """Stop the Code Story service and its dependencies.

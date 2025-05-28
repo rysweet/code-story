@@ -6,6 +6,7 @@ repository through all workflow steps correctly using real services.
 
 import logging
 import os
+import shutil
 import tempfile
 import time
 
@@ -157,5 +158,6 @@ retry:
                 job_status.get("status") == StepStatus.FAILED
             ), "Pipeline should have failed with non-existent repository path"
         except ValueError:
-            # It's also acceptable if the pipeline manager refuses to start a job with an invalid path
+            # It's also acceptable if the pipeline manager refuses to start a job with an 
+            # invalid path
             pass

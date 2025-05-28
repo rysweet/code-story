@@ -172,15 +172,13 @@ def setup_mocks():
 
     # Configure find_step_manually to return our mock classes
     def find_step_side_effect(step_name):
-        if step_name == "filesystem":
-            return FileSystemStep
-        elif step_name == "blarify":
-            return BlarifyStep
-        elif step_name == "summarizer":
-            return SummarizerStep
-        elif step_name == "documentation_grapher":
-            return DocumentationGrapherStep
-        return None
+        step_mapping = {
+            "filesystem": FileSystemStep,
+            "blarify": BlarifyStep,
+            "summarizer": SummarizerStep,
+            "documentation_grapher": DocumentationGrapherStep,
+        }
+        return step_mapping.get(step_name)
 
     mock_fs.side_effect = find_step_side_effect
 

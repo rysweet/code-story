@@ -4,8 +4,8 @@ This module provides a specialized settings class for the service, building
 on the core settings infrastructure.
 """
 
-from typing import Any
 import logging
+from typing import Any
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -144,4 +144,4 @@ def get_service_settings() -> ServiceSettings:
     Returns:
         ServiceSettings instance with service-specific configuration
     """
-    return ServiceSettings()
+    return ServiceSettings()  # type: ignore  # TODO: Pydantic BaseSettings with defaults

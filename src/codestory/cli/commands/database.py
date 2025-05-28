@@ -1,6 +1,7 @@
 """Database commands for the Code Story CLI."""
 
 from typing import Any
+
 import click
 from rich.panel import Panel
 from rich.prompt import Confirm

@@ -7,13 +7,13 @@ and store AST and symbol bindings in Neo4j.
 import logging
 import os
 import time
-import uuid
 from typing import Any
+from uuid import uuid4
 
 import docker
-from celery import current_app, shared_task  # type: ignore[import-untyped]
-from celery.app.control import Control  # type: ignore[import-untyped]
-from celery.result import AsyncResult  # type: ignore[import-untyped]
+from celery import current_app, shared_task
+from celery.app.control import Control
+from celery.result import AsyncResult
 from docker.errors import DockerException
 
 from codestory.config.settings import get_settings
@@ -57,7 +57,7 @@ class BlarifyStep(PipelineStep):
             logger.info("Docker client initialized successfully")
         except DockerException as e:
             logger.warning(f"Docker client initialization failed: {e}. Will use Celery task.")
-            self.docker_client = None
+            self.docker_client = None  # type: ignore  # TODO: Fix None assignment
 
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the Blarify step.
@@ -80,7 +80,7 @@ class BlarifyStep(PipelineStep):
             raise ValueError(f"Repository path is not a valid directory: {repository_path}")
 
         # Generate job ID
-        job_id = f"blarify-{uuid.uuid4.uuid4()}"
+        job_id = f"blarify-{uuid4()}"
 
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
@@ -157,7 +157,8 @@ class BlarifyStep(PipelineStep):
             # This fixes a race condition where the job was stopped but Celery hasn't updated yet
             if job_info.get("status") in [StepStatus.STOPPED, StepStatus.CANCELLED]:
                 logger.debug(
-                    f"Job {job_id} has internal status {job_info['status']}, using that over Celery status"
+                    f"Job {job_id} has internal status {job_info['status']}, using that "
+                    f"over Celery status"
                 )
                 return {
                     "status": job_info["status"],
@@ -180,7 +181,8 @@ class BlarifyStep(PipelineStep):
                     if not containers:
                         # Container is gone but job status wasn't updated
                         logger.info(
-                            f"Container {container_name} is not running, updating job status to COMPLETED"
+                            f"Container {container_name} is not running, updating job status "
+                            f"to COMPLETED"
                         )
                         job_info["status"] = StepStatus.COMPLETED
                         job_info["end_time"] = time.time()
@@ -349,7 +351,8 @@ class BlarifyStep(PipelineStep):
 
                     # Container still exists, wait and retry
                     logger.warning(
-                        f"Container {container_name} still exists, retrying stop... (attempt {retry_count + 1})"
+                        f"Container {container_name} still exists, retrying stop... "
+                        f"(attempt {retry_count + 1})"
                     )
                     for container in containers:
                         try:
@@ -497,7 +500,8 @@ def run_blarify(
                             host_path, container_path, 1
                         )
                         logger.info(
-                            f"Mapped repository path from {repository_path} to {container_repository_path}"
+                            f"Mapped repository path from {repository_path} to "
+                            f"{container_repository_path}"
                         )
                         break
 
@@ -517,7 +521,8 @@ def run_blarify(
                             # Repository is already mounted, use the container path
                             container_repository_path = mount["Destination"]
                             logger.info(
-                                f"Found existing mount: {repository_path} -> {container_repository_path}"
+                                f"Found existing mount: {repository_path} -> "
+                                f"{container_repository_path}"
                             )
                             break
         except Exception as e:
@@ -624,17 +629,21 @@ def run_blarify(
                 # Check for inactivity timeout
                 if current_time - last_activity_time > max_inactivity:
                     logger.error(
-                        f"Blarify process timed out due to inactivity after {max_inactivity} seconds"
+                        f"Blarify process timed out due to inactivity after "
+                        f"{max_inactivity} seconds"
                     )
                     # Attempt to stop the container gracefully
                     try:
                         container.stop(timeout=10)
-                        logger.info(f"Stopped container {container.id} due to inactivity timeout")
+                        logger.info(
+                            f"Stopped container {container.id} due to inactivity timeout"
+                        )
                     except Exception as e:
                         logger.warning(f"Error stopping container: {e}")
 
                     raise TimeoutError(
-                        f"Blarify process timed out due to inactivity after {max_inactivity} seconds"
+                        f"Blarify process timed out due to inactivity after "
+                        f"{max_inactivity} seconds"
                     )
             except Exception as e:
                 logger.warning(f"Error processing log line: {e}")
@@ -683,10 +692,13 @@ def run_blarify(
                         password=settings.neo4j.password.get_secret_value(),
                         database=settings.neo4j.database,
                     )
-                    logger.info(f"Connected to Neo4j using localhost override: {localhost_uri}")
+                    logger.info(
+                        f"Connected to Neo4j using localhost override: {localhost_uri}"
+                    )
                 except Exception as e:
                     logger.warning(
-                        f"Failed to connect to Neo4j using localhost: {e}, falling back to original URI"
+                        f"Failed to connect to Neo4j using localhost: {e}, falling back "
+                        f"to original URI"
                     )
                     connector = Neo4jConnector(
                         uri=settings.neo4j.uri,

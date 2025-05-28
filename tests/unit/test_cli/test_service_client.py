@@ -247,7 +247,8 @@ class TestServiceClient:
         # Verify result
         assert result == "<html>Visualization</html>"
 
-        # Since the implementation tries multiple endpoints, we only verify that get was called at least once
+        # Since the implementation tries multiple endpoints, we only verify that get was called 
+        # at least once
         client.client.get.assert_called_with("/visualize")
 
         # Verify it was called only once (the first attempt succeeds)

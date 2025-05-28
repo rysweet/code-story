@@ -1,6 +1,8 @@
 from enum import Enum
+from uuid import uuid4
+
 from pydantic import BaseModel, Field
-import uuid
+
 """Data models for documentation entities and relationships.
 
 This module defines data models used by the Documentation Grapher for
@@ -78,7 +80,7 @@ class DocumentationFile(BaseModel):
 class DocumentationEntity(BaseModel):
     """Represents an entity within a documentation file."""
 
-    id: str = Field(default_factory=lambda: f"entity_{uuid.uuid4.uuid4()}")
+    id: str = Field(default_factory=lambda: f"entity_{uuid4()}")
     type: EntityType
     content: str
     file_path: str
@@ -97,7 +99,7 @@ class DocumentationEntity(BaseModel):
 class DocumentationRelationship(BaseModel):
     """Represents a relationship between documentation entities."""
 
-    id: str = Field(default_factory=lambda: f"rel_{uuid.uuid4.uuid4()}")
+    id: str = Field(default_factory=lambda: f"rel_{uuid4()}")
     type: RelationType
     source_id: str  # ID of source entity
     target_id: str  # ID of target entity

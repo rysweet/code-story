@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 """Parser factory for creating appropriate parsers for different document types.
 
 This module provides a factory for creating the appropriate parser based on
@@ -38,7 +40,7 @@ class ParserFactory:
     _parsers: dict[DocumentType, type[Parser]] = {}
 
     @classmethod
-    def register(cls, doc_type: DocumentType) -> callable:
+    def register(cls, doc_type: DocumentType) -> Callable:
         """Register a parser class for a document type.
 
         This is a decorator for registering parser classes.

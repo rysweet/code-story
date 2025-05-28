@@ -186,7 +186,8 @@ class Settings(BaseSettings):
     app_name: str = Field("code-story", description="Application name")
     version: str = Field("0.1.0", description="Application version")
     description: str = Field(
-        "A system to convert codebases into richly-linked knowledge graphs with natural-language summaries",
+        "A system to convert codebases into richly-linked knowledge graphs "
+        "with natural-language summaries",
         description="Application description",
     )
     log_level: str = Field("INFO", description="Logging level")
@@ -243,8 +244,8 @@ class Settings(BaseSettings):
         # 2. .env file for bootstrap settings
         # 3. .codestory.toml in the current directory
         # 4. .codestory.default.toml in the project root
-        toml_settings = {}
-        config_files_to_try = []
+        toml_settings: dict[Any, Any] = {}
+        config_files_to_try: list[Any] = []
 
         # For tests, use the test configuration
         if in_test_env:
@@ -483,7 +484,9 @@ class Settings(BaseSettings):
             if not self.neo4j.password.get_secret_value():
                 try:
                     secret = client.get_secret("neo4j-password")
-                    self.neo4j.password = SecretStr(secret.value)
+                    self.neo4j.password = (
+                        SecretStr(secret.value) if secret.value is not None else None
+                    )  # type: ignore  # TODO: Fix type compatibility
                 except Exception:
                     pass
 
@@ -491,7 +494,9 @@ class Settings(BaseSettings):
             if not self.openai.api_key.get_secret_value():
                 try:
                     secret = client.get_secret("openai-api-key")
-                    self.openai.api_key = SecretStr(secret.value)
+                    self.openai.api_key = (
+                        SecretStr(secret.value) if secret.value is not None else None
+                    )  # type: ignore  # TODO: Fix type compatibility
                 except Exception:
                     pass
 
@@ -502,7 +507,9 @@ class Settings(BaseSettings):
             ):
                 try:
                     secret = client.get_secret("azure-openai-api-key")
-                    self.azure_openai.api_key = SecretStr(secret.value)
+                    self.azure_openai.api_key = (
+                        SecretStr(secret.value) if secret.value is not None else None
+                    )  # type: ignore  # TODO: Fix type compatibility
                 except Exception:
                     pass
 
@@ -510,7 +517,9 @@ class Settings(BaseSettings):
             if self.azure.client_secret is None or not self.azure.client_secret.get_secret_value():
                 try:
                     secret = client.get_secret("azure-client-secret")
-                    self.azure.client_secret = SecretStr(secret.value)
+                    self.azure.client_secret = (
+                        SecretStr(secret.value) if secret.value is not None else None
+                    )  # type: ignore  # TODO: Fix type compatibility
                 except Exception:
                     pass
 
@@ -542,7 +551,7 @@ def unflatten_dict(d: dict[str, Any], sep: str = "__") -> dict[str, Any]:
     Example:
         {"neo4j__uri": "bolt://localhost:7687"} -> {"neo4j": {"uri": "bolt://localhost:7687"}}
     """
-    result = {}
+    result: dict[Any, Any] = {}
     for key, value in d.items():
         parts = key.split(sep)
 

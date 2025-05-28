@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Integration test for Azure OpenAI configuration.
+"""Integration test for Azure OpenAI configuration.
+
 This script tests the Azure OpenAI setup without requiring Docker containers.
 """
 

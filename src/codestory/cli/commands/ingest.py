@@ -26,7 +26,7 @@ def ingest() -> Any:
     pass
 
 
-def run_command(command, capture_output=True, shell=True):
+def run_command(command, capture_output=True, shell=True) -> None:
     """Run a shell command and return its output."""
     try:
         result = subprocess.run(
@@ -62,7 +62,7 @@ def is_docker_running() -> Any:
         return False
 
 
-def is_repo_mounted(repo_path, console=None):
+def is_repo_mounted(repo_path, console=None) -> None:
     """Check if repository is already mounted correctly for ingestion.
 
     This checks both the actual mount and whether the path is accessible
@@ -221,7 +221,7 @@ def is_repo_mounted(repo_path, console=None):
         return False
 
 
-def create_override_file(repo_path, console=None):
+def create_override_file(repo_path, console=None) -> None:
     """Create a docker-compose.override.yml file with the repository mount."""
     repo_path = os.path.abspath(repo_path)
     repo_name = os.path.basename(repo_path)
@@ -258,7 +258,7 @@ def create_override_file(repo_path, console=None):
         return False
 
 
-def create_repo_config(repo_path, console=None):
+def create_repo_config(repo_path, console=None) -> None:
     """Create repository configuration file."""
     config_dir = os.path.join(repo_path, ".codestory")
     os.makedirs(config_dir, exist_ok=True)
@@ -286,7 +286,7 @@ auto_mounted = true
     return True
 
 
-def wait_for_service(console=None, max_attempts=30):
+def wait_for_service(console=None, max_attempts=30) -> None:
     """Wait for the service to be ready."""
     if console:
         console.print("Waiting for service to be ready...")
@@ -330,7 +330,7 @@ def wait_for_service(console=None, max_attempts=30):
     return False
 
 
-def setup_repository_mount(repo_path, console=None, force_remount=False):
+def setup_repository_mount(repo_path, console=None, force_remount=False) -> None:
     """Set up repository mount using Docker bind mounts without restarting containers."""
     repo_path = os.path.abspath(repo_path)
 
@@ -926,7 +926,7 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
     )
 
     overall_task = progress.add_task("[bold]Overall Progress", total=100, status="Initializing...")
-    step_tasks = {}
+    step_tasks: dict[Any, Any] = {}
 
     # Function to update progress
     def update_progress(data: dict[str, Any]) -> None:

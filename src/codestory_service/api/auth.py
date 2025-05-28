@@ -24,7 +24,10 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
     "/login",
     response_model=TokenResponse,
     summary="Login",
-    description="Login with username and password to get a JWT token. Only available in development mode.",
+    description=(
+        "Login with username and password to get a JWT token. "
+        "Only available in development mode."
+    ),
 )
 async def login(
     request: LoginRequest, auth_service: AuthService = Depends(get_auth_service)

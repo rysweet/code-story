@@ -58,7 +58,7 @@ def run_query(
     console: Console = ctx.obj["console"]
 
     # Parse parameters
-    parameters = {}
+    parameters: dict[Any, Any] = {}
     if param:
         for p in param:
             try:
@@ -256,7 +256,7 @@ def export_query(
     console: Console = ctx.obj["console"]
 
     # Parse parameters
-    parameters = {}
+    parameters: dict[Any, Any] = {}
     if param:
         for p in param:
             try:
@@ -334,7 +334,7 @@ def _display_query_result(
 
         # Add rows
         for record in records:
-            row = []
+            row: list[Any] = []
             for column in columns:
                 value = record.get(column)
                 row.append(_format_value(value, color))
@@ -509,7 +509,7 @@ def _results_to_csv(result: dict[str, Any]) -> str:
 
         # Write records
         for record in records:
-            row = []
+            row: list[Any] = []
             for column in columns:
                 value = record.get(column)
                 if isinstance(value, dict | list):
@@ -528,7 +528,7 @@ def _results_to_csv(result: dict[str, Any]) -> str:
 
         if isinstance(results, list) and results and isinstance(results[0], dict):
             # Try to extract common keys for a table
-            columns = set()
+            columns: set[Any] = set()
             for item in results:
                 if isinstance(item, dict):
                     columns.update(item.keys())
@@ -541,7 +541,7 @@ def _results_to_csv(result: dict[str, Any]) -> str:
             # Write rows
             for item in results:
                 if isinstance(item, dict):
-                    row = []
+                    row: list[Any] = []
                     for column in columns:
                         value = item.get(column)
                         if isinstance(value, dict | list):

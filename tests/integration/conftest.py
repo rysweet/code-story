@@ -25,7 +25,10 @@ def fix_neo4j_port_config():
                 content = f.read()
 
             # Fix syntax error with port configuration
-            pattern1 = r'"bolt://localhost:" \+ \(os\.environ\.get\("CI"\) == "true" and "7687" or "7688"\)"'
+            pattern1 = (
+                r'"bolt://localhost:" \+ \(os\.environ\.get\("CI"\) == "true" and '
+                r'"7687" or "7688"\)"'
+            )
             replacement1 = 'f"bolt://localhost:{neo4j_port}"'
 
             if re.search(pattern1, content):
@@ -36,7 +39,9 @@ def fix_neo4j_port_config():
                 if "neo4j_port = " not in content:
                     content = re.sub(
                         r"import os",
-                        'import os\n\n# Determine Neo4j port based on CI environment\nci_env = os.environ.get("CI") == "true"\nneo4j_port = "7687" if ci_env else "7688"',
+                        'import os\n\n# Determine Neo4j port based on CI environment\n'
+                        'ci_env = os.environ.get("CI") == "true"\n'
+                        'neo4j_port = "7687" if ci_env else "7688"',
                         content,
                     )
 
@@ -139,7 +144,8 @@ def neo4j_env():
     """Setup Neo4j environment variables for tests."""
     # Determine the correct Neo4j port to use
     # In CI environment, Neo4j is often on the standard port
-    # In Docker environment, it's typically mapped to 7689 but with container-to-container networking
+    # In Docker environment, it's typically mapped to 7689 but with container-to-container 
+    # networking
     # In local docker-compose.test.yml, it's on port 7688
     ci_env = os.environ.get("CI") == "true"
     docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"

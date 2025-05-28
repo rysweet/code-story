@@ -6,8 +6,9 @@ from rich.console import Console
 
 
 def require_service_available() -> None:
-    """
-    Checks if the Code Story service is running and healthy. If not, prints an error and exits.
+    """Checks if the Code Story service is running and healthy.
+    
+    If not, prints an error and exits.
     Skips the check in test environments (when PYTEST_CURRENT_TEST is set).
     """
     if os.environ.get("PYTEST_CURRENT_TEST"):
@@ -22,7 +23,8 @@ def require_service_available() -> None:
         )
         if result.returncode != 0:
             console.print(
-                "[bold red]Code Story services are not running. Please start them with `codestory service start`."
+                "[bold red]Code Story services are not running. Please start them "
+                "with `codestory service start`."
             )
             sys.exit(1)
     except Exception as e:

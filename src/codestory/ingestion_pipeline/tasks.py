@@ -8,8 +8,8 @@ import logging
 import time
 from typing import Any
 
-from celery import chain  # type: ignore[import-untyped]
-from celery.result import AsyncResult  # type: ignore[import-untyped]
+from celery import chain
+from celery.result import AsyncResult
 
 from .celery_app import app
 from .step import StepStatus
@@ -19,9 +19,9 @@ from .utils import record_job_metrics, record_step_metrics
 logger = logging.getLogger(__name__)
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.run_step", bind=True)
+@app.task(name="codestory.ingestion_pipeline.tasks.run_step", bind=True)  # type: ignore[misc]
 def run_step(
-    self,
+    self: Any,
     repository_path: str,
     step_name: str,
     step_config: dict[str, Any],
@@ -35,6 +35,7 @@ def run_step(
     it can handle.
 
     Args:
+        self: Celery task instance
         repository_path: Path to the repository to process
         step_name: Name of the step to run
         step_config: Configuration for the step
@@ -128,12 +129,14 @@ def run_step(
             for param in list(step_config_copy.keys()):
                 if param not in safe_params and param != step_name + "_specific":
                     logger.debug(
-                        f"Removing '{param}' from {step_name} step config to avoid parameter mismatch"
+                        f"Removing '{param}' from {step_name} step config to avoid "
+                        f"parameter mismatch"
                     )
                     del step_config_copy[param]
 
         logger.debug(
-            f"Sending task {task_name} with args=[repository_path={repository_path}] and kwargs={step_config_copy}"
+            f"Sending task {task_name} with args=[repository_path={repository_path}] "
+            f"and kwargs={step_config_copy}"
         )
 
         try:
@@ -168,7 +171,8 @@ def run_step(
             # Log status every 30 seconds
             if current_time - last_log_time > 30 or poll_counter % 30 == 0:
                 logger.info(
-                    f"[{poll_counter}] Still waiting for task {task_name} (id: {step_task.id}) - elapsed: {current_time - start_poll:.1f}s"
+                    f"[{poll_counter}] Still waiting for task {task_name} (id: {step_task.id}) - "
+                    f"elapsed: {current_time - start_poll:.1f}s"
                 )
                 last_log_time = current_time
 
@@ -246,9 +250,9 @@ def run_step(
     return result
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)
+@app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)  # type: ignore[misc]
 def orchestrate_pipeline(
-    self, repository_path: str, step_configs: list[dict[str, Any]], job_id: str
+    self: Any, repository_path: str, step_configs: list[dict[str, Any]], job_id: str
 ) -> dict[str, Any]:
     """Orchestrate the execution of the entire pipeline.
 
@@ -256,6 +260,7 @@ def orchestrate_pipeline(
     tracks their progress, and returns the overall result.
 
     Args:
+        self: Celery task instance
         repository_path: Path to the repository to process
         step_configs: List of step configurations with name and parameters
         job_id: ID for the overall pipeline job
@@ -289,7 +294,7 @@ def orchestrate_pipeline(
 
     try:
         # Create a chain of step tasks
-        workflow = []
+        workflow: list[Any] = []
 
         # Add each step to the workflow
         for step_config in step_configs:
@@ -323,7 +328,7 @@ def orchestrate_pipeline(
         except Exception as e:
             logger.error(f"Error starting chain: {e}")
             # Try to get more detailed error message
-            from celery.exceptions import CeleryError  # type: ignore[import-untyped]
+            from celery.exceptions import CeleryError
 
             if isinstance(e, CeleryError):
                 logger.error(f"Celery error details: {e.args}")
@@ -347,7 +352,8 @@ def orchestrate_pipeline(
             # Log status every 30 seconds or each 15 polls
             if current_time - last_log_time > 30 or poll_counter % 15 == 0:
                 logger.info(
-                    f"[{poll_counter}] Still waiting for chain (id: {chain_result.id}) - elapsed: {current_time - start_poll:.1f}s"
+                    f"[{poll_counter}] Still waiting for chain (id: {chain_result.id}) - "
+                    f"elapsed: {current_time - start_poll:.1f}s"
                 )
                 last_log_time = current_time
 
@@ -425,11 +431,12 @@ def orchestrate_pipeline(
     return result
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)
-def get_job_status(self, task_id: str) -> dict[str, Any]:
+@app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)  # type: ignore[misc]
+def get_job_status(self: Any, task_id: str) -> dict[str, Any]:
     """Get the status of a running job.
 
     Args:
+        self: Celery task instance
         task_id: Celery task ID to check
 
     Returns:
@@ -464,11 +471,12 @@ def get_job_status(self, task_id: str) -> dict[str, Any]:
         }
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)
-def stop_job(self, task_id: str) -> dict[str, Any]:
+@app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)  # type: ignore[misc]
+def stop_job(self: Any, task_id: str) -> dict[str, Any]:
     """Stop a running job.
 
     Args:
+        self: Celery task instance
         task_id: Celery task ID to stop
 
     Returns:

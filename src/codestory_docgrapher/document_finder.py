@@ -1,3 +1,5 @@
+from typing import Any
+
 """Document finder for locating documentation files in repositories.
 
 This module provides functionality for locating documentation files
@@ -73,7 +75,7 @@ class DocumentFinder:
         ignore_patterns = ignore_patterns or []
         ignore_regex = self._compile_ignore_patterns(ignore_patterns)
 
-        doc_files = []
+        doc_files: list[Any] = []
         doc_files.extend(self._find_standalone_docs(ignore_regex))
         doc_files.extend(self._find_code_docstrings(ignore_regex))
 
@@ -89,7 +91,7 @@ class DocumentFinder:
         Returns:
             List of compiled regular expressions
         """
-        result = []
+        result: list[Any] = []
         for pattern in patterns:
             # Convert glob pattern to regex
             regex = pattern.replace(".", r"\.").replace("*", ".*").replace("?", ".")
@@ -120,7 +122,7 @@ class DocumentFinder:
         Returns:
             List of DocumentationFile objects
         """
-        result = []
+        result: list[Any] = []
 
         # Query Neo4j for file nodes
         query = """
@@ -194,7 +196,7 @@ class DocumentFinder:
         Returns:
             List of DocumentationFile objects
         """
-        result = []
+        result: list[Any] = []
 
         # Query Neo4j for files with docstrings
         query = """

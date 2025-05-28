@@ -67,7 +67,8 @@ class TestIngestCommands:
         help_result = cli_runner.invoke(app, ["ingest", "start", "--help"])
         assert help_result.exit_code == 0
         assert "Usage: app ingest start [OPTIONS] REPOSITORY_PATH" in help_result.output
-        # Accept either the explicit description or just the presence of REPOSITORY_PATH in the help output
+        # Accept either the explicit description or just the presence of REPOSITORY_PATH in the 
+        # help output
         assert "REPOSITORY_PATH" in help_result.output
 
     @pytest.mark.integration

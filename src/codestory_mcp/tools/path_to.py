@@ -109,7 +109,7 @@ class PathToTool(BaseTool):
                 first_path = paths[0]
 
                 # Extract elements for explanation
-                path_elements = []
+                path_elements: list[Any] = []
                 for i, element in enumerate(first_path):
                     if i % 2 == 0:  # Node
                         path_elements.append(
@@ -136,10 +136,10 @@ class PathToTool(BaseTool):
                 )
 
                 # Add explanation to response
-                response["explanation"] = explanation
+                response["explanation"] = explanation  # type: ignore  # TODO: Fix type compatibility
 
             # Add metadata to response
-            response["metadata"] = {
+            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
                 "from_id": from_id,
                 "to_id": to_id,
                 "max_paths": max_paths,

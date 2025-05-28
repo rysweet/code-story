@@ -1,4 +1,5 @@
 from typing import Any
+
 """Knowledge graph builder for documentation entities and relationships.
 
 This module provides functionality for building a knowledge graph of
@@ -95,7 +96,8 @@ class KnowledgeGraph:
         self._create_relationships()
 
         logger.info(
-            f"Stored documentation graph in Neo4j: {len(self.graph.documents)} documents, {len(self.graph.entities)} entities, {len(self.graph.relationships)} relationships"
+            f"Stored documentation graph in Neo4j: {len(self.graph.documents)} documents, "
+            f"{len(self.graph.entities)} entities, {len(self.graph.relationships)} relationships"
         )
 
     def _create_document_nodes(self) -> None:
@@ -166,7 +168,7 @@ class KnowledgeGraph:
             """
 
             # Convert metadata to a format compatible with Neo4j
-            metadata = {}
+            metadata: dict[Any, Any] = {}
             for key, value in entity.metadata.items():
                 if isinstance(value, str | int | float | bool):
                     metadata[key] = value
@@ -225,7 +227,8 @@ class KnowledgeGraph:
                     )
                 else:
                     logger.warning(
-                        f"Failed to create relationship {rel.type.value} between documentation entities"
+                        f"Failed to create relationship {rel.type.value} between "
+                        f"documentation entities"
                     )
 
             elif rel.type in [RelationType.DESCRIBES, RelationType.REFERENCES]:
@@ -250,11 +253,13 @@ class KnowledgeGraph:
 
                 if result:
                     logger.debug(
-                        f"Created relationship {rel.type.value} between documentation and code entities"
+                        f"Created relationship {rel.type.value} between documentation "
+                        f"and code entities"
                     )
                 else:
                     logger.warning(
-                        f"Failed to create relationship {rel.type.value} between documentation and code entities"
+                        f"Failed to create relationship {rel.type.value} between documentation "
+                        f"and code entities"
                     )
 
     def get_graph_stats(self) -> dict:
@@ -277,7 +282,7 @@ class KnowledgeGraph:
         Returns:
             Dict mapping entity types to counts
         """
-counts: dict[Any, Any] = {}
+        counts: dict[Any, Any] = {}
         for entity in self.graph.entities.values():
             type_name = entity.type.value
             counts[type_name] = counts.get(type_name, 0) + 1
@@ -289,7 +294,7 @@ counts: dict[Any, Any] = {}
         Returns:
             Dict mapping relationship types to counts
         """
-counts: dict[Any, Any] = {}
+        counts: dict[Any, Any] = {}
         for rel in self.graph.relationships.values():
             type_name = rel.type.value
             counts[type_name] = counts.get(type_name, 0) + 1

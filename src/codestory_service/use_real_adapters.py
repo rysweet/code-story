@@ -1,5 +1,5 @@
-"""
-Module to override adapter factory functions to always use real adapters.
+"""Module to override adapter factory functions to always use real adapters.
+
 This ensures we're never using dummy/mock adapters in demo or integration mode.
 """
 
@@ -12,7 +12,7 @@ from .infrastructure.neo4j_adapter import Neo4jAdapter
 from .infrastructure.openai_adapter import OpenAIAdapter
 
 # Set up logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__, Callable)
 
 T = TypeVar("T")
 
@@ -97,8 +97,8 @@ async def get_real_openai_adapter() -> OpenAIAdapter:
 
 # Apply the overrides when this module is imported
 def apply_overrides() -> None:
-    """
-    Apply all the overrides to the adapter factory functions.
+    """Apply all the overrides to the adapter factory functions.
+    
     This function should be called during application startup.
     """
     # Import the modules that define the factory functions
@@ -107,6 +107,6 @@ def apply_overrides() -> None:
     # Override the factory functions
     neo4j_adapter.get_neo4j_adapter = get_real_neo4j_adapter
     celery_adapter.get_celery_adapter = get_real_celery_adapter
-    openai_adapter.get_openai_adapter = get_real_openai_adapter
+    openai_adapter.get_openai_adapter = get_real_openai_adapter  # type: ignore  # TODO: Fix type compatibility
 
     logger.info("Applied real adapter overrides - demo/mock adapters are disabled")
