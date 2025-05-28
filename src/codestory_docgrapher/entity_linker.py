@@ -9,7 +9,7 @@ entities in the Neo4j database.
 import logging
 import re
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
 
 from .models import DocumentationEntity, DocumentationRelationship, RelationType
 from .utils.path_matcher import PathMatcher
@@ -192,7 +192,7 @@ class EntityLinker:
         # Check cache first
         cache_key = f"{entity_type}:{entity_name}"
         if cache_key in self.entity_cache:
-            return self.entity_cache[cache_key]
+            return self.entity_cache[cache_key]  # type: ignore[no-any-return]
 
         results: list[Any] = []
 

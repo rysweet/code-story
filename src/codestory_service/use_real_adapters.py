@@ -5,14 +5,14 @@ This ensures we're never using dummy/mock adapters in demo or integration mode.
 
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar, cast
+from typing import Any, Callable, Callable, Callable, TypeVar, cast
 
 from .infrastructure.celery_adapter import CeleryAdapter
 from .infrastructure.neo4j_adapter import Neo4jAdapter
 from .infrastructure.openai_adapter import OpenAIAdapter
 
 # Set up logging
-logger = logging.getLogger(__name__, Callable)
+logger = logging.getLogger(__name__, Callable)  # type: ignore[call-arg]
 
 T = TypeVar("T")
 

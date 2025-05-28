@@ -8,10 +8,10 @@ import sys
 
 import structlog
 
-from codestory_mcp.server import run_server
+from codestory_mcp.server import run_server  # type: ignore[import-untyped]
 
 # Import all tools to register them
-from codestory_mcp.utils.config import get_mcp_settings
+from codestory_mcp.utils.config import get_mcp_settings  # type: ignore[import-untyped]
 
 
 def setup_logging() -> None:
@@ -50,7 +50,7 @@ def setup_logging() -> None:
         processor=structlog.dev.ConsoleRenderer()
         if settings.debug
         else structlog.processors.JSONRenderer(),
-        foreign_pre_chain=pre_chain,
+        foreign_pre_chain=pre_chain,  # type: ignore[arg-type]
     )
 
     handler = logging.StreamHandler()

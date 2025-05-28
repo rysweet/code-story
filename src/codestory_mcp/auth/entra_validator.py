@@ -9,7 +9,7 @@ import jwt
 import structlog
 from jwt.jwks_client import PyJWKClient
 
-from codestory_mcp.auth.scope_manager import ScopeManager
+from codestory_mcp.auth.scope_manager import ScopeManager  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -43,7 +43,7 @@ class AuthorizationError(Exception):
 class EntraValidator:
     """JWT token validator for Microsoft Entra ID."""
 
-    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None) -> None:
+    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None) -> None:  # type: ignore[no-untyped-def]
         """Initialize the validator.
 
         Args:
@@ -99,7 +99,7 @@ class EntraValidator:
             # Verify required scopes are present
             self._verify_scopes(claims)
 
-            return claims
+            return claims  # type: ignore[no-any-return]
 
         except jwt.PyJWTError as e:
             logger.warning("Token validation failed", error=str(e))
@@ -126,7 +126,7 @@ class EntraValidator:
         elif isinstance(raw_scopes, list):
             scopes = raw_scopes
         else:
-            scopes: list[Any] = []
+            scopes: list[Any] = []  # type: ignore[no-redef]
 
         # Check scopes against required scopes
         if not self.scope_manager.has_required_scope(scopes):

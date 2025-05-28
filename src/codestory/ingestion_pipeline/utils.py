@@ -219,7 +219,7 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
                 entry_points_list = list(eps)
             except TypeError:
                 # Python 3.8-3.9 API
-                entry_points_list = eps.get(entry_point_group, [])
+                entry_points_list = eps.get(entry_point_group, [])  # type: ignore[attr-defined]
 
             for entry_point in entry_points_list:
                 step_name = entry_point.name

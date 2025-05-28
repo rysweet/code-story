@@ -28,7 +28,7 @@ router = APIRouter(prefix="/v1/service", tags=["service"])
     ),
 )
 async def start_service(
-    user: dict = Depends(require_role(["admin"])),
+    user: dict[str, str] = Depends(require_role(["admin"])),
 ) -> dict[str, str]:
     """Start the Code Story service and its dependencies.
 
@@ -74,7 +74,7 @@ async def start_service(
         "Only available in development mode."
     ),
 )
-async def stop_service(user: dict = Depends(require_role(["admin"]))) -> dict[str, str]:
+async def stop_service(user: dict[str, str] = Depends(require_role(["admin"]))) -> dict[str, str]:
     """Stop the Code Story service and its dependencies.
 
     This endpoint is only available in development mode and is a no-op in production.

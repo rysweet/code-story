@@ -9,8 +9,8 @@ to extract entities, relationships, and other information.
 import logging
 import re
 
-from codestory.llm.client import create_client
-from codestory.llm.models import ChatMessage, ChatRole
+from codestory.llm.client import create_client  # type: ignore[import-untyped]
+from codestory.llm.models import ChatMessage, ChatRole  # type: ignore[import-untyped]
 
 from ..models import DocumentationEntity, EntityType
 
@@ -41,7 +41,7 @@ class ContentAnalyzer:
         self.api_class_pattern = re.compile(r"`([A-Z][a-zA-Z0-9_]*)`")
         self.api_module_pattern = re.compile(r"`([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)`")
 
-    def analyze_entity_content(self, entity: DocumentationEntity) -> dict:
+    def analyze_entity_content(self, entity: DocumentationEntity) -> dict[str, Any]:
         """Analyze the content of a documentation entity.
 
         Args:
@@ -56,7 +56,7 @@ class ContentAnalyzer:
         if entity.type == EntityType.HEADING:
             return self._analyze_heading(content)
         elif entity.type == EntityType.CODE_BLOCK:
-            return self._analyze_code_block(content, entity.metadata.get("language", ""))
+            return self._analyze_code_block(content, entity.metadata.get("language", ""))  # type: ignore[arg-type]
         elif entity.type == EntityType.FUNCTION_DESC:
             return self._analyze_function_desc(content)
         elif entity.type == EntityType.CLASS_DESC:
@@ -67,7 +67,7 @@ class ContentAnalyzer:
             # Generic analysis for other entity types
             return self._analyze_generic(content)
 
-    def _analyze_heading(self, content: str) -> dict:
+    def _analyze_heading(self, content: str) -> dict[str, Any]:
         """Analyze a heading.
 
         Args:
@@ -92,7 +92,7 @@ class ContentAnalyzer:
 
         return {"keywords": keywords, "section_type": section_type}
 
-    def _analyze_code_block(self, content: str, language: str) -> dict:
+    def _analyze_code_block(self, content: str, language: str) -> dict[str, Any]:
         """Analyze a code block.
 
         Args:
@@ -144,7 +144,7 @@ class ContentAnalyzer:
             "definitions": definitions,
         }
 
-    def _analyze_function_desc(self, content: str) -> dict:
+    def _analyze_function_desc(self, content: str) -> dict[str, Any]:
         """Analyze a function description.
 
         Args:
@@ -186,7 +186,7 @@ class ContentAnalyzer:
             "purpose": purpose,
         }
 
-    def _analyze_class_desc(self, content: str) -> dict:
+    def _analyze_class_desc(self, content: str) -> dict[str, Any]:
         """Analyze a class description.
 
         Args:
@@ -216,7 +216,7 @@ class ContentAnalyzer:
 
         return {"methods": methods, "attributes": attributes, "purpose": purpose}
 
-    def _analyze_module_desc(self, content: str) -> dict:
+    def _analyze_module_desc(self, content: str) -> dict[str, Any]:
         """Analyze a module description.
 
         Args:
@@ -246,7 +246,7 @@ class ContentAnalyzer:
 
         return {"classes": classes, "functions": functions, "purpose": purpose}
 
-    def _analyze_generic(self, content: str) -> dict:
+    def _analyze_generic(self, content: str) -> dict[str, Any]:
         """Analyze generic content.
 
         Args:
@@ -303,7 +303,7 @@ class ContentAnalyzer:
         keywords = [w for w in words if w not in stop_words]
 
         # Count word frequency
-        word_counts: dict[Any, Any] = {}
+        word_counts: dict[str, int] = {}
         for word in keywords:
             word_counts[word] = word_counts.get(word, 0) + 1
 
@@ -339,9 +339,9 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)  # type: ignore[union-attr]
 
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
         except Exception as e:
             logger.warning(f"Error extracting function purpose: {e}")
             return ""
@@ -374,9 +374,9 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)  # type: ignore[union-attr]
 
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
         except Exception as e:
             logger.warning(f"Error extracting class purpose: {e}")
             return ""
@@ -409,9 +409,9 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)  # type: ignore[union-attr]
 
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
         except Exception as e:
             logger.warning(f"Error extracting module purpose: {e}")
             return ""

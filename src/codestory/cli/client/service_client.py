@@ -11,7 +11,7 @@ import httpx
 from pydantic import SecretStr
 from rich.console import Console
 
-from codestory.config import Settings, get_settings
+from codestory.config import Settings, get_settings  # type: ignore[import-untyped]
 
 
 class ServiceClient:
@@ -134,7 +134,7 @@ class ServiceClient:
 
                 # Check for Azure authentication issues in OpenAI component
                 self._check_for_azure_auth_issues(health_data)
-                return health_data
+                return health_data  # type: ignore[no-any-return]
             except httpx.HTTPError:
                 # Fall back to root health endpoint
                 params = {"auto_fix": "true"} if auto_fix else {}
@@ -147,7 +147,7 @@ class ServiceClient:
 
                 # Check for Azure authentication issues in OpenAI component
                 self._check_for_azure_auth_issues(health_data)
-                return health_data
+                return health_data  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             # Last resort - check if server is responding at all
             try:
@@ -470,10 +470,10 @@ class ServiceClient:
             if isinstance(data, dict):
                 # Standard format with 'items' field
                 if "items" in data:
-                    return data["items"]
+                    return data["items"]  # type: ignore[no-any-return]
                 # Legacy format with 'jobs' field
                 elif "jobs" in data:
-                    return data["jobs"]
+                    return data["jobs"]  # type: ignore[no-any-return]
                 # Single job format (check if it has job_id)
                 elif "job_id" in data:
                     # Special case for mock service
@@ -559,7 +559,7 @@ class ServiceClient:
 
             response = self.client.post(endpoint, json=data)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             raise ServiceError(f"Query execution failed: {e!s}") from e
 
@@ -580,7 +580,7 @@ class ServiceClient:
         try:
             response = self.client.post("/ask", json=data)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to ask question: {e!s}") from e
 
@@ -601,7 +601,7 @@ class ServiceClient:
         try:
             response = self.client.get("/config", params=params)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to get configuration: {e!s}") from e
 
@@ -618,7 +618,7 @@ class ServiceClient:
         try:
             response = self.client.patch("/config", json=updates)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to update configuration: {e!s}") from e
 
@@ -632,7 +632,7 @@ class ServiceClient:
         try:
             response = self.client.post("/service/start")
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to start service: {e!s}") from e
 
@@ -646,7 +646,7 @@ class ServiceClient:
         try:
             response = self.client.post("/service/stop")
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to stop service: {e!s}") from e
 
@@ -673,7 +673,7 @@ class ServiceClient:
             health_data = response.json()
             console.log("[debug] Health endpoint response:")
             console.log(health_data)
-            return health_data
+            return health_data  # type: ignore[no-any-return]
         except Exception as e:
             console.log(f"[error] Exception in get_service_status: {e}")
             console.log("[error] Traceback:")
@@ -813,12 +813,12 @@ class ServiceClient:
             try:
                 response = self.client.get("/v1/auth-renew", params=params)
                 response.raise_for_status()
-                return response.json()
+                return response.json()  # type: ignore[no-any-return]
             except httpx.HTTPError:
                 # Fall back to root health endpoint
                 response = self.client.get("/auth-renew", params=params)
                 response.raise_for_status()
-                return response.json()
+                return response.json()  # type: ignore[no-any-return]
         except httpx.HTTPError as e:
             # Check if the API returned a detailed error message
             error_detail = str(e)

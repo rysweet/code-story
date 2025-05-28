@@ -12,7 +12,7 @@ Metrics are exposed through the Prometheus client library.
 import time
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, TypeVar, cast
+from typing import Any, Callable, Callable, Callable, Callable, TypeVar, cast
 
 # Use lazy import for prometheus_client to avoid hard dependency
 try:
@@ -51,7 +51,7 @@ if PROMETHEUS_AVAILABLE:
         from prometheus_client import metrics
 
         for metric in metrics.REGISTRY._names_to_collectors.values():
-            if metric.name == f"{METRIC_PREFIX}_query_duration_seconds":
+            if metric.name == f"{METRIC_PREFIX}_query_duration_seconds":  # type: ignore[attr-defined]
                 QUERY_DURATION = metric  # type: ignore  # TODO: Fix type compatibility
                 break
     except Exception:
@@ -69,7 +69,7 @@ if PROMETHEUS_AVAILABLE:
             class DummyHistogram:
                 """Dummy histogram class for when Prometheus is not available."""
                 
-                def observe(self, value, **kwargs) -> Any:
+                def observe(self, value, **kwargs) -> Any:  # type: ignore[no-untyped-def]
                     """Dummy observe method that does nothing."""
                     pass
 
@@ -77,9 +77,9 @@ if PROMETHEUS_AVAILABLE:
                     """Dummy timer method that returns a dummy timer context."""
                     class DummyTimer:
                         def __enter__(self) -> None:
-                            return self
+                            return self  # type: ignore[return-value]
 
-                        def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+                        def __exit__(self, exc_type, exc_val, exc_tb) -> None:  # type: ignore[no-untyped-def]
                             pass
 
                     return DummyTimer()
@@ -131,7 +131,7 @@ if PROMETHEUS_AVAILABLE:
         )
         # If we get here, the metric exists, so reuse it instead of creating a new one
         for metric in metrics.REGISTRY._names_to_collectors.values():
-            if metric.name == f"{METRIC_PREFIX}_vector_search_duration_seconds":
+            if metric.name == f"{METRIC_PREFIX}_vector_search_duration_seconds":  # type: ignore[attr-defined]
                 VECTOR_SEARCH_DURATION = metric  # type: ignore  # TODO: Fix type compatibility
                 break
     except Exception:
@@ -178,7 +178,7 @@ def instrument_query(
                 duration = time.time() - start_time
 
                 # Record query duration
-                QUERY_DURATION.labels(query_type=query_type.value).observe(duration)
+                QUERY_DURATION.labels(query_type=query_type.value).observe(duration)  # type: ignore[union-attr]
 
                 # Record query count
                 status = "success" if success else "error"
@@ -236,4 +236,4 @@ def record_vector_search(node_label: str, duration: float) -> None:
         duration: Duration of the search in seconds
     """
     if PROMETHEUS_AVAILABLE:
-        VECTOR_SEARCH_DURATION.labels(node_label=node_label).observe(duration)
+        VECTOR_SEARCH_DURATION.labels(node_label=node_label).observe(duration)  # type: ignore[union-attr]

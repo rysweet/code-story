@@ -8,12 +8,12 @@ from typing import Any
 import structlog
 from fastapi import status
 
-from codestory_mcp.adapters.graph_service import get_graph_service
-from codestory_mcp.adapters.openai_service import get_openai_service
-from codestory_mcp.tools import register_tool
-from codestory_mcp.tools.base import BaseTool, ToolError
-from codestory_mcp.utils.metrics import get_metrics
-from codestory_mcp.utils.serializers import RelationshipSerializer
+from codestory_mcp.adapters.graph_service import get_graph_service  # type: ignore[import-untyped]
+from codestory_mcp.adapters.openai_service import get_openai_service  # type: ignore[import-untyped]
+from codestory_mcp.tools import register_tool  # type: ignore[import-untyped]
+from codestory_mcp.tools.base import BaseTool, ToolError  # type: ignore[import-untyped]
+from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
+from codestory_mcp.utils.serializers import RelationshipSerializer  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -136,10 +136,10 @@ class PathToTool(BaseTool):
                 )
 
                 # Add explanation to response
-                response["explanation"] = explanation  # type: ignore  # TODO: Fix type compatibility
+                response["explanation"] = explanation
 
             # Add metadata to response
-            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
+            response["metadata"] = {
                 "from_id": from_id,
                 "to_id": to_id,
                 "max_paths": max_paths,
@@ -154,7 +154,7 @@ class PathToTool(BaseTool):
                 path_count=len(paths),
             )
 
-            return response
+            return response  # type: ignore[no-any-return]
 
         except Exception as e:
             # Log error

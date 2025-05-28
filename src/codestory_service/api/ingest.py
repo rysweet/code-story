@@ -6,6 +6,7 @@ ingestion pipeline jobs.
 
 import contextlib
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 
@@ -36,7 +37,7 @@ router = APIRouter(prefix="/v1/ingest", tags=["ingestion"])
 async def start_ingestion(
     request: IngestionRequest,
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> IngestionStarted:
     """Start an ingestion pipeline job.
 
@@ -80,7 +81,7 @@ async def list_jobs(
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_order: str = Query("desc", description="Sort direction (asc or desc)"),
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> PaginatedIngestionJobs:
     """List ingestion jobs with optional filtering.
 
@@ -113,7 +114,7 @@ async def list_jobs(
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,  # type: ignore[union-attr]
             detail=f"Failed to list jobs: {e!s}",
         ) from e
 
@@ -127,7 +128,7 @@ async def list_jobs(
 async def get_job_status(
     job_id: str,
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> IngestionJob:
     """Get the status of an ingestion job.
 
@@ -164,7 +165,7 @@ async def get_job_status(
 async def cancel_job(
     job_id: str,
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> IngestionJob:
     """Cancel an ingestion job.
 

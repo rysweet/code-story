@@ -4,6 +4,7 @@ This module provides endpoints for reading and updating configuration settings.
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -29,7 +30,7 @@ def get_config(
         False, description="Whether to include sensitive values (requires admin role)"
     ),
     config_service: ConfigService = Depends(get_config_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> ConfigDump:
     """Get the current configuration.
 
@@ -80,7 +81,7 @@ def get_config(
 async def update_config(
     patch: ConfigPatch,
     config_service: ConfigService = Depends(get_config_service),
-    user: dict = Depends(require_role(["admin"])),
+    user: dict[str, Any] = Depends(require_role(["admin"])),
 ) -> ConfigDump:
     """Update configuration settings.
 
@@ -116,7 +117,7 @@ async def update_config(
 )
 def get_config_schema(
     config_service: ConfigService = Depends(get_config_service),
-    user: dict = Depends(get_current_user),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> ConfigSchema:
     """Get the JSON Schema for the configuration.
 

@@ -11,7 +11,7 @@ import logging
 import os
 import re
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
 
 from .models import DocumentationFile, DocumentType
 
@@ -82,7 +82,7 @@ class DocumentFinder:
         logger.info(f"Found {len(doc_files)} documentation files in repository")
         return doc_files
 
-    def _compile_ignore_patterns(self, patterns: list[str]) -> list[re.Pattern]:
+    def _compile_ignore_patterns(self, patterns: list[str]) -> list[re.Pattern[str]]:
         """Compile ignore patterns into regular expressions.
 
         Args:
@@ -101,7 +101,7 @@ class DocumentFinder:
                 logger.warning(f"Invalid ignore pattern: {pattern}")
         return result
 
-    def _should_ignore(self, path: str, ignore_patterns: list[re.Pattern]) -> bool:
+    def _should_ignore(self, path: str, ignore_patterns: list[re.Pattern[str]]) -> bool:
         """Check if a path should be ignored.
 
         Args:
@@ -113,7 +113,7 @@ class DocumentFinder:
         """
         return any(pattern.search(path) for pattern in ignore_patterns)
 
-    def _find_standalone_docs(self, ignore_patterns: list[re.Pattern]) -> list[DocumentationFile]:
+    def _find_standalone_docs(self, ignore_patterns: list[re.Pattern[str]]) -> list[DocumentationFile]:
         """Find standalone documentation files (Markdown, RST, etc.).
 
         Args:
@@ -187,7 +187,7 @@ class DocumentFinder:
 
         return result
 
-    def _find_code_docstrings(self, ignore_patterns: list[re.Pattern]) -> list[DocumentationFile]:
+    def _find_code_docstrings(self, ignore_patterns: list[re.Pattern[str]]) -> list[DocumentationFile]:
         """Find documentation within code files (docstrings, comments).
 
         Args:

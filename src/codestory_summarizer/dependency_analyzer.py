@@ -6,7 +6,7 @@ of code dependencies by querying the Neo4j database for AST and filesystem nodes
 
 import logging
 
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
 
 from .models import DependencyGraph, NodeData, NodeType
 

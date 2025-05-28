@@ -11,11 +11,11 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.graphdb.exceptions import (
+from codestory.graphdb.exceptions import (  # type: ignore[import-untyped]
     QueryError,
     TransactionError,
 )
-from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory.graphdb.neo4j_connector import Neo4jConnector  # type: ignore[import-untyped]
 
 from ..domain.graph import (
     CypherQuery,
@@ -436,7 +436,7 @@ class DummyNeo4jConnector:
     This allows basic service functionality without Neo4j available.
     """
 
-    def __init__(self) -> Any:
+    def __init__(self) -> Any:  # type: ignore[misc]
         """Initialize the dummy connector."""
         logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
 
@@ -466,9 +466,9 @@ class DummyNeo4jAdapter(Neo4jAdapter):
     This allows basic service functionality without Neo4j being available.
     """
 
-    def __init__(self) -> Any:
+    def __init__(self) -> Any:  # type: ignore[misc]
         """Initialize with a dummy connector."""
-        self.connector = DummyNeo4jConnector()  # type: ignore  # TODO: Fix type compatibility
+        self.connector = DummyNeo4jConnector()
 
 
 async def get_neo4j_adapter() -> Neo4jAdapter:

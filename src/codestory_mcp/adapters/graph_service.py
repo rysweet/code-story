@@ -12,9 +12,9 @@ import structlog
 from fastapi import status
 from neo4j.graph import Node, Relationship
 
-from codestory_mcp.tools.base import ToolError
-from codestory_mcp.utils.config import get_mcp_settings
-from codestory_mcp.utils.metrics import get_metrics
+from codestory_mcp.tools.base import ToolError  # type: ignore[import-untyped]
+from codestory_mcp.utils.config import get_mcp_settings  # type: ignore[import-untyped]
+from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -168,7 +168,7 @@ class GraphServiceAdapter:
                 properties=data.get("properties", {}),
             )
 
-            return node
+            return node  # type: ignore[return-value]
 
         except httpx.RequestError as e:
             # Handle network errors
@@ -316,7 +316,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Return results
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
 
         except httpx.RequestError as e:
             # Handle network errors

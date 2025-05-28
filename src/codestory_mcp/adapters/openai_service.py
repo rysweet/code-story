@@ -10,10 +10,10 @@ from typing import Any
 import structlog
 from fastapi import status
 
-from codestory.llm.client import OpenAIClient
-from codestory.llm.models import ChatCompletionRequest, ChatMessage
-from codestory_mcp.tools.base import ToolError
-from codestory_mcp.utils.metrics import get_metrics
+from codestory.llm.client import OpenAIClient  # type: ignore[import-untyped]
+from codestory.llm.models import ChatCompletionRequest, ChatMessage  # type: ignore[import-untyped]
+from codestory_mcp.tools.base import ToolError  # type: ignore[import-untyped]
+from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -105,7 +105,7 @@ class OpenAIServiceAdapter:
             duration = time.time() - start_time
             self.metrics.record_service_api_call("openai_summary", "success", duration)
 
-            return summary
+            return summary  # type: ignore[no-any-return]
 
         except Exception as e:
             # Record metrics
@@ -196,7 +196,7 @@ class OpenAIServiceAdapter:
             duration = time.time() - start_time
             self.metrics.record_service_api_call("openai_path_explanation", "success", duration)
 
-            return explanation
+            return explanation  # type: ignore[no-any-return]
 
         except Exception as e:
             # Record metrics

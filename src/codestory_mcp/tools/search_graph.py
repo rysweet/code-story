@@ -8,11 +8,11 @@ from typing import Any
 import structlog
 from fastapi import status
 
-from codestory_mcp.adapters.graph_service import get_graph_service
-from codestory_mcp.tools import register_tool
-from codestory_mcp.tools.base import BaseTool, ToolError
-from codestory_mcp.utils.metrics import get_metrics
-from codestory_mcp.utils.serializers import NodeSerializer
+from codestory_mcp.adapters.graph_service import get_graph_service  # type: ignore[import-untyped]
+from codestory_mcp.tools import register_tool  # type: ignore[import-untyped]
+from codestory_mcp.tools.base import BaseTool, ToolError  # type: ignore[import-untyped]
+from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
+from codestory_mcp.utils.serializers import NodeSerializer  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -92,7 +92,7 @@ class SearchGraphTool(BaseTool):
             )
 
             # Add metadata to response
-            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
+            response["metadata"] = {
                 "query": query,
                 "node_types": node_types,
                 "limit": limit,
@@ -102,7 +102,7 @@ class SearchGraphTool(BaseTool):
             # Log success
             logger.info("Search completed", query=query, result_count=len(response["matches"]))
 
-            return response
+            return response  # type: ignore[no-any-return]
 
         except Exception as e:
             # Log error

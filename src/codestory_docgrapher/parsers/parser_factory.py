@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 """Parser factory for creating appropriate parsers for different document types.
 
@@ -19,7 +20,7 @@ class Parser:
     All document parsers should implement this interface.
     """
 
-    def parse(self, document: DocumentationFile) -> dict:
+    def parse(self, document: DocumentationFile) -> dict[str, Any]:
         """Parse a documentation file and extract entities and relationships.
 
         Args:
@@ -40,7 +41,7 @@ class ParserFactory:
     _parsers: dict[DocumentType, type[Parser]] = {}
 
     @classmethod
-    def register(cls, doc_type: DocumentType) -> Callable:
+    def register(cls, doc_type: DocumentType) -> Callable[[type[Parser]], type[Parser]]:
         """Register a parser class for a document type.
 
         This is a decorator for registering parser classes.

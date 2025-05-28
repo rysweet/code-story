@@ -32,19 +32,19 @@ class ParallelExecutor:
         """
         self.max_concurrency = max_concurrency
         self.executor = executor or ThreadPoolExecutor(max_workers=max_concurrency)
-        self.active_tasks: dict[str, asyncio.Future] = {}
+        self.active_tasks: dict[str, asyncio.Future[tuple[str, bool]]] = {}
         self.completed_tasks: set[str] = set()
         self.failed_tasks: set[str] = set()
         self.task_queue: list[str] = []
         self.graph: DependencyGraph | None = None
-        self.processing_function: Callable | None = None
+        self.processing_function: Callable[[str, NodeData], Any] | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
 
     async def process_graph(
         self,
         graph: DependencyGraph,
         process_func: Callable[[str, NodeData], Any],
-        on_completion: Callable | None = None,
+        on_completion: Callable[[str, NodeData], None] | None = None,
     ) -> DependencyGraph:
         """Process all nodes in the dependency graph.
 
@@ -161,7 +161,7 @@ class ParallelExecutor:
             return node_id, False
 
     async def _handle_completed_task(
-        self, node_id: str, success: bool, on_completion: Callable | None = None
+        self, node_id: str, success: bool, on_completion: Callable[[str, NodeData], None] | None = None
     ) -> None:
         """Handle a completed task.
 

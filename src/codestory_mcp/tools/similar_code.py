@@ -8,10 +8,10 @@ from typing import Any
 import structlog
 from fastapi import status
 
-from codestory_mcp.adapters.openai_service import get_openai_service
-from codestory_mcp.tools import register_tool
-from codestory_mcp.tools.base import BaseTool, ToolError
-from codestory_mcp.utils.metrics import get_metrics
+from codestory_mcp.adapters.openai_service import get_openai_service  # type: ignore[import-untyped]
+from codestory_mcp.tools import register_tool  # type: ignore[import-untyped]
+from codestory_mcp.tools.base import BaseTool, ToolError  # type: ignore[import-untyped]
+from codestory_mcp.utils.metrics import get_metrics  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -77,7 +77,7 @@ class SimilarCodeTool(BaseTool):
             response = {"matches": results}
 
             # Add metadata to response
-            response["metadata"] = {  # type: ignore  # TODO: Fix type compatibility
+            response["metadata"] = {
                 "code_length": len(code),
                 "limit": limit,
                 "result_count": len(results),

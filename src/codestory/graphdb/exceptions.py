@@ -95,9 +95,9 @@ class QueryError(Neo4jError):
             **kwargs: Additional details to include
         """
         # Redact sensitive parameters like passwords
-        safe_params = None
+        safe_params: dict[Any, Any] | None = None
         if parameters:
-            safe_params: dict[Any, Any] = {}
+            safe_params = {}
             for k, v in parameters.items():
                 if any(sensitive in k.lower() for sensitive in ["password", "secret", "key"]):
                     safe_params[k] = "********"  # Redact sensitive values
