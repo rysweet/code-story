@@ -85,6 +85,235 @@ def client():
         yield client
 
 
+class TestReasoningModelSupport:
+    """Tests for reasoning model parameter adjustment logic."""
+
+    def test_is_reasoning_model(self, client):
+        """Test reasoning model detection."""
+        # Test reasoning models
+        assert client._is_reasoning_model("o1")
+        assert client._is_reasoning_model("o1-preview")
+        assert client._is_reasoning_model("o1-mini")
+        assert client._is_reasoning_model("O1")  # Case insensitive
+        assert client._is_reasoning_model("gpt-o1-preview")
+        assert client._is_reasoning_model("my-o1-deployment")
+
+        # Test non-reasoning models
+        assert not client._is_reasoning_model("gpt-4o")
+        assert not client._is_reasoning_model("gpt-4")
+        assert not client._is_reasoning_model("gpt-3.5-turbo")
+        assert not client._is_reasoning_model("text-embedding-3-small")
+        assert not client._is_reasoning_model("claude-3")
+
+    def test_adjust_params_for_reasoning_model_o1(self, client):
+        """Test parameter adjustment for o1 reasoning models."""
+        # Test with o1 model
+        original_params = {
+            "max_tokens": 100,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "other_param": "value"
+        }
+
+        adjusted_params = client._adjust_params_for_reasoning_model(original_params, "o1")
+
+        # Should convert max_tokens to max_completion_tokens
+        assert "max_completion_tokens" in adjusted_params
+        assert adjusted_params["max_completion_tokens"] == 100
+        assert "max_tokens" not in adjusted_params
+
+        # Should remove temperature
+        assert "temperature" not in adjusted_params
+
+        # Should preserve other parameters
+        assert adjusted_params["top_p"] == 0.9
+        assert adjusted_params["other_param"] == "value"
+
+    def test_adjust_params_for_reasoning_model_o1_preview(self, client):
+        """Test parameter adjustment for o1-preview model."""
+        original_params = {
+            "max_tokens": 50,
+            "temperature": 1.0,
+        }
+
+        adjusted_params = client._adjust_params_for_reasoning_model(original_params, "o1-preview")
+
+        # Should convert max_tokens to max_completion_tokens
+        assert "max_completion_tokens" in adjusted_params
+        assert adjusted_params["max_completion_tokens"] == 50
+        assert "max_tokens" not in adjusted_params
+        assert "temperature" not in adjusted_params
+
+    def test_adjust_params_for_reasoning_model_regular_model(self, client):
+        """Test parameter adjustment for regular (non-reasoning) models."""
+        original_params = {
+            "max_tokens": 100,
+            "temperature": 0.7,
+            "top_p": 0.9,
+        }
+
+        adjusted_params = client._adjust_params_for_reasoning_model(original_params, "gpt-4o")
+
+        # Should not modify parameters for regular models
+        assert adjusted_params == original_params
+        assert "max_tokens" in adjusted_params
+        assert adjusted_params["max_tokens"] == 100
+        assert "temperature" in adjusted_params
+        assert adjusted_params["temperature"] == 0.7
+        assert "max_completion_tokens" not in adjusted_params
+
+    def test_adjust_params_for_reasoning_model_no_max_tokens(self, client):
+        """Test parameter adjustment when max_tokens is not present."""
+        original_params = {
+            "temperature": 0.5,
+            "top_p": 0.8,
+        }
+
+        adjusted_params = client._adjust_params_for_reasoning_model(original_params, "o1")
+
+        # Should only remove temperature for reasoning model
+        assert "temperature" not in adjusted_params
+        assert "top_p" in adjusted_params
+        assert adjusted_params["top_p"] == 0.8
+        assert "max_completion_tokens" not in adjusted_params
+        assert "max_tokens" not in adjusted_params
+
+    def test_adjust_params_for_reasoning_model_none_max_tokens(self, client):
+        """Test parameter adjustment when max_tokens is None."""
+        original_params = {
+            "max_tokens": None,
+            "temperature": 0.3,
+        }
+
+        adjusted_params = client._adjust_params_for_reasoning_model(original_params, "o1-mini")
+
+        # Should not add max_completion_tokens if max_tokens was None
+        assert "max_tokens" not in adjusted_params
+        assert "max_completion_tokens" not in adjusted_params
+        assert "temperature" not in adjusted_params
+
+    def test_chat_with_reasoning_model_parameter_adjustment(self, client):
+        """Test that chat method properly adjusts parameters for reasoning models."""
+        with patch.object(client._sync_client.chat.completions, "create") as mock_create:
+            # Configure the mock response
+            mock_response = MagicMock()
+            mock_response.model_dump.return_value = {
+                "id": "chatcmpl-123",
+                "object": "chat.completion",
+                "created": 1616782565,
+                "model": "o1",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "Hello, how can I help you?",
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 15,
+                    "completion_tokens": 12,
+                    "total_tokens": 27,
+                },
+            }
+            mock_create.return_value = mock_response
+
+            # Create messages
+            messages = [
+                ChatMessage(role=ChatRole.USER, content="Hello"),
+            ]
+
+            # Call chat with reasoning model and parameters that should be adjusted
+            result = client.chat(
+                messages=messages,
+                model="o1",
+                max_tokens=10,
+                temperature=0.7,  # This should be removed
+            )
+
+            # Verify the result
+            assert isinstance(result, ChatCompletionResponse)
+            
+            # Verify the mock was called with adjusted parameters
+            mock_create.assert_called_once()
+            call_args = mock_create.call_args[1]
+            
+            # Should have max_completion_tokens instead of max_tokens
+            assert "max_completion_tokens" in call_args
+            assert call_args["max_completion_tokens"] == 10
+            assert "max_tokens" not in call_args
+            
+            # Should not have temperature
+            assert "temperature" not in call_args
+            
+            # Should have correct model and messages
+            assert call_args["model"] == "o1"
+            assert len(call_args["messages"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_chat_async_with_reasoning_model_parameter_adjustment(self, client):
+        """Test that chat_async method properly adjusts parameters for reasoning models."""
+        # Create a mock response for the async function
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {
+            "id": "chatcmpl-123",
+            "object": "chat.completion",
+            "created": 1616782565,
+            "model": "o1-preview",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "Async response",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+
+        # Create a proper awaitable for the async function to return
+        future = asyncio.Future()
+        future.set_result(mock_response)
+
+        # Create a patch for the async client
+        with patch.object(client._async_client.chat.completions, "create", return_value=future) as mock_create:
+            # Create messages
+            messages = [
+                ChatMessage(role=ChatRole.USER, content="Hello async"),
+            ]
+
+            # Call chat_async with reasoning model and parameters that should be adjusted
+            result = await client.chat_async(
+                messages=messages,
+                model="o1-preview",
+                max_tokens=20,
+                temperature=0.9,  # This should be removed
+            )
+
+            # Verify the result
+            assert isinstance(result, ChatCompletionResponse)
+            
+            # Verify the mock was called with adjusted parameters
+            mock_create.assert_called_once()
+            call_args = mock_create.call_args[1]
+            
+            # Should have max_completion_tokens instead of max_tokens
+            assert "max_completion_tokens" in call_args
+            assert call_args["max_completion_tokens"] == 20
+            assert "max_tokens" not in call_args
+            
+            # Should not have temperature
+            assert "temperature" not in call_args
+            
+            # Should have correct model and messages
+            assert call_args["model"] == "o1-preview"
+            assert len(call_args["messages"]) == 1
+
+
 class TestOpenAIClient:
     """Tests for the OpenAIClient class."""
 
