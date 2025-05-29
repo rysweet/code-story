@@ -8,6 +8,11 @@ import logging
 import time
 from typing import Any
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 from celery import chain
 from celery.result import AsyncResult
 
@@ -28,6 +33,8 @@ def run_step(
     job_id: str | None = None,
 ) -> dict[str, Any]:
     """Run a single pipeline step.
+
+    Implements resource throttling using ResourceTokenManager.
 
     This task calls the appropriate plugin to execute a specific pipeline step.
     It uses a task_name_map to route to the fully qualified task name for each step,
@@ -80,6 +87,36 @@ def run_step(
         "start_time": start_time,
         "task_id": self.request.id,
     }
+
+    import celery
+
+    from codestory.config.settings import get_settings
+
+    from .resource_manager import ResourceTokenManager
+
+    settings = get_settings()
+    redis_url = settings.redis.uri
+    max_tokens = getattr(settings.ingestion, "resource_max_tokens", 4)
+
+    token_manager = ResourceTokenManager(
+        redis_url=redis_url,
+        max_tokens=max_tokens,
+    )
+
+    acquired = token_manager.acquire_token()
+    if not acquired:
+        logger.error("Resource throttling: could not acquire resource token for step execution")
+        result["status"] = StepStatus.FAILED
+        result["error"] = "Resource throttling: could not acquire resource token (system busy)"
+        end_time = time.time()
+        result["end_time"] = end_time
+        result["duration"] = end_time - start_time
+        record_step_metrics(step_name, StepStatus.FAILED, end_time - start_time)
+        return result
+
+    # Extract retry/back-off config
+    max_retries = int(step_config.get("max_retries", 3))
+    back_off_seconds = int(step_config.get("back_off_seconds", 10))
 
     try:
         # This task doesn't directly run the step - instead it dispatches
@@ -149,6 +186,18 @@ def run_step(
             logger.debug(f"Task {task_name} sent successfully with ID: {step_task.id}")
         except Exception as e:
             logger.error(f"Error sending task {task_name}: {e}")
+            # Retry on transient errors (example: network, resource busy)
+            if hasattr(e, "errno") and e.errno in (11, 10060, 110):  # EAGAIN, ETIMEDOUT, ECONNREFUSED
+                if self.request.retries < max_retries:
+                    logger.warning(
+                        f"Transient error in step {step_name}, retrying "
+                        f"(attempt {self.request.retries + 1}/{max_retries}) in {back_off_seconds}s"
+                    )
+                    raise self.retry(
+                        countdown=back_off_seconds,
+                        max_retries=max_retries,
+                        exc=e,
+                    ) from e
             # Try to get more detailed error message
             raise Exception(f"Failed to send task {task_name}: {e}") from e
 
@@ -167,6 +216,46 @@ def run_step(
         while time.time() - start_poll < timeout:
             poll_counter += 1
             current_time = time.time()
+
+            # Collect resource usage
+            cpu_percent = None
+            memory_mb = None
+            if psutil:
+                try:
+                    p = psutil.Process()
+                    cpu_percent = p.cpu_percent(interval=0.0)
+                    memory_mb = p.memory_info().rss / 1024 / 1024
+                except Exception:
+                    cpu_percent = None
+                    memory_mb = None
+
+            # Emit progress update every 10 seconds or every 20 polls
+            if (current_time - last_log_time > 10 or poll_counter % 20 == 0):
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "progress": None,  # Could estimate based on step state if desired
+                        "message": f"Waiting for task {task_name} (elapsed: {current_time - start_poll:.1f}s)",
+                        "cpu_percent": cpu_percent,
+                        "memory_mb": memory_mb,
+                        "step": step_name,
+                        "retry_count": self.request.retries,
+                    },
+                )
+
+            # Check for task revocation/cancellation
+            if hasattr(self, "request") and getattr(self.request, "is_revoked", None):
+                if self.request.is_revoked():
+                    logger.warning(f"Step task {self.request.id} was revoked. Cancelling step execution.")
+                    result["status"] = StepStatus.CANCELLED
+                    result["error"] = "Step was cancelled by user"
+                    end_time = time.time()
+                    result["end_time"] = end_time
+                    result["duration"] = end_time - start_time
+                    result["retry_count"] = self.request.retries
+                    record_step_metrics(step_name, StepStatus.CANCELLED, end_time - start_time)
+                    logger.info(f"Step cancelled after {end_time - start_time:.2f} seconds")
+                    return result
 
             # Log status every 30 seconds
             if current_time - last_log_time > 30 or poll_counter % 30 == 0:
@@ -193,6 +282,18 @@ def run_step(
                         break
                     except Exception as e:
                         logger.error(f"Error getting result: {e}")
+                        # Retry on transient error in result retrieval
+                        if hasattr(e, "errno") and e.errno in (11, 10060, 110):
+                            if self.request.retries < max_retries:
+                                logger.warning(
+                                    f"Transient error retrieving result for {step_name}, retrying "
+                                    f"(attempt {self.request.retries + 1}/{max_retries}) in {back_off_seconds}s"
+                                )
+                                raise self.retry(
+                                    countdown=back_off_seconds,
+                                    max_retries=max_retries,
+                                    exc=e,
+                                ) from e
                         raise Exception(f"Error retrieving task result: {e}") from e
                 else:
                     error_info = "Unknown error"
@@ -201,11 +302,34 @@ def run_step(
                     except Exception as e:
                         error_info = f"Could not retrieve error info: {e}"
                     logger.error(f"Task failed: {error_info}")
+                    # Retry on transient error in step execution
+                    if hasattr(error_info, "errno") and error_info.errno in (11, 10060, 110):
+                        if self.request.retries < max_retries:
+                            logger.warning(
+                                f"Transient error in step {step_name}, retrying "
+                                f"(attempt {self.request.retries + 1}/{max_retries}) in {back_off_seconds}s"
+                            )
+                            raise self.retry(
+                                countdown=back_off_seconds,
+                                max_retries=max_retries,
+                                exc=error_info,
+                            )
                     raise Exception(f"Step task failed: {error_info}")
             time.sleep(1)  # Wait before checking again
 
         if step_result is None:
             logger.error(f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s")
+            # Retry on timeout if not exceeded max_retries
+            if self.request.retries < max_retries:
+                logger.warning(
+                    f"Step {step_name} timed out, retrying "
+                    f"(attempt {self.request.retries + 1}/{max_retries}) in {back_off_seconds}s"
+                )
+                raise self.retry(
+                    countdown=back_off_seconds,
+                    max_retries=max_retries,
+                    exc=TimeoutError(f"Step task timed out after {timeout} seconds"),
+                )
             raise Exception(f"Step task timed out after {timeout} seconds")
 
         # Update result with step's result
@@ -224,6 +348,8 @@ def run_step(
 
         # Mark as completed
         result["status"] = StepStatus.COMPLETED
+        result["retry_count"] = self.request.retries
+        result["last_error"] = None
 
     except Exception as e:
         # Log the error
@@ -232,6 +358,15 @@ def run_step(
         # Update result with error information
         result["status"] = StepStatus.FAILED
         result["error"] = str(e)
+        result["retry_count"] = self.request.retries
+        result["last_error"] = str(e)
+
+    finally:
+        # Always release the token if it was acquired
+        try:
+            token_manager.release_token()
+        except Exception as e:
+            logger.error(f"Error releasing resource token: {e}")
 
     # Record end time and duration
     end_time = time.time()
@@ -345,9 +480,23 @@ def orchestrate_pipeline(
         last_log_time = start_poll
         poll_counter = 0
 
+        import celery
         while time.time() - start_poll < timeout:
             poll_counter += 1
             current_time = time.time()
+
+            # Check for task revocation/cancellation
+            if hasattr(self, "request") and getattr(self.request, "is_revoked", None):
+                if self.request.is_revoked():
+                    logger.warning(f"Pipeline task {self.request.id} was revoked. Cancelling pipeline execution.")
+                    result["status"] = StepStatus.CANCELLED
+                    result["error"] = "Pipeline was cancelled by user"
+                    end_time = time.time()
+                    result["end_time"] = end_time
+                    result["duration"] = end_time - start_time
+                    record_job_metrics(StepStatus.CANCELLED)
+                    logger.info(f"Pipeline cancelled after {end_time - start_time:.2f} seconds")
+                    return result
 
             # Log status every 30 seconds or each 15 polls
             if current_time - last_log_time > 30 or poll_counter % 15 == 0:
@@ -356,6 +505,30 @@ def orchestrate_pipeline(
                     f"elapsed: {current_time - start_poll:.1f}s"
                 )
                 last_log_time = current_time
+
+                # Collect resource usage
+                cpu_percent = None
+                memory_mb = None
+                if psutil:
+                    try:
+                        p = psutil.Process()
+                        cpu_percent = p.cpu_percent(interval=0.0)
+                        memory_mb = p.memory_info().rss / 1024 / 1024
+                    except Exception:
+                        cpu_percent = None
+                        memory_mb = None
+
+                # Emit progress update
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "progress": None,  # Could estimate based on steps completed
+                        "message": f"Waiting for pipeline chain (elapsed: {current_time - start_poll:.1f}s)",
+                        "cpu_percent": cpu_percent,
+                        "memory_mb": memory_mb,
+                        "step": "pipeline",
+                    },
+                )
 
                 # Check current state
                 try:

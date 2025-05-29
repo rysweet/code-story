@@ -22,6 +22,22 @@ This specification has been split into modular components. Please refer to the i
 11. **[Infrastructure](./15-infra/infra.md)** - Deployment and infrastructure
 12. **[Documentation](./16-documentation/documentation.md)** - Project documentation
 
+## Async Task Management & Control
+
+The Code Story system supports advanced async task management for ingestion and workflow orchestration, including:
+
+- Task cancellation and termination (user-initiated, API/CLI)
+- Priority queueing and scheduling (high/low priority, delayed execution)
+- Resource management and throttling (worker concurrency, resource tags)
+- Task dependency tracking and ordering (chains, groups)
+- Real-time task monitoring and progress reporting (API/WebSocket)
+- Retry and failure recovery (configurable policies, API exposure)
+- Performance monitoring and metrics (API/Prometheus)
+
+See [Ingestion Pipeline](./06-ingestion-pipeline/ingestion-pipeline.md) and [Code Story Service](./11-code-story-service/code-story-service.md) for full details.
+
+---
+
 ## Component Dependencies
 
 ```mermaid

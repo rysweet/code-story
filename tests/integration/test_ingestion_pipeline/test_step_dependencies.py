@@ -486,3 +486,87 @@ def test_error_handling_in_dependency_chain():
     assert (
         "dependency failed: filesystem" in blarify_job["error"].lower()
     ), f"Error should mention dependency failure: {blarify_job['error']}"
+@pytest.mark.asyncio
+async def test_job_dependency_orchestration(sample_repo):
+    """
+    Integration test: Job B should not start until Job A (its dependency) completes.
+    """
+    from src.codestory_service.application.ingestion_service import IngestionService
+    from src.codestory_service.domain.ingestion import IngestionRequest, JobStatus
+
+    # Create a mock CeleryAdapter that immediately marks jobs as completed
+    class MockCeleryAdapter:
+        async def start_ingestion(self, request):
+            from src.codestory_service.domain.ingestion import IngestionStarted
+            return IngestionStarted(
+                job_id=f"job-{int(time.time() * 1000)}",
+                status=JobStatus.COMPLETED,
+                source=request.source,
+                started_at=None,
+                steps=request.steps or [],
+                message="Mock job completed",
+                eta=None,
+            )
+        async def get_job_status(self, job_id):
+            from src.codestory_service.domain.ingestion import IngestionJob
+            return IngestionJob(
+                job_id=job_id,
+                status=JobStatus.COMPLETED,
+                source="mock",
+                source_type=None,
+                branch=None,
+                progress=100.0,
+                created_at=None,
+                updated_at=None,
+                started_at=None,
+                completed_at=None,
+                duration=None,
+                steps=None,
+                current_step=None,
+                message="Mock job completed",
+                error=None,
+                result=None,
+            )
+        async def list_jobs(self, *args, **kwargs):
+            return []
+
+    service = IngestionService(MockCeleryAdapter())
+
+    # Start job A (no dependencies)
+    req_a = IngestionRequest(
+        source_type="local_path",
+        source=sample_repo,
+        steps=None,
+        dependencies=None,
+    )
+    started_a = await service.start_ingestion(req_a)
+    job_a_id = started_a.job_id
+
+    # Start job B, which depends on job A
+    req_b = IngestionRequest(
+        source_type="local_path",
+        source=sample_repo,
+        steps=None,
+        dependencies=[job_a_id],
+    )
+    started_b = await service.start_ingestion(req_b)
+    job_b_id = started_b.job_id
+
+    # Job B should be pending, not started
+    assert started_b.status == JobStatus.PENDING
+    assert "waiting for dependencies" in (started_b.message or "").lower()
+
+    # Simulate job A completion (would normally be triggered by Celery)
+    await service._check_and_trigger_dependents(job_a_id)
+
+    # Now, job B should be enqueued and run (mock adapter marks as completed)
+    # We simulate this by calling start_ingestion again for job B's request
+    # (In real system, this would be triggered by the dependency logic)
+    # For this test, we check that the dependency logic does not block forever
+    # and that job B can eventually run.
+
+    # There should be no waiting jobs left for job B
+    if service.redis:
+        waiting_key = f"codestory:ingestion:waiting:{job_b_id}"
+        waiting = await service.redis.get(waiting_key)
+        assert not waiting, "Job B should have been dequeued and started after dependency completion"

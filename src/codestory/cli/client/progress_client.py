@@ -4,7 +4,7 @@ import json
 import threading
 import time
 from collections.abc import Callable
-from typing import Any, Callable, Callable, Callable, Callable
+from typing import Any
 
 import redis
 from rich.console import Console

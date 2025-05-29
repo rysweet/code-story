@@ -54,6 +54,37 @@ class TestIngestCommands:
             repo_name = os.path.basename(os.path.abspath(temp_dir))
             expected_container_path = f"/repositories/{repo_name}"
             assert path_arg == expected_container_path
+    def test_ingest_start_with_priority(
+        self, cli_runner: CliRunner, mock_service_client: MagicMock
+    ) -> None:
+        """Test 'ingest start' command with --priority option."""
+        mock_service_client.start_ingestion.return_value = {"job_id": "test-123"}
+        mock_service_client.base_url = "http://localhost:8000/v1"
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            patch("codestory.cli.commands.ingest._show_progress"),
+            patch("codestory.cli.main.ServiceClient", return_value=mock_service_client),
+        ):
+            with (
+                patch(
+                    "codestory.cli.commands.ingest.setup_repository_mount",
+                    return_value=True,
+                ),
+                patch(
+                    "codestory.cli.commands.ingest.wait_for_service",
+                    return_value=True,
+                ),
+            ):
+                result = cli_runner.invoke(
+                    app, ["ingest", "start", temp_dir, "--priority", "high"]
+                )
+            assert result.exit_code == 0
+            assert "Starting ingestion" in result.output
+            assert "test-123" in result.output
+            mock_service_client.start_ingestion.assert_called_once()
+            # Check that priority argument was passed as "high"
+            call_args = mock_service_client.start_ingestion.call_args
+            assert call_args.kwargs.get("priority") == "high"
 
     def test_ingest_start_no_progress(
         self, cli_runner: CliRunner, mock_service_client: MagicMock

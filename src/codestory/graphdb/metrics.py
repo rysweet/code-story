@@ -12,7 +12,7 @@ Metrics are exposed through the Prometheus client library.
 import time
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Callable, Callable, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 # Use lazy import for prometheus_client to avoid hard dependency
 try:

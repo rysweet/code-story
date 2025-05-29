@@ -42,7 +42,16 @@ class IngestionSourceType(str, Enum):
 
 
 class IngestionRequest(BaseModel):
-    """Model for ingestion request payload."""
+    """Model for ingestion request payload.
+
+    Now supports dependency tracking via the `dependencies` field, which allows
+    jobs to declare prerequisite jobs or steps that must complete before execution.
+
+    Scheduling support:
+    - `eta`: Optional datetime (ISO 8601 string or Unix timestamp) at which to schedule the job.
+    - `countdown`: Optional number of seconds to delay job execution from now.
+    If both are provided, `eta` takes precedence.
+    """
 
     source_type: IngestionSourceType = Field(
         ...,
@@ -59,6 +68,11 @@ class IngestionRequest(BaseModel):
     steps: list[str] | None = Field(
         None,
         description="Specific steps to run (defaults to all configured steps)",
+    )
+    dependencies: list[str] | None = Field(
+        None,
+        description="List of job IDs or step names this job depends on. "
+                    "Job will not start until all dependencies are complete.",
     )
     config: dict[str, Any] | None = Field(
         None,
@@ -79,6 +93,18 @@ class IngestionRequest(BaseModel):
     tags: list[str] | None = Field(
         None,
         description="Tags for categorizing the ingestion job",
+    )
+    priority: str = Field(
+        "default",
+        description="Task priority: high, default, or low. Determines which Celery queue is used.",
+    )
+    eta: datetime | int | None = Field(
+        None,
+        description="Optional: schedule job to run at this datetime (ISO 8601 or Unix timestamp).",
+    )
+    countdown: int | None = Field(
+        None,
+        description="Optional: delay job execution by this many seconds from now.",
     )
 
     @field_validator("source")
@@ -147,6 +173,15 @@ class IngestionRequest(BaseModel):
 
         return v
 
+    @field_validator("priority")
+    @classmethod
+    def validate_priority(cls, v: str) -> str:
+        """Validate that the priority is one of the allowed values."""
+        allowed = {"high", "default", "low"}
+        if v not in allowed:
+            raise ValueError(f"Priority must be one of {allowed}")
+        return v
+
     @model_validator(mode="after")
     def validate_model(self) -> "IngestionRequest":
         """Validate the model as a whole.
@@ -206,6 +241,10 @@ class StepProgress(BaseModel):
     started_at: datetime | None = Field(None, description="Start time")
     completed_at: datetime | None = Field(None, description="Completion time")
     duration: float | None = Field(None, description="Duration in seconds")
+    cpu_percent: float | None = Field(None, description="CPU usage percent for the step process")
+    memory_mb: float | None = Field(None, description="Memory usage (MB) for the step process")
+    retry_count: int | None = Field(None, description="Number of retry attempts for this step")
+    last_error: str | None = Field(None, description="Last error message for this step, if any")
 
     @field_serializer("started_at", "completed_at")
     def serialize_dt(self, dt: datetime, _info: Any) -> str | None:
@@ -294,6 +333,8 @@ class JobProgressEvent(BaseModel):
     progress: float = Field(..., description="Progress percentage (0-100)")
     overall_progress: float = Field(..., description="Overall job progress")
     message: str | None = Field(None, description="Status message")
+    cpu_percent: float | None = Field(None, description="CPU usage percent for the job process")
+    memory_mb: float | None = Field(None, description="Memory usage (MB) for the job process")
     timestamp: float = Field(default_factory=time.time, description="Event timestamp")
 
 
