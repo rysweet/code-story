@@ -176,10 +176,12 @@ This is a critical requirement for project documentation and continuity. Failure
 
 Maintain a running history of all shell commands you run successfully, *except "git commit" commands* and *"git add" commands*, along with a comment explaining why you ran it, in a directory  .github/Copilot-History, in a shell history file that is unique to each session (use the datetime in the session file name). 
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
+- the file should be formatted in markdown, with commands inside of markdown code blocks, and comments explaining the purpose of each command.
 - **After updating shell history, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.
 ```
 
 </SYSTEM>
 
 Please follow all the procedures and instructions from your system prompt.
+
 
