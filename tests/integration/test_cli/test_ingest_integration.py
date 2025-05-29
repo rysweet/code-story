@@ -53,6 +53,103 @@ class TestIngestCommands:
         )
 
     @pytest.mark.integration
+    @pytest.mark.require_service
+    def test_ingest_start_with_countdown(
+        self,
+        cli_runner: CliRunner,
+        running_service: dict[str, Any],
+        test_repository: str,
+    ) -> None:
+        """Test 'ingest start' with --countdown schedules job for delayed execution."""
+        # Start ingestion with a 5-second countdown
+        result = cli_runner.invoke(
+            app, ["ingest", "start", test_repository, "--no-progress", "--countdown", "5"]
+        )
+
+        # Check result
+        assert result.exit_code == 0
+        assert "Starting ingestion" in result.output
+
+        # Extract job ID from output
+        job_id_line = next(line for line in result.output.splitlines() if "Job ID:" in line)
+        job_id = job_id_line.split("Job ID:")[1].strip()
+        assert job_id
+
+        # Immediately check status (should be pending or scheduled)
+        status_result = cli_runner.invoke(app, ["ingest", "status", job_id])
+        assert status_result.exit_code == 0
+        assert job_id in status_result.output
+        assert (
+            "pending" in status_result.output.lower()
+            or "waiting" in status_result.output.lower()
+            or "scheduled" in status_result.output.lower()
+        )
+
+        # Wait for the countdown to elapse and job to start
+        time.sleep(7)
+    @pytest.mark.integration
+    @pytest.mark.require_service
+    def test_ingest_start_with_eta(
+        self,
+        cli_runner: CliRunner,
+        running_service: dict[str, Any],
+        test_repository: str,
+    ) -> None:
+        """Test 'ingest start' with --eta schedules job for delayed execution at a specific time."""
+        from datetime import datetime, timedelta
+
+        # Schedule job to start 10 seconds from now
+        eta_time = datetime.now() + timedelta(seconds=10)
+        eta_iso = eta_time.isoformat()
+
+        result = cli_runner.invoke(
+            app, ["ingest", "start", test_repository, "--no-progress", "--eta", eta_iso]
+        )
+
+        # Check result
+        assert result.exit_code == 0
+        assert "Starting ingestion" in result.output
+
+        # Extract job ID from output
+        job_id_line = next(line for line in result.output.splitlines() if "Job ID:" in line)
+        job_id = job_id_line.split("Job ID:")[1].strip()
+        assert job_id
+
+        # Immediately check status (should be pending or scheduled)
+        status_result = cli_runner.invoke(app, ["ingest", "status", job_id])
+        assert status_result.exit_code == 0
+        assert job_id in status_result.output
+        assert (
+            "pending" in status_result.output.lower()
+            or "waiting" in status_result.output.lower()
+            or "scheduled" in status_result.output.lower()
+        )
+        # Check that eta is present in the status output (as ISO or timestamp)
+        assert "eta" in status_result.output.lower() or "scheduled" in status_result.output.lower()
+
+        # Wait for the eta to elapse and job to start
+        time.sleep(12)
+
+        # Check status again (should be running or completed)
+        status_result2 = cli_runner.invoke(app, ["ingest", "status", job_id])
+        assert status_result2.exit_code == 0
+        assert job_id in status_result2.output
+        assert (
+            "running" in status_result2.output.lower()
+            or "completed" in status_result2.output.lower()
+            or "filesystem" in status_result2.output.lower()
+        )
+
+        # Check status again (should be running or completed)
+        status_result2 = cli_runner.invoke(app, ["ingest", "status", job_id])
+        assert status_result2.exit_code == 0
+        assert job_id in status_result2.output
+        assert (
+            "running" in status_result2.output.lower()
+            or "completed" in status_result2.output.lower()
+            or "filesystem" in status_result2.output.lower()
+        )
+    @pytest.mark.integration
     def test_ingest_start_command_format(self, cli_runner: CliRunner) -> None:
         """Test that 'ingest start' uses positional arguments correctly."""
         # Test with incorrect option format

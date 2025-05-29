@@ -2,15 +2,14 @@
 
 ## Current Task
 
-- IN PROGRESS: Fix and optimize ingestion pipeline
-  - Fix issues with ingesting repositories including the code-story codebase itself
-  - Test the entire pipeline including LLM summarization
-  - Optimize performance of the ingestion steps for faster processing
-  - Ensure proper error handling and graceful degradation during ingestion
-  - Fix any identified issues with LLM connection during ingestion
-  - Address specific issues with Docker container mounting and repository access
-  - Improve diagnostics and progress tracking during ingestion
-  - Update documentation with latest ingestion pipeline features
+- IN PROGRESS: Milestone 4 – Dependency Tracking & Ordering
+  - Extend Celery to support task chains, groups, and chords for dependency declaration
+  - Accept a `dependencies` array in the ingestion API and CLI; persist in request model
+  - Update IngestionService to store dependency graph and enqueue jobs only when prerequisites complete
+  - Add dependency-aware status reporting
+  - Add/expand unit and integration tests to verify dependent tasks wait for prerequisites
+  - Update specs and documentation to describe dependency support
+  - Run all checks and tests before each commit
 
 ## Last Completed Task (May 22, 2025)
 

@@ -94,7 +94,7 @@ def _wait_for_neo4j(max_retries: int = 30, retry_delay: float = 2.0) -> None:
             return
         except Exception as e:
             if i == max_retries - 1:
-                raise RuntimeError(f"Neo4j failed to start within {max_retries * retry_delay}s: {e}")
+                raise RuntimeError(f"Neo4j failed to start within {max_retries * retry_delay}s: {e}") from e
             print(f"Waiting for Neo4j... ({i+1}/{max_retries})")
             time.sleep(retry_delay)
 
@@ -110,7 +110,7 @@ def _wait_for_redis(max_retries: int = 30, retry_delay: float = 1.0) -> None:
             return
         except Exception as e:
             if i == max_retries - 1:
-                raise RuntimeError(f"Redis failed to start within {max_retries * retry_delay}s: {e}")
+                raise RuntimeError(f"Redis failed to start within {max_retries * retry_delay}s: {e}") from e
             print(f"Waiting for Redis... ({i+1}/{max_retries})")
             time.sleep(retry_delay)
 

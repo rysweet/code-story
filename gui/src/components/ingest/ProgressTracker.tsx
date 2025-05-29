@@ -198,20 +198,32 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ jobId, onClose }) => 
         
         <Stack spacing="xs">
           <Text weight={500} size="sm">Overall Progress: {overallProgress}%</Text>
-          <Progress 
-            value={overallProgress} 
-            size="xl" 
-            radius="xl" 
+          <Progress
+            value={overallProgress}
+            size="xl"
+            radius="xl"
             color={jobStatus.status === 'failed' ? 'red' : undefined}
             striped={jobStatus.status === 'running'}
             animate={jobStatus.status === 'running'}
           />
+          {(jobStatus.cpu_percent !== undefined || jobStatus.memory_mb !== undefined) && (
+            <Text color="dimmed" size="xs" mt={2}>
+              {jobStatus.cpu_percent !== undefined && `CPU: ${jobStatus.cpu_percent.toFixed(1)}% `}
+              {jobStatus.memory_mb !== undefined && `Mem: ${jobStatus.memory_mb.toFixed(1)} MB`}
+            </Text>
+          )}
         </Stack>
         
         {activeStep && (
           <Alert color="blue" title={`Currently running: ${activeStep.name}`} icon={<IconRocket size={16} />}>
             <Text size="sm">Progress: {activeStep.progress}%</Text>
             {activeStep.message && <Text size="sm">{activeStep.message}</Text>}
+            {(activeStep.cpu_percent !== undefined || activeStep.memory_mb !== undefined) && (
+              <Text color="dimmed" size="xs" mt={2}>
+                {activeStep.cpu_percent !== undefined && `CPU: ${activeStep.cpu_percent.toFixed(1)}% `}
+                {activeStep.memory_mb !== undefined && `Mem: ${activeStep.memory_mb.toFixed(1)} MB`}
+              </Text>
+            )}
           </Alert>
         )}
         

@@ -7,6 +7,7 @@ including starting, stopping, and monitoring ingestion jobs.
 import asyncio
 import json
 import logging
+import time
 
 import redis.asyncio as redis
 from fastapi import Depends, HTTPException, WebSocket, status
@@ -178,25 +179,76 @@ class IngestionService:
         try:
             logger.info(f"Starting ingestion for source: {request.source}")
 
-            # Start the job using the Celery adapter
-            ingestion_started = await self.celery.start_ingestion(request)
+            # Initialize Redis if not already done
+            if self.redis is None:
+                await self._init_redis()
 
-            # Publish initial progress event
-            from codestory.ingestion_pipeline.step import StepStatus
+            # Dependency-aware job scheduling
+            dependencies = getattr(request, "dependencies", None)
+            job_id = None
 
-            initial_event = JobProgressEvent(
-                job_id=ingestion_started.job_id,
-                step="Initializing",
-                status=StepStatus.PENDING,
-                progress=0.0,
-                overall_progress=0.0,
-                message="Preparing to start ingestion",
-                timestamp=ingestion_started.eta if ingestion_started.eta else None,  # type: ignore[arg-type]
-            )
+            if dependencies:
+                # Store the job as waiting in Redis with its dependencies
+                job_id = f"job-{int(time.time() * 1000)}"
+                waiting_key = f"codestory:ingestion:waiting:{job_id}"
+                await self.redis.set(
+                    waiting_key,
+                    json.dumps({
+                        "request": request.model_dump(),
+                        "dependencies": dependencies,
+                        "status": "waiting"
+                    }),
+                    ex=3600 * 24
+                )
+                logger.info(f"Job {job_id} is waiting for dependencies: {dependencies}")
 
-            await self.publish_progress(ingestion_started.job_id, initial_event)
+                # Publish initial progress event
+                from codestory.ingestion_pipeline.step import StepStatus
+                initial_event = JobProgressEvent(
+                    job_id=job_id,
+                    step="WaitingForDependencies",
+                    status=StepStatus.PENDING,
+                    progress=0.0,
+                    overall_progress=0.0,
+                    message=f"Waiting for dependencies: {dependencies}",
+                    cpu_percent=None,
+                    memory_mb=None,
+                    timestamp=time.time(),
+                )
+                await self.publish_progress(job_id, initial_event)
 
-            return ingestion_started
+                # Return a placeholder IngestionStarted object
+                return IngestionStarted(
+                    job_id=job_id,
+                    status=JobStatus.PENDING,
+                    source=request.source,
+                    # started_at is optional, so omit it if not available
+                    steps=request.steps or [],
+                    message=f"Job is waiting for dependencies: {dependencies}",
+                    eta=None,
+                )
+            else:
+                # Start the job using the Celery adapter
+                ingestion_started = await self.celery.start_ingestion(request)
+
+                # Publish initial progress event
+                from codestory.ingestion_pipeline.step import StepStatus
+
+                initial_event = JobProgressEvent(
+                    job_id=ingestion_started.job_id,
+                    step="Initializing",
+                    status=StepStatus.PENDING,
+                    progress=0.0,
+                    overall_progress=0.0,
+                    message="Preparing to start ingestion",
+                    cpu_percent=None,
+                    memory_mb=None,
+                    timestamp=ingestion_started.eta if ingestion_started.eta else None,  # type: ignore[arg-type]
+                )
+
+                await self.publish_progress(ingestion_started.job_id, initial_event)
+
+                return ingestion_started
         except Exception as e:
             logger.error(f"Failed to start ingestion: {e!s}")
             if isinstance(e, HTTPException):
@@ -223,6 +275,10 @@ class IngestionService:
 
             # Get job status from the Celery adapter
             job = await self.celery.get_job_status(job_id)
+
+            # If job is completed, check for dependent jobs
+            if job.status == JobStatus.COMPLETED:
+                await self._check_and_trigger_dependents(job_id)
 
             return job
         except Exception as e:
@@ -262,6 +318,8 @@ class IngestionService:
                 progress=0.0,
                 overall_progress=job.progress,
                 message="Job was cancelled by user",
+                cpu_percent=None,
+                memory_mb=None,
                 timestamp=job.updated_at if job.updated_at else None,  # type: ignore[arg-type]
             )
 
@@ -327,16 +385,122 @@ class IngestionService:
             ) from e
 
 
+    async def get_resource_status(self) -> dict:
+        """
+        Return current resource token status for ingestion throttling.
+    
+        Plus recent job metrics (duration, CPU %, memory MB).
+        """
+        from codestory.config.settings import get_settings
+        from codestory.ingestion_pipeline.resource_manager import ResourceTokenManager
+    
+        # Token status
+        settings = get_settings()
+        redis_url = settings.redis.uri
+        max_tokens = getattr(settings.ingestion, "resource_max_tokens", 4)
+        token_manager = ResourceTokenManager(
+            redis_url=redis_url,
+            max_tokens=max_tokens,
+        )
+        token_status = token_manager.get_status()
+    
+        # Recent job metrics
+        try:
+            jobs = await self.celery.list_jobs(limit=20)
+        except Exception as e:
+            jobs = []
+            logger.error(f"Failed to fetch recent jobs for metrics: {e!s}")
+    
+        durations = []
+        cpu_percents = []
+        memory_mbs = []
+    
+        for job in jobs:
+            # Job-level metrics
+            if getattr(job, "duration", None) is not None:
+                durations.append(job.duration)
+            # Step-level metrics (cpu_percent, memory_mb, duration)
+            steps = getattr(job, "steps", None)
+            if steps and isinstance(steps, dict):
+                for step in steps.values():
+                    if getattr(step, "duration", None) is not None:
+                        durations.append(step.duration)
+                    if getattr(step, "cpu_percent", None) is not None:
+                        cpu_percents.append(step.cpu_percent)
+                    if getattr(step, "memory_mb", None) is not None:
+                        memory_mbs.append(step.memory_mb)
+    
+        def summary_stats(values):
+            if not values:
+                return {"avg": None, "min": None, "max": None}
+            return {
+                "avg": sum(values) / len(values),
+                "min": min(values),
+                "max": max(values),
+            }
+    
+        metrics_summary = {
+            "job_count": len(jobs),
+            "duration_seconds": summary_stats(durations),
+            "cpu_percent": summary_stats(cpu_percents),
+            "memory_mb": summary_stats(memory_mbs),
+        }
+    
+        return {
+            "tokens": token_status,
+            "metrics": metrics_summary,
+        }
+
+
+    async def _check_and_trigger_dependents(self, completed_job_id: str) -> None:
+        """Check for jobs waiting on this job and enqueue if all dependencies are complete."""
+        if self.redis is None:
+            await self._init_redis()
+        # Scan for all waiting jobs
+        pattern = "codestory:ingestion:waiting:*"
+        async for key in self.redis.scan_iter(match=pattern):
+            data = await self.redis.get(key)
+            if not data:
+                continue
+            try:
+                job_info = json.loads(data)
+                dependencies = job_info.get("dependencies", [])
+                if completed_job_id in dependencies:
+                    # Check if all dependencies are now complete
+                    all_complete = True
+                    for dep in dependencies:
+                        status_key = f"codestory:ingestion:latest:{dep}"
+                        dep_event = await self.redis.get(status_key)
+                        if not dep_event:
+                            all_complete = False
+                            break
+                        dep_event_data = json.loads(dep_event)
+                        dep_status = dep_event_data.get("status", None)
+                        if dep_status not in ("completed", JobStatus.COMPLETED):
+                            all_complete = False
+                            break
+                    if all_complete:
+                        # All dependencies are complete, dequeue and enqueue the job
+                        request_data = job_info["request"]
+                        # Remove from waiting
+                        await self.redis.delete(key)
+                        # Enqueue the job
+                        logger.info(f"All dependencies complete for waiting job, enqueuing: {key}")
+                        req = IngestionRequest(**request_data)
+                        await self.start_ingestion(req)
+            except Exception as e:
+                logger.error(f"Error checking/enqueuing dependent job for {completed_job_id}: {e!s}")
+
 async def get_ingestion_service(
     celery: CeleryAdapter = Depends(get_celery_adapter),
 ) -> IngestionService:
     """Factory function to create an ingestion service.
-
+    
     This is used as a FastAPI dependency.
-
+    
     Args:
         celery: Celery adapter instance
-
+    
     Returns:
         IngestionService instance
     """

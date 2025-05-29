@@ -6,11 +6,13 @@ the blarify step couldn't access Docker daemon due to missing Docker client or
 permission issues.
 """
 
-import pytest
 import subprocess
-import time
 import sys
+import time
 from pathlib import Path
+
+import pytest
+
 
 class TestDockerConnectivityFix:
     """Test suite for Docker connectivity fix validation"""

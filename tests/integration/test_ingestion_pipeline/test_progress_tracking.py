@@ -216,6 +216,13 @@ def test_step_progress_reporting(sample_repo: str, mock_step_progress: dict[str,
         assert "progress" in fs_status, "Filesystem step should report progress"
         assert "progress" in blarify_status, "Blarify step should report progress"
         assert "progress" in summarizer_status, "Summarizer step should report progress"
+        # Verify resource usage fields are present (may be None)
+        assert "cpu_percent" in fs_status, "Filesystem step should include cpu_percent"
+        assert "memory_mb" in fs_status, "Filesystem step should include memory_mb"
+        assert "cpu_percent" in blarify_status, "Blarify step should include cpu_percent"
+        assert "memory_mb" in blarify_status, "Blarify step should include memory_mb"
+        assert "cpu_percent" in summarizer_status, "Summarizer step should include cpu_percent"
+        assert "memory_mb" in summarizer_status, "Summarizer step should include memory_mb"
 
         time.sleep(0.1)  # Small delay between status checks
 

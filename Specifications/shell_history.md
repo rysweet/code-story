@@ -258,3 +258,11 @@
   5. **Set Docker socket permissions**: `chown root:docker /var/run/docker.sock && chmod 660 /var/run/docker.sock`
 - **Problem Solved**: Worker container can now access Docker daemon, preventing blarify step failures
 - **Preserved Functionality**: All existing volumes, environment variables, Celery worker, and Python environment remain intact
+## May 29, 2025 (Milestone 4 – Dependency Tracking & Ordering Start)
+- Updated Specifications/status.md to set current task to Milestone 4: Dependency Tracking & Ordering - project status update
+
+## May 29, 2025
+
+- `ruff check --fix tests/integration/test_ingestion_pipeline/test_cancellation.py` - Auto-fixed import sorting to resolve ruff linter error before running checks/tests
+
+- `poe check && poe test` - Ran all checks and tests after fixing type errors in the CLI client to validate the codebase before proceeding to the next milestone.

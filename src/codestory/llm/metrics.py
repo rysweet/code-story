@@ -8,7 +8,7 @@ import functools
 import time
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Callable, Callable, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from prometheus_client import Counter, Gauge, Histogram
 from prometheus_client.registry import REGISTRY

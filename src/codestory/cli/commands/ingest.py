@@ -4,7 +4,7 @@ import contextlib
 import os
 import subprocess
 import time
-from typing import Any
+from typing import Any, Optional, Union
 
 import click
 
@@ -436,6 +436,31 @@ def setup_repository_mount(repo_path, console=None, force_remount=False) -> None
 )
 @click.option("--debug", is_flag=True, help="Show additional debug information.")
 @click.pass_context
+@click.option(
+    "--priority",
+    type=click.Choice(["high", "default", "low"], case_sensitive=False),
+    default="default",
+    show_default=True,
+    help="Task priority: high, default, or low. Routes to the appropriate Celery queue.",
+)
+@click.option(
+    "--dependency",
+    "dependencies",
+    multiple=True,
+    help="Specify a job ID or step name this job depends on. Can be used multiple times.",
+)
+@click.option(
+    "--eta",
+    type=str,
+    default=None,
+    help="Optional: schedule job to run at this datetime (ISO 8601 or Unix timestamp).",
+)
+@click.option(
+    "--countdown",
+    type=int,
+    default=None,
+    help="Optional: delay job execution by this many seconds from now.",
+)
 def start_ingestion(
     ctx: click.Context,
     repository_path: str,
@@ -446,9 +471,16 @@ def start_ingestion(
     no_auto_mount: bool = False,
     force_remount: bool = False,
     debug: bool = False,
+    priority: str = "default",
+    dependencies: tuple[str, ...] = (),
+    eta: Optional[Union[str, int]] = None,
+    countdown: Optional[int] = None,
 ) -> None:
     """
     Start ingestion of a repository.
+
+    Optionally specify dependencies using --dependency JOB_ID or --dependency STEP_NAME.
+    The job will not start until all dependencies are complete.
 
     REPOSITORY_PATH is the path to the repository to ingest.
 
@@ -664,7 +696,36 @@ def start_ingestion(
         ingestion_path = local_path
 
     try:
-        response = client.start_ingestion(ingestion_path)
+        # Prepare scheduling fields
+        scheduling_kwargs = {}
+        if eta is not None:
+            from datetime import datetime
+            parsed_eta: object = None
+            if isinstance(eta, str):
+                try:
+                    # Try parsing as ISO 8601 string
+                    parsed_eta = datetime.fromisoformat(eta)
+                except Exception:
+                    try:
+                        # Try parsing as integer string timestamp
+                        parsed_eta = int(eta)
+                    except Exception:
+                        console.print(f"[yellow]Warning: Could not parse --eta value '{eta}'[/]")
+            elif isinstance(eta, int):
+                parsed_eta = eta
+            else:
+                console.print(f"[yellow]Warning: --eta value '{eta}' is not a recognized type[/]")
+            if parsed_eta is not None:
+                scheduling_kwargs["eta"] = parsed_eta
+        if countdown is not None:
+            scheduling_kwargs["countdown"] = countdown
+
+        response = client.start_ingestion(
+            ingestion_path,
+            priority=priority,
+            dependencies=list(dependencies) if dependencies else None,
+            **scheduling_kwargs,
+        )
         job_id = response.get("job_id")
 
         if not job_id:

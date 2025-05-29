@@ -120,7 +120,6 @@ class OpenAIAdapter:
         Raises:
             HTTPException: If connecting to OpenAI fails
         """
-
         # Log environment variables (without sensitive values)
         endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "NOT_SET")
         deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "NOT_SET")

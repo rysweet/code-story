@@ -32,7 +32,13 @@ router = APIRouter(prefix="/v1/ingest", tags=["ingestion"])
     response_model=IngestionStarted,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Start an ingestion job",
-    description="Start a new ingestion pipeline job with the specified source and options.",
+    description=(
+        "Start a new ingestion pipeline job with the specified source and options.\n\n"
+        "Scheduling support:\n"
+        "- `eta`: Optional datetime (ISO 8601 string or Unix timestamp) at which to schedule the job.\n"
+        "- `countdown`: Optional number of seconds to delay job execution from now.\n"
+        "If both are provided, `eta` takes precedence."
+    ),
 )
 async def start_ingestion(
     request: IngestionRequest,
@@ -42,7 +48,7 @@ async def start_ingestion(
     """Start an ingestion pipeline job.
 
     Args:
-        request: Details of the ingestion request
+        request: Details of the ingestion request. Supports scheduling via `eta` (datetime or timestamp) or `countdown` (seconds).
         ingestion_service: Ingestion service instance
         user: Current authenticated user
 
@@ -191,6 +197,21 @@ async def cancel_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel job: {e!s}",
         ) from e
+
+
+@router.get(
+    "/resource_status",
+    summary="Get resource usage and limits",
+    description="Get the current resource token usage and limits for ingestion throttling.",
+)
+async def get_resource_status(
+    ingestion_service: IngestionService = Depends(get_ingestion_service),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict:
+    """
+    Get the current resource token usage, limits, and recent job metrics for ingestion.
+    """
+    return await ingestion_service.get_resource_status()
 
 
 @router.websocket("/ws/status/{job_id}")

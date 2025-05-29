@@ -98,6 +98,9 @@ class IngestionSettings(BaseModel):
     max_retries: int = Field(3, description="Number of retry attempts")
     retry_backoff_factor: float = Field(2.0, description="Backoff multiplier between retries")
     concurrency: int = Field(5, description="Default concurrency for ingestion tasks")
+    resource_max_tokens: int = Field(
+        4, description="Maximum number of concurrent ingestion resource tokens (for throttling)"
+    )
     steps: dict[str, dict[str, Any]] = Field(
         default_factory=dict, description="Step-specific configuration"
     )

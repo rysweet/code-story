@@ -189,8 +189,8 @@ services:
       start_period: 120s
 
 volumes:
-  neo4j_data:
-  neo4j_logs:
-  neo4j_import:
-  neo4j_plugins:
-  redis_data:
+  codestory_neo4j_data:
+  codestory_neo4j_logs:
+  codestory_neo4j_import:
+  codestory_neo4j_plugins:
+  codestory_redis_data:

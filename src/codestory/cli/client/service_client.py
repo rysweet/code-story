@@ -323,7 +323,12 @@ class ServiceClient:
             self.console.print(json.dumps(status_data, indent=2))
         return data
 
-    def start_ingestion(self, repository_path: str) -> dict[str, Any]:
+    def start_ingestion(
+        self,
+        repository_path: str,
+        priority: str = "default",
+        dependencies: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Start an ingestion job for the given repository path.
 
@@ -331,6 +336,8 @@ class ServiceClient:
             repository_path: Path to the repository to ingest.
                 This can be either a local path or a container path.
                 For container paths, use /repositories/repo-name format.
+            priority: Task priority ("high", "default", or "low"). Routes to the appropriate Celery queue.
+            dependencies: List of job IDs or step names this job depends on. Job will not start until all dependencies are complete.
 
         Returns:
             Ingestion job data including job_id.
@@ -359,7 +366,10 @@ class ServiceClient:
             "source_type": "local_path",
             "source": abs_repository_path,
             "description": f"CLI ingestion of repository: {abs_repository_path}",
+            "priority": priority,
         }
+        if dependencies:
+            data["dependencies"] = list(dependencies)
 
         # Log important information about the repository path
         self.console.print(

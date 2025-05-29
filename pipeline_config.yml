@@ -15,20 +15,27 @@ steps:
       - ".venv/"
       - ".idea/"
       - ".vscode/"
-  
+    max_retries: 2
+    back_off_seconds: 5
+
   - name: blarify
     concurrency: 1
     docker_image: "codestory/blarify:latest"
     timeout: 300
+    max_retries: 4
+    back_off_seconds: 15
 
   - name: summarizer
     concurrency: 5
     max_tokens_per_file: 8000
     max_concurrency: 5
+    max_retries: 3
+    back_off_seconds: 10
 
   - name: documentation_grapher
     concurrency: 2
     enabled: true
+    # Uses global retry/back-off
 
 retry:
   max_retries: 3
