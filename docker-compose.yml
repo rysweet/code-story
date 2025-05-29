@@ -37,7 +37,7 @@ services:
     volumes:
       - ${CONTAINER_PREFIX:-codestory}_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -83,38 +83,20 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "cd /app && . .venv/bin/activate && (celery -A codestory.ingestion_pipeline.celery_app inspect ping || celery -A codestory.ingestion_pipeline.celery_app inspect ping -d celery@$$(hostname) || exit 1)"]
+      test: ["CMD-SHELL", "celery -A codestory.ingestion_pipeline.celery_app inspect ping || celery -A codestory.ingestion_pipeline.celery_app inspect ping -d celery@$$(hostname) || exit 1"]
       interval: 15s
       timeout: 15s
       retries: 15
       start_period: 180s
-    environment:
-      # Container network connection settings
-      - NEO4J__URI=${NEO4J__URI}
-      - NEO4J__USERNAME=${NEO4J__USERNAME}
-      - NEO4J__PASSWORD=${NEO4J__PASSWORD}
-      - NEO4J__DATABASE=${NEO4J__DATABASE}
-      # Redis connection settings (Celery broker)
-      - REDIS__URI=${REDIS__URI}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      # Azure OpenAI settings
-      - AZURE_OPENAI__ENDPOINT=${AZURE_OPENAI__ENDPOINT}
-      - AZURE_OPENAI__DEPLOYMENT_ID=${AZURE_OPENAI__DEPLOYMENT_ID}
-      - AZURE_OPENAI__API_VERSION=${AZURE_OPENAI__API_VERSION}
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      # Worker settings
-      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY}
-      - WORKER_LOGLEVEL=${WORKER_LOGLEVEL}
-      - C_FORCE_ROOT=${C_FORCE_ROOT}  # Allow running as root in container (for demo only)
       
   service:
-    image: python:3.12-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.service
     container_name: codestory-service
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
       # Mount for repositories to be ingested - modify this path for your environment
       # Default mount for all repositories
       - ${REPOSITORY_PATH:-~/repositories}:/repositories
@@ -122,32 +104,8 @@ services:
       - ${REPOSITORY_SOURCE:-$HOME/repositories}:${REPOSITORY_DEST:-/repositories}
       # Mount Azure credentials
       - ~/.azure:/root/.azure
-    working_dir: /app
-    command: >
-      bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && 
-      curl -sL https://aka.ms/InstallAzureCLIDeb | bash &&
-      # Create a non-root user
-      adduser --disabled-password --gecos '' appuser &&
-      chown -R appuser:appuser /app &&
-      mkdir -p /home/appuser/.local/bin &&
-      mkdir -p /home/appuser/.azure &&
-      cp -r /root/.azure/* /home/appuser/.azure/ || true &&
-      chown -R appuser:appuser /home/appuser &&
-      # Ensure container config exists
-      cd /app && bash /app/scripts/setup_container_config.sh &&
-      # Switch to the non-root user
-      su appuser -c '
-        python -m venv /app/.venv &&
-        . /app/.venv/bin/activate &&
-        pip install --upgrade pip &&
-        pip install -e . &&
-        pip install azure-identity azure-keyvault-secrets &&
-        cp /app/.codestory.container.toml /app/.codestory.toml &&
-        echo \"Patching adapters to ensure real implementations...\" &&
-        python /app/patch_adapters.py &&
-        echo \"Starting service with real adapters only...\" &&
-        python -m codestory_service.main
-      '"
+    env_file:
+      - .env
     depends_on:
       neo4j:
         condition: service_healthy
@@ -155,32 +113,6 @@ services:
         condition: service_healthy
       worker:
         condition: service_healthy
-    environment:
-      # Container network connection settings - use internal container names for networking
-      - NEO4J__URI=${NEO4J__URI}
-      - NEO4J__USERNAME=${NEO4J__USERNAME}
-      - NEO4J__PASSWORD=${NEO4J__PASSWORD}
-      - NEO4J__DATABASE=${NEO4J__DATABASE}
-      - CODESTORY_CONFIG_PATH=${CODESTORY_CONFIG_PATH}
-      # Redis connection settings
-      - REDIS__URI=${REDIS__URI}
-      - REDIS__HOST=${REDIS__HOST}
-      - REDIS__PORT=${REDIS__PORT}
-      # Celery settings
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      # Service settings - using standardized CODESTORY_SERVICE_ prefix
-      - CODESTORY_SERVICE_HOST=${CODESTORY_SERVICE_HOST}
-      - CODESTORY_SERVICE_PORT=${CODESTORY_SERVICE_PORT}
-      - CODESTORY_SERVICE_DEV_MODE=${CODESTORY_SERVICE_DEV_MODE}
-      # Force use of real adapters
-      - USE_REAL_ADAPTERS=${USE_REAL_ADAPTERS}
-      - CODESTORY_SERVICE_AUTH_ENABLED=${CODESTORY_SERVICE_AUTH_ENABLED}
-      # Azure OpenAI settings
-      - AZURE_OPENAI__ENDPOINT=${AZURE_OPENAI__ENDPOINT}
-      - AZURE_OPENAI__DEPLOYMENT_ID=${AZURE_OPENAI__DEPLOYMENT_ID}
-      - AZURE_OPENAI__API_VERSION=${AZURE_OPENAI__API_VERSION}
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health"]
       interval: 10s
