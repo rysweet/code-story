@@ -15,7 +15,7 @@ You MUST update `.github/Copilot-History/prompt_history_<datetime>.md` after EVE
 
 Requirements for maintaining prompt history:
 - Update the file IMMEDIATELY AFTER EVERY USER INTERACTION but BEFORE responding to the user
-- Use a unique file per session, named with the current datetime (e.g., `prompt_history_2025-05-29_14-30.md`)
+- Use a unique file per session, named with the current datetime and session id (e.g., `prompt_history_2025-05-29_14-30_${SESSION_ID}.md`)
 - Follow this exact format for each entry:  
   - "## Prompt N (current date)"  
     - "**Prompt**: [exact user request]"  
@@ -34,7 +34,7 @@ You MUST update `.github/Copilot-History/shell_history_<datetime>.md` after EVER
 
 Requirements for shell history:
 - Update this file IMMEDIATELY AFTER EVERY SHELL COMMAND you run successfully
-- Use a unique file per session, named with the current datetime (e.g., `shell_history_2025-05-29_14-30.md`)
+- Use a unique file per session, named with the current datetime and session id (e.g., `shell_history_2025-05-29_14-30_${SESSION_ID}.md`)
 - Include *all* shell commands *except "git commit" commands* and *"git add" commands*
 - Format each entry as a markdown code block with the command, followed by a comment explaining why you ran it
 - Group commands by date with a "## Date" header

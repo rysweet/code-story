@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  devcontainer:
+    image: mcr.microsoft.com/vscode/devcontainers/python:3.12
+    command: sleep infinity
+    volumes:
+      - ..:/workspace:cached
+      - ~/.gitconfig:/home/vscode/.gitconfig:ro
+      - ~/.ssh:/home/vscode/.ssh:ro
+      - /var/run/docker.sock:/var/run/docker-host.sock
+    environment:
+      - PYTHONPATH=/workspace
+      - DOCKER_HOST=unix:///var/run/docker-host.sock
+    working_dir: /workspace
+    user: vscode
+    
+  # Override service settings for development
+  service:
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      - PYTHONPATH=/workspace
+    working_dir: /workspace
