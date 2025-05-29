@@ -491,13 +491,13 @@ async def test_job_dependency_orchestration(sample_repo):
     """
     Integration test: Job B should not start until Job A (its dependency) completes.
     """
-    from src.codestory_service.application.ingestion_service import IngestionService
-    from src.codestory_service.domain.ingestion import IngestionRequest, JobStatus
+    from codestory_service.application.ingestion_service import IngestionService
+    from codestory_service.domain.ingestion import IngestionRequest, JobStatus
 
     # Create a mock CeleryAdapter that immediately marks jobs as completed
     class MockCeleryAdapter:
         async def start_ingestion(self, request):
-            from src.codestory_service.domain.ingestion import IngestionStarted
+            from codestory_service.domain.ingestion import IngestionStarted
             return IngestionStarted(
                 job_id=f"job-{int(time.time() * 1000)}",
                 status=JobStatus.COMPLETED,
@@ -508,7 +508,7 @@ async def test_job_dependency_orchestration(sample_repo):
                 eta=None,
             )
         async def get_job_status(self, job_id):
-            from src.codestory_service.domain.ingestion import IngestionJob
+            from codestory_service.domain.ingestion import IngestionJob
             return IngestionJob(
                 job_id=job_id,
                 status=JobStatus.COMPLETED,
