@@ -31,7 +31,7 @@ The system follows a microservices architecture with clear separation of concern
   - Provides REST and WebSocket interfaces for queries and real-time updates.
   - Handles authentication and authorization.
 - **Ingestion Pipeline** – Plugin-based workflow steps:
-  - **BlarifyStep** – Parses code into AST nodes.
+  - **BlarifyStep** – Parses code into AST nodes and binds symbols using LSP
   - **FileSystemStep** – Maps filesystem hierarchy into the graph.
   - **Summarizer** – Generates natural language summaries.
   - **DocumentationGrapher** – Attaches documentation to code nodes.
