@@ -283,3 +283,12 @@
 - `poetry run mypy --show-error-codes src tests > mypy_after_pass1.txt` - Ran MyPy after the fixer to capture the current error count and output to mypy_after_pass1.txt for tracking progress.
 
 - `wc -l mypy_after_pass1.txt` - Counted the number of MyPy errors after the first fixer pass to track progress; result: 1186 errors remain.
+
+- `git add -u` - Staged all modifications produced by the MyPy fixer for commit as part of the automated cleanup process.
+
+- `git commit -m "chore: automated mypy cleanup pass 1"` - Committed all changes produced by the MyPy fixer as the first automated cleanup pass.
+
+- `git push origin fix/mypy-cleanup` - Pushed the first automated MyPy cleanup commit to the remote branch for review in the draft PR.
+- `poetry run python fix_mypy_comprehensive.py` - Ran the comprehensive MyPy fixer script for automated type error cleanup (pass 2) as part of the iterative MyPy error elimination process.
+- `poetry run mypy --show-error-codes src tests > mypy_after_pass2.txt` - Ran MyPy after the second fixer pass to capture the current error count and output to mypy_after_pass2.txt for tracking progress.
+- `wc -l mypy_after_pass2.txt` - Counted the number of MyPy errors after the second fixer pass to track progress; result: 1,186 errors remain.

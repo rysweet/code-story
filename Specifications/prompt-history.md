@@ -193,3 +193,38 @@ Do NOT edit code manually; rely solely on the script’s automated changes for t
 - Will re-run MyPy and capture the new error count
 - Will stage, commit, and push all changes with the specified message
 - Will summarize files changed, new MyPy error count, and whether the count decreased
+## Prompt 104 (May 29, 2025)
+
+**Prompt**:  
+Context:
+• Branch `fix/mypy-cleanup` currently has 1 186 MyPy errors after automated cleanup pass 1.
+• Objective: Drive error count to zero within this same branch/PR.
+
+Scope – pass 2:
+1. Re-run the comprehensive fixer:
+   ```bash
+   poetry run python fix_mypy_comprehensive.py
+   ```
+2. Execute MyPy again:
+   ```bash
+   poetry run mypy --show-error-codes src tests > mypy_after_pass2.txt
+   ERRORS=$(wc -l < mypy_after_pass2.txt)
+   ```
+3. Stage & commit all changes:
+   ```
+   chore: automated mypy cleanup pass 2
+   ```
+4. Push to origin/fix/mypy-cleanup.
+5. In attempt_completion report:
+   • `git diff --stat origin/main..HEAD` summary  
+   • New MyPy error count ($ERRORS)  
+   • Comparison to previous 1 186 figure; indicate if further passes are needed.
+
+No manual edits; rely solely on the script. This message supersedes any conflicting general instructions.
+
+**Response**:
+- Updated prompt history to log the new user request as Prompt 104 before any code or CLI actions
+- Will run the comprehensive MyPy fixer script for pass 2 as instructed
+- Will re-run MyPy and capture the new error count to mypy_after_pass2.txt
+- Will stage, commit, and push all changes with the specified message
+- Will summarize files changed, new MyPy error count, and whether further passes are needed
