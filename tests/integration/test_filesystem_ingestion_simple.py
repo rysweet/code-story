@@ -1,13 +1,14 @@
 """Simplified filesystem ingestion integration test that runs without full service startup."""
 
-import tempfile
 import logging
+import tempfile
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
 import pytest
 
-from codestory_filesystem.step import FileSystemStep
 from codestory.config.settings import get_settings
+from codestory_filesystem.step import FileSystemStep
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -112,9 +113,6 @@ def test_main():
         # Verify test repository was created
         total_items = len(list(self.test_repo_path.rglob('*')))
         assert total_items > 10, f"Test repository should have >10 items, got {total_items}"
-        
-        # Load settings
-        settings = get_settings()
         
         # Create filesystem step parameters
         step_params = {

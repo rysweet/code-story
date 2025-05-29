@@ -23,7 +23,6 @@ from codestory.cli.main import main as cli_main
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
-
 # Configure logging for detailed test diagnostics
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -967,7 +966,7 @@ class Neo4jTestValidator:
                 validation_results["structure_valid"] = False
                 
         except Exception as e:
-            validation_results["errors"].append(f"Graph validation failed: {str(e)}")
+            validation_results["errors"].append(f"Graph validation failed: {e!s}")
             validation_results["structure_valid"] = False
             logger.error(f"Graph validation error: {e}")
             
