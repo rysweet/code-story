@@ -1,6 +1,11 @@
 # Shell Command History
 
 ## May 28, 2025
+
+- `git checkout -b filesystem-ingestion-validation` - Created new branch for filesystem ingestion validation work
+- `gh issue create --title "Validate and improve filesystem ingestion step end-to-end"` - Created GitHub issue #48 to track filesystem ingestion validation work
+
+## May 28, 2025
 - `docker compose down && docker compose up --build` - Restarted Docker containers to test Azure OpenAI health check reasoning model fix
 
 ## May 22, 2025 (Comprehensive Logging for Azure OpenAI Diagnostics)
