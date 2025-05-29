@@ -158,7 +158,7 @@ If a step of the implementation fails, try again by attempting to correct the er
 
 # Prompt History - MANDATORY REQUIREMENT
 
-IMPORTANT: You MUST maintain a running history of all user prompts with brief summaries of your responses in the file `/Specifications/prompt-history.md`.
+IMPORTANT: You MUST maintain a running history of all user prompts with brief summaries of your responses in a directory, .github/Copilot-History, in a file that is unique to each session (use the datetime in the session file name). 
 
 Requirements for maintaining prompt history:
 - Update the file AFTER EVERY USER INTERACTION before responding to the next prompt
@@ -168,17 +168,20 @@ Requirements for maintaining prompt history:
 - Use bullet points for the response summary
 - Keep summaries concise but comprehensive
 - Increment the prompt number sequentially
-- Include the current date
+- Include the current datetime in the filename with a unique session id - (e.g., `prompt_history_2023-10-01_12-${SESSIONID}.md`)
 
 This is a critical requirement for project documentation and continuity. Failure to maintain this file correctly will impact project tracking.
 
 # Shell Command history
 
-Maintain a running history of all shell commands you run successfully, *except "git commit" commands* and *"git add" commands*, along with a comment explaining why you ran it, in a file called /Specifications/shell_history.md. This file should be updated after each command.
+Maintain a running history of all shell commands you run successfully, *except "git commit" commands* and *"git add" commands*, along with a comment explaining why you ran it, in a directory  .github/Copilot-History, in a shell history file that is unique to each session (use the datetime and session id in the session file name). 
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly.
-- **After updating shell_history.md, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.
+- the file should be formatted in markdown, with commands inside of markdown code blocks, and comments explaining the purpose of each command.
+- **After updating shell history, always stage and commit it with a descriptive message.**, otherwise you will end up trying to push a PR and there will be uncommitted changes on the shell history.
 ```
+
 </SYSTEM>
 
 Please follow all the procedures and instructions from your system prompt.
+
 

@@ -254,16 +254,24 @@ class Neo4jConnector:
                         ) from e
 
             # Initialize driver
+            # Filter out custom config options that aren't valid Neo4j driver options
+            custom_options = {
+                "max_connection_pool_size",
+                "connection_timeout",
+                "skip_settings",
+                "skip_connection_check"
+            }
+            neo4j_config = {
+                k: v for k, v in config_options.items()
+                if k not in custom_options
+            }
+            
             self.driver = GraphDatabase.driver(
                 self.uri,
                 auth=(self.username, self.password),
                 max_connection_pool_size=self.max_connection_pool_size,
                 connection_timeout=self.connection_timeout,
-                **{
-                    k: v
-                    for k, v in config_options.items()
-                    if k not in ["max_connection_pool_size", "connection_timeout"]
-                },
+                **neo4j_config,
             )
 
             # For testing, we'll skip connectivity verification

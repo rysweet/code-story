@@ -6,10 +6,12 @@ of directories and files, which can be linked to AST nodes.
 
 import logging
 import os
+import pathlib
 import time
 import traceback
 from typing import Any
 
+import pathspec
 from celery import shared_task
 
 from codestory.config.settings import get_settings
@@ -22,6 +24,41 @@ logger = logging.getLogger(__name__)
 # Configure detailed logging
 DEBUG_ENABLED = True  # Set to False to disable detailed debug logs
 
+# Built-in ignore patterns for common noise files and directories
+BUILTIN_IGNORE_PATTERNS = [
+    ".git/",
+    "__pycache__/",
+    "*.pyc",
+    "*.pyo",
+    "*.log",
+    "*.tmp",
+    "node_modules/",
+    "build/",
+    "dist/",
+    ".venv/",
+    ".idea/",
+    ".vscode/",
+    ]
+    
+def get_combined_ignore_spec(
+    repository_path: str, extra_patterns: list[str] | None = None
+) -> pathspec.PathSpec:
+    """Returns a PathSpec combining built-in ignore patterns, .gitignore (if present), and any extra patterns.
+    
+    Built-in patterns are always first, then .gitignore, then extra_patterns.
+    """
+    repo_root = pathlib.Path(repository_path)
+    gitignore_path = repo_root / ".gitignore"
+    pathspec_patterns = list(BUILTIN_IGNORE_PATTERNS)
+    if gitignore_path.exists():
+        with open(gitignore_path, "r") as f:
+            gitignore_patterns = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+            pathspec_patterns.extend(gitignore_patterns)
+    if extra_patterns:
+        pathspec_patterns.extend(extra_patterns)
+    if ".git/" not in pathspec_patterns:
+        pathspec_patterns.append(".git/")
+    return pathspec.PathSpec.from_lines("gitwildmatch", pathspec_patterns)
 
 def log_debug(message: str, job_id: str | None = None) -> None:
     """Log a debug message with consistent formatting.
@@ -528,21 +565,27 @@ def process_filesystem(
     except Exception as e:
         log_error("Error listing repository contents", error=e, job_id=job_id)
 
-    # Default ignore patterns if not provided
-    if ignore_patterns is None:
-        ignore_patterns = [
-            "node_modules/",
-            ".git/",
-            "__pycache__/",
-            "*.pyc",
-            "*.pyo",
-            "*.pyd",
-            "venv/",
-            ".venv/",
-            ".idea/",
-            ".vscode/",
-        ]
-        log_info(f"Using default ignore patterns: {ignore_patterns}", job_id)
+    # Build pathspec from built-in ignore list and .gitignore (if present)
+    repo_root = pathlib.Path(repository_path)
+    gitignore_path = repo_root / ".gitignore"
+    pathspec_patterns = list(BUILTIN_IGNORE_PATTERNS)  # Start with built-in patterns
+
+    # If .gitignore exists, append its patterns (repo rules take precedence after built-in)
+    if gitignore_path.exists():
+        with open(gitignore_path, "r") as f:
+            gitignore_patterns = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+            pathspec_patterns.extend(gitignore_patterns)
+
+    # If ignore_patterns is provided, add them as well (for legacy/config compatibility)
+    if ignore_patterns:
+        pathspec_patterns.extend(ignore_patterns)
+
+    # Always ensure .git/ is ignored (should be in built-in, but double-check)
+    if ".git/" not in pathspec_patterns:
+        pathspec_patterns.append(".git/")
+
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", pathspec_patterns)
+    log_info(f"Using pathspec ignore patterns: {pathspec_patterns}", job_id)
 
     # Try multiple Neo4j connection configurations
     neo4j = None
@@ -735,39 +778,23 @@ def process_filesystem(
         for current_dir, dirs, files in os.walk(repository_path):
             dir_start_time = time.time()
             rel_path = os.path.relpath(current_dir, repository_path)
-            log_info(
-                f"Processing directory {dir_count + 1}: {rel_path} with {len(files)} files",
-                job_id,
-            )
-
-            # Check depth limit
-            if max_depth is not None:
-                if rel_path != "." and rel_path.count(os.sep) >= max_depth:
-                    log_info(f"Skipping directory due to depth limit: {rel_path}", job_id)
-                    dirs.clear()  # Don't descend further
-                    continue
-
-            # Filter directories based on ignore patterns
-            dirs_to_remove: list[Any] = []
-            for d in dirs:
-                if any(
-                    d.startswith(pat.rstrip("/")) or d == pat.rstrip("/")
-                    for pat in ignore_patterns
-                    if pat.endswith("/")
-                ):
-                    log_debug(f"Ignoring directory {d} (matched ignore pattern)", job_id)
+            # Compute rel_path for pathspec (normalize to posix)
+            rel_path_posix = pathlib.Path(rel_path).as_posix() if rel_path != "." else ""
+            # Filter directories in-place using pathspec
+            dirs_to_remove = []
+            for d in list(dirs):
+                dir_rel = os.path.normpath(os.path.join(rel_path_posix, d)).replace("\\", "/")
+                if spec.match_file(dir_rel + "/"):
+                    log_debug(f"Ignoring directory {dir_rel} (matched .gitignore/pathspec)", job_id)
                     dirs_to_remove.append(d)
-
             for d in dirs_to_remove:
                 dirs.remove(d)
-
             if dirs_to_remove:
                 log_info(
-                    f"Filtered {len(dirs_to_remove)} directories in {rel_path} "
-                    "due to ignore patterns",
+                    f"Filtered {len(dirs_to_remove)} directories in {rel_path} due to .gitignore/pathspec",
                     job_id,
                 )
-
+    
             # Create directory node
             rel_dir_path = os.path.relpath(current_dir, repository_path)
             if rel_dir_path == ".":
@@ -796,7 +823,7 @@ def process_filesystem(
                     dir_node_end = time.time()
                     dir_node_time = dir_node_end - dir_node_start
                     dir_timing_stats["dir_node_creation"] += dir_node_time
-
+    
                     if not dir_node:
                         log_error(
                             f"Failed to create directory node for {rel_dir_path}",
@@ -807,7 +834,7 @@ def process_filesystem(
                             f"Directory node created in {dir_node_time:.3f}s: {rel_dir_path}",
                             job_id,
                         )
-
+    
                     # Link to parent directory using MERGE for relationship
                     dir_linking_start = time.time()
                     parent_path = os.path.dirname(rel_dir_path)
@@ -856,22 +883,22 @@ def process_filesystem(
                         f"{rel_dir_path}",
                         job_id,
                     )
-
+    
                     dir_count += 1
-
+    
                     # Report directory progress for every directory
                     if total_dirs_estimate > 0:
                         progress_percent = min(100, (dir_count / total_dirs_estimate) * 100)
                     else:
                         progress_percent = 0
-
+    
                     if dir_count > 0:
                         avg_dir_node_time = dir_timing_stats["dir_node_creation"] / dir_count
                         avg_dir_linking_time = dir_timing_stats["dir_linking"] / dir_count
                     else:
                         avg_dir_node_time = 0
                         avg_dir_linking_time = 0
-
+    
                     # Always report directory creation
                     dir_progress_msg = (
                         f"Created directory {dir_count}/{total_dirs_estimate} "
@@ -880,7 +907,7 @@ def process_filesystem(
                         f"linking: {avg_dir_linking_time:.3f}s"
                     )
                     log_info(dir_progress_msg, job_id)
-
+    
                     # Update Celery task state
                     try:
                         self.update_state(
@@ -903,7 +930,7 @@ def process_filesystem(
                             error=e,
                             job_id=job_id,
                         )
-
+    
                 except Exception as e:
                     log_error(
                         f"Error creating directory node for {rel_dir_path}",
@@ -911,17 +938,17 @@ def process_filesystem(
                         job_id=job_id,
                     )
                     raise
-
+    
             # Track total directory processing time
             dir_processing_end = time.time()
             dir_timing_stats["dir_total"] += dir_processing_end - dir_start_time
-
+    
             # Process files in the current directory
             start_dir_time = time.time()
             log_info(f"Processing {len(files)} files in directory {rel_dir_path}", job_id)
             files_processed = 0
             files_skipped = 0
-
+    
             # Track timing for each operation type
             file_timing_stats = {
                 "file_metadata": 0.0,
@@ -929,29 +956,25 @@ def process_filesystem(
                 "linking": 0.0,
                 "total": 0.0,
             }
-
+    
             for file_idx, file in enumerate(files):
                 start_file_time = time.time()
-
-                # Skip files matching ignore patterns
-                if any(
-                    file == pat or file.endswith(pat.lstrip("*"))
-                    for pat in ignore_patterns
-                    if not pat.endswith("/")
-                ):
+                file_rel = os.path.normpath(os.path.join(rel_path_posix, file)).replace("\\", "/")
+                # Skip files matching .gitignore/pathspec
+                if spec.match_file(file_rel):
                     files_skipped += 1
                     continue
-
+    
                 # Check if extension is included
                 if include_extensions and not any(file.endswith(ext) for ext in include_extensions):
                     files_skipped += 1
                     continue
-
+    
                 # Create file node
                 file_path = os.path.join(rel_dir_path, file)
                 if rel_dir_path == ".":
                     file_path = file
-
+    
                 log_debug(f"[{file_idx + 1}/{len(files)}] Processing file: {file_path}", job_id)
                 try:
                     # Get file metadata
@@ -962,7 +985,7 @@ def process_filesystem(
                     file_extension = os.path.splitext(file)[1].lstrip(".") or None
                     metadata_end = time.time()
                     file_timing_stats["file_metadata"] += metadata_end - metadata_start
-
+    
                     # Use MERGE for file nodes to handle existing nodes
                     node_start = time.time()
                     file_properties = {
@@ -987,7 +1010,7 @@ def process_filesystem(
                     node_end = time.time()
                     node_time = node_end - node_start
                     file_timing_stats["file_node_creation"] += node_time
-
+    
                     if not file_node:
                         log_error(f"Failed to create file node for {file_path}", job_id=job_id)
                     else:
@@ -995,7 +1018,7 @@ def process_filesystem(
                             f"File node created in {node_time:.3f}s: {file_path}",
                             job_id,
                         )
-
+    
                     # Link to parent (repository or directory)
                     linking_start = time.time()
                     if rel_dir_path == ".":
@@ -1039,14 +1062,14 @@ def process_filesystem(
                         f"File relationship created in {linking_time:.3f}s: {file_path}",
                         job_id,
                     )
-
+    
                     file_count += 1
                     files_processed += 1
-
+    
                     file_end_time = time.time()
                     file_total_time = file_end_time - start_file_time
                     file_timing_stats["total"] += file_total_time
-
+    
                     # Calculate average times for reporting
                     if files_processed > 0:
                         avg_time_per_file = file_timing_stats["total"] / files_processed
@@ -1056,7 +1079,7 @@ def process_filesystem(
                         avg_time_per_file = 0
                         avg_node_time = 0
                         avg_linking_time = 0
-
+    
                     # Report progress more frequently for better visibility
                     if file_count % 10 == 0:
                         progress_msg = (
@@ -1066,7 +1089,7 @@ def process_filesystem(
                             f"(node: {avg_node_time:.3f}s, linking: {avg_linking_time:.3f}s)"
                         )
                         log_info(progress_msg, job_id)
-
+    
                         # Update Celery task state
                         try:
                             self.update_state(
@@ -1085,7 +1108,7 @@ def process_filesystem(
                             )
                         except Exception as e:
                             log_error("Error updating progress state", error=e, job_id=job_id)
-
+    
                 except Exception as e:
                     log_error(
                         f"Error creating file node for {file_path}",
@@ -1094,7 +1117,7 @@ def process_filesystem(
                     )
                     # Continue with other files
                     continue
-
+    
             # Log directory completion with timing info
             dir_end_time = time.time()
             dir_total_time = dir_end_time - start_dir_time
@@ -1103,7 +1126,7 @@ def process_filesystem(
                 f"{files_processed} files processed, {files_skipped} files skipped"
             )
             log_info(dir_summary, job_id)
-
+    
             # Log summary for this directory
             if files_processed > 0 or files_skipped > 0:
                 log_debug(

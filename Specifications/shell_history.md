@@ -1,4 +1,20 @@
 # Shell Command History
+- `docker compose ps` - Checked the status of all containers; codestory-service is up and health check is starting, others are healthy.
+
+# May 30, 2025
+
+- `uv venv .venv`  
+  Created a new Python virtual environment using uv for project setup as per updated workflow.
+- `.venv\\Scripts\\activate; uv pip install -r requirements.txt`  
+  Activated the uv virtual environment and installed all dependencies from requirements.txt using uv pip for a clean environment setup.
+
+## May 28, 2025
+
+- `git checkout -b filesystem-ingestion-validation` - Created new branch for filesystem ingestion validation work
+- `gh issue create --title "Validate and improve filesystem ingestion step end-to-end"` - Created GitHub issue #48 to track filesystem ingestion validation work
+- `git add .` - Staged all changes including new integration test file
+- `git commit -m "Add comprehensive filesystem ingestion validation test"` - Committed comprehensive integration test and documentation updates
+- `git push -u origin filesystem-ingestion-validation` - Pushed branch to remote repository for collaboration
 
 ## May 28, 2025
 - `docker compose down && docker compose up --build` - Restarted Docker containers to test Azure OpenAI health check reasoning model fix
@@ -20,89 +36,37 @@
 - `cd /Users/ryan/src/msec/code-story && bash scripts/check_ci_status.sh` - Check CI status
 - `cd /Users/ryan/src/msec/code-story && gh run view 15150025165 --log-failed` - Check failed CI logs
 
-## May 19, 2025 (OpenAI Adapter Resilience Enhancement)
-- `cd /Users/ryan/src/msec/code-story && python -m pytest -v` - Run all pytest tests in the project
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit -v` - Run only unit tests
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/test_client.py -v` - Run unit tests for the OpenAI client
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/test_metrics.py -v` - Run unit tests for the LLM metrics
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/test_backoff.py -v` - Run unit tests for the LLM backoff functionality
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/integration/test_llm/test_client_integration.py -v` - Run integration tests for the LLM client
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_codestory_service/test_infrastructure.py -v` - Run tests for the OpenAI adapter in the service
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/ -v` - Run all unit tests for the LLM module
-- `cd /Users/ryan/src/msec/code-story && git status` - Check git status
-- `cd /Users/ryan/src/msec/code-story && git add src/codestory_service/infrastructure/openai_adapter.py tests/unit/test_codestory_service/test_infrastructure.py` - Add changed files
-- `cd /Users/ryan/src/msec/code-story && python -m pytest tests/unit/test_llm/ tests/unit/test_codestory_service/test_infrastructure.py -v` - Run relevant tests
-- `cd /Users/ryan/src/msec/code-story && python -m ruff format src/codestory_service/infrastructure/openai_adapter.py` - Format the changed file
-- `cd /Users/ryan/src/msec/code-story && git push origin llm-ingestion-pipeline` - Push changes to remote
-- `cd /Users/ryan/src/msec/code-story && gh pr checks 13` - Check PR status
+## May 29, 2025
 
-## May 16, 2025 (Azure Authentication Resilience Implementation)
-- `cd /Users/ryan/src/msec/code-story && ls -la scripts/ingest_script.py` - Checking if the ingest script already exists
-- `cd /Users/ryan/src/msec/code-story && ls -la scripts/mount_repository.sh` - Checking if mount_repository.sh exists and is executable
-- `cd /Users/ryan/src/msec/code-story && ls -la ~/repositories` - Checking for available repositories or creating directory
-- `cd /Users/ryan/src/msec/code-story && docker-compose ps` - Checking the status of containers
-- `cd /Users/ryan/src/msec/code-story && chmod +x /Users/ryan/src/msec/code-story/scripts/ingest_script.py` - Making the ingest script executable
-- `cd /Users/ryan/src/msec/code-story && mkdir -p /Users/ryan/src/msec/code-story/tests/unit/test_scripts` - Creating test directory structure
-- `cd /Users/ryan/src/msec/code-story && python -m unittest tests/unit/test_scripts/test_ingest_script.py` - Testing ingest script functionality
-- `cd /Users/ryan/src/msec/code-story && docker-compose ps` - Checking final container status
+- `docker compose build service` - Built the dedicated service image to bake in dependencies and remove code bind-mount, fixing read-only filesystem errors.
+- `docker compose up -d service worker redis neo4j` - Started all required containers (service, worker, redis, neo4j) with the new service image and no code bind-mount.
+- `docker compose ps` - Checked the status of all containers to confirm they are running and healthy. Noted that codestory-service is not running; neo4j, redis, and worker are healthy.
+- `python -m pytest tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion -v -s` - Ran the comprehensive filesystem ingestion integration test. **FAILED**: Timeout waiting for CodeStory services to start; codestory-service container is not running.
+- `docker logs codestory-service --tail 200` - Captured the last 200 lines of logs from the codestory-service container to diagnose the startup failure. Revealed an ASGI app loading error: Attribute "app" not found in module "codestory_service.api.service".
+- `docker compose build service` - Rebuilt the codestory-service image after correcting the ASGI entrypoint in Dockerfile.service.
+- `docker compose up -d service` - Restarted the codestory-service container after fixing the ASGI entrypoint; confirmed it started successfully.
+- `docker compose ps` - Checked the status of all containers; codestory-service is up and health check is starting, others are healthy.
+- `python -m pytest tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion -v -s` - Ran the comprehensive filesystem ingestion integration test. **FAILED**: FileNotFoundError due to missing parent directories for .git/refs/heads/main in test setup.
+- `python -m pytest tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion -v -s` - Re-ran the comprehensive filesystem ingestion integration test. **FAILED**: Timeout (>120s) during service startup in test setup; likely subprocess or container state issue.
+- `python -m pytest tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion -v -s` - Re-ran the comprehensive filesystem ingestion integration test. **FAILED**: CLI command failed with return code 2 and no STDERR output.
+- `python -m pytest tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion -v -s` - Re-ran the comprehensive filesystem ingestion integration test. **FAILED**: Docker containers stuck in "Created" or "Exited" state; services not healthy.
 
-## May 16, 2025 (Fixing Integration Test Failures)
-- `cd /Users/ryan/src/msec/code-story && python3 scripts/check_ci_status.sh` - Trying to check CI status with Python script
-- `cd /Users/ryan/src/msec/code-story && bash scripts/check_ci_status.sh` - Checking CI status with bash script
-- `cd /Users/ryan/src/msec/code-story && gh run view 15075546551 --log-failed` - Checking detailed logs for failed CI run
-- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/tests/integration/test_ingestion_pipeline/test_filesystem_integration.py` - Examining failing test file
-- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/tests/integration/conftest.py` - Checking integration test configuration
-- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/src/codestory/ingestion_pipeline/celery_app.py` - Checking Celery app implementation
-- `cd /Users/ryan/src/msec/code-story && cat /Users/ryan/src/msec/code-story/tests/unit/conftest.py` - Examining unit test fixture setup
+- `docker compose ps` - Checked the status of all containers; output showed no running or created containers and a warning about the missing CODESTORY_CONFIG_PATH environment variable.
 
-## May 15, 2025 (Fixing Mount Verification Issues)
-- `cd /Users/ryan/src/msec/code-story && docker inspect codestory-service --format '{{json .Mounts}}'` - Inspecting actual container mounts
-- `cd /Users/ryan/src/msec/code-story && docker exec codestory-service ls -la /repositories` - Checking accessible repositories in container
-- `cd /Users/ryan/src/msec/code-story && docker-compose down` - Stopping containers for remounting
-- `cd /Users/ryan/src/msec/code-story && codestory ingest start . --auto-mount` - Testing updated CLI with auto-mount
-- `cd /Users/ryan/src/msec/code-story && python scripts/auto_mount.py . --debug --force-remount` - Testing improved auto-mount script with debugging
-- `cd /Users/ryan/src/msec/code-story && cat docker-compose.override.yml` - Checking generated override file with specific mounts
-- `cd /Users/ryan/src/msec/code-story && grep -n "REPOSITORY_PATH" docker-compose.yml` - Finding repository path references
+- `docker ps -a` - Listed all containers to check for stopped, exited, or created containers after compose up; found codestory-service and codestory-worker in "Created" state, codestory-neo4j and codestory-redis exited (137).
 
-## May 15, 2025 (Testing Auto-Mount Functionality)
-- `cd /Users/ryan/src/msec/code-story && mkdir -p tests/unit/test_cli/test_scripts` - Creating test directory structure
-- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_commands/test_auto_mount.py` - Running unit tests for auto-mount
-- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/test_scripts/test_auto_mount_script.py` - Running unit tests for auto_mount.py script
-- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/integration/test_cli/test_repository_mounting.py -k "test_auto_mount_script"` - Running integration test for auto-mount script
-- `cd /Users/ryan/src/msec/code-story && docker-compose down` - Cleaning up Docker containers after tests
+- `docker logs codestory-service --tail 200` - Attempted to collect logs from codestory-service (in "Created" state); no output, indicating the container never started.
 
-## May 15, 2025 (Full Repository Mounting Automation)
-- `cd /Users/ryan/src/msec/code-story && codestory ingest start .` - Testing ingest command with initial mount issue
-- `cd /Users/ryan/src/msec/code-story && docker ps` - Checking running containers
-- `cd /Users/ryan/src/msec/code-story && docker inspect codestory-service --format '{{json .Mounts}}'` - Checking service container mounts
-- `cd /Users/ryan/src/msec/code-story && python scripts/auto_mount.py .` - Testing new auto-mount script
-- `cd /Users/ryan/src/msec/code-story && chmod +x scripts/auto_mount.py` - Making auto-mount script executable
-- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package with new auto-mount feature
-- `cd /Users/ryan/src/msec/code-story && docker-compose down` - Stopping containers for testing
-- `cd /Users/ryan/src/msec/code-story && codestory ingest start . --auto-mount` - Testing explicit auto-mount flag
-- `cd /Users/ryan/src/msec/code-story && docker exec codestory-service ls -la /repositories` - Checking mounted repositories in container
+- `docker logs codestory-worker --tail 200` - Attempted to collect logs from codestory-worker (in "Created" state); no output, indicating the container never started.
 
-## May 15, 2025 (Repository Mounting Fix)
-- `cd /Users/ryan/src/msec/code-story && codestory ingest start .` - Testing ingest command to reproduce repository mounting issue
-- `cd /Users/ryan/src/msec/code-story && cat docker-compose.yml | grep -A2 volume` - Checking Docker volume mounts
-- `cd /Users/ryan/src/msec/code-story && cat scripts/mount_repository.sh` - Reviewing the repository mount script
-- `cd /Users/ryan/src/msec/code-story && cat src/codestory/cli/commands/ingest.py | grep -A10 start_ingestion` - Examining ingest command implementation
-- `cd /Users/ryan/src/msec/code-story && cat docs/deployment/repository_mounting.md` - Reviewing mount documentation
-- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package in development mode
-- `cd /Users/ryan/src/msec/code-story && ./scripts/mount_repository.sh . --restart` - Testing enhanced mount script with restart
-- `cd /Users/ryan/src/msec/code-story && codestory ingest start . --container` - Testing with container flag
+- `docker logs codestory-neo4j --tail 200` - Collected logs from codestory-neo4j (Exited 137); logs show normal startup and successful initialization, no explicit errors, suggesting the container was killed (likely OOM or external signal).
 
-## May 15, 2025 (Console Debug Bug Fix)
-- `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run ingest /some/path` - Testing ingest command to reproduce the bug
-- `cd /Users/ryan/src/msec/code-story && grep -r "console.debug" src/` - Finding all instances of console.debug() in the codebase
-- `cd /Users/ryan/src/msec/code-story && grep -r "Console" tests/unit` - Checking how Console is mocked in tests
-- `cd /Users/ryan/src/msec/code-story && pip install -e .` - Installing package in development mode to test fix
-- `cd /Users/ryan/src/msec/code-story && python -m pytest -xvs tests/unit/test_cli/client/test_service_client.py` - Running new unit tests
-- `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run ingest /some/path` - Testing command after fix
-- `cd /Users/ryan/src/msec/code-story && git add src/codestory/cli/client/service_client.py` - Staging the bug fix
-- `cd /Users/ryan/src/msec/code-story && git commit -m "Fix console.debug() calls in ServiceClient"` - Committing the bug fix
-- `cd /Users/ryan/src/msec/code-story && git add tests/unit/test_cli/client/__init__.py tests/unit/test_cli/client/test_service_client.py` - Staging the new tests
-- `cd /Users/ryan/src/msec/code-story && git commit -m "Add tests to catch invalid Console API usage"` - Committing new tests
+- `docker logs codestory-redis --tail 200` - Collected logs from codestory-redis (Exited 137); logs show normal startup and readiness, no explicit errors, suggesting the container was killed (likely OOM or external signal).
+## May 29, 2025
+- `docker compose up -d` - Start all services in detached mode after restoring env_file-based configuration.
+- `docker compose up -d` - Attempted to start all services; redis and neo4j are healthy, but codestory-worker exited (0) and service is not running.
+- `docker compose down` - Stopped and removed all containers to ensure a clean restart with updated .env service hostnames.
+- `docker compose up -d` - Start all services in detached mode with the updated .env using service hostnames.
 
 ## May 15, 2025 (CLI Improvements)
 - `cd /Users/ryan/src/msec/code-story && python -m codestory.cli.run invalidcommand` - Testing invalid command behavior

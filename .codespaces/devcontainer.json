@@ -1,12 +1,8 @@
 {
-  "name": "Code Story Development Environment",
+  "name": "Code Story (Codespaces)",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "remoteUser": "vscode",
-  
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
-  ],
   
   "customizations": {
     "vscode": {
@@ -29,12 +25,11 @@
         "streetsidesoftware.code-spell-checker"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "python.defaultInterpreterPath": "/workspaces/${localWorkspaceFolderBasename}/.venv/bin/python",
         "python.linting.enabled": true,
         "python.linting.flake8Enabled": true,
         "python.linting.mypyEnabled": true,
         "python.formatting.provider": "black",
-        "python.formatting.blackPath": "/workspace/.venv/bin/black",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
           "source.organizeImports": "explicit"
@@ -47,6 +42,12 @@
         },
         "terminal.integrated.defaultProfile.linux": "bash"
       }
+    },
+    "codespaces": {
+      "openFiles": [
+        "README.md",
+        ".devcontainer/README.md"
+      ]
     }
   },
   
@@ -58,13 +59,40 @@
     5173, 
     6379 
   ],
+  "portsAttributes": {
+    "7474": {
+      "label": "Neo4j HTTP",
+      "onAutoForward": "notify"
+    },
+    "7687": {
+      "label": "Neo4j Bolt",
+      "onAutoForward": "silent"
+    },
+    "8000": {
+      "label": "Code Story API",
+      "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "MCP Adapter",
+      "onAutoForward": "silent"
+    },
+    "5173": {
+      "label": "GUI Dev Server",
+      "onAutoForward": "openBrowser"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent"
+    }
+  },
   
   "postCreateCommand": "bash .devcontainer/setup.sh",
   
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest",
-      "enableNonRootDocker": "true"
+      "enableNonRootDocker": "true",
+      "moby": "true"
     },
     "ghcr.io/devcontainers/features/github-cli:1": {
       "version": "latest"
