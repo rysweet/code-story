@@ -1,67 +1,34 @@
 FROM python:3.12-slim
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential curl git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy project metadata first for layer caching
+WORKDIR /build
+COPY pyproject.toml poetry.lock* ./
+COPY README.md ./
+
+# Copy minimal source for Poetry install
+COPY src ./src
+
+# Install Poetry and project dependencies
+RUN pip install --no-cache-dir poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi --with dev
+
+# Create non-root user
+RUN useradd -m appuser
+USER appuser
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    build-essential
+# Copy source
+COPY --chown=appuser:appuser . /app
 
-# Copy the code
-COPY . /app/
+ENV PYTHONUNBUFFERED=1
 
-# Install Python dependencies
-RUN pip install -e .
+EXPOSE 8000
 
-# Create a patch to bypass OpenAI adapter checks
-RUN echo 'from unittest.mock import MagicMock\n\
-import sys\n\
-import os\n\
-import warnings\n\
-\n\
-# Find the OpenAI adapter module\n\
-openai_adapter_path = None\n\
-for path in sys.path:\n\
-    adapter_file = os.path.join(path, "src", "codestory_service", "infrastructure", "openai_adapter.py")\n\
-    if os.path.exists(adapter_file):\n\
-        openai_adapter_path = adapter_file\n\
-        break\n\
-\n\
-if not openai_adapter_path:\n\
-    warnings.warn("Could not find OpenAI adapter to patch")\n\
-    sys.exit(1)\n\
-\n\
-# Modify the get_openai_adapter function\n\
-with open(openai_adapter_path, "r") as f:\n\
-    content = f.read()\n\
-\n\
-if "def get_openai_adapter" in content:\n\
-    # Add our bypass logic\n\
-    modified_content = content.replace(\n\
-        "def get_openai_adapter(",\n\
-        "def _original_get_openai_adapter(")  # Rename the original function\n\
-    \n\
-    # Add our new bypassed function\n\
-    modified_content += """\n\n\
-def get_openai_adapter():\n\
-    \"\"\"Returns a dummy OpenAI adapter that always works\"\"\"\n\
-    from src.codestory_service.infrastructure.openai_adapter import DummyOpenAIAdapter\n\
-    print("Using DummyOpenAIAdapter for development")\n\
-    return DummyOpenAIAdapter()\n\
-"""\n\
-    \n\
-    # Write the modified file\n\
-    with open(openai_adapter_path, "w") as f:\n\
-        f.write(modified_content)\n\
-    \n\
-    print(f"Successfully patched {openai_adapter_path}")\n\
-else:\n\
-    warnings.warn("Could not find get_openai_adapter function in the OpenAI adapter module")\n\
-    sys.exit(1)\n\
-' > /app/patch_openai.py
-
-# Run the patch
-RUN python /app/patch_openai.py
-
-# Default command
-CMD ["python", "-m", "codestory_service.main"]
+# Default command runs FastAPI/uvicorn service
+CMD ["uvicorn", "codestory_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

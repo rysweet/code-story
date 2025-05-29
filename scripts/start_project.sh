@@ -92,7 +92,12 @@ print_success "Poetry is installed"
 
 # Install dependencies if needed
 print_info "Ensuring dependencies are installed with Poetry..."
-poetry install --no-interaction
+# Only install dependencies if not running inside a Docker container
+if [ ! -f /.dockerenv ]; then
+  poetry install --no-interaction
+else
+  print_info "Skipping poetry install inside Docker container."
+fi
 
 # Force sync dependencies in case pyproject.toml has been updated
 VENV_PATH=$(poetry env info -p 2>/dev/null)

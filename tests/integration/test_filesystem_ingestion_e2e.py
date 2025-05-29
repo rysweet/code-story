@@ -20,7 +20,7 @@ import pytest
 from neo4j import GraphDatabase
 
 from codestory.cli.main import main as cli_main
-from codestory.config.settings import load_settings
+from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
@@ -711,6 +711,7 @@ SMTP_PASSWORD=your_email_password
         
         # Git directory
         (self.test_repo_path / ".git/objects/abc123").write_bytes(b'\x00\x01\x02\x03' * 200)
+        (self.test_repo_path / ".git/refs/heads").mkdir(parents=True, exist_ok=True)
         (self.test_repo_path / ".git/refs/heads/main").write_text('abc123def456')
         
         # Temporary files
@@ -858,8 +859,13 @@ class Neo4jTestValidator:
     """Validator for Neo4j graph content after ingestion."""
     
     def __init__(self):
-        settings = load_settings()
-        self.connector = Neo4jConnector(settings.neo4j)
+        settings = get_settings()
+        self.connector = Neo4jConnector(
+            uri=settings.neo4j.uri,
+            username=settings.neo4j.username,
+            password=settings.neo4j.password.get_secret_value(),
+            database=settings.neo4j.database
+        )
     
     async def validate_graph_structure(self, repository_path: Path) -> Dict[str, any]:
         """Validate the graph structure matches the repository."""
@@ -1012,7 +1018,13 @@ class TestFilesystemIngestionE2E:
         self.helper = FilesystemIngestionTestHelper(self.test_repo_path)
         self.validator = Neo4jTestValidator()
         
+        # Start CodeStory services
+        await self._start_codestory_services()
+        
         yield
+        
+        # Stop services
+        await self._stop_codestory_services()
         
         # Cleanup
         try:
@@ -1020,6 +1032,187 @@ class TestFilesystemIngestionE2E:
             logger.info(f"Cleaned up test directory: {self.temp_dir}")
         except Exception as e:
             logger.warning(f"Failed to clean up test directory: {e}")
+    
+    async def _start_codestory_services(self):
+        """Start CodeStory services for testing.
+
+        Refactored to skip starting the stack if all required containers are already running and healthy.
+        """
+        import re
+
+        # Ensure Redis URI points at container before settings are loaded
+        os.environ["REDIS__URI"] = "redis://redis:6380/0"
+        os.environ["REDIS_URI"] = "redis://redis:6380/0"
+        logger.info("Checking CodeStory service container status...")
+
+        # Map service keys to both SERVICE column and container name
+        required_services = {
+            "neo4j": ["neo4j", "codestory-neo4j"],
+            "redis": ["redis", "codestory-redis"],
+            "worker": ["worker", "codestory-worker"],
+            "service": ["service", "codestory-service"],
+        }
+        healthy_services = set()
+
+        def parse_ps_output(output: str):
+            found = set()
+            for line in output.splitlines():
+                for svc, patterns in required_services.items():
+                    if svc == "service":
+                        # Accept "Up" with "(healthy)" or "(health: starting)" or "Started" for service
+                        if any(pat in line for pat in patterns) and (
+                            ("Up" in line and ("(healthy)" in line or "(health: starting)" in line))
+                            or "Started" in line
+                        ):
+                            found.add(svc)
+                    else:
+                        if any(pat in line for pat in patterns) and "Up" in line and "(healthy)" in line:
+                            found.add(svc)
+            return found
+
+        # Check if all required services are running and healthy
+        try:
+            ps_proc = subprocess.run(
+                ["docker", "compose", "ps", "--status=running"],
+                capture_output=True,
+                text=True,
+                timeout=15
+            )
+            if ps_proc.returncode == 0:
+                healthy_services = parse_ps_output(ps_proc.stdout)
+        except Exception as e:
+            logger.warning(f"Could not check docker compose status: {e}")
+
+        if healthy_services == set(required_services.keys()):
+            logger.info("All required CodeStory containers are already running and healthy. Skipping stack startup.")
+            # Still wait for readiness in case services are not fully ready
+            await self._wait_for_services_ready()
+            return
+
+        logger.info("Not all containers are healthy. Restarting stack...")
+
+        # Stop any existing services first
+        try:
+            subprocess.run(["codestory", "stop"], capture_output=True, timeout=30)
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            pass  # Ignore errors if services weren't running
+
+        # Start services
+        try:
+            result = subprocess.run(
+                ["codestory", "start"],
+                capture_output=True,
+                text=True,
+                timeout=120  # 2 minute timeout for service startup
+            )
+
+            if result.returncode != 0:
+                logger.error(f"Failed to start services: {result.stderr}")
+                # Try to start manually with docker compose
+                logger.info("Attempting manual docker compose startup...")
+                subprocess.run(
+                    ["docker", "compose", "--env-file", ".env", "up", "-d"],
+                    capture_output=True,
+                    timeout=120
+                )
+
+            # Wait for services to be ready
+            await self._wait_for_services_ready()
+
+        except subprocess.TimeoutExpired:
+            logger.error("Service startup timed out")
+            raise
+        except Exception as e:
+            logger.error(f"Error starting services: {e}")
+            raise
+    
+    async def _stop_codestory_services(self):
+        """Stop CodeStory services after testing."""
+        logger.info("Stopping CodeStory services...")
+        
+        try:
+            subprocess.run(
+                ["codestory", "stop"],
+                capture_output=True,
+                timeout=60
+            )
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            # Force stop with docker compose
+            subprocess.run(
+                ["docker", "compose", "down", "--remove-orphans"],
+                capture_output=True,
+                timeout=60
+            )
+    
+    async def _wait_for_services_ready(self, max_wait=60):
+        """Wait for all required services to be running and healthy."""
+        import re
+
+        logger.info("Waiting for all CodeStory containers to be running and healthy...")
+
+        # Map service keys to both SERVICE column and container name
+        required_services = {
+            "neo4j": ["neo4j", "codestory-neo4j"],
+            "redis": ["redis", "codestory-redis"],
+            "worker": ["worker", "codestory-worker"],
+            "service": ["service", "codestory-service"],
+        }
+
+        def parse_ps_output(output: str):
+            found = set()
+            for line in output.splitlines():
+                for svc, patterns in required_services.items():
+                    if svc == "service":
+                        # Accept "Up" with "(healthy)" or "(health: starting)" or "Started" for service
+                        if any(pat in line for pat in patterns) and (
+                            ("Up" in line and ("(healthy)" in line or "(health: starting)" in line))
+                            or "Started" in line
+                        ):
+                            found.add(svc)
+                    else:
+                        if any(pat in line for pat in patterns) and "Up" in line and "(healthy)" in line:
+                            found.add(svc)
+            return found
+
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            try:
+                ps_proc = subprocess.run(
+                    ["docker", "compose", "ps", "--status=running"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if ps_proc.returncode == 0:
+                    healthy_services = parse_ps_output(ps_proc.stdout)
+                    if healthy_services == set(required_services.keys()):
+                        logger.info("All required containers are running and healthy.")
+                        return
+            except Exception as e:
+                logger.warning(f"Error checking container health: {e}")
+
+            await asyncio.sleep(2)
+
+        # If we get here, services didn't start properly
+        docker_result = subprocess.run(
+            ["docker", "ps", "-a"],
+            capture_output=True,
+            text=True
+        )
+        logger.error(f"Services not ready after {max_wait}s. Docker status:\n{docker_result.stdout}")
+
+        # Check service logs for debugging
+        try:
+            service_logs = subprocess.run(
+                ["docker", "logs", "codestory-service"],
+                capture_output=True,
+                text=True
+            )
+            logger.error(f"Service logs:\n{service_logs.stdout}\n{service_logs.stderr}")
+        except Exception:
+            pass
+
+        raise TimeoutError(f"Services not ready after {max_wait} seconds")
     
     async def test_comprehensive_filesystem_ingestion(self):
         """Test comprehensive filesystem ingestion with realistic repository."""
@@ -1041,7 +1234,7 @@ class TestFilesystemIngestionE2E:
         
         command = [
             "codestory", "ingest", "start",
-            "--repository", str(self.test_repo_path),
+            str(self.test_repo_path),
             "--steps", "filesystem",
             "--verbose"
         ]
@@ -1156,8 +1349,8 @@ temp/
         
         # Run ingestion
         command = [
-            "codestory", "ingest", "start", 
-            "--repository", str(simple_repo),
+            "codestory", "ingest", "start",
+            str(simple_repo),
             "--steps", "filesystem"
         ]
         
@@ -1204,7 +1397,7 @@ temp/
         # Run ingestion with time limit
         command = [
             "codestory", "ingest", "start",
-            "--repository", str(large_repo),
+            str(large_repo),
             "--steps", "filesystem"
         ]
         
@@ -1258,7 +1451,7 @@ temp/
         # Run ingestion
         command = [
             "codestory", "ingest", "start",
-            "--repository", str(edge_repo),
+            str(edge_repo),
             "--steps", "filesystem"
         ]
         
