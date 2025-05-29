@@ -10,7 +10,7 @@ from codestory.config.settings import get_settings, refresh_settings
 from codestory.llm.client import OpenAIClient, create_client
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: Any) -> None:
     """Add command line options for integration tests."""
     parser.addoption(
         "--skip-openai",
@@ -27,13 +27,13 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
+def pytest_config: Anyure(config) -> None:
     """Register custom markers."""
     config.addinivalue_line("markers", "integration: mark test as an integration test")
     config.addinivalue_line("markers", "openai: mark test as requiring OpenAI API access")
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems: Any(config: Any, items) -> None:
     """Skip OpenAI tests if explicitly disabled or if they require Azure.
 
     For Azure tests, we first check if Azure credentials are available before skipping.
@@ -99,7 +99,7 @@ def openai_credentials() -> dict[str, Any]:
 
 
 @pytest.fixture
-def azure_login(openai_credentials) -> None:
+def azure_login(openai_credentials: Any) -> None:
     """Ensure Azure CLI is logged in to the correct tenant."""
     tenant_id = openai_credentials.get("tenant_id")
     subscription_id = openai_credentials.get("subscription_id")
@@ -136,7 +136,7 @@ def azure_login(openai_credentials) -> None:
 
 
 @pytest.fixture
-def client(openai_credentials, azure_login) -> OpenAIClient:
+def client(openai_credentials: Any, azure_login: Any) -> OpenAIClient:
     """Create an OpenAI client for testing."""
     try:
         # Create client from settings

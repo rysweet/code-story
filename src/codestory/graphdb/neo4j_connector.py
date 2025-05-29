@@ -298,7 +298,7 @@ class Neo4jConnector:
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:  # type: ignore[no-untyped-def]
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:  # type: ignore[no-untyped-def]
         """Exit the context manager.
 
         This method is called when exiting a 'with' block. It ensures
@@ -451,7 +451,7 @@ class Neo4jConnector:
                 cause=e,
             ) from e
 
-    def _transaction_function(self, tx, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:  # type: ignore[no-untyped-def]
+    def _transaction_function(self, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:  # type: ignore[no-untyped-def]
         """Execute a single query in a transaction.
 
         Args:

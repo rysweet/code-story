@@ -20,7 +20,7 @@ class ProgressTracker:
     summarization process and generating progress reports.
     """
 
-    def __init__(self, graph: DependencyGraph):
+    def __init__(self, graph: DependencyGraph) -> None:
         """Initialize the progress tracker.
 
         Args:

@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the MCP Adapter."""
 
 import os
@@ -15,7 +16,7 @@ from codestory_mcp.tools.summarize_node import SummarizeNodeTool
 
 
 @pytest.fixture
-def client():
+def client() -> None:
     """Create a test client for the MCP server."""
     # Set environment variables for testing
     os.environ["AUTH_ENABLED"] = "false"
@@ -54,7 +55,7 @@ def client():
     os.environ.pop("CODE_STORY_SERVICE_URL", None)
 
 
-def test_health_check(client):
+def test_health_check(client: Any) -> None:
     """Test the health check endpoint."""
     response = client.get("/v1/health")
 
@@ -62,7 +63,7 @@ def test_health_check(client):
     assert response.json() == {"status": "healthy"}
 
 
-def test_get_tools(client):
+def test_get_tools(client: Any) -> None:
     """Test getting available tools."""
     response = client.get("/v1/tools")
 
@@ -78,7 +79,7 @@ def test_get_tools(client):
     assert "similarCode" in tool_names
 
 
-def test_execute_search_graph_tool(client):
+def test_execute_search_graph_tool(client: Any) -> None:
     """Test executing the searchGraph tool."""
     # Mock the GraphServiceAdapter search method and serializer
     with (
@@ -134,7 +135,7 @@ def test_execute_search_graph_tool(client):
         service.search.assert_called_once_with(query="test query", node_types=["Class"], limit=5)
 
 
-def test_execute_summarize_node_tool(client):
+def test_execute_summarize_node_tool(client: Any) -> None:
     """Test executing the summarizeNode tool."""
     # Mock the GraphServiceAdapter and OpenAIServiceAdapter
     with (
@@ -186,7 +187,7 @@ def test_execute_summarize_node_tool(client):
         openai_service.generate_code_summary.assert_called_once()
 
 
-def test_execute_tool_with_invalid_parameters(client):
+def test_execute_tool_with_invalid_parameters(client: Any) -> None:
     """Test executing a tool with invalid parameters."""
     response = client.post(
         "/v1/tools/searchGraph",
@@ -203,7 +204,7 @@ def test_execute_tool_with_invalid_parameters(client):
         assert "Search query cannot be empty" in error_json["detail"]
 
 
-def test_execute_nonexistent_tool(client):
+def test_execute_nonexistent_tool(client: Any) -> None:
     """Test executing a non-existent tool."""
     response = client.post("/v1/tools/nonexistentTool", json={})
 

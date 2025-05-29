@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the MCP Adapter tools."""
 
 import asyncio
@@ -36,7 +37,7 @@ class TestToolsRegistry:
         assert registered is MockTool
         assert get_tool("mockTool") is MockTool
 
-    def test_get_tool_not_found(self):
+    def test_get_tool_not_found(self) -> None:
         """Test getting a non-existent tool."""
         with pytest.raises(KeyError):
             get_tool("nonexistentTool")
@@ -77,7 +78,7 @@ class TestSearchGraphTool:
     """Tests for the SearchGraphTool."""
 
     @pytest.fixture
-    def graph_service(self):
+    def graph_service(self) -> None:
         """Create a mock graph service."""
         with mock.patch("codestory_mcp.tools.search_graph.get_graph_service") as mock_get_service:
             service = mock.Mock()
@@ -85,7 +86,7 @@ class TestSearchGraphTool:
             yield service
 
     @pytest.fixture
-    def metrics(self):
+    def metrics(self) -> None:
         """Create a mock metrics object."""
         with mock.patch("codestory_mcp.tools.search_graph.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
@@ -93,11 +94,11 @@ class TestSearchGraphTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, graph_service, metrics):
+    def tool(self, graph_service: Any, metrics: Any):
         """Create a SearchGraphTool instance."""
         return SearchGraphTool()
 
-    def test_init(self, graph_service, metrics):
+    def test_init(self, graph_service: Any, metrics: Any) -> None:
         """Test initialization."""
         tool = SearchGraphTool()
 
@@ -131,10 +132,10 @@ class TestSearchGraphTool:
         mock_node.labels = ["Class"]
         mock_node.properties = {"name": "TestClass", "path": "/path/to/test.py"}
 
-        def getitem(key):
+        def getitem(key: Any):
             return mock_node.properties[key]
 
-        def contains(key):
+        def contains(key: Any):
             return key in mock_node.properties
 
         mock_node.__getitem__ = mock.Mock(side_effect=getitem)
@@ -188,7 +189,7 @@ class TestSummarizeNodeTool:
     """Tests for the SummarizeNodeTool."""
 
     @pytest.fixture
-    def graph_service(self):
+    def graph_service(self) -> None:
         """Create a mock graph service."""
         with mock.patch("codestory_mcp.tools.summarize_node.get_graph_service") as mock_get_service:
             service = mock.Mock()
@@ -196,7 +197,7 @@ class TestSummarizeNodeTool:
             yield service
 
     @pytest.fixture
-    def openai_service(self):
+    def openai_service(self) -> None:
         """Create a mock OpenAI service."""
         with mock.patch(
             "codestory_mcp.tools.summarize_node.get_openai_service"
@@ -206,7 +207,7 @@ class TestSummarizeNodeTool:
             yield service
 
     @pytest.fixture
-    def metrics(self):
+    def metrics(self) -> None:
         """Create a mock metrics object."""
         with mock.patch("codestory_mcp.tools.summarize_node.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
@@ -214,11 +215,11 @@ class TestSummarizeNodeTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, graph_service, openai_service, metrics):
+    def tool(self, graph_service: Any, openai_service: Any, metrics: Any):
         """Create a SummarizeNodeTool instance."""
         return SummarizeNodeTool()
 
-    def test_init(self, graph_service, openai_service, metrics):
+    def test_init(self, graph_service: Any, openai_service: Any, metrics: Any) -> None:
         """Test initialization."""
         tool = SummarizeNodeTool()
 
@@ -301,7 +302,7 @@ class TestPathToTool:
     """Tests for the PathToTool."""
 
     @pytest.fixture
-    def graph_service(self):
+    def graph_service(self) -> None:
         """Create a mock graph service."""
         with mock.patch("codestory_mcp.tools.path_to.get_graph_service") as mock_get_service:
             service = mock.Mock()
@@ -309,7 +310,7 @@ class TestPathToTool:
             yield service
 
     @pytest.fixture
-    def openai_service(self):
+    def openai_service(self) -> None:
         """Create a mock OpenAI service."""
         with mock.patch("codestory_mcp.tools.path_to.get_openai_service") as mock_get_service:
             service = mock.Mock()
@@ -317,7 +318,7 @@ class TestPathToTool:
             yield service
 
     @pytest.fixture
-    def metrics(self):
+    def metrics(self) -> None:
         """Create a mock metrics object."""
         with mock.patch("codestory_mcp.tools.path_to.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
@@ -325,7 +326,7 @@ class TestPathToTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, graph_service, openai_service, metrics):
+    def tool(self, graph_service: Any, openai_service: Any, metrics: Any):
         """Create a PathToTool instance."""
         return PathToTool()
 
@@ -365,10 +366,10 @@ class TestPathToTool:
         mock_node1.labels = ["Class"]
         mock_node1_props = {"name": "TestClass"}
 
-        def node1_getitem(key):
+        def node1_getitem(key: Any):
             return mock_node1_props[key]
 
-        def node1_contains(key):
+        def node1_contains(key: Any):
             return key in mock_node1_props
 
         mock_node1.__getitem__ = mock.Mock(side_effect=node1_getitem)
@@ -384,10 +385,10 @@ class TestPathToTool:
         mock_rel.end_node.id = "node-456"
         mock_rel.properties = {}
 
-        def rel_getitem(key):
+        def rel_getitem(key: Any):
             return mock_rel.properties[key]
 
-        def rel_contains(key):
+        def rel_contains(key: Any):
             return key in mock_rel.properties
 
         mock_rel.__getitem__ = mock.Mock(side_effect=rel_getitem)
@@ -400,10 +401,10 @@ class TestPathToTool:
         mock_node2.labels = ["Method"]
         mock_node2_props = {"name": "testMethod"}
 
-        def node2_getitem(key):
+        def node2_getitem(key: Any):
             return mock_node2_props[key]
 
-        def node2_contains(key):
+        def node2_contains(key: Any):
             return key in mock_node2_props
 
         mock_node2.__getitem__ = mock.Mock(side_effect=node2_getitem)
@@ -452,7 +453,7 @@ class TestSimilarCodeTool:
     """Tests for the SimilarCodeTool."""
 
     @pytest.fixture
-    def openai_service(self):
+    def openai_service(self) -> None:
         """Create a mock OpenAI service."""
         with mock.patch("codestory_mcp.tools.similar_code.get_openai_service") as mock_get_service:
             service = mock.Mock()
@@ -460,7 +461,7 @@ class TestSimilarCodeTool:
             yield service
 
     @pytest.fixture
-    def metrics(self):
+    def metrics(self) -> None:
         """Create a mock metrics object."""
         with mock.patch("codestory_mcp.tools.similar_code.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
@@ -468,7 +469,7 @@ class TestSimilarCodeTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, openai_service, metrics):
+    def tool(self, openai_service: Any, metrics: Any):
         """Create a SimilarCodeTool instance."""
         return SimilarCodeTool()
 

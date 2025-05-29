@@ -12,7 +12,7 @@ from codestory_filesystem.step import FileSystemStep
 
 @pytest.mark.integration
 @pytest.mark.celery
-def test_filesystem_task_registration():
+def test_filesystem_task_registration() -> None:
     """Test that the filesystem task is properly registered with Celery."""
     # Get the list of registered tasks
     registered_tasks = celery_app.tasks.keys()
@@ -26,7 +26,7 @@ def test_filesystem_task_registration():
 
 @pytest.mark.integration
 @pytest.mark.celery
-def test_filesystem_task_routing():
+def test_filesystem_task_routing() -> None:
     """Test that the filesystem task is routed to the correct queue."""
     # Get the routing configuration for the task
     routes = celery_app.conf.task_routes or {}
@@ -47,7 +47,7 @@ def test_filesystem_task_routing():
 
 @pytest.mark.integration
 @pytest.mark.celery
-def test_run_step_task_name_mapping():
+def test_run_step_task_name_mapping() -> None:
     """Test that the run_step task uses the correct task name mapping."""
     # Import the task function
     # Check the task_name_map in the function source code
@@ -66,7 +66,7 @@ def test_run_step_task_name_mapping():
 
 @pytest.mark.integration
 @pytest.mark.celery
-def test_step_class_task_delegation():
+def test_step_class_task_delegation() -> None:
     """Test that the FileSystemStep.run method properly delegates to the Celery task."""
     # Check the FileSystemStep.run source code
     import inspect

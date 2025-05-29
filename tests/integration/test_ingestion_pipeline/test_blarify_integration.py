@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the Blarify workflow step.
 
 These tests verify that the BlarifyStep can correctly process a repository
@@ -38,7 +39,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
 
 
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> None:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -101,7 +102,7 @@ if __name__ == "__main__":
 
 
 @pytest.fixture
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     # Determine Neo4j port based on environment
     ci_env = os.environ.get("CI") == "true"
@@ -315,7 +316,7 @@ CMD ["echo", "Ready to process code"]
 
 
 @pytest.fixture(scope="function")
-def blarify_celery_app(celery_app):
+def blarify_celery_app: Any(celery_app):
     """Provide a Celery app configured for BlarifyStep testing.
 
     This fixture depends on the celery_app fixture from conftest.py
@@ -332,7 +333,7 @@ def blarify_celery_app(celery_app):
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app):
+def test_blarify_step_run(sample_repo: Any, neo4j_connector: Any, ensure_blarify_image: Any, blarify_celery_app: Any) -> None:
     """Test that the Blarify step can process a repository and create AST nodes in Neo4j."""
     # Get the Celery app from the fixture
 
@@ -565,7 +566,7 @@ def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify_image, bl
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarify_image, blarify_celery_app):
+def test_blarify_step_stop(sample_repo: Any, neo4j_connector: Any, ensure_blarify_image: Any, blarify_celery_app: Any) -> None:
     """Test that the Blarify step can be stopped mid-process."""
     # Get the Celery app from the fixture
 

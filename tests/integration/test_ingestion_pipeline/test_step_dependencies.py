@@ -425,7 +425,7 @@ def test_error_handling_in_dependency_chain():
     }
 
     # Define the dependency check function (similar to how PipelineManager would check)
-    def check_dependencies(step_name, repo_path):
+    def check_dependencies(step_name: Any, repo_path: Any):
         # Get the dependencies for this step from the config
         dependencies = []
         if "dependencies" in manager.config and step_name in manager.config["dependencies"]:

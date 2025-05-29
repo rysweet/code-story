@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the ingestion pipeline.
 
 These tests verify that the PipelineManager can orchestrate workflow steps
@@ -217,7 +218,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.neo4j, pytest.mark.celery]
 
 
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> None:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -240,7 +241,7 @@ def sample_repo():
 
 
 @pytest.fixture
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     # Use direct connection parameters to connect to the test Neo4j instance
     connector = Neo4jConnector(
@@ -264,7 +265,7 @@ def neo4j_connector():
 
 
 @pytest.fixture
-def test_config():
+def test_config() -> None:
     """Create a test configuration file for the pipeline."""
     config_content = """
     steps:
@@ -289,7 +290,7 @@ def test_config():
 
 
 @pytest.mark.integration
-def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
+def test_pipeline_manager_run(sample_repo: Any, neo4j_connector: Any, test_config: Any):
     """Test that the pipeline manager can run a workflow."""
     # Create the pipeline manager
     manager = PipelineManager(config_path=test_config)
@@ -303,7 +304,7 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
 
     # Mock the start_job method to use our custom implementation
 
-    def mock_start_job(self, repository_path):
+    def mock_start_job(self, repository_path: Any):
         # Store job information
         self.active_jobs[test_job_id] = {
             "task_id": "mock-task-id",
@@ -358,7 +359,7 @@ def test_pipeline_manager_run(sample_repo, neo4j_connector, test_config):
 
 
 @pytest.mark.integration
-def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
+def test_pipeline_manager_stop(sample_repo: Any, neo4j_connector: Any, test_config: Any):
     """Test that the pipeline manager can stop a running job."""
     # Create the pipeline manager
     manager = PipelineManager(config_path=test_config)
@@ -370,7 +371,7 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
     test_job_id = str(uuid.uuid4())
 
     # Mock the start_job method
-    def mock_start_job(self, repository_path):
+    def mock_start_job(self, repository_path: Any):
         # Store job information with running status
         self.active_jobs[test_job_id] = {
             "task_id": "mock-task-id",
@@ -381,13 +382,13 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
         return test_job_id
 
     # Mock the stop method
-    def mock_stop(self, job_id):
+    def mock_stop(self, job_id: Any):
         # Update job status to stopped
         self.active_jobs[job_id]["status"] = StepStatus.STOPPED
         return self.active_jobs[job_id]
 
     # Mock the status method
-    def mock_status(self, job_id):
+    def mock_status(self, job_id: Any):
         # Return current job status
         return self.active_jobs[job_id]
 
@@ -417,7 +418,7 @@ def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_config):
 
 
 @pytest.mark.integration
-def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_config):
+def test_pipeline_manager_run_single_step(sample_repo: Any, neo4j_connector: Any, test_config: Any):
     """Test that the pipeline manager can run a single step."""
     # Create the pipeline manager
     manager = PipelineManager(config_path=test_config)
@@ -429,7 +430,7 @@ def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_con
     test_job_id = str(uuid.uuid4())
 
     # Mock the run_single_step method
-    def mock_run_single_step(self, repository_path, step_name, **config):
+    def mock_run_single_step(self, repository_path: Any, step_name: Any, **config):
         # Verify the step name is correct
         assert step_name == "filesystem", "Unexpected step name"
 
@@ -456,7 +457,7 @@ def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector, test_con
         return test_job_id
 
     # Mock the status method
-    def mock_status(self, job_id):
+    def mock_status(self, job_id: Any):
         # Return current job status
         return self.active_jobs[job_id]
 

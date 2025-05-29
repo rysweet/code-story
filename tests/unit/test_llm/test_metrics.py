@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for OpenAI client metrics collection."""
 
 from unittest.mock import MagicMock, call, patch
@@ -10,7 +11,7 @@ from codestory.llm.metrics import OperationType
 
 # Create mock fixture to prevent real Prometheus metrics from being used
 @pytest.fixture(autouse=True)
-def mock_all_metrics_objects():
+def mock_all_metrics_objects() -> None:
     """Mock all Prometheus metrics objects before any module imports."""
     with (
         patch("prometheus_client.Counter") as mock_counter,
@@ -60,7 +61,7 @@ def mock_all_metrics_objects():
 class TestMetricsFunctions:
     """Tests for metrics utility functions."""
 
-    def test_record_request(self, mock_all_metrics_objects):
+    def test_record_request(self, mock_all_metrics_objects: Any) -> None:
         """Test record_request function."""
         record_request = mock_all_metrics_objects["record_request"]
         request_count = mock_all_metrics_objects["REQUEST_COUNT"]
@@ -91,7 +92,7 @@ class TestMetricsFunctions:
             mock_duration_labels.assert_called_once_with(operation="chat", model="gpt-4o")
             mock_duration_labels.return_value.observe.assert_called_once_with(1.5)
 
-    def test_record_request_with_tokens(self, mock_all_metrics_objects):
+    def test_record_request_with_tokens(self, mock_all_metrics_objects: Any) -> None:
         """Test record_request function with token usage."""
         record_request = mock_all_metrics_objects["record_request"]
         request_count = mock_all_metrics_objects["REQUEST_COUNT"]
@@ -144,7 +145,7 @@ class TestMetricsFunctions:
                 any_order=True,
             )
 
-    def test_record_error(self, mock_all_metrics_objects):
+    def test_record_error(self, mock_all_metrics_objects: Any) -> None:
         """Test record_error function."""
         record_error = mock_all_metrics_objects["record_error"]
         error_count = mock_all_metrics_objects["ERROR_COUNT"]
@@ -168,7 +169,7 @@ class TestMetricsFunctions:
             )
             mock_error_labels.return_value.inc.assert_called_once()
 
-    def test_record_retry(self, mock_all_metrics_objects):
+    def test_record_retry(self, mock_all_metrics_objects: Any) -> None:
         """Test record_retry function."""
         record_retry = mock_all_metrics_objects["record_retry"]
         retry_count = mock_all_metrics_objects["RETRY_COUNT"]
@@ -188,7 +189,7 @@ class TestMetricsFunctions:
 class TestInstrumentRequestDecorator:
     """Tests for the instrument_request decorator."""
 
-    def test_instrument_request_success(self, mock_all_metrics_objects):
+    def test_instrument_request_success(self, mock_all_metrics_objects: Any) -> None:
         """Test instrument_request decorator with successful response."""
         instrument_request = mock_all_metrics_objects["instrument_request"]
         current_requests = mock_all_metrics_objects["CURRENT_REQUESTS"]
@@ -233,7 +234,7 @@ class TestInstrumentRequestDecorator:
             # Check token info was extracted
             assert kwargs["tokens"] == {"prompt": 100, "completion": 50, "total": 150}
 
-    def test_instrument_request_error(self, mock_all_metrics_objects):
+    def test_instrument_request_error(self, mock_all_metrics_objects: Any) -> None:
         """Test instrument_request decorator with an error response."""
         instrument_request = mock_all_metrics_objects["instrument_request"]
         current_requests = mock_all_metrics_objects["CURRENT_REQUESTS"]

@@ -1,3 +1,4 @@
+from typing import Any
 """
 Test Docker connectivity fix for the blarify step.
 
@@ -18,7 +19,7 @@ class TestDockerConnectivityFix:
     """Test suite for Docker connectivity fix validation"""
     
     @pytest.fixture(scope="class")
-    def worker_container(self):
+    def worker_container(self) -> None:
         """Fixture to ensure worker container is running with our Docker fix"""
         # Start base services first
         result = subprocess.run([
@@ -52,7 +53,7 @@ class TestDockerConnectivityFix:
         # Cleanup
         subprocess.run(["docker", "compose", "down"], capture_output=True)
     
-    def test_docker_socket_accessibility(self, worker_container):
+    def test_docker_socket_accessibility(self, worker_container: Any) -> None:
         """Test that Docker socket is properly mounted and accessible"""
         result = subprocess.run([
             "docker", "exec", worker_container, "ls", "-la", "/var/run/docker.sock"
@@ -61,7 +62,7 @@ class TestDockerConnectivityFix:
         assert result.returncode == 0, "Docker socket should be accessible"
         assert "docker.sock" in result.stdout, "Docker socket should exist"
     
-    def test_docker_cli_installation(self, worker_container):
+    def test_docker_cli_installation(self, worker_container: Any) -> None:
         """Test that Docker CLI is properly installed"""
         result = subprocess.run([
             "docker", "exec", worker_container, "which", "docker"
@@ -70,7 +71,7 @@ class TestDockerConnectivityFix:
         assert result.returncode == 0, "Docker CLI should be installed"
         assert "docker" in result.stdout, "Docker CLI path should be returned"
     
-    def test_docker_python_module_availability(self, worker_container):
+    def test_docker_python_module_availability(self, worker_container: Any) -> None:
         """Test that Python docker module is available in the virtual environment"""
         result = subprocess.run([
             "docker", "exec", worker_container, "/app/.venv/bin/python", "-c", 
@@ -80,7 +81,7 @@ class TestDockerConnectivityFix:
         assert result.returncode == 0, "Docker Python module should be importable"
         assert "Docker module imported successfully" in result.stdout
     
-    def test_docker_daemon_connectivity(self, worker_container):
+    def test_docker_daemon_connectivity(self, worker_container: Any) -> None:
         """Test that Docker daemon is accessible from worker container (the critical fix)"""
         result = subprocess.run([
             "docker", "exec", worker_container, "/app/.venv/bin/python", "-c", 
@@ -92,7 +93,7 @@ class TestDockerConnectivityFix:
         assert "Docker client created" in result.stdout
         assert "SUCCESS" in result.stdout
     
-    def test_docker_group_configuration(self, worker_container):
+    def test_docker_group_configuration(self, worker_container: Any) -> None:
         """Test Docker group configuration (informational - not critical)"""
         # Check if docker group exists
         result = subprocess.run([
@@ -103,7 +104,7 @@ class TestDockerConnectivityFix:
         if result.returncode == 0:
             assert "docker" in result.stdout
     
-    def test_blarify_docker_integration(self, worker_container):
+    def test_blarify_docker_integration(self, worker_container: Any) -> None:
         """Test that the blarify step's Docker integration will work"""
         # This simulates what the blarify step does
         test_code = """
@@ -137,7 +138,7 @@ except Exception as e:
         assert "BLARIFY_DOCKER_SUCCESS" in result.stdout
         assert "BLARIFY_DOCKER_FAILURE" not in result.stdout
     
-    def test_worker_health_with_docker_fix(self, worker_container):
+    def test_worker_health_with_docker_fix(self, worker_container: Any) -> None:
         """Test that worker is healthy and can access required services"""
         # Check worker health
         result = subprocess.run([
@@ -154,7 +155,7 @@ except Exception as e:
 class TestDockerConnectivityRegression:
     """Regression tests to ensure the original Docker connectivity issue is fixed"""
     
-    def test_original_issue_resolved(self):
+    def test_original_issue_resolved(self) -> None:
         """Test that the original blarify Docker connectivity issue is resolved"""
         # This test documents what was broken and verifies it's now fixed
         

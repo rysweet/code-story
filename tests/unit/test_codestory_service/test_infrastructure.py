@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the Code Story Service infrastructure adapters.
 
 This module contains tests for the infrastructure adapters used in the service.
@@ -35,7 +36,7 @@ class TestNeo4jAdapter:
         return connector
 
     @pytest.fixture
-    def adapter(self, mock_connector):
+    def adapter(self, mock_connector: Any):
         """Create a Neo4jAdapter with a mock connector."""
         return Neo4jAdapter(connector=mock_connector)
 
@@ -164,7 +165,7 @@ class TestOpenAIAdapter:
         return client
 
     @pytest.fixture
-    def adapter(self, mock_client):
+    def adapter(self, mock_client: Any):
         """Create an OpenAIAdapter with a mock client."""
         return OpenAIAdapter(client=mock_client)
 
@@ -376,7 +377,7 @@ class TestCeleryAdapter:
         return app
 
     @pytest.fixture
-    def adapter(self, mock_app):
+    def adapter(self, mock_app: Any):
         """Create a CeleryAdapter with a mock app."""
         adapter = CeleryAdapter()
         adapter.app = mock_app

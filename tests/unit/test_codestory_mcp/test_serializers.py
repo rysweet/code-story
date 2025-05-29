@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the MCP Adapter serializers."""
 
 from unittest import mock
@@ -25,14 +26,14 @@ class TestNodeSerializer:
         }
 
         # Mock dictionary-like access
-        def getitem(key):
+        def getitem(key: Any):
             if isinstance(key, int):
                 raise IndexError(key)
             if key in node.properties:
                 return node.properties[key]
             raise KeyError(key)
 
-        def contains(key):
+        def contains(key: Any):
             return key in node.properties
 
         node.__getitem__ = mock.Mock(side_effect=getitem)
@@ -42,7 +43,7 @@ class TestNodeSerializer:
 
         return node
 
-    def test_to_dict_basic(self, mock_node):
+    def test_to_dict_basic(self, mock_node: Any) -> None:
         """Test basic node serialization."""
         result = NodeSerializer.to_dict(mock_node)
 
@@ -55,13 +56,13 @@ class TestNodeSerializer:
         assert result["properties"]["created_at"] == "2023-01-01"
         assert result["properties"]["lines"] == 10
 
-    def test_to_dict_with_score(self, mock_node):
+    def test_to_dict_with_score(self, mock_node: Any) -> None:
         """Test node serialization with score."""
         result = NodeSerializer.to_dict(mock_node, score=0.95)
 
         assert result["score"] == 0.95
 
-    def test_to_dict_with_include_properties(self, mock_node):
+    def test_to_dict_with_include_properties(self, mock_node: Any) -> None:
         """Test node serialization with included properties."""
         result = NodeSerializer.to_dict(mock_node, include_properties=["created_at"])
 
@@ -69,7 +70,7 @@ class TestNodeSerializer:
         assert "created_at" in result["properties"]
         assert "lines" not in result["properties"]
 
-    def test_to_dict_with_exclude_properties(self, mock_node):
+    def test_to_dict_with_exclude_properties(self, mock_node: Any) -> None:
         """Test node serialization with excluded properties."""
         result = NodeSerializer.to_dict(mock_node, exclude_properties=["content", "lines"])
 
@@ -78,21 +79,21 @@ class TestNodeSerializer:
         assert "created_at" in result["properties"]
         assert "lines" not in result["properties"]
 
-    def test_to_mcp_result_with_nodes(self, mock_node):
+    def test_to_mcp_result_with_nodes(self, mock_node: Any):
         """Test MCP result serialization with nodes."""
         mock_node2 = mock.Mock()
         mock_node2.id = "node-456"
         mock_node2.labels = ["Function"]
         mock_node2.properties = {"name": "test_function"}
 
-        def getitem(key):
+        def getitem(key: Any):
             if isinstance(key, int):
                 raise IndexError(key)
             if key in mock_node2.properties:
                 return mock_node2.properties[key]
             raise KeyError(key)
 
-        def contains(key):
+        def contains(key: Any):
             return key in mock_node2.properties
 
         mock_node2.__getitem__ = mock.Mock(side_effect=getitem)
@@ -107,21 +108,21 @@ class TestNodeSerializer:
         assert result["matches"][0]["id"] == "node-123"
         assert result["matches"][1]["id"] == "node-456"
 
-    def test_to_mcp_result_with_scored_nodes(self, mock_node):
+    def test_to_mcp_result_with_scored_nodes(self, mock_node: Any):
         """Test MCP result serialization with nodes and scores."""
         mock_node2 = mock.Mock()
         mock_node2.id = "node-456"
         mock_node2.labels = ["Function"]
         mock_node2.properties = {"name": "test_function"}
 
-        def getitem(key):
+        def getitem(key: Any):
             if isinstance(key, int):
                 raise IndexError(key)
             if key in mock_node2.properties:
                 return mock_node2.properties[key]
             raise KeyError(key)
 
-        def contains(key):
+        def contains(key: Any):
             return key in mock_node2.properties
 
         mock_node2.__getitem__ = mock.Mock(side_effect=getitem)
@@ -154,14 +155,14 @@ class TestRelationshipSerializer:
             "content": "class TestClass:\n    pass",
         }
 
-        def getitem(key):
+        def getitem(key: Any):
             if isinstance(key, int):
                 raise IndexError(key)
             if key in node.properties:
                 return node.properties[key]
             raise KeyError(key)
 
-        def contains(key):
+        def contains(key: Any):
             return key in node.properties
 
         node.__getitem__ = mock.Mock(side_effect=getitem)
@@ -190,14 +191,14 @@ class TestRelationshipSerializer:
         rel.properties = {"count": 5, "created_at": "2023-01-01"}
 
         # Mock dictionary-like access
-        def getitem(key):
+        def getitem(key: Any):
             if isinstance(key, int):
                 raise IndexError(key)
             if key in rel.properties:
                 return rel.properties[key]
             raise KeyError(key)
 
-        def contains(key):
+        def contains(key: Any):
             return key in rel.properties
 
         rel.__getitem__ = mock.Mock(side_effect=getitem)
@@ -207,7 +208,7 @@ class TestRelationshipSerializer:
 
         return rel
 
-    def test_to_dict_basic(self, mock_relationship):
+    def test_to_dict_basic(self, mock_relationship: Any) -> None:
         """Test basic relationship serialization."""
         result = RelationshipSerializer.to_dict(mock_relationship)
 
@@ -219,7 +220,7 @@ class TestRelationshipSerializer:
         assert result["properties"]["count"] == 5
         assert result["properties"]["created_at"] == "2023-01-01"
 
-    def test_to_dict_with_include_properties(self, mock_relationship):
+    def test_to_dict_with_include_properties(self, mock_relationship: Any) -> None:
         """Test relationship serialization with included properties."""
         result = RelationshipSerializer.to_dict(mock_relationship, include_properties=["count"])
 
@@ -227,7 +228,7 @@ class TestRelationshipSerializer:
         assert "count" in result["properties"]
         assert "created_at" not in result["properties"]
 
-    def test_to_dict_with_exclude_properties(self, mock_relationship):
+    def test_to_dict_with_exclude_properties(self, mock_relationship: Any) -> None:
         """Test relationship serialization with excluded properties."""
         result = RelationshipSerializer.to_dict(mock_relationship, exclude_properties=["count"])
 
@@ -243,14 +244,14 @@ class TestRelationshipSerializer:
         node.labels = ["Function"]
         node.properties = {"name": "test_function"}
 
-        def getitem(key):
+        def getitem(key: Any):
             if isinstance(key, int):
                 raise IndexError(key)
             if key in node.properties:
                 return node.properties[key]
             raise KeyError(key)
 
-        def contains(key):
+        def contains(key: Any):
             return key in node.properties
 
         node.__getitem__ = mock.Mock(side_effect=getitem)
@@ -261,11 +262,11 @@ class TestRelationshipSerializer:
         return node
 
     @pytest.fixture
-    def mock_path(self, mock_node, mock_relationship, mock_node2):
+    def mock_path(self, mock_node: Any, mock_relationship: Any, mock_node2: Any):
         """Create a mock path of nodes and relationships."""
         return [[mock_node, mock_relationship, mock_node2]]
 
-    def test_to_mcp_path_result(self, mock_path):
+    def test_to_mcp_path_result(self, mock_path: Any) -> None:
         """Test MCP path result serialization."""
         result = RelationshipSerializer.to_mcp_path_result(mock_path)
 

@@ -37,7 +37,7 @@ class BlarifyStep(PipelineStep):
     structure and store the results directly in the Neo4j database.
     """
 
-    def __init__(self, docker_image: str | None = None, timeout: int | None = None):
+    def __init__(self, docker_image: str | None = None, timeout: int | None = None) -> None:
         """Initialize the Blarify step.
 
         Args:

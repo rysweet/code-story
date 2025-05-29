@@ -69,7 +69,7 @@ if PROMETHEUS_AVAILABLE:
             class DummyHistogram:
                 """Dummy histogram class for when Prometheus is not available."""
                 
-                def observe(self, value, **kwargs) -> Any:  # type: ignore[no-untyped-def]
+                def observe(self, value: Any, **kwargs) -> Any:  # type: ignore[no-untyped-def]
                     """Dummy observe method that does nothing."""
                     pass
 
@@ -79,7 +79,7 @@ if PROMETHEUS_AVAILABLE:
                         def __enter__(self) -> None:
                             return self  # type: ignore[return-value]
 
-                        def __exit__(self, exc_type, exc_val, exc_tb) -> None:  # type: ignore[no-untyped-def]
+                        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:  # type: ignore[no-untyped-def]
                             pass
 
                     return DummyTimer()

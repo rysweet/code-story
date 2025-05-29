@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the MCP Adapter configuration."""
 
 import os
@@ -8,7 +9,7 @@ import pytest
 from codestory_mcp.utils.config import MCPSettings, get_mcp_settings
 
 
-def test_mcp_settings_defaults():
+def test_mcp_settings_defaults() -> None:
     """Test the default settings."""
     settings = MCPSettings()
 
@@ -29,7 +30,7 @@ def test_mcp_settings_defaults():
     assert settings.debug is False
 
 
-def test_audience_validator():
+def test_audience_validator() -> None:
     """Test the audience validator."""
     # When audience is provided, it should use that
     settings = MCPSettings(
@@ -79,7 +80,7 @@ def test_audience_validator():
         ),
     ],
 )
-def test_settings_from_env(env_vars, expected):
+def test_settings_from_env(env_vars: Any, expected: Any) -> None:
     """Test loading settings from environment variables."""
     with mock.patch.dict(os.environ, env_vars, clear=True):
         settings = MCPSettings()
@@ -88,7 +89,7 @@ def test_settings_from_env(env_vars, expected):
             assert getattr(settings, key) == value
 
 
-def test_get_mcp_settings_singleton():
+def test_get_mcp_settings_singleton() -> None:
     """Test that get_mcp_settings returns a singleton."""
     with mock.patch.dict(
         os.environ, {"CODE_STORY_SERVICE_URL": "http://localhost:8000"}, clear=True

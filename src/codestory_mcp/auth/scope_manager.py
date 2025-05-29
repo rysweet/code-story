@@ -1,3 +1,4 @@
+from typing import Any
 """Scope management for MCP authentication.
 
 This module provides utilities for managing authorization scopes in the MCP Adapter.
@@ -9,7 +10,7 @@ from codestory_mcp.utils.config import get_mcp_settings
 class ScopeManager:
     """Manage authorization scopes for the MCP Adapter."""
 
-    def __init__(self, settings=None) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, settings: Any=None) -> None:  # type: ignore[no-untyped-def]
         """Initialize the scope manager.
 
         Args:

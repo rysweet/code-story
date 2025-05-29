@@ -185,7 +185,7 @@ register_commands()
 
 
 # Create a wrapper function that will intercept UsageError exceptions
-def _wrap_click_command(cmd) -> None:  # type: ignore[no-untyped-def]
+def _wrap_click_command(cmd: Any) -> None:  # type: ignore[no-untyped-def]
     """Create a wrapper around a Click command to intercept UsageError exceptions."""
     original_main = cmd.main
 
@@ -257,7 +257,7 @@ def main() -> None:
     original_error_callback = click.exceptions.UsageError.show
 
     # Define our custom error handler
-    def custom_error_callback(self, file=None) -> None:  # type: ignore[no-untyped-def]
+    def custom_error_callback(self, file: Any=None) -> None:  # type: ignore[no-untyped-def]
         """Custom error formatter that shows error first, then suggestions, then help."""
         # Get the context
         ctx = getattr(self, "ctx", None)

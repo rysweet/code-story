@@ -36,7 +36,7 @@ from codestory_service.domain.ingestion import (
 class TestAuthModels:
     """Tests for authentication domain models."""
 
-    def test_login_request_validation(self):
+    def test_login_request_validation(self) -> None:
         """Test that LoginRequest validates inputs correctly."""
         # Valid request
         valid_request = LoginRequest(username="testuser", password="password123")
@@ -51,7 +51,7 @@ class TestAuthModels:
         with pytest.raises(ValidationError):
             LoginRequest(username="testuser", password="")
 
-    def test_token_response(self):
+    def test_token_response(self) -> None:
         """Test TokenResponse model."""
         token = TokenResponse(
             access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -64,7 +64,7 @@ class TestAuthModels:
         assert token.expires_in == 3600
         assert token.scope == "api"
 
-    def test_user_info(self):
+    def test_user_info(self) -> None:
         """Test UserInfo model."""
         user = UserInfo(
             id="user123",
@@ -83,7 +83,7 @@ class TestAuthModels:
 class TestConfigModels:
     """Tests for configuration domain models."""
 
-    def test_config_item_is_sensitive(self):
+    def test_config_item_is_sensitive(self) -> None:
         """Test that ConfigItem correctly identifies sensitive items."""
         # Create a sensitive item (password)
         sensitive_meta = ConfigMetadata(
@@ -109,7 +109,7 @@ class TestConfigModels:
         non_sensitive_item = ConfigItem(value=True, metadata=non_sensitive_meta)
         assert non_sensitive_item.is_sensitive is False
 
-    def test_config_item_redact_if_sensitive(self):
+    def test_config_item_redact_if_sensitive(self) -> None:
         """Test that ConfigItem redacts sensitive values."""
         # Create a sensitive item
         sensitive_meta = ConfigMetadata(
@@ -140,7 +140,7 @@ class TestConfigModels:
         non_redacted_item = non_sensitive_item.redact_if_sensitive()
         assert non_redacted_item.value is True
 
-    def test_config_patch_validation(self):
+    def test_config_patch_validation(self) -> None:
         """Test that ConfigPatch validates inputs correctly."""
         # Valid patch
         valid_patch = ConfigPatch(
@@ -161,7 +161,7 @@ class TestConfigModels:
 class TestGraphModels:
     """Tests for graph domain models."""
 
-    def test_cypher_query_validation(self):
+    def test_cypher_query_validation(self) -> None:
         """Test that CypherQuery validates inputs correctly."""
         # Valid query
         valid_query = CypherQuery(query="MATCH (n) RETURN n LIMIT 10", parameters={"limit": 10})
@@ -172,7 +172,7 @@ class TestGraphModels:
         with pytest.raises(ValidationError):
             CypherQuery(query="", parameters={})
 
-    def test_vector_query_validation(self):
+    def test_vector_query_validation(self) -> None:
         """Test that VectorQuery validates inputs correctly."""
         # Valid query
         valid_query = VectorQuery(
@@ -190,7 +190,7 @@ class TestGraphModels:
         with pytest.raises(ValidationError):
             VectorQuery(query="Valid query", min_score=1.5)
 
-    def test_path_request_validation(self):
+    def test_path_request_validation(self) -> None:
         """Test that PathRequest validates inputs correctly."""
         # Valid request
         valid_request = PathRequest(start_node_id="node1", end_node_id="node2", max_depth=5)
@@ -206,7 +206,7 @@ class TestGraphModels:
 class TestIngestionModels:
     """Tests for ingestion domain models."""
 
-    def test_ingestion_request_validation(self):
+    def test_ingestion_request_validation(self) -> None:
         """Test that IngestionRequest validates inputs correctly."""
         # We need to patch the os.path.exists check to make the test pass
         with mock.patch("os.path.exists", return_value=True):
@@ -232,7 +232,7 @@ class TestIngestionModels:
                     source_type=IngestionSourceType.GITHUB_REPO, source="invalid-format"
                 )
 
-    def test_ingestion_started(self):
+    def test_ingestion_started(self) -> None:
         """Test IngestionStarted model."""
         started = IngestionStarted(
             job_id="job123",
@@ -247,7 +247,7 @@ class TestIngestionModels:
         assert started.message == "Job submitted successfully"
         assert started.eta == 1620000000
 
-    def test_step_progress(self):
+    def test_step_progress(self) -> None:
         """Test StepProgress model."""
         progress = StepProgress(
             name="filesystem",

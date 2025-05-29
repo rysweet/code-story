@@ -17,7 +17,7 @@ from codestory.graphdb.schema import (
 
 # Mock Prometheus metrics to prevent registration conflicts
 @pytest.fixture(autouse=True)
-def mock_prometheus_metrics():
+def mock_prometheus_metrics() -> None:
     """Mock prometheus metrics to avoid registration issues during tests."""
     with (
         patch("prometheus_client.Counter") as mock_counter,
@@ -36,7 +36,7 @@ def mock_prometheus_metrics():
         yield
 
 
-def test_get_vector_index_query():
+def test_get_vector_index_query() -> None:
     """Test getting vector index query."""
     # Test with default parameters
     query = get_vector_index_query("Test", "embedding")
@@ -55,7 +55,7 @@ def test_get_vector_index_query():
     assert '`vector.similarity_function`: "euclidean"' in query
 
 
-def test_get_all_schema_elements():
+def test_get_all_schema_elements() -> None:
     """Test getting all schema elements."""
     schema_elements = get_all_schema_elements()
 
@@ -87,7 +87,7 @@ def test_get_all_schema_elements():
     )
 
 
-def test_get_schema_initialization_queries():
+def test_get_schema_initialization_queries() -> None:
     """Test getting schema initialization queries."""
     queries = get_schema_initialization_queries()
 
@@ -101,7 +101,7 @@ def test_get_schema_initialization_queries():
     assert len(queries) == total_expected
 
 
-def test_create_custom_vector_index():
+def test_create_custom_vector_index() -> None:
     """Test creating a custom vector index."""
     # Create mock connector
     mock_connector = MagicMock()
@@ -131,7 +131,7 @@ def test_create_custom_vector_index():
     assert exc_info.value.details["property"] == "embedding"
 
 
-def test_initialize_schema():
+def test_initialize_schema() -> None:
     """Test initializing schema."""
     # Create mock connector
     mock_connector = MagicMock()
@@ -164,7 +164,7 @@ def test_initialize_schema():
     assert exc_info.value.details is not None
 
 
-def test_verify_schema():
+def test_verify_schema() -> None:
     """Test verifying schema."""
     # Create mock connector with mock results
     mock_connector = MagicMock()

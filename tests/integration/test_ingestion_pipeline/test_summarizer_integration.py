@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the summarizer workflow step.
 
 These tests verify that the SummarizerStep can correctly process a repository
@@ -30,7 +31,7 @@ from codestory_summarizer.step import SummarizerStep
 
 
 # Custom implementation of process_filesystem that directly uses the neo4j_connector
-def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_patterns=None):
+def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector: Any, ignore_patterns: Any=None):
     """Custom implementation of process_filesystem for testing."""
     print(
         f"*** TEST_DEBUG: Running custom_process_filesystem for test_summarizer_integration "
@@ -217,7 +218,7 @@ def mock_llm_client():
         # Create a mock client with a chat method that returns a predefined response
         mock_client = MagicMock()
 
-        def mock_chat(messages, **kwargs):
+        def mock_chat(messages: Any, **kwargs):
             # Extract the node type from the messages
             node_type = "unknown"
             for msg in messages:
@@ -263,7 +264,7 @@ def mock_llm_client():
 
 
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> None:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -348,7 +349,7 @@ Welcome to the documentation for the sample repository.
 
 
 @pytest.fixture
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     # Use direct connection parameters for test environment
     connector = Neo4jConnector(
@@ -368,7 +369,7 @@ def neo4j_connector():
 
 
 @pytest.fixture
-def initialized_repo(sample_repo, neo4j_connector):
+def initialized_repo(sample_repo: Any, neo4j_connector: Any):
     """Initialize the repository in Neo4j using a custom implementation of process_filesystem."""
     # Create a job ID for direct execution
     job_id = str(uuid.uuid4())
@@ -462,7 +463,7 @@ def initialized_repo(sample_repo, neo4j_connector):
 
 
 @pytest.mark.integration
-def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client):
+def test_summarizer_step_run(initialized_repo: Any, neo4j_connector: Any, mock_llm_client: Any):
     """Test that the summarizer step can generate summaries for a repository."""
     # Create a direct run function that doesn't use Celery
     import time
@@ -472,7 +473,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
     from codestory.ingestion_pipeline.step import StepStatus
 
     # Custom implementation of SummarizerStep's run method
-    def mock_run(self, repository_path, **config):
+    def mock_run(self, repository_path: Any, **config):
         """Mock implementation of run that runs synchronously."""
         # Create a job ID
         job_id = str(uuid.uuid4())
@@ -765,7 +766,7 @@ def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 
 
 @pytest.mark.integration
-def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, mock_llm_client):
+def test_summarizer_step_ingestion_update(initialized_repo: Any, neo4j_connector: Any, mock_llm_client: Any):
     """Test that the summarizer step can update summaries for a modified repository."""
     # Create a direct run function that doesn't use Celery
     import uuid
@@ -774,7 +775,7 @@ def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, moc
     from codestory.ingestion_pipeline.step import StepStatus
 
     # Custom implementation of SummarizerStep's run method
-    def mock_run(self, repository_path, **config):
+    def mock_run(self, repository_path: Any, **config):
         """Mock implementation of run that runs synchronously."""
         # Create a job ID
         job_id = str(uuid.uuid4())
@@ -842,7 +843,7 @@ def test_summarizer_step_ingestion_update(initialized_repo, neo4j_connector, moc
         return job_id
 
     # Also mock the ingestion_update method
-    def mock_ingestion_update(self, repository_path, **config):
+    def mock_ingestion_update(self, repository_path: Any, **config):
         """Mock implementation of ingestion_update that runs synchronously."""
         # Create a job ID
         job_id = str(uuid.uuid4())

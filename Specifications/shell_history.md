@@ -292,3 +292,28 @@
 - `poetry run python fix_mypy_comprehensive.py` - Ran the comprehensive MyPy fixer script for automated type error cleanup (pass 2) as part of the iterative MyPy error elimination process.
 - `poetry run mypy --show-error-codes src tests > mypy_after_pass2.txt` - Ran MyPy after the second fixer pass to capture the current error count and output to mypy_after_pass2.txt for tracking progress.
 - `wc -l mypy_after_pass2.txt` - Counted the number of MyPy errors after the second fixer pass to track progress; result: 1,186 errors remain.
+- `git add -u` - Staged all modifications produced by the second MyPy fixer pass for commit as part of the automated cleanup process.
+- `git commit -m "chore: automated mypy cleanup pass 2"` - Committed all changes produced by the second MyPy fixer pass as the second automated cleanup pass.
+- `git push origin fix/mypy-cleanup` - Pushed the second automated MyPy cleanup commit to the remote branch for review in the draft PR.
+- `git add src/codestory/py.typed src/codestory_service/py.typed src/codestory_docgrapher/py.typed src/codestory_filesystem/py.typed src/codestory_mcp/py.typed src/codestory_summarizer/py.typed src/codestory_blarify/py.typed` - Staged all new py.typed marker files in first-party packages to eliminate MyPy "import-untyped" errors.
+- `poetry run mypy --show-error-codes src tests > mypy_after_pytyped.txt && wc -l < mypy_after_pytyped.txt` - Ran MyPy after adding py.typed markers to check for remaining errors and count them; MyPy halted on a duplicate module error, blocking further checking.
+- `git commit -m "chore: add py.typed markers to first-party packages"` - Committed all new py.typed marker files to document type completeness for MyPy in all first-party packages.
+- `git push origin fix/mypy-cleanup` - Pushed the commit adding py.typed markers to the remote fix/mypy-cleanup branch for MyPy error elimination.
+- `poetry run mypy --show-error-codes --pretty -p codestory -p codestory_service -p codestory_docgrapher -p codestory_filesystem -p codestory_mcp -p codestory_summarizer -p codestory_blarify > mypy_after_config_fix.txt` - Ran MyPy on all first-party packages after fixing config to avoid duplicate-module errors.
+- `poetry run mypy --show-error-codes --pretty tests >> mypy_after_config_fix.txt` - Appended MyPy results for the tests directory to the same output file.
+- `wc -l < mypy_after_config_fix.txt` - Counted total lines (errors/warnings) in the combined MyPy output after config fix; result: 475.
+## May 29, 2025 (MyPy Config Relaxation and Error Count)
+
+- `poetry run mypy --show-error-codes --pretty -p codestory > mypy_after_config_tune.txt` - Ran MyPy on the codestory package after relaxing config to ignore third-party stubs and relax test rules.
+- `poetry run mypy --show-error-codes --pretty -p codestory_service >> mypy_after_config_tune.txt` - Appended MyPy results for codestory_service package.
+- `poetry run mypy --show-error-codes --pretty -p codestory_docgrapher >> mypy_after_config_tune.txt` - Appended MyPy results for codestory_docgrapher package.
+- `poetry run mypy --show-error-codes --pretty -p codestory_filesystem >> mypy_after_config_tune.txt` - Appended MyPy results for codestory_filesystem package.
+- `poetry run mypy --show-error-codes --pretty -p codestory_mcp >> mypy_after_config_tune.txt` - Appended MyPy results for codestory_mcp package.
+- `poetry run mypy --show-error-codes --pretty -p codestory_summarizer >> mypy_after_config_tune.txt` - Appended MyPy results for codestory_summarizer package.
+- `poetry run mypy --show-error-codes --pretty -p codestory_blarify >> mypy_after_config_tune.txt` - Appended MyPy results for codestory_blarify package.
+- `poetry run mypy --show-error-codes --pretty tests >> mypy_after_config_tune.txt` - Appended MyPy results for the tests directory.
+- `wc -l < mypy_after_config_tune.txt` - Counted total MyPy errors after config relaxation; result: 2,378.
+
+## May 29, 2025
+
+- `poetry run python nuclear_mypy_fix.py` - Ran the nuclear MyPy fixer script to aggressively annotate all functions in src/ and tests/ with missing type hints, aiming to dramatically reduce no-untyped-def and similar errors as part of the mypy cleanup process.

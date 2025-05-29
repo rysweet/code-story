@@ -26,7 +26,7 @@ class OperationType(str, Enum):
 
 
 # Function to get or create metrics to avoid duplicate registration issues
-def _get_or_create_counter(name, description, labels=None) -> Any:  # type: ignore[no-untyped-def]
+def _get_or_create_counter(name: Any, description: Any, labels: Any=None) -> Any:  # type: ignore[no-untyped-def]
     try:
         return Counter(name, description, labels)
     except ValueError:
@@ -47,7 +47,7 @@ def _get_or_create_counter(name, description, labels=None) -> Any:  # type: igno
         return Counter(name, description, labels, registry=private_registry)
 
 
-def _get_or_create_gauge(name, description, labels=None) -> Any:  # type: ignore[no-untyped-def]
+def _get_or_create_gauge(name: Any, description: Any, labels: Any=None) -> Any:  # type: ignore[no-untyped-def]
     try:
         return Gauge(name, description, labels)
     except ValueError:
@@ -68,7 +68,7 @@ def _get_or_create_gauge(name, description, labels=None) -> Any:  # type: ignore
         return Gauge(name, description, labels, registry=private_registry)
 
 
-def _get_or_create_histogram(name, description, labels=None, buckets=None) -> Any:  # type: ignore[no-untyped-def]
+def _get_or_create_histogram(name: Any, description: Any, labels: Any=None, buckets: Any=None) -> Any:  # type: ignore[no-untyped-def]
     try:
         return Histogram(name, description, labels, buckets=buckets)
     except ValueError:

@@ -21,7 +21,7 @@ class PathMatcher:
     filesystem paths or entities in the repository.
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str):
+    def __init__(self, connector: Neo4jConnector, repository_path: str) -> None:
         """Initialize the path matcher.
 
         Args:

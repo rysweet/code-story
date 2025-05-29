@@ -10,7 +10,7 @@ from codestory.cli.client.progress_client import ProgressClient
 class TestProgressClient:
     """Tests for the ProgressClient class."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test ProgressClient initialization."""
         # Create test client with mocked redis
         with patch("redis.from_url") as mock_redis_from_url:
@@ -30,7 +30,7 @@ class TestProgressClient:
             assert client.use_redis is False
             assert client.redis is None
 
-    def test_redis_connection_success(self):
+    def test_redis_connection_success(self) -> None:
         """Test successful Redis connection."""
         # Create mock redis client
         mock_redis_client = MagicMock()
@@ -57,7 +57,7 @@ class TestProgressClient:
             assert client.use_redis is True
             assert client.redis is not None
 
-    def test_docker_port_detection(self):
+    def test_docker_port_detection(self) -> None:
         """Test Docker port detection for Redis."""
         # Create mock redis client
         mock_redis_client = MagicMock()
@@ -110,7 +110,7 @@ class TestProgressClient:
                 assert client.use_redis is True
                 assert client.redis is not None
 
-    def test_use_explicit_redis_url(self):
+    def test_use_explicit_redis_url(self) -> None:
         """Test using explicitly provided Redis URL."""
         # Create mock redis client
         mock_redis_client = MagicMock()
@@ -137,7 +137,7 @@ class TestProgressClient:
             assert client.use_redis is True
             assert client.redis is not None
 
-    def test_fallback_to_http_polling(self):
+    def test_fallback_to_http_polling(self) -> None:
         """Test fallback to HTTP polling when Redis is not available."""
         # Create a callback
         callback = MagicMock()

@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the MCP Adapter server."""
 
 import asyncio
@@ -11,7 +12,7 @@ from codestory_mcp.tools.base import BaseTool, ToolError
 
 
 @pytest.fixture
-def mock_settings():
+def mock_settings() -> None:
     """Create a mock settings object."""
     with mock.patch("codestory_mcp.server.get_mcp_settings") as mock_get_settings:
         settings = mock.Mock()
@@ -28,7 +29,7 @@ def mock_settings():
 
 
 @pytest.fixture
-def mock_metrics():
+def mock_metrics() -> None:
     """Create a mock metrics object."""
     with mock.patch("codestory_mcp.server.get_metrics") as mock_get_metrics:
         metrics = mock.Mock()
@@ -37,7 +38,7 @@ def mock_metrics():
 
 
 @pytest.fixture
-def mock_entra_validator():
+def mock_entra_validator() -> None:
     """Create a mock EntraValidator."""
     with mock.patch("codestory_mcp.server.EntraValidator") as mock_validator_cls:
         validator = mock.Mock()
@@ -46,7 +47,7 @@ def mock_entra_validator():
 
 
 @pytest.fixture
-def mock_tool():
+def mock_tool() -> None:
     """Create a mock tool."""
     with mock.patch("codestory_mcp.server.get_tool") as mock_get_tool:
         tool_cls = mock.Mock(spec=BaseTool)
@@ -271,7 +272,7 @@ async def test_tool_executor_unexpected_error(mock_metrics, mock_tool):
     assert mock_metrics.record_tool_call.call_args[0][1] == "error"
 
 
-def test_create_app(mock_settings):
+def test_create_app(mock_settings: Any) -> None:
     """Test app creation."""
     # Mock dependencies
     with (

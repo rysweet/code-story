@@ -228,3 +228,191 @@ No manual edits; rely solely on the script. This message supersedes any conflict
 - Will re-run MyPy and capture the new error count to mypy_after_pass2.txt
 - Will stage, commit, and push all changes with the specified message
 - Will summarize files changed, new MyPy error count, and whether further passes are needed
+## Prompt 105 (May 29, 2025)
+
+**Prompt**:  
+Context: Remaining 1 186 MyPy errors include ≈260 “import-untyped” issues, largely because our internal packages lack `py.typed` markers. Adding these markers will eliminate those errors for every import site (tests + prod).
+
+Scope — do ONLY the following:
+
+1. Create an **empty** file named `py.typed` in each first-party package under `src/`:
+   • src/codestory  
+   • src/codestory_service  
+   • src/codestory_docgrapher  
+   • src/codestory_filesystem  
+   • src/codestory_mcp  
+   • src/codestory_summarizer  
+   • src/codestory_blarify  
+2. `git add` the new files.
+3. Re-run MyPy:
+   ```bash
+   poetry run mypy --show-error-codes src tests > mypy_after_pytyped.txt
+   ERRORS=$(wc -l < mypy_after_pytyped.txt)
+   ```
+4. Commit with message:
+   ```
+   chore: add py.typed markers to first-party packages
+   ```
+5. Push to origin/fix/mypy-cleanup.
+6. Use attempt_completion summarizing:
+   • Confirmation of py.typed files created (list them).  
+   • New MyPy error count ($ERRORS) and reduction versus 1 186 figure.  
+   • Indicate next logical focus area if errors remain.
+
+No other code changes.
+
+**Response**:
+- Logged Prompt 105 before any code or CLI actions
+- Will create empty `py.typed` files in all listed first-party package directories under `src/`
+- Will stage the new files with `git add`
+- Will re-run MyPy and capture the new error count
+- Will commit and push with the specified message
+- Will summarize results, including files created, new error count, and next focus area
+## Prompt 106 (May 29, 2025)
+
+**Prompt**:  
+Context:
+• After duplicate-module fix, MyPy still reports 1 249 errors, the bulk coming from:
+  – tests.* functions lacking type annotations (no-untyped-def)  
+  – import-untyped for 3rd-party libs (celery, msal, etc.)
+• Goal: reach zero reported errors without changing code semantics.
+
+Plan for this pass – tame configuration noise:
+
+1. Open `.mypy.ini` and append the following sections:
+
+```
+[mypy]
+# keep strict for src
+disallow_untyped_defs = True
+warn_unused_ignores = True
+
+# third-party libs without stubs
+[mypy-celery.*]
+ignore_missing_imports = True
+[mypy-msal.*]
+ignore_missing_imports = True
+[mypy-neo4j.*]
+ignore_missing_imports = True
+
+# relax strict rules in tests
+[mypy-tests.*]
+disallow_untyped_defs = False
+disallow_incomplete_defs = False
+warn_return_any = False
+```
+
+2. Save the file.
+
+3. Re-run MyPy with the explicit packages command again, capture output:
+
+```bash
+poetry run mypy --show-error-codes --pretty \
+  -p codestory -p codestory_service -p codestory_docgrapher \
+  -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+  -p codestory_blarify tests > mypy_after_config_tune.txt
+ERRORS=$(wc -l < mypy_after_config_tune.txt)
+```
+
+4. Commit the `.mypy.ini` changes with message:
+```
+chore: relax mypy rules for tests and ignore missing stubs
+```
+
+5. Push to `origin/fix/mypy-cleanup`.
+
+6. Finish with attempt_completion summarizing:
+   • New MyPy error count ($ERRORS) versus previous 1 249.  
+   • Confirm that remaining errors (if any) are within src (production) only.  
+   • State next step if errors remain.
+
+No code edits beyond `.mypy.ini`.
+
+**Response**:
+- Logged Prompt 106 before any code or CLI actions
+- Will append the specified configuration to `.mypy.ini`
+- Will re-run MyPy with the explicit packages command and capture output
+- Will commit and push `.mypy.ini` with the provided message
+- Will summarize new MyPy error count, confirm error locations, and state next step if needed
+## Prompt 107 (May 29, 2025)
+
+**Prompt**: 
+Context:
+• Current branch fix/mypy-cleanup; `.mypy.ini` now stricter; 2 378 MyPy errors remain across src and tests.
+• A helper script [`nuclear_mypy_fix.py`](nuclear_mypy_fix.py) exists and is designed to add missing `-> None` / parameter annotations to functions (especially in tests) and insert `# type: ignore` where safe, dramatically reducing `no-untyped-def` and similar errors.
+
+Scope – run the nuclear fix and measure impact:
+
+1. Execute the fixer:
+   ```bash
+   poetry run python nuclear_mypy_fix.py
+   ```
+2. Re-run MyPy with the explicit package list + tests:
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_after_nuclear.txt
+   ERRORS=$(wc -l < mypy_after_nuclear.txt)
+   ```
+3. Stage and commit all modifications with message:
+   ```
+   chore: nuclear mypy fix pass
+   ```
+4. Push to origin/fix/mypy-cleanup.
+5. Use attempt_completion summarizing:
+   • Files changed / lines modified (use `git diff --stat origin/main..HEAD`).  
+   • New MyPy error count ($ERRORS) and delta from 2 378.  
+   • List top remaining error codes (first 10 unique codes from output).  
+   • Recommend next action (manual tweaks, another script, etc.) if errors remain.
+
+No manual edits besides running the script.
+
+**Response**:
+- Logged Prompt 107 before any code or CLI actions
+- Will run the nuclear MyPy fixer script as instructed
+- Will re-run MyPy with the explicit package list and capture output/error count
+- Will stage, commit, and push all changes with the specified message
+- Will summarize files changed, new MyPy error count, error code breakdown, and recommend next steps
+## Prompt 108 (May 29, 2025)
+
+**Prompt**:  
+Context:
+• Branch fix/mypy-cleanup. File [`nuclear_mypy_fix.py`](nuclear_mypy_fix.py) exists at repository root (confirmed in VS Code open tabs).  
+• Previous attempt reported script missing—likely a path or execution issue.
+
+Scope – verify and run the script:
+
+1. Confirm the script is present by listing it: `ls -l nuclear_mypy_fix.py`.
+2. Execute the fixer:  
+   ```bash
+   poetry run python nuclear_mypy_fix.py
+   ```
+3. Re-run MyPy with explicit packages + tests:  
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_after_nuclear.txt
+   ERRORS=$(wc -l < mypy_after_nuclear.txt)
+   ```
+4. Stage and commit changes produced by the script:  
+   ```
+   chore: nuclear mypy fix pass
+   ```
+5. Push to origin/fix/mypy-cleanup.
+6. In attempt_completion include:  
+   • `git diff --stat origin/main..HEAD` summary.  
+   • New MyPy error count ($ERRORS) and delta from previous 2 378.  
+   • Top remaining error codes (unique codes from first ~20 lines).  
+   • Recommended next action if errors remain.
+
+No manual edits besides running the script.
+
+**Response**:
+- Logged Prompt 108 before any code or CLI actions
+- Will confirm presence of `nuclear_mypy_fix.py` at repo root
+- Will run the fixer script using Poetry
+- Will re-run MyPy with explicit package list and capture output/error count
+- Will stage, commit, and push all changes with the specified message
+- Will summarize files changed, new MyPy error count, error code breakdown, and recommend next steps

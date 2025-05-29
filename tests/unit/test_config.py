@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the configuration module."""
 
 import os
@@ -17,7 +18,7 @@ from codestory.config.exceptions import SettingNotFoundError
 
 
 @pytest.fixture
-def mock_env():
+def mock_env() -> None:
     """Fixture to provide a controlled environment for testing."""
     env_vars = {
         # Core settings
@@ -64,7 +65,7 @@ def mock_env():
 
 
 @pytest.fixture
-def temp_env_file():
+def temp_env_file() -> None:
     """Fixture to create a temporary .env file."""
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write("NEO4J__URI=bolt://localhost:7687\n")
@@ -82,7 +83,7 @@ def temp_env_file():
 
 
 @pytest.fixture
-def temp_toml_file():
+def temp_toml_file() -> None:
     """Fixture to create a temporary .codestory.toml file."""
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write("[neo4j]\n")
@@ -100,7 +101,7 @@ def temp_toml_file():
         os.unlink(temp_path)
 
 
-def test_settings_default_values(mock_env):
+def test_settings_default_values(mock_env: Any) -> None:
     """Test default values for settings."""
     with (
         patch("src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"),
@@ -122,7 +123,7 @@ def test_settings_default_values(mock_env):
         assert settings.service.port == 8000
 
 
-def test_settings_override_from_env(mock_env):
+def test_settings_override_from_env(mock_env: Any) -> None:
     """Test overriding settings from environment variables."""
     with (
         patch.dict(
@@ -146,7 +147,7 @@ def test_settings_override_from_env(mock_env):
         assert settings.openai.embedding_model == "text-embedding-3-large"
 
 
-def test_get_settings_cache():
+def test_get_settings_cache() -> None:
     """Test that get_settings caches the result."""
     # Instead of mocking Settings, we'll work with the actual implementation
     # and verify that caching works by identity comparison
@@ -174,7 +175,7 @@ def test_get_settings_cache():
 
 
 @pytest.mark.skip(reason="Refresh settings behavior has changed to modify in place")
-def test_refresh_settings():
+def test_refresh_settings() -> None:
     """Test refreshing settings clears the cache.
 
     This test has been skipped because the behavior of refresh_settings
@@ -200,7 +201,7 @@ def test_refresh_settings():
 
 
 @pytest.mark.skip(reason="Test fails due to dependency on environment state")
-def test_get_config_value(mock_env):
+def test_get_config_value(mock_env: Any) -> None:
     """Test getting a config value by path."""
     # Rather than mocking, use the actual get_settings function
     # but temporarily modify the lru_cache to use our controlled values
@@ -238,14 +239,14 @@ def test_get_config_value(mock_env):
 
 
 @pytest.mark.skip(reason="Complex mocking causing recursion issues, to be fixed later")
-def test_update_config():
+def test_update_config() -> None:
     """Test updating a config value in memory."""
     # Simplified test just to ensure test suite passes
     # This will be revisited later to fix the mocking issues
     pass
 
 
-def test_export_to_json():
+def test_export_to_json() -> None:
     """Test exporting settings to JSON."""
     # Create a mock settings object
     mock_settings = MagicMock()
@@ -299,7 +300,7 @@ def test_export_to_json():
         assert "********" in json_str
 
 
-def test_create_env_template():
+def test_create_env_template() -> None:
     """Test creating an .env template."""
     # Create a mock settings object
     mock_settings = MagicMock()
@@ -358,7 +359,7 @@ def test_create_env_template():
         assert "# Neo4j settings" in env_template
 
 
-def test_settings_validation(mock_env):
+def test_settings_validation(mock_env: Any) -> None:
     """Test validation of settings."""
     # Test valid log level
     with (
@@ -442,7 +443,7 @@ def test_settings_validation(mock_env):
         assert settings.telemetry.log_format == "text"
 
 
-def test_settings_with_azure_keyvault(mock_env):
+def test_settings_with_azure_keyvault(mock_env: Any) -> None:
     """Test settings with Azure KeyVault integration."""
     # Test KeyVault integration indirectly by checking for Azure import
     # when keyvault_name is set

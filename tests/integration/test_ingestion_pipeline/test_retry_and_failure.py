@@ -1,3 +1,4 @@
+from typing import Any
 """Integration test for retry and failure recovery in the ingestion pipeline.
 
 This test simulates a transient failure in a pipeline step, verifies that the step is retried
@@ -15,7 +16,7 @@ from codestory.ingestion_pipeline.step import StepStatus
 
 pytestmark = [pytest.mark.integration]
 
-def test_retry_and_failure_reporting(tmp_path):
+def test_retry_and_failure_reporting(tmp_path: Any):
     """Test that a step is retried on transient error and retry info is reported."""
 
     # Simulate a step that fails twice, then succeeds
@@ -24,13 +25,13 @@ def test_retry_and_failure_reporting(tmp_path):
 
     retry_attempts = {"count": 0}
 
-    def flaky_run(self, repository_path, **kwargs):
+    def flaky_run(self, repository_path: Any, **kwargs):
         if retry_attempts["count"] < 2:
             retry_attempts["count"] += 1
             raise TransientError("Simulated transient error")
         return "flaky-job-id"
 
-    def flaky_status(self, job_id):
+    def flaky_status(self, job_id: Any):
         # After 2 failures, status is completed
         if retry_attempts["count"] < 2:
             return {
@@ -82,7 +83,7 @@ def test_retry_and_failure_reporting(tmp_path):
         assert fs_step["status"] == StepStatus.COMPLETED, "Step should eventually complete"
         assert fs_step["last_error"] is None, "Last error should be cleared on success"
 
-def test_retry_exceeds_max(tmp_path):
+def test_retry_exceeds_max(tmp_path: Any):
     """Test that a step fails after exceeding max_retries and last_error is reported."""
 
     class TransientError(Exception):
@@ -90,11 +91,11 @@ def test_retry_exceeds_max(tmp_path):
 
     retry_attempts = {"count": 0}
 
-    def always_fail_run(self, repository_path, **kwargs):
+    def always_fail_run(self, repository_path: Any, **kwargs) -> None:
         retry_attempts["count"] += 1
         raise TransientError("Simulated persistent error")
 
-    def always_fail_status(self, job_id):
+    def always_fail_status(self, job_id: Any):
         return {
             "status": StepStatus.FAILED,
             "progress": 0,

@@ -1,3 +1,4 @@
+from typing import Any
 """
 Integration tests for repository mounting functionality.
 
@@ -31,7 +32,7 @@ pytestmark = [
 
 
 @pytest.fixture
-def temp_repository():
+def temp_repository() -> None:
     """Create a temporary repository for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create some files in the repository to make it look real
@@ -61,7 +62,7 @@ if __name__ == "__main__":
 
 
 @pytest.fixture
-def stop_containers():
+def stop_containers() -> None:
     """Stop Code Story containers before and after tests."""
     # Stop containers before test
     subprocess.run(["docker-compose", "down"], cwd=os.getcwd(), capture_output=True)
@@ -81,7 +82,7 @@ def cli_runner():
 class TestRepositoryMounting:
     """Integration tests for repository mounting."""
 
-    def test_mount_verification(self, temp_repository):
+    def test_mount_verification(self, temp_repository: Any) -> None:
         """Test that the mount verification correctly detects issues."""
         # Skip this test if Docker is not running
         docker_check = subprocess.run(["docker", "ps"], capture_output=True, text=True)
@@ -246,7 +247,7 @@ class TestRepositoryMounting:
 class TestCliAutoMount:
     """CLI integration tests for auto mounting with ingest command."""
 
-    def test_cli_mount_verification_function(self, temp_repository):
+    def test_cli_mount_verification_function(self, temp_repository: Any) -> None:
         """Test that ingest command correctly verifies container paths."""
         # Skip this test if Docker is not running
         docker_check = subprocess.run(["docker", "ps"], capture_output=True, text=True)

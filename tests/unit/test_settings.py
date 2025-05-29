@@ -160,7 +160,7 @@ def setup_test_settings():
     return (settings_patch, new_patch)
 
 
-def test_settings_creation():
+def test_settings_creation() -> None:
     """Test that test settings can be created without errors."""
     settings = create_test_settings()
     assert settings is not None

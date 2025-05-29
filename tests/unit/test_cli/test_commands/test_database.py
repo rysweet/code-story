@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the database CLI commands."""
 
 from unittest.mock import MagicMock
@@ -28,14 +29,14 @@ def mock_console():
 
 
 @pytest.fixture
-def cli_context(mock_client, mock_console):
+def cli_context(mock_client: Any, mock_console: Any):
     """Click context with client and console."""
     ctx = MagicMock()
     ctx.obj = {"client": mock_client, "console": mock_console}
     return ctx
 
 
-def test_database_group():
+def test_database_group() -> None:
     """Test the database command group."""
     runner = CliRunner()
     result = runner.invoke(database, ["--help"])
@@ -43,7 +44,7 @@ def test_database_group():
     assert "Manage the graph database" in result.output
 
 
-def test_clear_database_with_force(cli_context, mock_client, mock_console):
+def test_clear_database_with_force(cli_context: Any, mock_client: Any, mock_console: Any) -> None:
     """Test clearing the database with force option."""
     runner = CliRunner()
     result = runner.invoke(clear_database, ["--force"], obj=cli_context.obj)
@@ -53,7 +54,7 @@ def test_clear_database_with_force(cli_context, mock_client, mock_console):
     assert mock_console.print.call_count >= 2  # Opening message + result
 
 
-def test_clear_database_error(cli_context, mock_client, mock_console):
+def test_clear_database_error(cli_context: Any, mock_client: Any, mock_console: Any) -> None:
     """Test handling errors when clearing the database."""
     # Set up the error
     mock_client.clear_database.side_effect = ServiceError("Failed to clear database")

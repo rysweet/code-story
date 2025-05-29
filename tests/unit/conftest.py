@@ -1,3 +1,4 @@
+from typing import Any
 """Pytest configuration for unit tests."""
 
 import os
@@ -17,7 +18,7 @@ def mock_settings():
     from tests.unit.test_settings import setup_test_settings, test_settings
 
     # Ensure any attribute lookup returns a mock object
-    def getattr_mock(instance, name):
+    def getattr_mock(instance: Any, name: Any):
         if name in instance.__dict__:
             return instance.__dict__[name]
         return MagicMock()
@@ -46,7 +47,7 @@ def mock_settings():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_env_vars():
+def load_env_vars() -> None:
     """Load environment variables for unit tests."""
     # Load environment variables from .env file
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")

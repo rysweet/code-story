@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the service command group in the CLI."""
 
 import sys
@@ -36,12 +37,12 @@ class TestServiceCommand:
         return CliRunner()
 
     @pytest.fixture
-    def ctx_obj(self, mock_client):
+    def ctx_obj(self, mock_client: Any):
         """Create a Click context object."""
         console = Console(width=100, color_system=None)
         return {"client": mock_client, "console": console}
 
-    def test_auth_renew_command_exists(self):
+    def test_auth_renew_command_exists(self) -> None:
         """Test that auth-renew command exists."""
         # Get all commands in the service group
         commands = service.commands
@@ -49,7 +50,7 @@ class TestServiceCommand:
         # Check if auth-renew is in the commands
         assert "auth-renew" in commands
 
-    def test_auth_renew_help(self, cli_runner):
+    def test_auth_renew_help(self, cli_runner: Any) -> None:
         """Test that auth-renew command has correct help text."""
         # Run the command with --help flag
         result = cli_runner.invoke(service, ["auth-renew", "--help"])

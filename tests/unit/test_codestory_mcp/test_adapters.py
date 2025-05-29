@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the MCP Adapter service adapters."""
 
 import asyncio
@@ -23,7 +24,7 @@ from codestory_mcp.tools.base import ToolError
 class TestMockNode:
     """Tests for the MockNode class."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test initialization."""
         node = MockNode("node-123", ["Class"], {"name": "TestClass"})
 
@@ -31,7 +32,7 @@ class TestMockNode:
         assert node.labels == ["Class"]
         assert node.properties == {"name": "TestClass"}
 
-    def test_get(self):
+    def test_get(self) -> None:
         """Test get method."""
         node = MockNode("node-123", ["Class"], {"name": "TestClass"})
 
@@ -39,7 +40,7 @@ class TestMockNode:
         assert node.get("nonexistent") is None
         assert node.get("nonexistent", "default") == "default"
 
-    def test_items(self):
+    def test_items(self) -> None:
         """Test items method."""
         node = MockNode("node-123", ["Class"], {"name": "TestClass", "path": "/path"})
 
@@ -48,7 +49,7 @@ class TestMockNode:
         assert ("name", "TestClass") in items
         assert ("path", "/path") in items
 
-    def test_getitem(self):
+    def test_getitem(self) -> None:
         """Test __getitem__ method."""
         node = MockNode("node-123", ["Class"], {"name": "TestClass"})
 
@@ -61,7 +62,7 @@ class TestMockNode:
 class TestMockRelationship:
     """Tests for the MockRelationship class."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test initialization."""
         rel = MockRelationship("rel-123", "CALLS", "node-123", "node-456", {"count": 5})
 
@@ -71,7 +72,7 @@ class TestMockRelationship:
         assert rel.start_node.id == "node-123"
         assert rel.end_node.id == "node-456"
 
-    def test_get(self):
+    def test_get(self) -> None:
         """Test get method."""
         rel = MockRelationship("rel-123", "CALLS", "node-123", "node-456", {"count": 5})
 
@@ -79,7 +80,7 @@ class TestMockRelationship:
         assert rel.get("nonexistent") is None
         assert rel.get("nonexistent", "default") == "default"
 
-    def test_items(self):
+    def test_items(self) -> None:
         """Test items method."""
         rel = MockRelationship(
             "rel-123", "CALLS", "node-123", "node-456", {"count": 5, "timestamp": "now"}
@@ -90,7 +91,7 @@ class TestMockRelationship:
         assert ("count", 5) in items
         assert ("timestamp", "now") in items
 
-    def test_getitem(self):
+    def test_getitem(self) -> None:
         """Test __getitem__ method."""
         rel = MockRelationship("rel-123", "CALLS", "node-123", "node-456", {"count": 5})
 
@@ -104,7 +105,7 @@ class TestGraphServiceAdapter:
     """Tests for the GraphServiceAdapter class."""
 
     @pytest.fixture
-    def mock_settings(self):
+    def mock_settings(self) -> None:
         """Create a mock settings object."""
         with mock.patch(
             "codestory_mcp.adapters.graph_service.get_mcp_settings"
@@ -115,7 +116,7 @@ class TestGraphServiceAdapter:
             yield settings
 
     @pytest.fixture
-    def mock_metrics(self):
+    def mock_metrics(self) -> None:
         """Create a mock metrics object."""
         with mock.patch("codestory_mcp.adapters.graph_service.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
@@ -123,7 +124,7 @@ class TestGraphServiceAdapter:
             yield metrics
 
     @pytest.fixture
-    def mock_client(self):
+    def mock_client(self) -> None:
         """Create a mock HTTP client."""
         with mock.patch(
             "codestory_mcp.adapters.graph_service.httpx.AsyncClient"
@@ -133,11 +134,11 @@ class TestGraphServiceAdapter:
             yield client
 
     @pytest.fixture
-    def adapter(self, mock_settings, mock_metrics, mock_client):
+    def adapter(self, mock_settings: Any, mock_metrics: Any, mock_client: Any):
         """Create a GraphServiceAdapter instance."""
         return GraphServiceAdapter()
 
-    def test_init(self, mock_settings, mock_metrics, mock_client):
+    def test_init(self, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> None:
         """Test initialization."""
         adapter = GraphServiceAdapter()
 
@@ -145,7 +146,7 @@ class TestGraphServiceAdapter:
         assert adapter.metrics is mock_metrics
         assert adapter.client is mock_client
 
-    def test_init_with_custom_url(self, mock_settings, mock_metrics, mock_client):
+    def test_init_with_custom_url(self, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> None:
         """Test initialization with custom URL."""
         # Set a default value for code_story_service_url in settings
         mock_settings.code_story_service_url = "http://default:8000"
@@ -389,7 +390,7 @@ class TestGraphServiceAdapter:
         assert paths[0][2].labels == ["Function"]
         assert paths[0][2].properties["name"] == "testFunction"
 
-    def test_get_graph_service_singleton(self, mock_settings):
+    def test_get_graph_service_singleton(self, mock_settings: Any) -> None:
         """Test that get_graph_service returns a singleton."""
         service1 = get_graph_service()
         service2 = get_graph_service()
@@ -401,7 +402,7 @@ class TestOpenAIServiceAdapter:
     """Tests for the OpenAIServiceAdapter class."""
 
     @pytest.fixture
-    def mock_client(self):
+    def mock_client(self) -> None:
         """Create a mock OpenAI client."""
         with mock.patch("codestory_mcp.adapters.openai_service.OpenAIClient") as mock_client_cls:
             client = mock.Mock()
@@ -409,7 +410,7 @@ class TestOpenAIServiceAdapter:
             yield client
 
     @pytest.fixture
-    def mock_metrics(self):
+    def mock_metrics(self) -> None:
         """Create a mock metrics object."""
         with mock.patch("codestory_mcp.adapters.openai_service.get_metrics") as mock_get_metrics:
             metrics = mock.Mock()
@@ -417,18 +418,18 @@ class TestOpenAIServiceAdapter:
             yield metrics
 
     @pytest.fixture
-    def adapter(self, mock_client, mock_metrics):
+    def adapter(self, mock_client: Any, mock_metrics: Any):
         """Create an OpenAIServiceAdapter instance."""
         return OpenAIServiceAdapter()
 
-    def test_init(self, mock_client, mock_metrics):
+    def test_init(self, mock_client: Any, mock_metrics: Any) -> None:
         """Test initialization."""
         adapter = OpenAIServiceAdapter()
 
         assert adapter.client is mock_client
         assert adapter.metrics is mock_metrics
 
-    def test_init_with_custom_client(self, mock_metrics):
+    def test_init_with_custom_client(self, mock_metrics: Any) -> None:
         """Test initialization with custom client."""
         custom_client = mock.Mock()
         adapter = OpenAIServiceAdapter(client=custom_client)
@@ -584,7 +585,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args_list[1][0][0] == "similar_code"
         assert mock_metrics.record_graph_operation.called
 
-    def test_get_openai_service_singleton(self):
+    def test_get_openai_service_singleton(self) -> None:
         """Test that get_openai_service returns a singleton."""
         service1 = get_openai_service()
         service2 = get_openai_service()

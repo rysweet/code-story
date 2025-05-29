@@ -24,7 +24,7 @@ class EntityLinker:
     between them and relevant code entities in the Neo4j database.
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str):
+    def __init__(self, connector: Neo4jConnector, repository_path: str) -> None:
         """Initialize the entity linker.
 
         Args:

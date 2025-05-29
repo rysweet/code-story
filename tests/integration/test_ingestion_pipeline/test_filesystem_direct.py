@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the filesystem workflow step using direct execution.
 
 These tests verify that the FileSystemStep can correctly process a repository
@@ -40,7 +41,7 @@ TEST_NEO4J_SETTINGS = Neo4jSettings(
 
 # Fixtures reused from test_filesystem_integration.py
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> None:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -262,7 +263,7 @@ def custom_process_filesystem(
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_filesystem_direct(sample_repo, neo4j_connector):
+def test_filesystem_direct(sample_repo: Any, neo4j_connector: Any) -> None:
     """Test that the filesystem task works correctly when executed directly."""
     print("*** IMPORTANT: TEST IS ACTUALLY RUNNING ***")
 
@@ -331,7 +332,7 @@ def test_filesystem_direct(sample_repo, neo4j_connector):
 
 @pytest.mark.integration
 @pytest.mark.neo4j
-def test_filesystem_update_direct(sample_repo, neo4j_connector):
+def test_filesystem_update_direct(sample_repo: Any, neo4j_connector: Any) -> None:
     """Test that the filesystem task can update an existing repository."""
     print("Running initial execution...")
 

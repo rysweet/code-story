@@ -4,10 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 import requests
 
+from typing import Any
 API_BASE = "http://localhost:8000/v1/ingest"
 
 @pytest.mark.integration
-def test_resource_status_endpoint():
+def test_resource_status_endpoint() -> None:
     """Test that the /resource_status endpoint returns correct structure."""
     resp = requests.get(f"{API_BASE}/resource_status", headers={"Authorization": "Bearer test"})
     assert resp.status_code == 200
@@ -36,7 +37,7 @@ def test_resource_status_endpoint():
             assert stat in metrics[key]
 
 @pytest.mark.integration
-def test_resource_throttling_enforced(monkeypatch):
+def test_resource_throttling_enforced(monkeypatch: Any):
     """
     Test that resource throttling is enforced by attempting to run more jobs than allowed.
     This test assumes the resource_max_tokens is set to 2 for demonstration.

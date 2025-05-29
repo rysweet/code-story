@@ -53,7 +53,7 @@ class TestServiceCommands:
         assert exc_info.value.code in [0, None]
 
     @pytest.mark.skipif(os.environ.get("CI") == "true", reason="Skip in CI environment")
-    def test_service_start_stop_subprocess(self):
+    def test_service_start_stop_subprocess(self) -> None:
         """Test that the service can be started and stopped using subprocess.
 
         This test uses subprocess directly rather than click's test runner

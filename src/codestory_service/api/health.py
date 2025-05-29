@@ -435,7 +435,7 @@ async def auth_renew(
 
                 # Wait for process to complete with timeout
                 class AsyncSubprocessResult:
-                    def __init__(self, returncode, stdout, stderr) -> None:  # type: ignore[no-untyped-def]
+                    def __init__(self, returncode: Any, stdout: Any, stderr: Any) -> None:  # type: ignore[no-untyped-def]
                         self.returncode = returncode
                         self.stdout = stdout
                         self.stderr = stderr

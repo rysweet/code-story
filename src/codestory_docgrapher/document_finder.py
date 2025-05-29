@@ -26,7 +26,7 @@ class DocumentFinder:
     code files (docstrings, comments).
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str):
+    def __init__(self, connector: Neo4jConnector, repository_path: str) -> None:
         """Initialize the document finder.
 
         Args:

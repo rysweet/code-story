@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the ingestion pipeline manager."""
 
 import os
@@ -22,7 +23,7 @@ sys.modules["celery.result"] = MagicMock()
 
 # Mock Prometheus metrics to prevent registration conflicts
 @pytest.fixture(autouse=True)
-def mock_prometheus_metrics():
+def mock_prometheus_metrics() -> None:
     """Mock prometheus metrics to avoid registration issues during tests."""
     with (
         patch("prometheus_client.Counter") as mock_counter,
@@ -42,7 +43,7 @@ class TestPipelineManager:
     """Tests for the PipelineManager class."""
 
     @pytest.fixture
-    def config_file(self):
+    def config_file(self) -> None:
         """Create a temporary configuration file for testing."""
         config = {
             "steps": [
@@ -75,7 +76,7 @@ class TestPipelineManager:
 
         return MagicMock(return_value=mock_step)
 
-    def test_init(self, config_file):
+    def test_init(self, config_file: Any) -> None:
         """Test initialization with a configuration file."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
@@ -88,7 +89,7 @@ class TestPipelineManager:
             assert manager.config["steps"][0]["name"] == "filesystem"
             assert manager.config["steps"][1]["name"] == "blarify"
 
-    def test_get_step_class_found(self, config_file, mock_step_class):
+    def test_get_step_class_found(self, config_file: Any, mock_step_class: Any) -> None:
         """Test getting a step class that exists."""
         with (
             patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover,
@@ -109,7 +110,7 @@ class TestPipelineManager:
                 # Restore original method
                 manager._get_step_class = original_method
 
-    def test_get_step_class_not_found(self, config_file):
+    def test_get_step_class_not_found(self, config_file: Any) -> None:
         """Test getting a step class that doesn't exist."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
@@ -123,7 +124,7 @@ class TestPipelineManager:
                 step_class = manager._get_step_class("nonexistent")
                 assert step_class is None
 
-    def test_prepare_step_configs(self, config_file):
+    def test_prepare_step_configs(self, config_file: Any) -> None:
         """Test preparing step configurations from the config file."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
@@ -135,7 +136,7 @@ class TestPipelineManager:
             assert step_configs[0]["name"] == "filesystem"
             assert step_configs[1]["name"] == "blarify"
 
-    def test_validate_steps_all_found(self, config_file, mock_step_class):
+    def test_validate_steps_all_found(self, config_file: Any, mock_step_class: Any) -> None:
         """Test validating steps when all are found."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {
@@ -148,7 +149,7 @@ class TestPipelineManager:
             # Should not raise an exception
             manager._validate_steps()
 
-    def test_validate_steps_missing(self, config_file, mock_step_class):
+    def test_validate_steps_missing(self, config_file: Any, mock_step_class: Any) -> None:
         """Test validating steps when some are missing."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {"filesystem": mock_step_class}
@@ -172,7 +173,7 @@ class TestPipelineManager:
 
                     assert "blarify" in str(exc.value)
 
-    def test_start_job(self, config_file, mock_step_class):
+    def test_start_job(self, config_file: Any, mock_step_class: Any) -> None:
         """Test starting a job."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {
@@ -210,7 +211,7 @@ class TestPipelineManager:
                         assert manager.active_jobs[job_id]["task_id"] == "test-task-id"
                     assert manager.active_jobs[job_id]["status"] == StepStatus.RUNNING
 
-    def test_status(self, config_file, mock_step_class):
+    def test_status(self, config_file: Any, mock_step_class: Any) -> None:
         """Test checking job status."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}
@@ -250,7 +251,7 @@ class TestPipelineManager:
                     assert status["status"] == StepStatus.RUNNING
                     assert status["progress"] == 50.0
 
-    def test_stop(self, config_file, mock_step_class):
+    def test_stop(self, config_file: Any, mock_step_class: Any) -> None:
         """Test stopping a job."""
         with patch("codestory.ingestion_pipeline.manager.discover_pipeline_steps") as mock_discover:
             mock_discover.return_value = {}

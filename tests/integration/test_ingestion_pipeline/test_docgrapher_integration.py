@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the Documentation Grapher workflow step.
 
 These tests verify that the DocumentationGrapherStep can correctly process
@@ -38,7 +39,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
 
 
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> None:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -131,7 +132,7 @@ if __name__ == "__main__":
 
 
 @pytest.fixture
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     connector = Neo4jConnector(
         uri=f"bolt://localhost:{neo4j_port}",
@@ -150,7 +151,7 @@ def neo4j_connector():
 
 
 @pytest.fixture
-def initialized_repo(sample_repo, neo4j_connector):
+def initialized_repo(sample_repo: Any, neo4j_connector: Any):
     """Initialize the repository in Neo4j using the FileSystemStep."""
     # Create a mocked FileSystemStep that doesn't rely on Celery
     with (
@@ -322,7 +323,7 @@ def initialized_repo(sample_repo, neo4j_connector):
 
 
 @pytest.fixture
-def mock_llm_client():
+def mock_llm_client() -> None:
     """Mock the LLM client for testing."""
     with patch("codestory.llm.client") as mock_client:
         # Setup mock response for content analysis
@@ -365,7 +366,7 @@ def mock_llm_client():
 
 
 @pytest.mark.integration
-def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_llm_client):
+def test_docgrapher_step_run(initialized_repo: Any, neo4j_connector: Any, mock_llm_client: Any) -> None:
     """Test that the Documentation Grapher step can process a repository."""
     # Create the step with mocked methods to avoid Celery dependencies
     with (
@@ -517,7 +518,7 @@ def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_llm_client)
 
 
 @pytest.mark.integration
-def test_docgrapher_step_with_no_llm(initialized_repo, neo4j_connector):
+def test_docgrapher_step_with_no_llm(initialized_repo: Any, neo4j_connector: Any) -> None:
     """Test that the Documentation Grapher step works without LLM analysis."""
     # Create the step with mocked methods to avoid Celery dependencies
     with (

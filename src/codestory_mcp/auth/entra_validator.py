@@ -43,7 +43,7 @@ class AuthorizationError(Exception):
 class EntraValidator:
     """JWT token validator for Microsoft Entra ID."""
 
-    def __init__(self, tenant_id: str, audience: str, scope_manager=None, jwks_client=None) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, tenant_id: str, audience: str, scope_manager: Any=None, jwks_client: Any=None) -> None:  # type: ignore[no-untyped-def]
         """Initialize the validator.
 
         Args:

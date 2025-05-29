@@ -13,7 +13,7 @@ from codestory.cli.client.service_client import ServiceClient, ServiceError
 class TestServiceClient:
     """Tests for the ServiceClient class."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test ServiceClient initialization."""
         # Create test client
         client = ServiceClient()
@@ -23,7 +23,7 @@ class TestServiceClient:
         assert client.api_key is None
         assert isinstance(client.console, Console)
 
-    def test_console_methods(self):
+    def test_console_methods(self) -> None:
         """Test that only valid Console methods are used."""
         # Create a real Console object
         console = Console()
@@ -41,7 +41,7 @@ class TestServiceClient:
             with pytest.raises(ServiceError):
                 client.check_service_health()
 
-    def test_start_ingestion_logging(self):
+    def test_start_ingestion_logging(self) -> None:
         """Test start_ingestion with console logging."""
         # Create temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -63,7 +63,7 @@ class TestServiceClient:
                 # Check result
                 assert result == {"job_id": "test-job"}
 
-    def test_check_service_health_with_error(self):
+    def test_check_service_health_with_error(self) -> None:
         """Test check_service_health with error and console logging."""
         # Create client with real console
         console = Console()
@@ -78,7 +78,7 @@ class TestServiceClient:
             with pytest.raises(ServiceError):
                 client.check_service_health()
 
-    def test_generate_visualization_logging(self):
+    def test_generate_visualization_logging(self) -> None:
         """Test generate_visualization with console logging."""
         # Create client with real console
         console = Console()
@@ -102,7 +102,7 @@ class TestServiceClient:
             except ServiceError:
                 pass  # We expect this to fail with all mocks returning errors
 
-    def test_list_ingestion_jobs_with_items_field(self):
+    def test_list_ingestion_jobs_with_items_field(self) -> None:
         """Test list_ingestion_jobs with 'items' field in response."""
         # Create client
         client = ServiceClient()
@@ -132,7 +132,7 @@ class TestServiceClient:
             assert jobs[0]["job_id"] == "job1"
             assert jobs[1]["job_id"] == "job2"
 
-    def test_list_ingestion_jobs_with_jobs_field(self):
+    def test_list_ingestion_jobs_with_jobs_field(self) -> None:
         """Test list_ingestion_jobs with 'jobs' field in response (legacy format)."""
         # Create client
         client = ServiceClient()
@@ -158,7 +158,7 @@ class TestServiceClient:
             assert jobs[0]["job_id"] == "job1"
             assert jobs[1]["job_id"] == "job2"
 
-    def test_list_ingestion_jobs_with_invalid_format(self):
+    def test_list_ingestion_jobs_with_invalid_format(self) -> None:
         """Test list_ingestion_jobs with response lacking both 'items' and 'jobs' fields."""
         # Create client
         client = ServiceClient()
@@ -182,7 +182,7 @@ class TestServiceClient:
             assert "Invalid response format" in str(excinfo.value)
             assert "expected job data structure" in str(excinfo.value)
 
-    def test_list_ingestion_jobs_with_list_format(self):
+    def test_list_ingestion_jobs_with_list_format(self) -> None:
         """Test list_ingestion_jobs with direct list response format."""
         # Create client
         client = ServiceClient()
@@ -206,7 +206,7 @@ class TestServiceClient:
             assert jobs[0]["job_id"] == "job1"
             assert jobs[1]["job_id"] == "job2"
 
-    def test_list_ingestion_jobs_with_single_job_format(self):
+    def test_list_ingestion_jobs_with_single_job_format(self) -> None:
         """Test list_ingestion_jobs with single job response format."""
         # Create client
         client = ServiceClient()
@@ -230,7 +230,7 @@ class TestServiceClient:
             assert len(jobs) == 1
             assert jobs[0]["job_id"] == "job1"
 
-    def test_list_ingestion_jobs_with_mock_format(self):
+    def test_list_ingestion_jobs_with_mock_format(self) -> None:
         """Test list_ingestion_jobs with mock service format (job_id='jobs')."""
         # Create client with console mock to check warning
         console = MagicMock()

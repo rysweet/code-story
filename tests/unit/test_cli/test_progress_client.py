@@ -152,7 +152,7 @@ class TestProgressClient:
             # Set stop event after processing messages
             original_set = client._stop_event.set
 
-            def stop_after_messages():
+            def stop_after_messages() -> None:
                 # Stop after processing all messages
                 time.sleep(0.1)
                 original_set()

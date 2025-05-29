@@ -1,3 +1,4 @@
+from typing import Any
 """Test for the config API."""
 
 import os
@@ -20,7 +21,7 @@ from codestory_service.main import create_app
 
 
 @pytest.fixture(scope="module")
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Create a Neo4j connector for integration tests."""
     # Create a connector that uses the Neo4j test container
     connector = Neo4jConnector(
@@ -48,7 +49,7 @@ def neo4j_connector():
 
 
 @pytest.fixture
-def test_client(neo4j_connector):
+def test_client(neo4j_connector: Any):
     """Create a test client for the FastAPI application."""
     # Set up test environment variables
     os.environ["CODESTORY_SERVICE_DEV_MODE"] = "true"
@@ -137,7 +138,7 @@ def test_client(neo4j_connector):
 
 
 @pytest.mark.integration
-def test_config_api_simple(test_client):
+def test_config_api_simple(test_client: Any) -> None:
     """Test the configuration API endpoints with basic validation."""
     # Ensure DB is configured correctly for any new connectors
     os.environ["NEO4J_DATABASE"] = "testdb"

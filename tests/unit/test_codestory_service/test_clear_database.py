@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for database clear functionality."""
 
 from unittest.mock import AsyncMock, MagicMock
@@ -27,7 +28,7 @@ def mock_graph_service():
 
 
 @pytest.fixture
-def test_client(mock_graph_service):
+def test_client(mock_graph_service: Any):
     """Create a test client with mocked dependencies."""
     # Override the dependency
     app.dependency_overrides = {}
@@ -55,7 +56,7 @@ def test_client(mock_graph_service):
     app.dependency_overrides = {}
 
 
-def test_clear_database_success(test_client, mock_graph_service):
+def test_clear_database_success(test_client: Any, mock_graph_service: Any) -> None:
     """Test successful database clearing."""
     # Set up test client
     response = test_client.post(
@@ -77,7 +78,7 @@ def test_clear_database_success(test_client, mock_graph_service):
     assert request_arg.preserve_schema is True
 
 
-def test_clear_database_without_confirmation(test_client, mock_graph_service):
+def test_clear_database_without_confirmation(test_client: Any, mock_graph_service: Any) -> None:
     """Test clearing database without confirmation."""
     # Set up service to raise error
     mock_graph_service.clear_database.side_effect = ValueError(
@@ -94,7 +95,7 @@ def test_clear_database_without_confirmation(test_client, mock_graph_service):
     assert "confirm" in response.json()["detail"][0]["msg"].lower()
 
 
-def test_clear_database_error(test_client, mock_graph_service):
+def test_clear_database_error(test_client: Any, mock_graph_service: Any) -> None:
     """Test database clearing with error."""
     # Set up service to raise error
     mock_graph_service.clear_database.side_effect = HTTPException(

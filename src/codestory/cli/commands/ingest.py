@@ -26,7 +26,7 @@ def ingest() -> Any:
     pass
 
 
-def run_command(command, capture_output=True, shell=True) -> None:  # type: ignore[no-untyped-def]
+def run_command: Any(command, capture_output: Any=True, shell: Any=True) -> None:  # type: ignore[no-untyped-def]
     """Run a shell command and return its output."""
     try:
         result = subprocess.run(
@@ -62,7 +62,7 @@ def is_docker_running() -> Any:
         return False
 
 
-def is_repo_mounted(repo_path, console=None) -> None:  # type: ignore[no-untyped-def]
+def is_repo_mounted(repo_path: Any, console: Any=None) -> None:  # type: ignore[no-untyped-def]
     """Check if repository is already mounted correctly for ingestion.
 
     This checks both the actual mount and whether the path is accessible
@@ -221,7 +221,7 @@ def is_repo_mounted(repo_path, console=None) -> None:  # type: ignore[no-untyped
         return False  # type: ignore[return-value]
 
 
-def create_override_file(repo_path, console=None) -> None:  # type: ignore[no-untyped-def]
+def create_override_file(repo_path: Any, console: Any=None) -> None:  # type: ignore[no-untyped-def]
     """Create a docker-compose.override.yml file with the repository mount."""
     repo_path = os.path.abspath(repo_path)
     repo_name = os.path.basename(repo_path)
@@ -258,7 +258,7 @@ def create_override_file(repo_path, console=None) -> None:  # type: ignore[no-un
         return False  # type: ignore[return-value]
 
 
-def create_repo_config(repo_path, console=None) -> None:  # type: ignore[no-untyped-def]
+def create_repo_config(repo_path: Any, console: Any=None) -> None:  # type: ignore[no-untyped-def]
     """Create repository configuration file."""
     config_dir = os.path.join(repo_path, ".codestory")
     os.makedirs(config_dir, exist_ok=True)
@@ -286,7 +286,7 @@ auto_mounted = true
     return True  # type: ignore[return-value]
 
 
-def wait_for_service(console=None, max_attempts=30) -> None:  # type: ignore[no-untyped-def]
+def wait_for_service(console: Any=None, max_attempts: Any=30) -> None:  # type: ignore[no-untyped-def]
     """Wait for the service to be ready."""
     if console:
         console.print("Waiting for service to be ready...")
@@ -330,7 +330,7 @@ def wait_for_service(console=None, max_attempts=30) -> None:  # type: ignore[no-
     return False  # type: ignore[return-value]
 
 
-def setup_repository_mount(repo_path, console=None, force_remount=False) -> None:  # type: ignore[no-untyped-def]
+def setup_repository_mount(repo_path: Any, console: Any=None, force_remount: Any=False) -> None:  # type: ignore[no-untyped-def]
     """Set up repository mount using Docker bind mounts without restarting containers."""
     repo_path = os.path.abspath(repo_path)
 

@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the Neo4jConnector class."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -48,7 +49,7 @@ def mock_async_driver():
 
 
 @pytest.fixture
-def connector(mock_driver):
+def connector(mock_driver: Any) -> None:
     """Create a Neo4jConnector with a mock driver."""
     with patch("neo4j.GraphDatabase.driver", return_value=mock_driver):
         connector = Neo4jConnector(
@@ -63,7 +64,7 @@ def connector(mock_driver):
 
 
 @pytest.fixture
-def async_connector(mock_async_driver):
+def async_connector(mock_async_driver: Any) -> None:
     """Create a Neo4jConnector with a mock async driver."""
     with patch("neo4j.GraphDatabase.driver", return_value=mock_async_driver):
         connector = Neo4jConnector(
@@ -78,7 +79,7 @@ def async_connector(mock_async_driver):
         # Close is handled automatically in the test
 
 
-def test_init():
+def test_init() -> None:
     """Test connector initialization."""
     # Test with explicit parameters
     with patch("neo4j.GraphDatabase.driver") as mock_driver_func:
@@ -99,7 +100,7 @@ def test_init():
         assert connector.max_connection_pool_size == 50
 
 
-def test_execute_query(connector, mock_driver):
+def test_execute_query(connector: Any, mock_driver: Any) -> None:
     """Test execute_query method."""
     # Configure mock session
     session = mock_driver.session.return_value.__enter__.return_value
@@ -115,7 +116,7 @@ def test_execute_query(connector, mock_driver):
     assert result == [{"name": "test_write"}]
 
 
-def test_execute_query_with_retry(connector, mock_driver):
+def test_execute_query_with_retry(connector: Any, mock_driver: Any) -> None:
     """Test execute_query with retry on transient error."""
     # This test just verifies the retry mechanism works by checking function attributes
 
@@ -129,7 +130,7 @@ def test_execute_query_with_retry(connector, mock_driver):
     assert callable(connector.execute_query)
 
 
-def test_execute_query_max_retries_exceeded(connector, mock_driver):
+def test_execute_query_max_retries_exceeded(connector: Any, mock_driver: Any) -> None:
     """Test execute_query when max retries is exceeded."""
     # Configure session to raise an exception for execute_query
     session = mock_driver.session.return_value.__enter__.return_value
@@ -142,7 +143,7 @@ def test_execute_query_max_retries_exceeded(connector, mock_driver):
         connector.execute_query("MATCH (n) RETURN n", retry_count=2)
 
 
-def test_execute_many(connector, mock_driver):
+def test_execute_many(connector: Any, mock_driver: Any) -> None:
     """Test execute_many method."""
     # Configure mock session
     session = mock_driver.session.return_value.__enter__.return_value
@@ -160,7 +161,7 @@ def test_execute_many(connector, mock_driver):
     assert results[1] == [{"query": "second"}]
 
 
-def test_execute_many_transaction_error(connector, mock_driver):
+def test_execute_many_transaction_error(connector: Any, mock_driver: Any) -> None:
     """Test execute_many with transaction error."""
     # Configure mock session to raise exception
     session = mock_driver.session.return_value.__enter__.return_value
@@ -174,7 +175,7 @@ def test_execute_many_transaction_error(connector, mock_driver):
         connector.execute_many(queries, params_list)
 
 
-def test_semantic_search(connector, mock_driver):
+def test_semantic_search(connector: Any, mock_driver: Any) -> None:
     """Test semantic_search method."""
     # Setup session and result for semantic search
     session = mock_driver.session.return_value.__enter__.return_value
@@ -234,13 +235,13 @@ async def test_execute_many_async(async_connector, mock_async_driver):
     assert results[1] == [{"async": "result2"}]
 
 
-def test_close(connector, mock_driver):
+def test_close(connector: Any, mock_driver: Any) -> None:
     """Test driver close method."""
     connector.close()
     mock_driver.close.assert_called_once()
 
 
-def test_context_manager():
+def test_context_manager() -> None:
     """Test using connector as a context manager."""
     with patch("neo4j.GraphDatabase.driver") as mock_driver_func:
         mock_driver = MagicMock()

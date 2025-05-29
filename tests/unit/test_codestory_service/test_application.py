@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the Code Story Service application services.
 
 This module contains tests for the application services used in the service.
@@ -39,7 +40,7 @@ class TestAuthService:
         return validator
 
     @pytest.fixture
-    def service(self, mock_validator):
+    def service(self, mock_validator: Any):
         """Create an AuthService with mock dependencies."""
         service = AuthService(mock_validator)
         service.settings = mock.MagicMock()
@@ -114,7 +115,7 @@ class TestConfigService:
         service.redis = mock.AsyncMock()
         return service
 
-    def test_get_config_dump(self, service):
+    def test_get_config_dump(self, service: Any) -> None:
         """Test getting configuration dump."""
         # Mock model_dump methods
         service.core_settings.model_dump.return_value = {
@@ -134,7 +135,7 @@ class TestConfigService:
         assert config.version == "1.0.0"
         assert "last_updated" in config.model_dump()
 
-    def test_get_config_schema(self, service):
+    def test_get_config_schema(self, service: Any) -> None:
         """Test getting configuration schema."""
         from codestory_service.domain.config import (
             ConfigDump,
@@ -274,7 +275,7 @@ class TestGraphService:
         return adapter
 
     @pytest.fixture
-    def service(self, mock_neo4j, mock_openai):
+    def service(self, mock_neo4j: Any, mock_openai: Any):
         """Create a GraphService with mock dependencies."""
         return GraphService(mock_neo4j, mock_openai)
 
@@ -361,7 +362,7 @@ class TestIngestionService:
         return adapter
 
     @pytest.fixture
-    def service(self, mock_celery):
+    def service(self, mock_celery: Any):
         """Create an IngestionService with mock dependencies."""
         service = IngestionService(mock_celery)
         service.redis = mock.AsyncMock()

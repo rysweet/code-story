@@ -30,7 +30,7 @@ class KnowledgeGraph:
     knowledge graph, and stores it in Neo4j.
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str):
+    def __init__(self, connector: Neo4jConnector, repository_path: str) -> None:
         """Initialize the knowledge graph.
 
         Args:

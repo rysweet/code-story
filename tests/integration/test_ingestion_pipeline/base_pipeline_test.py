@@ -1,3 +1,4 @@
+from typing import Any
 """Base test class for pipeline integration tests.
 
 This module provides a base test class with common functionality for
@@ -21,7 +22,7 @@ class BasePipelineTest:
     """
 
     @pytest.fixture(autouse=True)
-    def setup_test_env(self, neo4j_connector, redis_client, celery_app):
+    def setup_test_env(self, neo4j_connector: Any, redis_client: Any, celery_app: Any) -> None:
         """Set up the test environment.
 
         This fixture sets up the test environment with Neo4j, Redis, and Celery
@@ -134,7 +135,7 @@ This is a test repository for pipeline integration tests.
 
         return repo_dir
 
-    def wait_for_node_in_db(self, query, params=None, timeout=15):
+    def wait_for_node_in_db(self, query: Any, params: Any=None, timeout: Any=15):
         """Wait for a node to appear in the database.
 
         Args:
@@ -153,7 +154,7 @@ This is a test repository for pipeline integration tests.
             time.sleep(0.5)  # Small delay between checks
         return False
 
-    def create_filesystem_nodes(self):
+    def create_filesystem_nodes(self) -> None:
         """Create filesystem nodes directly in Neo4j.
 
         This is useful for tests that need a filesystem structure

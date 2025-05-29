@@ -8,6 +8,7 @@ from codestory_service.domain.ingestion import JobStatus
 from codestory_service.infrastructure.celery_adapter import CeleryAdapter
 from codestory_service.main import app
 
+from typing import Any
 client = TestClient(app)
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def celery_adapter():
     return CeleryAdapter()
 
 @pytest.fixture
-def ingestion_service(celery_adapter):
+def ingestion_service(celery_adapter: Any):
     return IngestionService(celery_adapter)
 
 def start_test_job():
@@ -30,7 +31,7 @@ def start_test_job():
     job_id = response.json()["job_id"]
     return job_id
 
-def test_cancel_running_job(ingestion_service):
+def test_cancel_running_job(ingestion_service: Any) -> None:
     job_id = start_test_job()
     # Wait briefly to ensure job is running
     time.sleep(2)
@@ -44,7 +45,7 @@ def test_cancel_running_job(ingestion_service):
         time.sleep(1)
     assert status == JobStatus.CANCELLED
 
-def test_cancel_pending_job(ingestion_service):
+def test_cancel_pending_job(ingestion_service: Any) -> None:
     job_id = start_test_job()
     # Immediately cancel before it starts
     cancel_response = client.post(f"/v1/ingest/{job_id}/cancel")
@@ -57,7 +58,7 @@ def test_cancel_pending_job(ingestion_service):
         time.sleep(1)
     assert status == JobStatus.CANCELLED
 
-def test_cancel_completed_job(ingestion_service):
+def test_cancel_completed_job(ingestion_service: Any) -> None:
     job_id = start_test_job()
     # Wait for job to complete
     for _ in range(30):

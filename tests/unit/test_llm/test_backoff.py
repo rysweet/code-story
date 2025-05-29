@@ -22,7 +22,7 @@ from codestory.llm.metrics import OperationType
 
 # Create mock fixture to prevent real Prometheus metrics from being used
 @pytest.fixture(autouse=True)
-def mock_all_prometheus():
+def mock_all_prometheus() -> None:
     """Mock all Prometheus metrics objects before any module imports."""
     with (
         patch("prometheus_client.Counter") as mock_counter,
@@ -43,7 +43,7 @@ def mock_all_prometheus():
 class TestRetryFunctions:
     """Tests for retry utility functions."""
 
-    def test_get_retry_after(self):
+    def test_get_retry_after(self) -> None:
         """Test get_retry_after function."""
         # Create a mock retry state with an exception that has retry_after
         retry_state = MagicMock()
@@ -66,7 +66,7 @@ class TestRetryFunctions:
         result = get_retry_after(retry_state)
         assert result is None
 
-    def test_before_retry_callback(self):
+    def test_before_retry_callback(self) -> None:
         """Test before_retry_callback function."""
         # Create a mock retry state
         retry_state = MagicMock()
@@ -91,7 +91,7 @@ class TestRetryFunctions:
 class TestRetryDecorators:
     """Tests for retry decorators."""
 
-    def test_retry_on_openai_errors(self):
+    def test_retry_on_openai_errors(self) -> None:
         """Test the retry_on_openai_errors decorator."""
         # Create a test function that raises different types of errors
         mock_func = MagicMock()
@@ -135,13 +135,13 @@ class TestRetryDecorators:
             assert "_operation_type" in mock_func.call_args[1]
             assert mock_func.call_args[1]["_operation_type"] == OperationType.CHAT
 
-    def test_exception_conversion_rate_limit(self):
+    def test_exception_conversion_rate_limit(self) -> None:
         """Test conversion of RateLimitError."""
         with patch("codestory.llm.backoff.retry") as mock_retry:
             mock_retry.return_value = lambda f: f
 
             # Define a function that raises OpenAI RateLimitError
-            def test_func():
+            def test_func() -> None:
                 raise openai.RateLimitError(
                     message="Rate limit exceeded", response=MagicMock(), body=None
                 )
@@ -153,13 +153,13 @@ class TestRetryDecorators:
             with pytest.raises(RateLimitError):
                 decorated_func()
 
-    def test_exception_conversion_api_connection(self):
+    def test_exception_conversion_api_connection(self) -> None:
         """Test conversion of APIConnectionError."""
         with patch("codestory.llm.backoff.retry") as mock_retry:
             mock_retry.return_value = lambda f: f
 
             # Define a function that raises OpenAI APIConnectionError
-            def test_func():
+            def test_func() -> None:
                 raise openai.APIConnectionError(message="Connection error", request=MagicMock())
 
             # Apply our decorator
@@ -169,7 +169,7 @@ class TestRetryDecorators:
             with pytest.raises(ServiceUnavailableError):
                 decorated_func()
 
-    def test_exception_conversion_timeout(self):
+    def test_exception_conversion_timeout(self) -> None:
         """Test TimeoutError conversion directly."""
         with patch("codestory.llm.backoff.retry") as mock_retry:
             mock_retry.return_value = lambda f: f
@@ -177,12 +177,12 @@ class TestRetryDecorators:
             # Create a simpler test function that mimics APITimeoutError behavior
             # Just inspect how APITimeoutError is created in the actual code
             class MockAPITimeoutError(Exception):
-                def __init__(self):
+                def __init__(self) -> None:
                     self.message = "Request timed out"
                     super().__init__(self.message)
 
             # Define a function that raises our mock timeout error
-            def test_func():
+            def test_func() -> None:
                 # Instead of trying to create a complex object,
                 # we patch the place where openai.APITimeoutError is used
                 with patch("openai.APITimeoutError", MockAPITimeoutError):
@@ -202,13 +202,13 @@ class TestRetryDecorators:
                 # but we can check that the exception contains the right message
                 assert "Request timed out" in str(exc_info.value)
 
-    def test_exception_conversion_context_length(self):
+    def test_exception_conversion_context_length(self) -> None:
         """Test conversion of BadRequestError for context length."""
         with patch("codestory.llm.backoff.retry") as mock_retry:
             mock_retry.return_value = lambda f: f
 
             # Define a function that raises OpenAI BadRequestError for context length
-            def test_func():
+            def test_func() -> None:
                 raise openai.BadRequestError(
                     message="Input context length exceeded maximum context length",
                     response=MagicMock(),
@@ -222,14 +222,14 @@ class TestRetryDecorators:
             with pytest.raises(ContextLengthError):
                 decorated_func()
 
-    def test_retry_on_openai_errors_retry_after(self):
+    def test_retry_on_openai_errors_retry_after(self) -> None:
         """Test that retry_after is extracted from headers."""
         with patch("codestory.llm.backoff.retry") as mock_retry:
             # Make the mock retry actually execute the function directly
             mock_retry.return_value = lambda f: f
 
             # Create a function that raises a rate limit error with headers
-            def test_retry_after():
+            def test_retry_after() -> None:
                 e = openai.RateLimitError(
                     message="Rate limit exceeded", response=MagicMock(), body=None
                 )
@@ -246,7 +246,7 @@ class TestRetryDecorators:
             # Check that retry_after was extracted
             assert exc_info.value.retry_after == 30
 
-    def test_retry_on_openai_errors_async_creation(self):
+    def test_retry_on_openai_errors_async_creation(self) -> None:
         """Test that the async decorator is created correctly."""
         # Create a simple mock to replace retry without needing tenacity internals
         mock_decorated = MagicMock()

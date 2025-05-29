@@ -1,3 +1,4 @@
+from typing import Any
 """
 Unit tests for auto-mount functionality in the ingest command.
 """
@@ -38,7 +39,7 @@ def cli_context():
 class TestAutoMount:
     """Tests for auto-mount functionality in the ingest command."""
 
-    def test_container_detection(self, cli_runner, cli_context):
+    def test_container_detection(self, cli_runner: Any, cli_context: Any) -> None:
         """Test that Docker container deployment is detected correctly."""
         with (
             patch(
@@ -69,7 +70,7 @@ class TestAutoMount:
                         assert args[0] == expected_container_path
                         assert len(args) == 1
 
-    def test_auto_mount_execution(self, cli_runner, cli_context):
+    def test_auto_mount_execution(self, cli_runner: Any, cli_context: Any) -> None:
         """Test that auto_mount.py is executed when repository is not mounted."""
         with (
             patch(
@@ -129,7 +130,7 @@ class TestAutoMount:
                             assert args[0] == expected_container_path
                             assert len(args) == 1
 
-    def test_no_auto_mount(self, cli_runner, cli_context):
+    def test_no_auto_mount(self, cli_runner: Any, cli_context: Any) -> None:
         """Test that --no-auto-mount flag disables auto mounting."""
         with (
             patch(
@@ -158,7 +159,7 @@ class TestAutoMount:
                 assert args[0] == expected_container_path
                 assert len(args) == 1
 
-    def test_non_docker_deployment(self, cli_runner, cli_context):
+    def test_non_docker_deployment(self, cli_runner: Any, cli_context: Any) -> None:
         """Test behavior with non-Docker deployment."""
         with (
             patch(
@@ -190,7 +191,7 @@ class TestAutoMount:
 class TestAutoMountFlags:
     """Tests for auto-mount related CLI flags."""
 
-    def test_auto_mount_flag(self, cli_runner, cli_context):
+    def test_auto_mount_flag(self, cli_runner: Any, cli_context: Any) -> None:
         """Test that --auto-mount flag works as expected."""
         with (
             patch(
@@ -228,7 +229,7 @@ class TestAutoMountFlags:
                     assert args[0] == expected_container_path
                     assert len(args) == 1
 
-    def test_no_auto_mount_flag(self, cli_runner, cli_context):
+    def test_no_auto_mount_flag(self, cli_runner: Any, cli_context: Any) -> None:
         """Test that --no-auto-mount flag works as expected."""
         with (
             patch(

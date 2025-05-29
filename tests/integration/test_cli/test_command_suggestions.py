@@ -1,3 +1,4 @@
+from typing import Any
 """
 Integration tests for CLI command suggestions and help behavior.
 """
@@ -15,7 +16,7 @@ def cli_runner():
     return CliRunner()
 
 
-def test_no_command_shows_help(cli_runner):
+def test_no_command_shows_help(cli_runner: Any) -> None:
     """Test that running the CLI without a command shows help."""
     # Run CLI without any command
     result = cli_runner.invoke(app, [])
@@ -27,7 +28,7 @@ def test_no_command_shows_help(cli_runner):
     assert "Commands:" in result.output
 
 
-def test_invalid_command_suggestion(cli_runner):
+def test_invalid_command_suggestion(cli_runner: Any) -> None:
     """Test that running the CLI with an invalid command gives a suggestion."""
     # Run CLI with a command that doesn't exist but is close to "service"
     result = cli_runner.invoke(app, ["servic"])
@@ -39,7 +40,7 @@ def test_invalid_command_suggestion(cli_runner):
     assert "service" in result.output
 
 
-def test_invalid_command_with_similar_options(cli_runner):
+def test_invalid_command_with_similar_options(cli_runner: Any) -> None:
     """Test suggestions with multiple similar commands."""
     # Both "status" and "st" (service status alias) should be suggested for "stat"
     result = cli_runner.invoke(app, ["stat"])
@@ -52,7 +53,7 @@ def test_invalid_command_with_similar_options(cli_runner):
     assert "st" in result.output
 
 
-def test_help_flag_shows_help(cli_runner):
+def test_help_flag_shows_help(cli_runner: Any) -> None:
     """Test that --help flag shows help information."""
     # Run CLI with --help flag
     result = cli_runner.invoke(app, ["--help"])
@@ -65,7 +66,7 @@ def test_help_flag_shows_help(cli_runner):
     assert "Options:" in result.output
 
 
-def test_command_help_shows_command_help(cli_runner):
+def test_command_help_shows_command_help(cli_runner: Any) -> None:
     """Test that command --help shows command-specific help."""
     # Run CLI with command help
     result = cli_runner.invoke(app, ["service", "--help"])

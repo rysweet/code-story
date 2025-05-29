@@ -1,3 +1,4 @@
+from typing import Any
 """Ingestion service for Code Story Service.
 
 This module provides application-level services for managing the ingestion pipeline,
@@ -430,7 +431,7 @@ class IngestionService:
                     if getattr(step, "memory_mb", None) is not None:
                         memory_mbs.append(step.memory_mb)
     
-        def summary_stats(values):
+        def summary_stats(values: Any):
             if not values:
                 return {"avg": None, "min": None, "max": None}
             return {

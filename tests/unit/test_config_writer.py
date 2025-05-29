@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the configuration writer module."""
 
 import os
@@ -17,7 +18,7 @@ from codestory.config.exceptions import SettingNotFoundError
 
 
 @pytest.fixture
-def temp_env_file():
+def temp_env_file() -> None:
     """Fixture to create a temporary .env file."""
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write("NEO4J__URI=bolt://localhost:7687\n")
@@ -34,7 +35,7 @@ def temp_env_file():
 
 
 @pytest.fixture
-def temp_toml_file():
+def temp_toml_file() -> None:
     """Fixture to create a temporary .codestory.toml file."""
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write("[neo4j]\n")
@@ -52,7 +53,7 @@ def temp_toml_file():
         os.unlink(temp_path)
 
 
-def test_update_env(temp_env_file):
+def test_update_env(temp_env_file: Any) -> None:
     """Test updating values in a .env file."""
     # Update a value
     update_env("NEO4J__URI", "bolt://neo4j:7687", env_file=temp_env_file)
@@ -74,7 +75,7 @@ def test_update_env(temp_env_file):
     assert "NEW_SETTING='new-value'" in content
 
 
-def test_update_toml(temp_toml_file):
+def test_update_toml(temp_toml_file: Any) -> None:
     """Test updating values in a .codestory.toml file."""
     # Update a value
     update_toml("neo4j", "uri", "bolt://neo4j:7687", toml_file=temp_toml_file)
@@ -138,7 +139,7 @@ def test_update_config_invalid_path():
     # Configure hasattr to return False for 'invalid' section
     original_hasattr = hasattr
 
-    def mock_hasattr(obj, name):
+    def mock_hasattr(obj: Any, name: Any):
         if name == "invalid" and obj == mock_settings:
             return False
         # Return True for valid sections we set up, False for others
@@ -177,7 +178,7 @@ def test_update_config_invalid_path():
             update_config("neo4j.invalid", "value")
 
 
-def test_update_config_persist_env():
+def test_update_config_persist_env() -> None:
     """Test updating a config value and persisting to .env."""
     # Create a temp env file
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
@@ -212,7 +213,7 @@ def test_update_config_persist_env():
             os.unlink(env_file)
 
 
-def test_update_config_persist_toml():
+def test_update_config_persist_toml() -> None:
     """Test updating a config value and persisting to .toml."""
     # Create a temp toml file
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
@@ -247,7 +248,7 @@ def test_update_config_persist_toml():
 
 
 @pytest.mark.skip(reason="Refresh settings behavior has changed to modify in place")
-def test_update_config_refresh():
+def test_update_config_refresh() -> None:
     """Test that update_config refreshes settings.
 
     This test has been skipped because the behavior of refresh_settings

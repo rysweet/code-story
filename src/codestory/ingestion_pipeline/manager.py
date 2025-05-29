@@ -32,7 +32,7 @@ class PipelineManager:
     monitor ingestion jobs.
     """
 
-    def __init__(self, config_path: str | Path = "pipeline_config.yml"):
+    def __init__(self, config_path: str | Path = "pipeline_config.yml") -> None:
         """Initialize the pipeline manager.
 
         Args:

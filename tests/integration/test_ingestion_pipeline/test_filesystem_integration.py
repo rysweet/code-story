@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the filesystem workflow step.
 
 These tests verify that the FileSystemStep can correctly process a repository
@@ -216,7 +217,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.neo4j, pytest.mark.celery]
 
 
 @pytest.fixture
-def sample_repo():
+def sample_repo() -> None:
     """Create a sample repository structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a simple directory structure
@@ -245,7 +246,7 @@ def sample_repo():
 
 
 @pytest.fixture
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     # Use direct connection parameters to connect to the test Neo4j instance
     connector = Neo4jConnector(
@@ -272,7 +273,7 @@ def neo4j_connector():
 @pytest.mark.neo4j
 @pytest.mark.celery
 @pytest.mark.timeout(60)  # Limit test execution to 60 seconds
-def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
+def test_filesystem_step_run(sample_repo: Any, neo4j_connector: Any, celery_app: Any):
     """Test that the filesystem step can process a repository."""
     print("*** IMPORTANT: TEST IS ACTUALLY RUNNING ***")
 
@@ -294,7 +295,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
     job_id = generate_job_id()
 
     # Create a mock run method that executes directly
-    def mock_run(self, repository_path, **config):
+    def mock_run(self, repository_path: Any, **config):
         # Store job information
         self.active_jobs[job_id] = {
             "task_id": "direct-execution",
@@ -375,7 +376,7 @@ def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app):
 @pytest.mark.integration
 @pytest.mark.neo4j
 @pytest.mark.celery
-def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_app):
+def test_filesystem_step_ingestion_update(sample_repo: Any, neo4j_connector: Any, celery_app: Any):
     """Test that the filesystem step can update an existing repository."""
     # Configure Celery to run tasks eagerly (synchronously)
     celery_app.conf.task_always_eager = True
@@ -391,7 +392,7 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
     initial_job_id = generate_job_id()
 
     # Create a mock run method that executes directly
-    def mock_run(self, repository_path, **config):
+    def mock_run(self, repository_path: Any, **config):
         # Store job information
         self.active_jobs[initial_job_id] = {
             "task_id": "direct-execution",
@@ -446,7 +447,7 @@ def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector, celery_a
     update_job_id = generate_job_id()
 
     # Create a mock update method
-    def mock_update(self, repository_path, **config):
+    def mock_update(self, repository_path: Any, **config):
         # Store job information
         self.active_jobs[update_job_id] = {
             "task_id": "direct-update",

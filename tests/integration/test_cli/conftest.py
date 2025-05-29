@@ -25,7 +25,7 @@ def cli_runner() -> CliRunner:
     return CliRunner()
 
 
-def pytest_configure(config):
+def pytest_config: Anyure(config) -> None:
     """Add custom markers to pytest."""
     config.addinivalue_line(
         "markers",
@@ -34,7 +34,7 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session")
-def running_service(request) -> Generator[dict[str, Any], None, None]:
+def running_service(request: Any) -> Generator[dict[str, Any], None, None]:
     """
     Ensures the Code Story service is running for integration tests.
 

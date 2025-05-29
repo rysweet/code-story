@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the configuration export functionality."""
 
 import json
@@ -135,7 +136,7 @@ def mock_settings():
     return settings
 
 
-def test_redact_secrets():
+def test_redact_secrets() -> None:
     """Test redacting secrets from configuration dictionaries."""
     config = {
         "neo4j": {
@@ -167,7 +168,7 @@ def test_redact_secrets():
     assert redacted["azure"]["client_id"] == "client-id"
 
 
-def test_settings_to_dict(mock_settings):
+def test_settings_to_dict(mock_settings: Any) -> None:
     """Test converting settings to a dictionary."""
     # Test with redaction (default)
     result = settings_to_dict(mock_settings)
@@ -189,7 +190,7 @@ def test_settings_to_dict(mock_settings):
     assert result["openai"]["api_key"] == "test-key"
 
 
-def test_export_to_json(mock_settings):
+def test_export_to_json(mock_settings: Any) -> None:
     """Test exporting settings to JSON."""
     # Modify mock_settings model_dump to return dict with proper structure for processing SecretStr
     mock_settings.model_dump.return_value = {
@@ -279,13 +280,13 @@ def test_export_to_json(mock_settings):
 
 
 @pytest.mark.skip(reason="Complex TOML mocking causing issues, to be fixed later")
-def test_export_to_toml(mock_settings):
+def test_export_to_toml(mock_settings: Any) -> None:
     """Test exporting settings to TOML."""
     # This test is skipped for now due to complex mocking issues
     pass
 
 
-def test_create_env_template(mock_settings):
+def test_create_env_template(mock_settings: Any) -> None:
     """Test creating an .env template."""
     with patch("src.codestory.config.export.get_settings", return_value=mock_settings):
         # Test with default parameters

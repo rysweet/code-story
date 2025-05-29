@@ -11,7 +11,7 @@ from codestory.cli.main import app, main
 
 
 @contextmanager
-def custom_error_handler():
+def custom_error_handler() -> None:
     """Context manager for handling custom error handling tests."""
     # Save the original error callback
     original_error_callback = click.Context.fail

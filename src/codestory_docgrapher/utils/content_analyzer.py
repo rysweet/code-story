@@ -24,7 +24,7 @@ class ContentAnalyzer:
     relationships, and other structured information from documentation content.
     """
 
-    def __init__(self, use_llm: bool = True):
+    def __init__(self, use_llm: bool = True) -> None:
         """Initialize the content analyzer.
 
         Args:

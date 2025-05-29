@@ -22,7 +22,7 @@ class ContentExtractor:
     relevant context for summarization of different node types.
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str | None = None):
+    def __init__(self, connector: Neo4jConnector, repository_path: str | None = None) -> None:
         """Initialize the content extractor.
 
         Args:

@@ -377,7 +377,7 @@ class OpenAIClient:
                 logger.error("Authentication error during client creation - check credentials")
             raise
 
-    def _prepare_request_data(self, request) -> None:  # type: ignore[no-untyped-def]
+    def _prepare_request: Any_data(self, request) -> None:  # type: ignore[no-untyped-def]
         """Extract model name and prepare request data, removing internal parameters.
 
         Args:

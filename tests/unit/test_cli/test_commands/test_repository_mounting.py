@@ -37,7 +37,7 @@ def cli_context():
 class TestRepositoryMounting:
     """Tests for repository mounting functionality in the ingest command."""
 
-    def test_is_repo_mounted(self):
+    def test_is_repo_mounted(self) -> None:
         """Test the is_repo_mounted function."""
         # Create mock for subprocess.run
         with patch("subprocess.run") as mock_run:
@@ -75,7 +75,7 @@ class TestRepositoryMounting:
                 # Verify result
                 assert result is True
 
-    def test_setup_repository_mount(self):
+    def test_setup_repository_mount(self) -> None:
         """Test the setup_repository_mount function."""
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -143,7 +143,7 @@ class TestRepositoryMounting:
                                     mock_wait.assert_called_once()
                                     mock_config.assert_called_once()
 
-    def test_create_override_file(self):
+    def test_create_override_file(self) -> None:
         """Test the create_override_file function."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Mock open function

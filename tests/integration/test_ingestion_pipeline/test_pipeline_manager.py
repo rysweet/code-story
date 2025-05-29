@@ -10,7 +10,7 @@ from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
 class TestPipelineManager:
     """A test implementation of PipelineManager that runs steps directly without Celery."""
 
-    def __init__(self, neo4j_connector: Neo4jConnector):
+    def __init__(self, neo4j_connector: Neo4jConnector) -> None:
         self.neo4j_connector = neo4j_connector
         self.job_id = str(uuid.uuid4())
         self.steps_status = {}

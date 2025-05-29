@@ -1,3 +1,4 @@
+from typing import Any
 """Configuration for the MCP Adapter.
 
 This module provides configuration management for the MCP Adapter.
@@ -87,7 +88,7 @@ class MCPSettings(BaseSettings):
 
     @field_validator("api_audience", mode="before")
     @classmethod
-    def set_audience(cls, v: str | None, info) -> str:  # type: ignore[no-untyped-def]
+    def set_audience(cls, v: str | None, info: Any) -> str:  # type: ignore[no-untyped-def]
         """Set default audience based on client ID.
 
         Args:

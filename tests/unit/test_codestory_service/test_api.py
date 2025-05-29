@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for the Code Story Service API endpoints.
 
 This module contains tests for the API layer of the service.
@@ -219,7 +220,7 @@ class TestConfigAPI:
 
         return service
 
-    def test_get_config(self, mock_service):
+    def test_get_config(self, mock_service: Any) -> None:
         """Test getting configuration."""
         from codestory_service.domain.config import ConfigSection
 
@@ -237,7 +238,7 @@ class TestConfigAPI:
         assert result.version == "1.0.0"
         assert ConfigSection.GENERAL in result.groups
 
-    def test_get_config_sensitive(self, mock_service):
+    def test_get_config_sensitive(self, mock_service: Any) -> None:
         """Test that only admins can view sensitive values."""
 
         # Call the endpoint with non-admin user

@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for graph database export functionality."""
 
 import csv
@@ -32,7 +33,7 @@ def mock_connector():
     return connector
 
 
-def test_export_to_json(mock_connector):
+def test_export_to_json(mock_connector: Any) -> None:
     """Test exporting data to JSON."""
     with tempfile.TemporaryDirectory() as temp_dir:
         output_path = os.path.join(temp_dir, "test_export.json")
@@ -63,7 +64,7 @@ def test_export_to_json(mock_connector):
             assert data[1]["name"] == "Node2"
 
 
-def test_export_to_csv(mock_connector):
+def test_export_to_csv(mock_connector: Any) -> None:
     """Test exporting data to CSV."""
     with tempfile.TemporaryDirectory() as temp_dir:
         output_path = os.path.join(temp_dir, "test_export.csv")
@@ -96,7 +97,7 @@ def test_export_to_csv(mock_connector):
             assert rows[1]["name"] == "Node2"
 
 
-def test_export_to_csv_no_headers(mock_connector):
+def test_export_to_csv_no_headers(mock_connector: Any) -> None:
     """Test exporting data to CSV without headers."""
     with tempfile.TemporaryDirectory() as temp_dir:
         output_path = os.path.join(temp_dir, "test_export_no_headers.csv")
@@ -118,7 +119,7 @@ def test_export_to_csv_no_headers(mock_connector):
             assert rows[0][1] == "Node1"
 
 
-def test_export_to_json_error(mock_connector):
+def test_export_to_json_error(mock_connector: Any) -> None:
     """Test error handling in JSON export."""
     # Configure mock to raise an exception
     mock_connector.execute_query.side_effect = Exception("Query failed")
@@ -138,7 +139,7 @@ def test_export_to_json_error(mock_connector):
         assert not os.path.exists(output_path)
 
 
-def test_export_graph_data(mock_connector):
+def test_export_graph_data(mock_connector: Any):
     """Test exporting complete graph data."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # These queries will be executed, but we're not using the variable
@@ -185,7 +186,7 @@ def test_export_graph_data(mock_connector):
             assert rels_data[0]["r"]["type"] == "RELATES_TO"
 
 
-def test_export_cypher_script(mock_connector):
+def test_export_cypher_script(mock_connector: Any):
     """Test exporting database as a Cypher script."""
     # Configure mock responses
     nodes_data = [
@@ -212,7 +213,7 @@ def test_export_cypher_script(mock_connector):
     ]
 
     # Set up mock to return appropriate data for each query
-    def mock_execute(query, *args, **kwargs):
+    def mock_execute(query: Any, *args, **kwargs):
         if "MATCH (n)" in query:
             return nodes_data
         elif "MATCH ()-[r]" in query:

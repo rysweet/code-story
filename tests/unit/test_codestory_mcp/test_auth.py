@@ -1,3 +1,4 @@
+from typing import Any
 """Unit tests for the MCP Adapter authentication."""
 
 from unittest import mock
@@ -15,7 +16,7 @@ from codestory_mcp.auth.scope_manager import ScopeManager
 class TestScopeManager:
     """Tests for the ScopeManager class."""
 
-    def test_get_required_scopes(self):
+    def test_get_required_scopes(self) -> None:
         """Test getting required scopes."""
         # Create a mock settings object
         mock_settings = mock.MagicMock()
@@ -24,7 +25,7 @@ class TestScopeManager:
         manager = ScopeManager(settings=mock_settings)
         assert manager.get_required_scopes() == ["scope1", "scope2"]
 
-    def test_has_required_scope_when_no_scopes_required(self):
+    def test_has_required_scope_when_no_scopes_required(self) -> None:
         """Test that any scopes are accepted when no scopes are required."""
         # Create a mock settings object
         mock_settings = mock.MagicMock()
@@ -34,7 +35,7 @@ class TestScopeManager:
         assert manager.has_required_scope([]) is True
         assert manager.has_required_scope(["random-scope"]) is True
 
-    def test_has_required_scope_with_wildcard(self):
+    def test_has_required_scope_with_wildcard(self) -> None:
         """Test that wildcard scope grants access to all scopes."""
         # Create a mock settings object
         mock_settings = mock.MagicMock()
@@ -43,7 +44,7 @@ class TestScopeManager:
         manager = ScopeManager(settings=mock_settings)
         assert manager.has_required_scope(["*"]) is True
 
-    def test_has_required_scope_with_matching_scope(self):
+    def test_has_required_scope_with_matching_scope(self) -> None:
         """Test that having one required scope is sufficient."""
         # Create a mock settings object
         mock_settings = mock.MagicMock()
@@ -54,7 +55,7 @@ class TestScopeManager:
         assert manager.has_required_scope(["scope2"]) is True
         assert manager.has_required_scope(["scope1", "other-scope"]) is True
 
-    def test_has_required_scope_with_no_matching_scope(self):
+    def test_has_required_scope_with_no_matching_scope(self) -> None:
         """Test that having no required scope results in denial."""
         # Create a mock settings object
         mock_settings = mock.MagicMock()
@@ -64,7 +65,7 @@ class TestScopeManager:
         assert manager.has_required_scope([]) is False
         assert manager.has_required_scope(["other-scope"]) is False
 
-    def test_can_execute_tool(self):
+    def test_can_execute_tool(self) -> None:
         """Test tool execution authorization."""
         # Create a mock settings object
         mock_settings = mock.MagicMock()
@@ -83,23 +84,23 @@ class TestEntraValidator:
     """Tests for the EntraValidator class."""
 
     @pytest.fixture
-    def mock_jwks_client(self):
+    def mock_jwks_client(self) -> None:
         """Create a mock JWKS client."""
         with mock.patch("codestory_mcp.auth.entra_validator.PyJWKClient") as mock_client:
             yield mock_client
 
     @pytest.fixture
-    def mock_jwt(self):
+    def mock_jwt(self) -> None:
         """Create a mock JWT module."""
         with mock.patch("codestory_mcp.auth.entra_validator.jwt") as mock_jwt:
             yield mock_jwt
 
     @pytest.fixture
-    def validator(self, mock_jwks_client):
+    def validator(self, mock_jwks_client: Any):
         """Create an EntraValidator instance."""
         return EntraValidator("test-tenant", "test-audience")
 
-    def test_init(self, mock_jwks_client):
+    def test_init(self, mock_jwks_client: Any) -> None:
         """Test initialization."""
         validator = EntraValidator("test-tenant", "test-audience")
 
@@ -160,7 +161,7 @@ class TestEntraValidator:
 
         assert "Token validation failed" in str(excinfo.value)
 
-    def test_verify_scopes_success(self, validator):
+    def test_verify_scopes_success(self, validator: Any) -> None:
         """Test successful scope verification."""
         # Mock ScopeManager
         with mock.patch.object(
@@ -174,7 +175,7 @@ class TestEntraValidator:
             validator._verify_scopes({"scope": ["code-story.query"]})
             mock_has_scope.assert_called_with(["code-story.query"])
 
-    def test_verify_scopes_failure(self, validator):
+    def test_verify_scopes_failure(self, validator: Any) -> None:
         """Test scope verification failure."""
         # Mock ScopeManager
         with mock.patch.object(validator.scope_manager, "has_required_scope", return_value=False):

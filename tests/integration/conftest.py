@@ -1,3 +1,4 @@
+from typing import Any
 """Pytest configuration for integration tests."""
 
 import glob
@@ -13,7 +14,7 @@ from .test_config import get_test_settings
 
 
 # Auto-fix Neo4j port configuration in test files
-def fix_neo4j_port_config():
+def fix_neo4j_port_config() -> None:
     """Fix Neo4j URI syntax in test files."""
     print("Auto-fixing Neo4j port configuration in test files...")
     test_files = glob.glob("tests/**/*.py", recursive=True)
@@ -63,7 +64,7 @@ if os.environ.get("CI") == "true":
     fix_neo4j_port_config()
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: Any) -> None:
     """Add command line options for integration tests."""
     parser.addoption(
         "--skip-neo4j",
@@ -92,14 +93,14 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
+def pytest_config: Anyure(config) -> None:
     """Register custom markers."""
     config.addinivalue_line("markers", "integration: mark test as an integration test")
     config.addinivalue_line("markers", "neo4j: mark test as requiring Neo4j")
     config.addinivalue_line("markers", "celery: mark test as requiring Celery")
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems: Any(config: Any, items) -> None:
     """Enable Neo4j and Celery tests by default.
 
     Neo4j and Redis are considered core components of the system, so their
@@ -125,7 +126,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def mock_settings():
+def mock_settings() -> None:
     """Mock the settings module to use test settings.
 
     This fixture patches the get_settings function to return test settings
@@ -140,7 +141,7 @@ def mock_settings():
 
 
 @pytest.fixture(scope="session")
-def neo4j_env():
+def neo4j_env() -> None:
     """Setup Neo4j environment variables for tests."""
     # Determine the correct Neo4j port to use
     # In CI environment, Neo4j is often on the standard port
@@ -183,7 +184,7 @@ def neo4j_env():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_env_vars():
+def load_env_vars() -> None:
     """Load environment variables for integration tests.
 
     This fixture automatically loads environment variables from .env file
@@ -241,7 +242,7 @@ def load_env_vars():
 
 
 @pytest.fixture
-def neo4j_connector():
+def neo4j_connector() -> None:
     """Return a Neo4j connector for tests."""
     from codestory.graphdb.neo4j_connector import Neo4jConnector
 
@@ -300,7 +301,7 @@ def neo4j_connector():
 
 
 @pytest.fixture(scope="function")
-def redis_client():
+def redis_client() -> None:
     """Create a Redis client for testing and manage cleanup.
 
     This fixture provides a Redis client and ensures proper cleanup after tests.
@@ -333,7 +334,7 @@ def redis_client():
 
 
 @pytest.fixture(scope="function")
-def celery_app(redis_client):
+def celery_app(redis_client: Any) -> None:
     """Provide a Celery app configured for integration testing.
 
     This fixture depends on redis_client to ensure Redis is properly set up

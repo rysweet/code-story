@@ -116,7 +116,7 @@ def _wait_for_redis(max_retries: int = 30, retry_delay: float = 1.0) -> None:
 
 
 @pytest.fixture
-def neo4j_connector(test_databases):
+def neo4j_connector(test_databases: Any) -> None:
     """Create a Neo4j connector for testing with automatic cleanup."""
     from codestory.graphdb.neo4j_connector import Neo4jConnector
     from codestory.graphdb.schema import initialize_schema
@@ -148,7 +148,7 @@ def neo4j_connector(test_databases):
 
 
 @pytest.fixture
-def redis_client(test_databases):
+def redis_client(test_databases: Any) -> None:
     """Create a Redis client for testing with automatic cleanup."""
     db_info = test_databases
     client = redis.Redis.from_url(db_info["redis_url"])
@@ -168,7 +168,7 @@ def redis_client(test_databases):
 
 
 # Markers for test categorization
-def pytest_configure(config):
+def pytest_config: Anyure(config) -> None:
     """Configure pytest markers."""
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "docker: marks tests that require Docker")

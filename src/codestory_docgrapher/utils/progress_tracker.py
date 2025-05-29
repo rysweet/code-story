@@ -19,7 +19,7 @@ class ProgressTracker:
     of documentation processing during the DocumentationGrapher step.
     """
 
-    def __init__(self, graph: DocumentationGraph):
+    def __init__(self, graph: DocumentationGraph) -> None:
         """Initialize the progress tracker.
 
         Args:

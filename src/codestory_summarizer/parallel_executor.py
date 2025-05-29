@@ -23,7 +23,7 @@ class ParallelExecutor:
     dependency graph, respecting the DAG order and limiting concurrency.
     """
 
-    def __init__(self, max_concurrency: int = 5, executor: ThreadPoolExecutor | None = None):
+    def __init__(self, max_concurrency: int = 5, executor: ThreadPoolExecutor | None = None) -> None:
         """Initialize the parallel executor.
 
         Args:

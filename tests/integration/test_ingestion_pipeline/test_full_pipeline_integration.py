@@ -26,7 +26,7 @@ class TestFullPipelineIntegration(BasePipelineTest):
     """Test the full ingestion pipeline with real services."""
 
     @pytest.fixture(autouse=True)
-    def setup_pipeline_manager(self):
+    def setup_pipeline_manager(self) -> None:
         """Set up the pipeline manager for the test."""
         # Create a basic config file for the PipelineManager
         self.config_file_path = self._create_pipeline_config_file()
@@ -67,7 +67,7 @@ retry:
             f.write(config_content)
             return f.name
 
-    def test_full_pipeline_execution(self):
+    def test_full_pipeline_execution(self) -> None:
         """Test that the full pipeline creates filesystem nodes in Neo4j."""
         # We'll use our method from the base class to directly create filesystem nodes
         self.create_filesystem_nodes()
@@ -87,7 +87,7 @@ retry:
         module_result = self.neo4j_connector.execute_query(module_query)
         assert module_result[0]["count"] == 1, "module.py not found in graph"
 
-    def test_pipeline_with_empty_repo(self):
+    def test_pipeline_with_empty_repo(self) -> None:
         """Test creating a repository node for an empty repository."""
         # Create an empty repository
         empty_repo_dir = tempfile.mkdtemp()
@@ -125,7 +125,7 @@ retry:
             if os.path.exists(empty_repo_dir):
                 shutil.rmtree(empty_repo_dir)
 
-    def test_pipeline_error_handling(self):
+    def test_pipeline_error_handling(self) -> None:
         """Test that the pipeline handles errors correctly when steps fail."""
         # Use a non-existent repository path to trigger an error
         non_existent_path = "/path/that/does/not/exist"

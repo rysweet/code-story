@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for OpenAI client.
 
 These tests use real OpenAI API access and require valid credentials to be successful.
@@ -15,7 +16,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.openai]
 
 
 @pytest.mark.integration
-def test_client_creation(openai_credentials):
+def test_client_creation(openai_credentials: Any) -> None:
     """Test client creation with real credentials.
 
     This verifies that the client can be created successfully with the
@@ -36,7 +37,7 @@ def test_client_creation(openai_credentials):
 
 
 @pytest.mark.integration
-def test_client_configuration(client):
+def test_client: Any_configuration(client) -> None:
     """Test client configuration with expected values."""
     # Get current settings
     settings = get_settings()
@@ -49,7 +50,7 @@ def test_client_configuration(client):
 
 
 @pytest.mark.integration
-def test_chat_completion(client):
+def test_chat_completion(client: Any) -> None:
     """Test chat completion with real API.
 
     This test verifies that the client can successfully make a chat completion
@@ -82,7 +83,7 @@ def test_chat_completion(client):
 
 
 @pytest.mark.integration
-def test_reasoning_model_parameter_handling(client):
+def test_reasoning_model_parameter_handling(client: Any) -> None:
     """Test that reasoning models use correct parameters (max_completion_tokens).
     
     This test verifies that when using reasoning models like o1, the client
@@ -177,7 +178,7 @@ async def test_reasoning_model_async_parameter_handling(client):
 
 
 @pytest.mark.integration
-def test_regular_model_vs_reasoning_model_parameters(client):
+def test_regular_model_vs_reasoning_model_parameters(client: Any) -> None:
     """Test that regular models and reasoning models use different parameters.
     
     This test verifies that regular models can use temperature while reasoning
@@ -236,7 +237,7 @@ def test_regular_model_vs_reasoning_model_parameters(client):
 
 
 @pytest.mark.integration
-def test_embedding(client):
+def test_embedding(client: Any) -> None:
     """Test embedding generation with real API.
 
     This test verifies that the client can successfully generate embeddings

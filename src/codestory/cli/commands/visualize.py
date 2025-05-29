@@ -1,3 +1,4 @@
+from typing import Any
 """Visualization commands for the Code Story CLI."""
 
 import contextlib

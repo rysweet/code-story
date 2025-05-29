@@ -181,7 +181,7 @@ def create_custom_vector_index(  # type: ignore[no-untyped-def]
         ) from e
 
 
-def initialize_schema(connector, force: bool = False) -> None:  # type: ignore[no-untyped-def]
+def initialize_schema(connector: Any, force: bool = False) -> None:  # type: ignore[no-untyped-def]
     """Initialize the Neo4j database schema with constraints and indexes.
 
     Args:
@@ -255,7 +255,7 @@ def initialize_schema(connector, force: bool = False) -> None:  # type: ignore[n
             raise SchemaError("Failed to initialize schema", details=details, cause=e) from e
 
 
-def verify_schema(connector) -> dict[str, dict[str, bool]]:  # type: ignore[no-untyped-def]
+def verify_schema(connector: Any) -> dict[str, dict[str, bool]]:  # type: ignore[no-untyped-def]
     """Verify that all required schema elements exist.
 
     Args:

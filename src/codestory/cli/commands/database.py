@@ -30,7 +30,7 @@ def database() -> Any:
     help="Force clearing without confirmation.",
 )
 @click.pass_context
-def clear_database(ctx, force: bool) -> Any:  # type: ignore[no-untyped-def]
+def clear_database(ctx: Any, force: bool) -> Any:  # type: ignore[no-untyped-def]
     """Clear all data from the Neo4j database.
 
     Args:

@@ -22,7 +22,7 @@ class DependencyAnalyzer:
     establishing the overall processing order.
     """
 
-    def __init__(self, connector: Neo4jConnector):
+    def __init__(self, connector: Neo4jConnector) -> None:
         """Initialize the dependency analyzer.
 
         Args:
