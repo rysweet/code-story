@@ -114,9 +114,10 @@ graph TD
 - Python 3.12+
 - Node.js 18+
 - Docker and Docker Compose
-- Poetry 1.8+
+- Poetry 1.8+ (or [uv](https://github.com/astral-sh/uv) for fast Python dependency management)
 - Neo4j 5.x
 - Redis 7.x
+
 
 ### Installation
 
@@ -132,7 +133,25 @@ graph TD
    # Edit .env with your settings
    ```
 
-3. Explore the interactive demos to get a feel for the system:
+3. Install Python dependencies (choose one):
+   - With Poetry (default):
+     ```bash
+     poetry install
+     ```
+   - With [uv](https://github.com/astral-sh/uv) (faster, recommended for large projects):
+     ```bash
+     uv pip install -r requirements.txt
+     # or, for editable/development mode:
+     uv pip install -e .
+     ```
+     > Note: `uv` is a drop-in replacement for pip and venv. It will create a `.venv` if one does not exist.
+
+4. Install Node.js dependencies:
+   ```bash
+   npm install
+   ```
+
+5. Explore the interactive demos to get a feel for the system:
 
    - CLI Demo: [docs/demos/cli_demo.md](docs/demos/cli_demo.md)
    - GUI Demo: [docs/demos/gui_demo.md](docs/demos/gui_demo.md)
@@ -146,23 +165,23 @@ Refer to the full documentation at [docs/index.md](docs/index.md) for additional
 - Complete documentation site: [docs/index.md](docs/index.md)
 - Specification suite: [specs/Main.md](specs/Main.md)
 
+
 ### Development Setup
 
-1. Install Python dependencies:
+1. (Optional) Create a new virtual environment with uv (if not using Poetry):
    ```bash
-   poetry install
+   uv venv
+   uv pip install -r requirements.txt
    ```
 
-2. Install Node.js dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Run the development servers:
+2. Run the development servers:
    ```bash
    # In one terminal
    poetry run uvicorn src.codestory_service.main:app --reload
-   
+   # or, if using uv:
+   uv pip install uvicorn
+   uvicorn src.codestory_service.main:app --reload
+
    # In another terminal
    npm run dev
    ```
