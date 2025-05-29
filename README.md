@@ -114,10 +114,69 @@ graph TD
 - Python 3.12+
 - Node.js 18+
 - Docker and Docker Compose
-- Poetry 1.8+ (or [uv](https://github.com/astral-sh/uv) for fast Python dependency management)
+- Poetry 1.8+ **or** [uv](https://github.com/astral-sh/uv) (recommended for fast Python dependency management)
 - Neo4j 5.x
 - Redis 7.x
 
+---
+
+## Python Environment & Package Management with uv
+
+This project supports [uv](https://github.com/astral-sh/uv) for fast, modern Python package and virtual environment management.
+
+### Why uv?
+- Much faster dependency resolution and installation than pip/pip-tools
+- Simple, single-binary tool for venv, install, and dependency management
+- Compatible with pyproject.toml and requirements.txt
+
+### Getting Started with uv
+
+1. **Install uv**
+   - Download from https://github.com/astral-sh/uv#installation or use:
+     ```powershell
+     irm https://astral.sh/uv/install.ps1 | iex
+     ```
+   - Or use Homebrew, Scoop, or download a release binary.
+
+2. **Create a Virtual Environment**
+   ```bash
+   uv venv .venv
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   uv pip install -r requirements.txt
+   # Or install directly from pyproject.toml:
+   uv pip install -r pyproject.toml
+   ```
+
+4. **Add/Update Dependencies**
+   - To add a package:
+     ```bash
+     uv pip install <package>
+     ```
+   - To update all:
+     ```bash
+     uv pip install -U -r requirements.txt
+     ```
+   - To recompile requirements.txt from pyproject.toml:
+     ```bash
+     uv pip compile --all-extras --output-file=requirements.txt pyproject.toml
+     ```
+
+5. **Run Project**
+   - Activate the venv and use as normal:
+     ```powershell
+     .venv\Scripts\Activate.ps1  # Windows PowerShell
+     source .venv/bin/activate    # Linux/macOS
+     ```
+
+**Notes:**
+- `uv` is fully compatible with pip and venv workflows.
+- You can continue to use Poetry or pip if desired, but `uv` is recommended for speed and simplicity.
+- See https://github.com/astral-sh/uv for full documentation.
+
+---
 
 ### Installation
 
@@ -134,17 +193,16 @@ graph TD
    ```
 
 3. Install Python dependencies (choose one):
-   - With Poetry (default):
+   - With Poetry:
      ```bash
      poetry install
      ```
-   - With [uv](https://github.com/astral-sh/uv) (faster, recommended for large projects):
+   - With uv (recommended):
      ```bash
      uv pip install -r requirements.txt
      # or, for editable/development mode:
      uv pip install -e .
      ```
-     > Note: `uv` is a drop-in replacement for pip and venv. It will create a `.venv` if one does not exist.
 
 4. Install Node.js dependencies:
    ```bash
@@ -152,7 +210,6 @@ graph TD
    ```
 
 5. Explore the interactive demos to get a feel for the system:
-
    - CLI Demo: [docs/demos/cli_demo.md](docs/demos/cli_demo.md)
    - GUI Demo: [docs/demos/gui_demo.md](docs/demos/gui_demo.md)
    - MCP Demo: [docs/demos/mcp_demo.md](docs/demos/mcp_demo.md)
