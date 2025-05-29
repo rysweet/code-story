@@ -496,13 +496,13 @@ class Settings(BaseSettings):
                 try:
                     secret = client.get_secret("neo4j-password")
                     self.neo4j.password = (
-                        SecretStr(secret.value) if secret.value is not None else None[assignment]
+                        SecretStr(secret.value) if secret.value is not None else None
                     )
                 except Exception:
                     pass
 
             # Load OpenAI API key if needed
-            if not self.openai.api_key.get_secret_value():[union-attr]
+            if not self.openai.api_key.get_secret_value():
                 try:
                     secret = client.get_secret("openai-api-key")
                     self.openai.api_key = (

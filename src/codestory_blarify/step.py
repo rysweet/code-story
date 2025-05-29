@@ -420,8 +420,8 @@ class BlarifyStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_blarify.step.run_blarify")[misc]
-def run_blarify([no-untyped-def]
+@shared_task(bind=True, name="codestory_blarify.step.run_blarify")
+def run_blarify(
     self,  # Celery task instance
     repository_path: str,
     job_id: str,
@@ -492,12 +492,12 @@ def run_blarify([no-untyped-def]
                 pass
             else:
                 # Try to map host path to container path
-                for host_path, container_path in os.environ.get([misc]
+                for host_path, container_path in os.environ.get(
                     "CODESTORY_MOUNT_MAPPINGS", ""
                 ).split(";"):
-                    if host_path and container_path and repository_path.startswith(host_path):[has-type]
+                    if host_path and container_path and repository_path.startswith(host_path):
                         container_repository_path = repository_path.replace(
-                            host_path, container_path, 1[has-type]
+                            host_path, container_path, 1
                         )
                         logger.info(
                             f"Mapped repository path from {repository_path} to "
@@ -746,7 +746,7 @@ def run_blarify([no-untyped-def]
 
         logger.info(f"Blarify task completed: {result['message']}")
 
-        return result[no-any-return]
+        return result
     except (docker.errors.DockerException, TimeoutError) as e:
         logger.error(f"Docker error: {e}")
         # Return error result

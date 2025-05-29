@@ -37,7 +37,7 @@ class NodeSerializer:
         # Start with basic identification
         result = {
             "id": str(node.id),
-            "type": node.labels[0] if node.labels else "Unknown",[index]
+            "type": node.labels[0] if node.labels else "Unknown",
             "name": node.get("name", node.get("id", f"node-{node.id}")),
         }
 
@@ -136,8 +136,8 @@ class RelationshipSerializer:
         result = {
             "id": str(relationship.id),
             "type": relationship.type,
-            "start_node_id": str(relationship.start_node.id),[union-attr]
-            "end_node_id": str(relationship.end_node.id),[union-attr]
+            "start_node_id": str(relationship.start_node.id),
+            "end_node_id": str(relationship.end_node.id),
         }
 
         # Process properties according to include/exclude lists
@@ -189,7 +189,7 @@ class RelationshipSerializer:
                         {
                             "element_type": "node",
                             **NodeSerializer.to_dict(
-                                element,[arg-type]
+                                element,
                                 None,
                                 include_node_properties,
                                 exclude_node_properties,
@@ -201,7 +201,7 @@ class RelationshipSerializer:
                         {
                             "element_type": "relationship",
                             **RelationshipSerializer.to_dict(
-                                element, include_rel_properties, exclude_rel_properties[arg-type]
+                                element, include_rel_properties, exclude_rel_properties
                             ),
                         }
                     )

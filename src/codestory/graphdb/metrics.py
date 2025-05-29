@@ -51,7 +51,7 @@ if PROMETHEUS_AVAILABLE:
         from prometheus_client import metrics
 
         for metric in metrics.REGISTRY._names_to_collectors.values():
-            if metric.name == f"{METRIC_PREFIX}_query_duration_seconds":[attr-defined]
+            if metric.name == f"{METRIC_PREFIX}_query_duration_seconds":
                 QUERY_DURATION = metric  # TODO: Fix type compatibility
                 break
     except Exception:
@@ -69,7 +69,7 @@ if PROMETHEUS_AVAILABLE:
             class DummyHistogram:
                 """Dummy histogram class for when Prometheus is not available."""
                 
-                def observe(self, value: Any, **kwargs) -> Any:[no-untyped-def]
+                def observe(self, value: Any, **kwargs) -> Any:
                     """Dummy observe method that does nothing."""
                     pass
 
@@ -77,9 +77,9 @@ if PROMETHEUS_AVAILABLE:
                     """Dummy timer method that returns a dummy timer context."""
                     class DummyTimer:
                         def __enter__(self) -> None:
-                            return self[return-value]
+                            return self
 
-                        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:[no-untyped-def]
+                        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
                             pass
 
                     return DummyTimer()
@@ -131,7 +131,7 @@ if PROMETHEUS_AVAILABLE:
         )
         # If we get here, the metric exists, so reuse it instead of creating a new one
         for metric in metrics.REGISTRY._names_to_collectors.values():
-            if metric.name == f"{METRIC_PREFIX}_vector_search_duration_seconds":[attr-defined]
+            if metric.name == f"{METRIC_PREFIX}_vector_search_duration_seconds":
                 VECTOR_SEARCH_DURATION = metric  # TODO: Fix type compatibility
                 break
     except Exception:
@@ -178,7 +178,7 @@ def instrument_query(
                 duration = time.time() - start_time
 
                 # Record query duration
-                QUERY_DURATION.labels(query_type=query_type.value).observe(duration)[union-attr]
+                QUERY_DURATION.labels(query_type=query_type.value).observe(duration)
 
                 # Record query count
                 status = "success" if success else "error"
@@ -236,4 +236,4 @@ def record_vector_search(node_label: str, duration: float) -> None:
         duration: Duration of the search in seconds
     """
     if PROMETHEUS_AVAILABLE:
-        VECTOR_SEARCH_DURATION.labels(node_label=node_label).observe(duration)[union-attr]
+        VECTOR_SEARCH_DURATION.labels(node_label=node_label).observe(duration)

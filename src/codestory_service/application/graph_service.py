@@ -184,7 +184,7 @@ class GraphService:
                 node_query = CypherQuery(
                     query="MATCH (n) WHERE elementId(n) = $id RETURN n",
                     parameters={"id": result.id},
-                    query_type="read",[arg-type]
+                    query_type="read",
                 )
 
                 node_result = await self.neo4j.execute_cypher_query(node_query)
@@ -196,10 +196,10 @@ class GraphService:
 
             # Generate the answer using the OpenAI adapter
             logger.info(f"Generating answer using {len(context_items)} context items")
-            answer = await self.openai.answer_question(request, context_items)[attr-defined]
+            answer = await self.openai.answer_question(request, context_items)
 
             logger.info("Answer generated successfully")
-            return answer[no-any-return]
+            return answer
         except Exception as e:
             logger.error(f"Error answering question: {e!s}")
             if isinstance(e, HTTPException):
@@ -345,7 +345,7 @@ class GraphService:
         query = CypherQuery(
             query=cypher_query,
             parameters=params,
-            query_type="read",[arg-type]
+            query_type="read",
         )
         result = await self.neo4j.execute_cypher_query(query)
 
@@ -1146,7 +1146,7 @@ class GraphService:
             logger.warning("Clearing all data from database")
 
             # Create a delete query to remove all nodes and relationships
-            delete_query = CypherQuery(query="MATCH (n) DETACH DELETE n", query_type="write")[arg-type]
+            delete_query = CypherQuery(query="MATCH (n) DETACH DELETE n", query_type="write")
 
             # Execute the query
             await self.execute_cypher_query(delete_query)
@@ -1155,7 +1155,7 @@ class GraphService:
             if request.preserve_schema:
                 logger.info("Preserving schema - reinitializing")
                 schema_query = CypherQuery(
-                    query="CALL apoc.schema.assert({}, {})", query_type="write"[arg-type]
+                    query="CALL apoc.schema.assert({}, {})", query_type="write"
                 )
                 await self.execute_cypher_query(schema_query)
 

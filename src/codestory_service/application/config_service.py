@@ -122,15 +122,15 @@ class ConfigService:
             # Initialize Redis if not already done
             if not self._init_redis_task:
                 self._init_redis_task = self._init_redis()  # TODO: Fix type compatibility
-                await self._init_redis_task[misc]
+                await self._init_redis_task
             else:
-                await self._init_redis_task[unreachable]
+                await self._init_redis_task
 
         if not self.redis:
             logger.warning("Redis not available for config notifications")
             return
 
-        try:[unreachable]
+        try:
             # Prepare notification payload
             notification = {
                 "timestamp": int(time.time()),
@@ -297,10 +297,10 @@ class ConfigService:
                 # Update the configuration
                 if section != "service":
                     # Core settings
-                    self.writer.update_setting(section, key, item.value, comment=patch.comment)[attr-defined]
+                    self.writer.update_setting(section, key, item.value, comment=patch.comment)
                 else:
                     # Service settings (would use a different writer in reality)
-                    self.writer.update_setting("service", key, item.value, comment=patch.comment)[attr-defined]
+                    self.writer.update_setting("service", key, item.value, comment=patch.comment)
 
                 changed_keys.add(item.key)
 

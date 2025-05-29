@@ -168,7 +168,7 @@ class GraphServiceAdapter:
                 properties=data.get("properties", {}),
             )
 
-            return node[return-value]
+            return node
 
         except httpx.RequestError as e:
             # Handle network errors
@@ -316,7 +316,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Return results
-            return response.json()[no-any-return]
+            return response.json()
 
         except httpx.RequestError as e:
             # Handle network errors

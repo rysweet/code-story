@@ -1,0 +1,9 @@
+src/codestory/cli/commands/query.py:379: error: positional argument follows
+keyword argument  [syntax]
+                    )
+                     ^
+Found 1 error in 1 file (errors prevented further checking)
+src/codestory/graphdb/models.py:90: error: invalid syntax  [syntax]
+        def __init__(self, **data) -> None:[no-untyped-def]
+                                                        ^
+Found 1 error in 1 file (errors prevented further checking)

@@ -81,7 +81,7 @@ class MSALValidator:
             # Try to decode the token, but don't enforce validation
             try:
                 claims = jwt.decode(token, options={"verify_signature": False, "verify_exp": False})
-                return claims[no-any-return]
+                return claims
             except Exception:
                 return {
                     "sub": "anonymous",
@@ -94,7 +94,7 @@ class MSALValidator:
         if self.dev_mode and self.jwt_secret:
             try:
                 claims = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
-                return claims[no-any-return]
+                return claims
             except jwt.ExpiredSignatureError as err:
                 logger.warning("Token has expired")
                 raise HTTPException(

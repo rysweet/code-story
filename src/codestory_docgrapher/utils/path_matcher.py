@@ -90,7 +90,7 @@ class PathMatcher:
         """
         # Check cache first
         if path_reference in self.path_cache:
-            return self.path_cache[path_reference][no-any-return]
+            return self.path_cache[path_reference]
 
         # Try exact match first
         if path_reference in self.file_paths:
@@ -108,7 +108,7 @@ class PathMatcher:
         if len(matching_paths) == 1:
             # Unambiguous match
             self.path_cache[path_reference] = matching_paths[0]
-            return matching_paths[0][no-any-return]
+            return matching_paths[0]
         elif len(matching_paths) > 1:
             # Multiple matches, try to find the best one
             # Check if any match contains directory components from the reference
@@ -130,17 +130,17 @@ class PathMatcher:
 
                 if len(filtered_paths) == 1:
                     self.path_cache[path_reference] = filtered_paths[0]
-                    return filtered_paths[0][no-any-return]
+                    return filtered_paths[0]
                 elif len(filtered_paths) > 1:
                     # Still ambiguous, return the shortest path
                     shortest = min(filtered_paths, key=len)
                     self.path_cache[path_reference] = shortest
-                    return shortest[no-any-return]
+                    return shortest
 
             # No directory components or still ambiguous, return the shortest path
             shortest = min(matching_paths, key=len)
             self.path_cache[path_reference] = shortest
-            return shortest[no-any-return]
+            return shortest
 
         # Try to match by extension
         if "." in basename:
@@ -150,7 +150,7 @@ class PathMatcher:
             if matching_paths:
                 # Return any one file with matching extension
                 self.path_cache[path_reference] = matching_paths[0]
-                return matching_paths[0][no-any-return]
+                return matching_paths[0]
 
         # No match found
         self.path_cache[path_reference] = None

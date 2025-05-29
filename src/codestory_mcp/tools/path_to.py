@@ -154,7 +154,7 @@ class PathToTool(BaseTool):
                 path_count=len(paths),
             )
 
-            return response[no-any-return]
+            return response
 
         except Exception as e:
             # Log error

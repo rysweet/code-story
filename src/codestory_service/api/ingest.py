@@ -120,7 +120,7 @@ async def list_jobs(
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,[union-attr]
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list jobs: {e!s}",
         ) from e
 

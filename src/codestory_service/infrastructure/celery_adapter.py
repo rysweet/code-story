@@ -291,7 +291,7 @@ class CeleryAdapter:
                 memory_mb = info.get("memory_mb")
                 steps = build_steps_from_result(info)
 
-                return IngestionJob([call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.RUNNING,
                     created_at=info.get("created_at", int(time.time())),
@@ -311,7 +311,7 @@ class CeleryAdapter:
                 cpu_percent = result.get("cpu_percent")
                 memory_mb = result.get("memory_mb")
                 steps = build_steps_from_result(result)
-                return IngestionJob([call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.COMPLETED,
                     created_at=result.get("created_at", int(time.time()) - 60),
@@ -329,7 +329,7 @@ class CeleryAdapter:
             if task.state == "FAILURE":
                 info = task.info or {}
                 steps = build_steps_from_result(info)
-                return IngestionJob([call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.FAILED,
                     created_at=int(time.time()) - 60,  # Estimate
@@ -343,7 +343,7 @@ class CeleryAdapter:
                 )
 
             if task.state == "REVOKED":
-                return IngestionJob([call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.CANCELLED,
                     created_at=int(time.time()) - 60,  # Estimate
@@ -356,7 +356,7 @@ class CeleryAdapter:
                 )
 
             # Default case for unknown state
-            return IngestionJob([call-arg]
+            return IngestionJob(
                 job_id=job_id,
                 status=JobStatus.UNKNOWN,
                 created_at=int(time.time()) - 60,  # Estimate
@@ -422,8 +422,8 @@ class CeleryAdapter:
             self.app.control.revoke(job_id, terminate=True)
 
             # Return updated job status
-            return IngestionJob([call-arg]
-job_id=job_id,
+            return IngestionJob(
+                job_id=job_id,
                 status=JobStatus.CANCELLING,
                 created_at=int(time.time()) - 60,  # Estimate
                 updated_at=int(time.time()),
@@ -472,7 +472,7 @@ job_id=job_id,
         except Exception as e:
             logger.error(f"Failed to list jobs: {e!s}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,[union-attr]
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to list jobs: {e!s}",
             ) from e
 

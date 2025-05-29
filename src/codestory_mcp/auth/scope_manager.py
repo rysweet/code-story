@@ -10,7 +10,7 @@ from codestory_mcp.utils.config import get_mcp_settings
 class ScopeManager:
     """Manage authorization scopes for the MCP Adapter."""
 
-    def __init__(self, settings: Any=None) -> None:[no-untyped-def]
+    def __init__(self, settings: Any=None) -> None:
         """Initialize the scope manager.
 
         Args:
@@ -24,7 +24,7 @@ class ScopeManager:
         Returns:
             List of required scopes
         """
-        return self.settings.required_scopes[no-any-return]
+        return self.settings.required_scopes
 
     def has_required_scope(self, scopes: list[str]) -> bool:
         """Check if the provided scopes include at least one required scope.

@@ -146,6 +146,8 @@ class ConfigPatch(BaseModel):
 class ConfigSchemaProperty(BaseModel):
     """JSON Schema property for a configuration key."""
 
+    model_config = {"populate_by_name": True}
+
     type: str = Field(..., description="JSON Schema type")
     title: str = Field(..., description="Display title")
     description: str = Field(..., description="Property description")
@@ -157,8 +159,8 @@ class ConfigSchemaProperty(BaseModel):
     min_length: int | None = Field(default=None, description="Minimum length for strings", alias="minLength")
     max_length: int | None = Field(default=None, description="Maximum length for strings", alias="maxLength")
     pattern: str | None = Field(default=None, description="Regex pattern for strings")
-    read_only: bool | None = Field(default=None, description="If true, value is read-only", alias="readOnly")
-    write_only: bool | None = Field(default=None, description="If true, value is write-only", alias="writeOnly")
+    read_only: bool | None = Field(default=None, description="If true, value is read-only")
+    write_only: bool | None = Field(default=None, description="If true, value is write-only")
 
 
 class ConfigSchemaSection(BaseModel):
@@ -199,7 +201,7 @@ class ConfigSchema(BaseModel):
                 meta = item.metadata
 
                 # Create property schema
-                prop = ConfigSchemaProperty([call-arg]
+                prop = ConfigSchemaProperty(
                     type=meta.type.value,
                     title=key,
                     description=meta.description,

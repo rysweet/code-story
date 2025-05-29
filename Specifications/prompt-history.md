@@ -552,3 +552,201 @@ These instructions supersede any conflicting general rules.
 - Will re-run MyPy and capture new error count
 - Will stage, commit, and push all changes with the specified message
 - Will summarize new MyPy error count, diff stat, and declare cleanup complete if zero errors remain
+## Prompt 112 (May 29, 2025)
+
+**Prompt**:  
+Context  
+• MyPy now fails on two remaining syntax errors:  
+  1. [`src/codestory/cli/client/progress_client.py`](src/codestory/cli/client/progress_client.py) line 187 – “unexpected indent” on `self._stop_event.set()`  
+  2. [`src/codestory/cli/main.py`](src/codestory/cli/main.py) line 13 – invalid syntax on `import rich_click as rich_click_module[assignment]`  
+• Clearing these will make MyPy pass with zero errors.
+
+Scope – perform ONLY:
+
+1. In `src/codestory/cli/client/progress_client.py`
+   • Dedent or otherwise correct the line around 187 so indentation matches surrounding block.
+
+2. In `src/codestory/cli/main.py`
+   • Fix the malformed import—remove the trailing `[assignment]`, leaving just  
+     `import rich_click as rich_click_module`
+
+3. Run MyPy with explicit packages + tests:  
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_zero.txt
+   ERRORS=$(wc -l < mypy_zero.txt)
+   ```
+
+4. If ERRORS == 0:  
+   • Commit fixes + optional mypy_zero.txt with message  
+     `fix: resolve final syntax errors – MyPy clean`  
+   • Push to origin/fix/mypy-cleanup and use attempt_completion summarizing zero-error state.
+
+5. If ERRORS > 0:  
+   • Do NOT commit; use attempt_completion summarizing new errors (count + first 20 lines).
+
+No other code edits.
+
+**Response**:
+- Logged Prompt 112 before any code or CLI actions
+- Will fix indentation in progress_client.py at/around line 187
+- Will fix malformed import in main.py at line 13
+- Will run MyPy with the explicit command and capture output
+- Will commit and push if zero errors, otherwise summarize error count and first 20 lines
+## Prompt 113 (May 29, 2025)
+
+**Prompt**:  
+Context:
+MyPy now stops on remaining syntax tokens accidentally left during earlier automated passes:
+1. src/codestory/cli/main.py : line 13 – `import rich_click as rich_click_module[assignment]`
+2. src/codestory/cli/client/progress_client.py : around line 187 – unexpected indent on `self._stop_event.set()`
+3. src/codestory/cli/client/service_client.py : line 137 – trailing `[no-any-return]` inside return statement
+4. Any similar `[something]` bracket tokens that slipped through.
+
+Goal: remove these bracket-tokens and indentation issue so MyPy can run cleanly.
+
+Scope – perform ONLY:
+A. Locate and delete the trailing bracket tokens (`[assignment]`, `[no-any-return]`, etc.) keeping valid Python.
+B. Fix the indentation of `self._stop_event.set()` so it aligns with surrounding code block.
+C. Search once for residual bracket tokens:
+   `grep -R --line-number -E "\[[a-zA-Z0-9_-]+\]" src tests || true`
+   Clean any genuine leftovers that are part of earlier type-ignore markers inside code.
+D. Run MyPy with explicit package list + tests:
+   ```
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_zero.txt
+   ERRORS=$(wc -l < mypy_zero.txt)
+   ```
+E. If ERRORS == 0:
+   1. Commit fixes (+ optional mypy_zero.txt) with message  
+      fix: clear residual syntax tokens – MyPy passes clean
+   2. Push to origin/fix/mypy-cleanup
+   3. Use attempt_completion summarising zero-error result and `git diff --stat origin/main..HEAD` for this commit
+F. If ERRORS > 0:
+   • Do NOT commit; use attempt_completion giving count and first 20 lines for next planning.
+
+No other edits; focus strictly on removing bracket tokens / indentation error.
+
+**Response**:
+- Logged Prompt 113 before any code or CLI actions
+- Will remove `[assignment]` from src/codestory/cli/main.py and `[no-any-return]` from src/codestory/cli/client/service_client.py
+- Will fix indentation of `self._stop_event.set()` in src/codestory/cli/client/progress_client.py
+- Will search for and remove any other stray `[something]` bracket tokens in src and tests
+- Will run MyPy with the explicit package list and capture error count
+- Will commit and push if zero errors, otherwise summarize error count and first 20 lines
+## Prompt 114 (May 29, 2025)
+
+**Prompt**:  
+Context:
+• MyPy now stops on bracket-tokens left in two CLI command files:
+  1. src/codestory/cli/commands/database.py line 33 → `-> Any:[no-untyped-def]`
+  2. src/codestory/cli/commands/ingest.py  line 29 → trailing `:[no-untyped-def]`
+• Once these bracket fragments are removed there should be no remaining syntax errors (only 8 total errors now).
+
+Scope – perform ONLY:
+1. In each file, delete the `:[no-untyped-def]` suffix so the type hint remains valid; e.g.  
+   `def clear_database(ctx: Any, force: bool) -> Any:`  
+   and ensure ingest.py signature likewise ends with `-> None:` (no bracket token).
+2. Run the bracket-token grep once more:  
+   `grep -R --line-number -E "\[[a-zA-Z0-9_-]+\]" src/codestory/cli/commands || true`  
+   Confirm no stray `[something]` in these command files.
+3. Re-run MyPy (explicit package list + tests) saving output to mypy_zero_cli.txt and capture error count:
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_zero_cli.txt
+   ERRORS=$(wc -l < mypy_zero_cli.txt)
+   ```
+4. If ERRORS == 0:
+   • Commit the fixes (+ optional mypy_zero_cli.txt) with message  
+     fix(cli commands): remove bracket tokens – MyPy clean
+   • Push to origin/fix/mypy-cleanup and attempt_completion summarizing:
+     – confirmation MyPy is 0 error
+     – git diff --stat for this commit.
+5. If ERRORS > 0:
+   • Do NOT commit; attempt_completion summarizing error count and first 20 lines.
+
+Do not edit any other files.
+
+**Response**:
+- Logged Prompt 114 before any code or CLI actions
+- Will remove `:[no-untyped-def]` from function signatures in database.py and ingest.py
+- Will run grep to confirm no bracket tokens remain in these files
+- Will re-run MyPy with the explicit package list and capture error count
+- Will commit and push if zero errors, otherwise summarize error count and first 20 lines
+## Prompt 115 (May 29, 2025)
+
+**Prompt**: Context:
+MyPy now fails on two syntax issues discovered after previous fixes:
+1. src/codestory/cli/commands/query.py line ~379 – "positional argument follows keyword argument".
+2. src/codestory/graphdb/models.py line 90 – leftover bracket token `:[no-untyped-def]`.
+
+Objective:
+Remove these last syntax blockers and obtain a zero-error MyPy run.
+
+Scope – perform ONLY:
+1. In src/codestory/cli/commands/query.py
+   • Locate the call starting near line 379 that closes a multiline argument list. Ensure no positional argument appears after a keyword argument; adjust parentheses/comma ordering accordingly.
+
+2. In src/codestory/graphdb/models.py
+   • Delete the trailing `:[no-untyped-def]` so the `__init__` signature ends with `-> None:`.
+
+3. Sweep the entire src/codestory tree for any remaining `[no-untyped-def]` or similar bracket tokens:
+   ```
+   grep -R --line-number -E "\[[a-zA-Z0-9_-]+\]" src/codestory || true
+   ```
+   If any are found in Python code (not docs/tests), remove them.
+
+4. Re-run MyPy with explicit package list + tests:
+   ```
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_final.txt
+   ERRORS=$(wc -l < mypy_final.txt)
+   ```
+
+5. If ERRORS == 0:
+   • Commit fixes (+ optional mypy_final.txt) with message  
+     fix: remove final syntax tokens – MyPy passes clean
+   • Push to origin/fix/mypy-cleanup
+   • Use attempt_completion summarising zero-error MyPy and `git diff --stat origin/main..HEAD` for this commit.
+
+6. If ERRORS > 0:
+   • Do NOT commit; use attempt_completion summarising remaining error count and first 20 lines of mypy_final.txt.
+
+Do not edit any other files or functionality.
+
+**Response**:
+- Updated prompt history to log Prompt 115 before any code or CLI actions
+- Will locate and fix syntax issues in query.py and models.py
+- Will search for and remove any bracket tokens in src/codestory
+- Will run MyPy with explicit package list and capture error count
+- Will commit and push if zero errors, otherwise summarize remaining errors
+## Prompt 116 (May 29, 2025)
+
+**Prompt**: The user insists we finish the job—no more partial passes. MyPy still fails on:
+
+1. src/codestory/cli/commands/query.py ≈ line 379  
+   "positional argument follows keyword argument" → a `)`/comma ordering issue in a multiline call.
+2. src/codestory/graphdb/models.py line 90  
+   Constructor ends with `-> None:[no-untyped-def]` – remove the bracket token.
+3. Sweep again for any lingering `\[.*\]` bracket tokens in **all** `src/codestory/**` PY files and delete them.
+4. Run MyPy (`-p codestory …` + tests).  
+   If error count == 0 → commit with message  
+      fix: final syntax cleanup – MyPy passes clean  
+   Else → DO NOT commit; report error count and first 30 lines.
+
+No other edits; resolve these errors completely.
+
+**Response**:
+- Updated prompt history to log Prompt 116 before any code or CLI actions
+- Will fix positional/keyword argument issue in query.py around line 379
+- Will remove bracket token from models.py line 90 constructor
+- Will sweep all src/codestory/**/*.py files for bracket tokens and remove them
+- Will run MyPy with explicit package list and commit if zero errors, otherwise report count and first 30 lines

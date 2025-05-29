@@ -87,7 +87,7 @@ class IngestionService:
             logger.warning("Redis not available for publishing progress")
             return
 
-        try:[unreachable]
+        try:
             # Create channel name specific to this job
             channel = f"{self.pubsub_channel}:{job_id}"
 
@@ -118,7 +118,7 @@ class IngestionService:
             await websocket.close(code=1011, reason="Service unavailable")
             return
 
-        try:[unreachable]
+        try:
             # Create channel name specific to this job
             channel = f"{self.pubsub_channel}:{job_id}"
 
@@ -244,7 +244,7 @@ class IngestionService:
                     message="Preparing to start ingestion",
                     cpu_percent=None,
                     memory_mb=None,
-                    timestamp=ingestion_started.eta if ingestion_started.eta else None,[arg-type]
+                    timestamp=ingestion_started.eta if ingestion_started.eta else None,
                 )
 
                 await self.publish_progress(ingestion_started.job_id, initial_event)
@@ -321,7 +321,7 @@ class IngestionService:
                 message="Job was cancelled by user",
                 cpu_percent=None,
                 memory_mb=None,
-                timestamp=job.updated_at if job.updated_at else None,[arg-type]
+                timestamp=job.updated_at if job.updated_at else None,
             )
 
             await self.publish_progress(job_id, cancel_event)
@@ -381,7 +381,7 @@ class IngestionService:
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,[union-attr]
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to list jobs: {e!s}",
             ) from e
 

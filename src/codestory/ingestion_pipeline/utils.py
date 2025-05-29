@@ -16,7 +16,7 @@ try:
     from importlib.metadata import entry_points
 except ImportError:
     # Fallback for Python < 3.8
-    import pkg_resources[import-untyped]
+    import pkg_resources
 
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -226,7 +226,7 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
                 entry_points_list = list(eps)
             except TypeError:
                 # Python 3.8-3.9 API
-                entry_points_list = eps.get(entry_point_group, [])[attr-defined]
+                entry_points_list = eps.get(entry_point_group, [])
 
             for entry_point in entry_points_list:
                 step_name = entry_point.name

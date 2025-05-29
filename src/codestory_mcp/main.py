@@ -50,7 +50,7 @@ def setup_logging() -> None:
         processor=structlog.dev.ConsoleRenderer()
         if settings.debug
         else structlog.processors.JSONRenderer(),
-        foreign_pre_chain=pre_chain,[arg-type]
+        foreign_pre_chain=pre_chain,
     )
 
     handler = logging.StreamHandler()

@@ -13,7 +13,7 @@ from pathlib import Path
 try:
     import rich_click as click
 except ImportError:
-    import click[no-redef]
+    import click
 from rich.console import Console
 from rich.table import Table
 
@@ -639,7 +639,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 )
                 if process.returncode == 0:
                     unhealthy_containers = [
-                        c for c in process.stdout.strip().split("\n") if c and c in containers[arg-type]
+                        c for c in process.stdout.strip().split("\n") if c and c in containers
                     ]
             except Exception:
                 pass
@@ -850,10 +850,10 @@ def renew_azure_auth(
                     console.print("Run with --verbose for full output.")
                     # Show the last few lines of the error
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:][arg-type]
+                        error_lines = process.stderr.strip().split("\n")[-5:]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
-                            console.print(f"  {line}")[str-bytes-safe]
+                            console.print(f"  {line}")
 
             if success:
                 console.print("[green]Azure authentication tokens updated successfully.[/]")
@@ -1007,10 +1007,10 @@ def renew_azure_auth(
                     console.print("[red]Token injection failed.[/]")
                     console.print("Run with --verbose for full output.")
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:][arg-type]
+                        error_lines = process.stderr.strip().split("\n")[-5:]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
-                            console.print(f"  {line}")[str-bytes-safe]
+                            console.print(f"  {line}")
                     sys.exit(1)
 
             if success:

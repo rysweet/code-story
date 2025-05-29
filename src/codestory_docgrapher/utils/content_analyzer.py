@@ -56,7 +56,7 @@ class ContentAnalyzer:
         if entity.type == EntityType.HEADING:
             return self._analyze_heading(content)
         elif entity.type == EntityType.CODE_BLOCK:
-            return self._analyze_code_block(content, entity.metadata.get("language", ""))[arg-type]
+            return self._analyze_code_block(content, entity.metadata.get("language", ""))
         elif entity.type == EntityType.FUNCTION_DESC:
             return self._analyze_function_desc(content)
         elif entity.type == EntityType.CLASS_DESC:
@@ -339,9 +339,9 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)[union-attr]
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
 
-            return response.choices[0].message.content.strip()[no-any-return]
+            return response.choices[0].message.content.strip()
         except Exception as e:
             logger.warning(f"Error extracting function purpose: {e}")
             return ""
@@ -374,9 +374,9 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)[union-attr]
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
 
-            return response.choices[0].message.content.strip()[no-any-return]
+            return response.choices[0].message.content.strip()
         except Exception as e:
             logger.warning(f"Error extracting class purpose: {e}")
             return ""
@@ -409,9 +409,9 @@ class ContentAnalyzer:
         ]
 
         try:
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)[union-attr]
+            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
 
-            return response.choices[0].message.content.strip()[no-any-return]
+            return response.choices[0].message.content.strip()
         except Exception as e:
             logger.warning(f"Error extracting module purpose: {e}")
             return ""

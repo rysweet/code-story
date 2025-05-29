@@ -168,7 +168,7 @@ def redis_client(test_databases: Any) -> None:
 
 
 # Markers for test categorization
-def pytest_config: Anyure(config) -> None:
+def pytest_configure(config) -> None:
     """Configure pytest markers."""
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "docker: marks tests that require Docker")
