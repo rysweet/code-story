@@ -11,33 +11,36 @@ IMMEDIATELY AFTER EACH USER INTERACTION OR SHELL COMMAND:
 
 ## Prompt History Maintenance
 
-You MUST update `/Specifications/prompt-history.md` after EVERY user interaction before responding to the next prompt.
+You MUST update `.github/Copilot-History/prompt_history_<datetime>.md` after EVERY user interaction before responding to the next prompt.
 
 Requirements for maintaining prompt history:
 - Update the file IMMEDIATELY AFTER EVERY USER INTERACTION but BEFORE responding to the user
-- Follow this exact format: "## Prompt N (current date)" followed by:
-  - "**Prompt**: [exact user request]"
-  - "**Response**: [3-7 bullet points summarizing your actions]"
+- Use a unique file per session, named with the current datetime (e.g., `prompt_history_2025-05-29_14-30.md`)
+- Follow this exact format for each entry:  
+  - "## Prompt N (current date)"  
+    - "**Prompt**: [exact user request]"  
+    - "**Response**: [3-7 bullet points summarizing your actions]"
 - Use bullet points for the response summary
 - Keep summaries concise but comprehensive
 - Increment the prompt number sequentially
-- Include the current date
-- Check that the file exists and is properly updated after each interaction
+- Include the current datetime in the filename and entry
 - ALWAYS read the file first to determine the next prompt number
 
 This is a CRITICAL requirement for project documentation and continuity. Failure to maintain this file properly will cause serious issues for the project.
 
 ## Shell Command History Maintenance
 
-You MUST update `/Specifications/shell_history.md` after EVERY command you run (except git add/commit).
+You MUST update `.github/Copilot-History/shell_history_<datetime>.md` after EVERY command you run (except git add/commit).
 
 Requirements for shell history:
 - Update this file IMMEDIATELY AFTER EVERY SHELL COMMAND you run successfully
+- Use a unique file per session, named with the current datetime (e.g., `shell_history_2025-05-29_14-30.md`)
 - Include *all* shell commands *except "git commit" commands* and *"git add" commands*
-- Format each entry as: `- \`command\` - explanation of why you ran it`
+- Format each entry as a markdown code block with the command, followed by a comment explaining why you ran it
 - Group commands by date with a "## Date" header
 - Ensure that the history is clear and concise, focusing on commands that impact the project significantly
 - After each update to shell_history.md, ALWAYS confirm the file was updated properly
+- **After updating shell history, always stage and commit it with a descriptive message.** Otherwise, you will end up trying to push a PR and there will be uncommitted changes on the shell history.
 - **NEVER fail to document a shell command in this file**
 
 ⚠️⚠️⚠️ CRITICAL WORKFLOW PROCEDURE ⚠️⚠️⚠️

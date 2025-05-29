@@ -1,4 +1,12 @@
 # Shell Command History
+- `docker compose ps` - Checked the status of all containers; codestory-service is up and health check is starting, others are healthy.
+
+# May 30, 2025
+
+- `uv venv .venv`  
+  Created a new Python virtual environment using uv for project setup as per updated workflow.
+- `.venv\\Scripts\\activate; uv pip install -r requirements.txt`  
+  Activated the uv virtual environment and installed all dependencies from requirements.txt using uv pip for a clean environment setup.
 
 ## May 28, 2025
 
