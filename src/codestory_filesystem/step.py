@@ -6,13 +6,13 @@ of directories and files, which can be linked to AST nodes.
 
 import logging
 import os
+import pathlib
 import time
 import traceback
 from typing import Any
 
-import pathlib
-from celery import shared_task
 import pathspec
+from celery import shared_task
 
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -43,8 +43,8 @@ BUILTIN_IGNORE_PATTERNS = [
 def get_combined_ignore_spec(
     repository_path: str, extra_patterns: list[str] | None = None
 ) -> pathspec.PathSpec:
-    """
-    Returns a PathSpec combining built-in ignore patterns, .gitignore (if present), and any extra patterns.
+    """Returns a PathSpec combining built-in ignore patterns, .gitignore (if present), and any extra patterns.
+    
     Built-in patterns are always first, then .gitignore, then extra_patterns.
     """
     repo_root = pathlib.Path(repository_path)

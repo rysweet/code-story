@@ -1,11 +1,12 @@
 import os
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
 
 from codestory_filesystem.step import get_combined_ignore_spec
+
 
 def create_test_tree(root):
     # Create files and directories
