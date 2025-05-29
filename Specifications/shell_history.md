@@ -266,3 +266,20 @@
 - `ruff check --fix tests/integration/test_ingestion_pipeline/test_cancellation.py` - Auto-fixed import sorting to resolve ruff linter error before running checks/tests
 
 - `poe check && poe test` - Ran all checks and tests after fixing type errors in the CLI client to validate the codebase before proceeding to the next milestone.
+
+## May 29, 2025
+
+- `git commit --allow-empty -m "chore: start mypy cleanup"` - created an empty starter commit on fix/mypy-cleanup to enable PR creation
+
+- `git push` - pushed the empty starter commit to origin/fix/mypy-cleanup to enable PR creation
+
+- `gh pr create --base main --head fix/mypy-cleanup --title "Fix: eliminate all mypy errors" --body "Tracking commits to bring the entire codebase to a clean mypy slate." --draft` - opened a draft PR against main for mypy cleanup tracking; PR URL: https://github.com/rysweet/code-story/pull/51
+- `poetry run mypy --show-error-codes --pretty src tests > mypy_baseline.txt` - Ran MyPy across all source and test files to generate a baseline error report for planning type fixes.
+- `grep -Eo '^[^:]+' mypy_baseline.txt | sort | uniq -c | sort -nr > mypy_summary.txt` - Summarized MyPy errors per file to identify error hotspots for planning.
+- `wc -l mypy_baseline.txt` - Counted total number of MyPy errors for baseline reporting.
+
+- `poetry run python fix_mypy_comprehensive.py` - Ran the comprehensive MyPy fixer script to auto-refactor code for MyPy compliance as part of the iterative cleanup process.
+
+- `poetry run mypy --show-error-codes src tests > mypy_after_pass1.txt` - Ran MyPy after the fixer to capture the current error count and output to mypy_after_pass1.txt for tracking progress.
+
+- `wc -l mypy_after_pass1.txt` - Counted the number of MyPy errors after the first fixer pass to track progress; result: 1186 errors remain.
