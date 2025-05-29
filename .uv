@@ -1,0 +1,3 @@
+# This file tells uv to use the current directory as the project root
+[project]
+name = "code-story"
