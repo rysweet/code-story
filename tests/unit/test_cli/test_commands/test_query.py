@@ -282,7 +282,7 @@ class TestQueryCommands:
         }
 
         # Set up mock to return different results for different queries
-        def mock_execute_query: Any(query, params: Any=None):
+        def mock_execute_query(query, params: Any = None):
             if "labels(n) as type" in query:
                 return node_counts
             elif "MATCH (n:Class)" in query:

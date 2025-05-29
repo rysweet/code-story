@@ -26,7 +26,7 @@ def ingest() -> Any:
     pass
 
 
-def run_command: Any(command, capture_output: Any=True, shell: Any=True) -> None:  # type: ignore[no-untyped-def]
+def run_command(command: Any, capture_output: Any = True, shell: Any = True) -> None:  # type: ignore[no-untyped-def]
     """Run a shell command and return its output."""
     try:
         result = subprocess.run(

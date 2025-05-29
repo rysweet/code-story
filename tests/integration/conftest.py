@@ -93,14 +93,14 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
-def pytest_config: Anyure(config) -> None:
+def pytest_configure(config) -> None:
     """Register custom markers."""
     config.addinivalue_line("markers", "integration: mark test as an integration test")
     config.addinivalue_line("markers", "neo4j: mark test as requiring Neo4j")
     config.addinivalue_line("markers", "celery: mark test as requiring Celery")
 
 
-def pytest_collection_modifyitems: Any(config: Any, items) -> None:
+def pytest_collection_modifyitems(config: Any, items) -> None:
     """Enable Neo4j and Celery tests by default.
 
     Neo4j and Redis are considered core components of the system, so their

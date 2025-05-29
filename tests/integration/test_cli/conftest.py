@@ -25,7 +25,7 @@ def cli_runner() -> CliRunner:
     return CliRunner()
 
 
-def pytest_config: Anyure(config) -> None:
+def pytest_configure(config) -> None:
     """Add custom markers to pytest."""
     config.addinivalue_line(
         "markers",

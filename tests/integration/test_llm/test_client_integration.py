@@ -37,7 +37,7 @@ def test_client_creation(openai_credentials: Any) -> None:
 
 
 @pytest.mark.integration
-def test_client: Any_configuration(client) -> None:
+def test_client_configuration(client: Any) -> None:
     """Test client configuration with expected values."""
     # Get current settings
     settings = get_settings()

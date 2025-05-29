@@ -316,7 +316,7 @@ CMD ["echo", "Ready to process code"]
 
 
 @pytest.fixture(scope="function")
-def blarify_celery_app: Any(celery_app):
+def blarify_celery_app(celery_app: Any):
     """Provide a Celery app configured for BlarifyStep testing.
 
     This fixture depends on the celery_app fixture from conftest.py

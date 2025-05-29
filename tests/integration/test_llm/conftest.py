@@ -27,13 +27,13 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
-def pytest_config: Anyure(config) -> None:
+def pytest_configure(config) -> None:
     """Register custom markers."""
     config.addinivalue_line("markers", "integration: mark test as an integration test")
     config.addinivalue_line("markers", "openai: mark test as requiring OpenAI API access")
 
 
-def pytest_collection_modifyitems: Any(config: Any, items) -> None:
+def pytest_collection_modifyitems(config: Any, items) -> None:
     """Skip OpenAI tests if explicitly disabled or if they require Azure.
 
     For Azure tests, we first check if Azure credentials are available before skipping.
