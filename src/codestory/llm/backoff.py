@@ -7,7 +7,7 @@ rate limiting and transient errors from the Azure OpenAI API.
 import functools
 import logging
 from collections.abc import Callable
-from typing import Any, Callable, Callable, Callable, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 import openai
 from tenacity import (

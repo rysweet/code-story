@@ -31,6 +31,88 @@
 
 ## 6.3 Architecture and Code Structure
 
+---
+
+## 6.3a Async Task Management & Control
+
+### Overview
+
+The ingestion pipeline supports advanced async task management features to enable robust, scalable, and user-controllable workflows. These include:
+
+- Task cancellation and termination
+- Priority queueing
+- Resource management and throttling
+- Task dependency tracking and ordering
+- Task monitoring and progress reporting
+- Retry and failure recovery
+- Task scheduling and delayed execution
+- Performance monitoring
+
+### Features & Design
+
+- **Task Cancellation:**
+  Users can cancel running or pending ingestion tasks via API/CLI. The pipeline uses Celery's `revoke` API with `terminate=True` and ensures workflow steps check for revocation for graceful shutdown.
+
+- **Priority Queues:**
+  Multiple Celery queues (e.g., high, default, low) are supported. Task priority is accepted via API/CLI and routed to the appropriate queue. Worker configuration ensures high-priority tasks are processed first.
+
+- **Resource Management:**
+  Worker concurrency and resource tags are configurable. Optionally, a resource manager (e.g., Redis-based tokens) can be used to throttle resource usage. Resource usage and limits are exposed via API.
+
+#### Resource Management & Throttling (Implementation Details)
+
+- The ingestion pipeline enforces resource throttling using a Redis-backed token bucket.
+- The maximum number of concurrent ingestion steps is configurable via `resource_max_tokens` in settings.
+- Before each step runs, a token is acquired from Redis; if no tokens are available, the step is blocked or fails with a throttling error.
+- After the step completes (success or failure), the token is released.
+- The current number of available tokens and the configured maximum are exposed via the API endpoint:
+  `GET /v1/ingest/resource_status`
+- This endpoint returns a JSON object:
+  `{ "available_tokens": <int>, "max_tokens": <int> }`
+- Integration tests verify that resource limits are enforced and reported correctly.
+- This mechanism prevents overloading the system and allows for dynamic adjustment of resource usage.
+
+- **Dependency Tracking:**
+  Task chains/groups/chords are used to express dependencies between workflow steps. The API can accept dependency information, ensuring correct execution order.
+
+- **Monitoring & Progress:**
+  Task status and progress are reported via Celery's result backend and `update_state`. Real-time updates are streamed to clients via WebSocket and API endpoints.
+
+- **Retry & Failure Recovery:**
+  Retry policies (max retries, backoff) are configurable per step. Retry/failure info is exposed via API, and tests cover failure/retry scenarios.
+
+- **Scheduling:**
+  Tasks can be scheduled for future execution using Celery's `eta`/`countdown` parameters, with API/CLI support for delayed jobs.
+
+- **Performance Monitoring:**
+  Task execution metrics (duration, resource usage) are collected and exposed via API and/or Prometheus.
+
+### Implementation Notes
+
+- All features are reflected in the pipeline configuration, API, and plugin step interfaces.
+- See section 6.5 for updated API and step requirements.
+- See section 6.8 for updated user stories and acceptance criteria.
+
+#### Task Cancellation API and Implementation
+
+- **API Endpoint:**  
+  The ingestion pipeline exposes a cancellation endpoint:  
+  `POST /v1/ingest/{job_id}/cancel`  
+  This endpoint cancels a running or pending ingestion job by revoking the associated Celery task with `terminate=True`.
+
+- **Graceful Cancellation:**  
+  The pipeline orchestration and step tasks periodically check for task revocation using Celery's `is_revoked()` API. If a task is revoked, it exits early and updates the job status to `CANCELLED`. This ensures that both pending and running jobs can be cancelled cleanly.
+
+- **Testing:**  
+  Integration tests cover:
+  - Cancelling a running job and verifying it transitions to `CANCELLED`
+  - Cancelling a pending job and verifying it transitions to `CANCELLED`
+  - Attempting to cancel a completed job (should remain `COMPLETED`)
+
+- **User Story:**  
+  As a user, I can cancel ingestion jobs via API/CLI and expect the pipeline to stop promptly and report the cancellation status.
+---
+
 The Ingestion Pipeline orchestrates standalone “step” modules—discovered via entry points—and uses Redis-backed Celery for task management. Steps live in separate plugin packages, allowing extensibility without modifying the core pipeline.
 
 1. **Pipeline Manager**  
@@ -138,11 +220,18 @@ The following steps are the default workflow of the ingestion pipeline but are s
 ## 6.5 Workflow Steps API
 
 Each workflow step must implement the following operations, inherited from the `PipelineStep` interface:
-- `run(repository)`: Run the workflow step with the specified configuration and input data (location of the repo, neo4j connection information, etc.). The operation returns an identifier for the job that can be used to check the status of the job.
-- `status(job_id)`: Check the status of the workflow step. The operation returns the current status of the job (e.g., running (% complete), completed, failed).
-- `stop(job_id)`: Stop the workflow step. The operation returns the current status of the job (e.g., running, completed, failed).
-- `cancel(job_id)`: Cancel the workflow step. The operation returns the current status of the job (e.g., running, completed, failed).
-- `ingestion_update(repository)`: Update the graph with the results of the workflow step without running the entire pipeline. The operation returns a job_id that can be used to check the status of the job.
+
+- `run(repository, **options)`: Run the workflow step with the specified configuration and input data (location of the repo, neo4j connection information, etc.). Supports options for priority, scheduling, dependencies, and resource tags. Returns a job identifier.
+- `status(job_id)`: Check the status of the workflow step. Returns the current status (e.g., running (% complete), completed, failed), progress, and resource usage.
+- `stop(job_id)`: Stop the workflow step. Returns the current status.
+- `cancel(job_id)`: Cancel the workflow step. Returns the current status. Steps must periodically check for revocation and terminate gracefully.
+- `ingestion_update(repository)`: Update the graph with the results of the workflow step without running the entire pipeline. Returns a job_id.
+- `dependencies(job_id)`: (Optional) Return a list of job_ids this step depends on.
+- `retry(job_id)`: (Optional) Retry a failed or cancelled job.
+- `schedule(repository, eta/countdown, **options)`: (Optional) Schedule a step for future execution.
+
+All steps must support progress reporting via `update_state` and log resource usage for monitoring.
+
 
 ## 6.6 Code Example of calling the Ingestion Pipeline
 
@@ -285,11 +374,13 @@ To avoid parameter conflicts between different pipeline steps, the CeleryAdapter
 | User Story | Acceptance Criteria |
 |------------|---------------------|
 | As a developer, I want the ingestion pipeline to execute workflow steps in a configurable order so that I can easily manage and modify the ingestion process. | • Workflow steps execute in the order specified by the configuration file.<br>• Changing the configuration file updates the execution order without code changes. |
-| As a developer, I want to be able to start, stop, and monitor ingestion jobs so that I can control and track the ingestion process effectively. | • Methods exist to start, stop, and check the status of ingestion jobs.<br>• Job statuses are accurately reported and logged. |
+| As a developer, I want to be able to start, stop, cancel, and monitor ingestion jobs so that I can control and track the ingestion process effectively. | • Methods exist to start, stop, cancel, and check the status of ingestion jobs.<br>• Job statuses and progress are accurately reported and logged.<br>• Users can cancel long-running tasks via API/CLI. |
 | As a developer, I want the ingestion pipeline to support adding new workflow steps as plugins so that I can extend the system functionality without modifying core pipeline code. | • New workflow steps can be added as plugins without altering existing pipeline code.<br>• Newly added plugins are recognized and executed by the pipeline. |
-| As a developer, I want the ingestion pipeline to retry failed workflow steps or entire workflows so that transient errors do not require manual intervention. | • Failed workflow steps can be retried individually.<br>• Entire workflows can be retried from the beginning.<br>• Retry attempts are logged clearly. |
+| As a developer, I want the ingestion pipeline to retry failed workflow steps or entire workflows so that transient errors do not require manual intervention. | • Failed workflow steps can be retried individually.<br>• Entire workflows can be retried from the beginning.<br>• Retry attempts are logged clearly.<br>• Retry/failure info is exposed via API. |
 | As a developer, I want workflow steps to optionally support an "Ingestion Update" mode so that I can update the graph incrementally without rerunning the entire pipeline. | • Workflow steps can be executed individually in "Ingestion Update" mode.<br>• Graph updates occur correctly without executing unrelated steps. |
-| As a developer, I want detailed logging of workflow step execution and errors so that I can easily diagnose and resolve issues. | • Execution status and errors for each workflow step are logged clearly.<br>• Logs contain sufficient context to diagnose issues quickly. |
+| As a developer, I want to schedule ingestion jobs and set task priorities so that I can optimize resource usage and workflow timing. | • API/CLI supports scheduling jobs for future execution.<br>• Priority parameter is accepted and high-priority tasks are processed first.<br>• Resource usage is controlled and monitored. |
+| As a developer, I want to define dependencies between workflow steps so that tasks execute in the correct order. | • Task dependencies are respected in execution order.<br>• API accepts dependency information.<br>• Dependent tasks wait for prerequisites to complete. |
+| As a developer, I want detailed logging and monitoring of workflow step execution, progress, and performance so that I can easily diagnose and resolve issues. | • Execution status, progress, resource usage, and errors for each workflow step are logged and exposed via API/WebSocket.<br>• Performance metrics are collected and available for monitoring. |
 | As a user, I want repositories to be automatically mounted when using Docker so that I don't need to manually configure volume mounts. | • CLI automatically detects when repository mounting is needed.<br>• Repositories are mounted correctly in Docker containers.<br>• Users don't need to manually edit docker-compose files. |
 | As a developer, I want clear errors when repository mounting fails so that I can easily diagnose and fix mounting issues. | • Clear error messages explain mounting problems.<br>• Specific troubleshooting steps are provided.<br>• Detailed diagnostic information is available when needed. |
 

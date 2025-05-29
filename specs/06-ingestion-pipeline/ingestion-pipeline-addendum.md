@@ -178,3 +178,109 @@ CODESTORY_LLM_DEBUG=true
 ```
 
 These improvements ensure the ingestion pipeline can continue operating even when facing authentication challenges, creating a more resilient system.
+## A.3 Retry & Failure Recovery
+
+### A.3.1 Configurable Retry and Back-off
+
+- Each pipeline step can specify `max_retries` and `back_off_seconds` in `pipeline_config.yml`.
+- If not set per-step, global defaults under the `retry` section are used.
+- Example:
+  ```yaml
+  steps:
+    - name: filesystem
+      max_retries: 2
+      back_off_seconds: 5
+    - name: blarify
+      max_retries: 4
+      back_off_seconds: 15
+  retry:
+    max_retries: 3
+    back_off_seconds: 10
+  ```
+
+### A.3.2 Transient Error Handling and Idempotency
+
+- Steps are implemented to call `self.retry()` on transient errors (e.g., network, resource busy).
+- Retries use the configured back-off and are capped at `max_retries`.
+- All steps are designed to be idempotent to ensure safe retry.
+
+### A.3.3 Status Reporting and Visibility
+
+- Retry count and last error for each step are persisted and exposed via:
+  - Status API: `/v1/ingest/{job_id}` includes `retry_count` and `last_error` per step.
+  - WebSocket events: Real-time updates include retry/failure info.
+  - CLI and GUI: Display retry counts and last error messages for each step.
+
+### A.3.4 Test Coverage
+
+- Integration tests simulate transient failures and verify:
+  - Steps are retried up to the configured limit.
+  - Status API and UI report correct retry/failure info.
+  - Final job status reflects success or failure after retries.
+
+### A.3.5 User Experience
+
+- Users can monitor retry progress and error messages in real time.
+- Failure recovery is automatic for transient issues, with clear reporting if a step ultimately fails.
+## A.4 Scheduling & Delayed Execution
+
+### A.4.1 API and CLI Support
+
+- The ingestion API (`/v1/ingest`) and CLI (`codestory ingest start`) support scheduling jobs using:
+  - `eta`: Absolute datetime (ISO 8601 string or Unix timestamp) at which to schedule the job.
+  - `countdown`: Number of seconds to delay job execution from now.
+- If both are provided, `eta` takes precedence.
+- Example CLI usage:
+  ```bash
+  codestory ingest start /path/to/repo --eta "2025-05-29T12:00:00"  # Schedule for a specific time
+  codestory ingest start /path/to/repo --countdown 60                # Delay by 60 seconds
+  ```
+
+### A.4.2 Schedule Metadata Persistence
+
+- Schedule metadata (`eta`, `countdown`) is persisted with each job and visible in job status via:
+  - Status API: `/v1/ingest/{job_id}` includes `eta` field.
+  - CLI: `codestory ingest status JOB_ID` displays scheduled time if applicable.
+- Jobs are enqueued for execution at the scheduled time and remain in "pending" or "scheduled" state until then.
+
+### A.4.3 Test Coverage
+
+- Integration tests verify:
+  - Jobs started with `--countdown` or `--eta` remain pending until the scheduled time.
+  - After the scheduled time, jobs transition to running/completed.
+  - Schedule metadata is visible in job status.
+- Example test: `test_ingest_start_with_eta` in `tests/integration/test_cli/test_ingest_integration.py`.
+## A.5 Performance Monitoring & Metrics
+
+### A.5.1 Metrics API
+
+- The ingestion API exposes recent job and step metrics at:
+  - `/v1/ingest/resource_status`
+- The response includes:
+  - `tokens`: Resource token usage and limits for throttling
+  - `metrics`: Summary statistics for recent jobs and steps:
+    - `duration_seconds`: { avg, min, max }
+    - `cpu_percent`: { avg, min, max }
+    - `memory_mb`: { avg, min, max }
+- Example response:
+  ```json
+  {
+    "tokens": {
+      "available_tokens": 2,
+      "max_tokens": 4
+    },
+    "metrics": {
+      "job_count": 20,
+      "duration_seconds": { "avg": 12.3, "min": 2.1, "max": 45.7 },
+      "cpu_percent": { "avg": 23.5, "min": 10.2, "max": 55.1 },
+      "memory_mb": { "avg": 120.4, "min": 80.0, "max": 200.0 }
+    }
+  }
+  ```
+
+### A.5.2 Test Coverage
+
+- Integration tests verify:
+  - The `/v1/ingest/resource_status` endpoint returns the correct structure and metrics fields
+  - Metrics are aggregated from recent jobs and steps
+  - See: `test_resource_status_endpoint` in `tests/integration/test_ingestion_pipeline/test_resource_throttling.py`

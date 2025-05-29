@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import Any, Callable, Callable, Callable
+from typing import Any
 
 import structlog
 from fastapi import Depends, FastAPI, HTTPException, Request, status

@@ -195,6 +195,13 @@ def load_pipeline_config(config_path: str | Path) -> dict[str, Any]:
     if "back_off_seconds" not in config["retry"]:
         config["retry"]["back_off_seconds"] = 10
 
+    # Propagate per-step retry/back-off config (step overrides global)
+    for step in config["steps"]:
+        if "max_retries" not in step:
+            step["max_retries"] = config["retry"]["max_retries"]
+        if "back_off_seconds" not in step:
+            step["back_off_seconds"] = config["retry"]["back_off_seconds"]
+
     return config
 
 

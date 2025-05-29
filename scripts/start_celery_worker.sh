@@ -21,4 +21,4 @@ echo "Setting up Python path..."
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 echo "Starting Celery worker..."
-celery -A src.codestory.ingestion_pipeline.celery_app:app worker -l info -Q ingestion
+celery -A src.codestory.ingestion_pipeline.celery_app:app worker -l info -Q high,default,low

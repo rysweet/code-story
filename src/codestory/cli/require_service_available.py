@@ -1,8 +1,9 @@
 import os
-import subprocess
 import sys
 
 from rich.console import Console
+
+from .client import ServiceClient, ServiceError
 
 
 def require_service_available() -> None:
@@ -14,19 +15,17 @@ def require_service_available() -> None:
     if os.environ.get("PYTEST_CURRENT_TEST"):
         # In test environment, do nothing
         return
+    
     console = Console()
     try:
-        result = subprocess.run(
-            ["codestory", "service", "status", "--check"],
-            capture_output=True,
-            text=True,
+        client = ServiceClient(console=console)
+        client.check_service_health()
+    except ServiceError:
+        console.print(
+            "[bold red]Code Story services are not running. Please start them "
+            "with `codestory service start`."
         )
-        if result.returncode != 0:
-            console.print(
-                "[bold red]Code Story services are not running. Please start them "
-                "with `codestory service start`."
-            )
-            sys.exit(1)
+        sys.exit(1)
     except Exception as e:
         console.print(f"[bold red]Failed to check service status: {e}")
         sys.exit(1)

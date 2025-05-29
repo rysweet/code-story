@@ -30,12 +30,21 @@ def create_celery_app() -> Celery:
         backend=settings.redis.uri,
     )
 
-    # Configure task routes
+    # Define priority queues
+    from kombu import Queue
+
+    app.conf.task_queues = (
+        Queue("high"),
+        Queue("default"),
+        Queue("low"),
+    )
+
+    # Configure task routes (default to "default" queue for backward compatibility)
     app.conf.task_routes = {
-        "codestory.ingestion_pipeline.tasks.*": {"queue": "ingestion"},
-        "codestory_*.step.*": {"queue": "ingestion"},
+        "codestory.ingestion_pipeline.tasks.*": {"queue": "default"},
+        "codestory_*.step.*": {"queue": "default"},
         "codestory.pipeline.steps.*": {
-            "queue": "ingestion"
+            "queue": "default"
         },  # Match the task name in the decorator
     }
 

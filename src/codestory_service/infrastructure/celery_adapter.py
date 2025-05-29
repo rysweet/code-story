@@ -6,6 +6,7 @@ facilitating interaction with the ingestion pipeline and other background tasks.
 
 import logging
 import time
+from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -20,6 +21,8 @@ from ..domain.ingestion import (
     IngestionRequest,
     IngestionStarted,
     JobStatus,
+    StepProgress,
+    StepStatus,
 )
 
 # Set up logging
@@ -160,9 +163,28 @@ class CeleryAdapter:
             # Submit the Celery task with positional parameters
             # For testing, use a local reference that can be mocked
             task_func = getattr(self, "_run_ingestion_pipeline", run_ingestion_pipeline)
+            # Map priority to queue name
+            queue_name = request.priority if request.priority in {"high", "default", "low"} else "default"
+            # Scheduling support: determine eta/countdown
+            eta = None
+            countdown = 0
+            if getattr(request, "eta", None):
+                # Accept both datetime and int (timestamp)
+                if isinstance(request.eta, datetime):
+                    eta = request.eta
+                else:
+                    try:
+                        eta = datetime.fromtimestamp(int(request.eta))
+                    except Exception:
+                        eta = None
+            elif getattr(request, "countdown", None):
+                countdown = int(request.countdown)
+
             task = task_func.apply_async(
                 args=[repository_path, step_configs, job_id],
-                countdown=0,  # Start immediately
+                queue=queue_name,
+                eta=eta,
+                countdown=countdown if eta is None else None,
                 expires=3600 * 24,  # Expire after 24 hours if not started
             )
 
@@ -173,7 +195,7 @@ class CeleryAdapter:
                 source=request.source,  # Add required source field
                 steps=request.steps or ["default_pipeline"],  # Add required steps field
                 message="Ingestion job submitted successfully",
-                eta=int(time.time()),  # Immediate start
+                eta=int(eta.timestamp()) if eta else (int(time.time()) + countdown if countdown else int(time.time())),
             )
 
         except Exception as e:
@@ -199,9 +221,49 @@ class CeleryAdapter:
             # Check if job exists
             task = self.app.AsyncResult(job_id)
 
+            # Helper to build steps dict from Celery result
+            def build_steps_from_result(result: Any) -> dict[str, StepProgress]:
+                steps = {}
+                # If result is a list of step dicts (from orchestrate_pipeline)
+                if isinstance(result, dict) and "steps" in result and isinstance(result["steps"], list):
+                    for step in result["steps"]:
+                        name = step.get("step") or step.get("name") or "unknown"
+                        steps[name] = StepProgress(
+                            name=name,
+                            status=StepStatus(step.get("status", StepStatus.UNKNOWN)),
+                            progress=step.get("progress", 0.0),
+                            message=step.get("message"),
+                            error=step.get("error"),
+                            started_at=datetime.fromtimestamp(step.get("start_time")) if step.get("start_time") else None,
+                            completed_at=datetime.fromtimestamp(step.get("end_time")) if step.get("end_time") else None,
+                            duration=step.get("duration"),
+                            cpu_percent=step.get("cpu_percent"),
+                            memory_mb=step.get("memory_mb"),
+                            retry_count=step.get("retry_count"),
+                            last_error=step.get("last_error"),
+                        )
+                # If result is a single step dict
+                elif isinstance(result, dict) and "step" in result:
+                    name = result.get("step") or result.get("name") or "unknown"
+                    steps[name] = StepProgress(
+                        name=name,
+                        status=StepStatus(result.get("status", StepStatus.UNKNOWN)),
+                        progress=result.get("progress", 0.0),
+                        message=result.get("message"),
+                        error=result.get("error"),
+                        started_at=datetime.fromtimestamp(result.get("start_time")) if result.get("start_time") else None,
+                        completed_at=datetime.fromtimestamp(result.get("end_time")) if result.get("end_time") else None,
+                        duration=result.get("duration"),
+                        cpu_percent=result.get("cpu_percent"),
+                        memory_mb=result.get("memory_mb"),
+                        retry_count=result.get("retry_count"),
+                        last_error=result.get("last_error"),
+                    )
+                return steps
+
             if task.state == "PENDING":
                 return IngestionJob(
-job_id=job_id,
+                    job_id=job_id,
                     status=JobStatus.PENDING,
                     source=None,
                     source_type=None,
@@ -225,9 +287,12 @@ job_id=job_id,
                 progress = info.get("progress", 0.0)
                 current_step = info.get("step", "Processing")
                 message = info.get("message", "Task is in progress")
+                cpu_percent = info.get("cpu_percent")
+                memory_mb = info.get("memory_mb")
+                steps = build_steps_from_result(info)
 
                 return IngestionJob(  # type: ignore[call-arg]
-job_id=job_id,
+                    job_id=job_id,
                     status=JobStatus.RUNNING,
                     created_at=info.get("created_at", int(time.time())),
                     updated_at=int(time.time()),
@@ -236,13 +301,18 @@ job_id=job_id,
                     message=message,
                     result=None,
                     error=None,
+                    steps=steps,
+                    cpu_percent=cpu_percent,
+                    memory_mb=memory_mb,
                 )
 
             if task.state == "SUCCESS":
                 result = task.result or {}
-
+                cpu_percent = result.get("cpu_percent")
+                memory_mb = result.get("memory_mb")
+                steps = build_steps_from_result(result)
                 return IngestionJob(  # type: ignore[call-arg]
-job_id=job_id,
+                    job_id=job_id,
                     status=JobStatus.COMPLETED,
                     created_at=result.get("created_at", int(time.time()) - 60),
                     updated_at=int(time.time()),
@@ -251,11 +321,16 @@ job_id=job_id,
                     message="Ingestion completed successfully",
                     result=result,
                     error=None,
+                    steps=steps,
+                    cpu_percent=cpu_percent,
+                    memory_mb=memory_mb,
                 )
 
             if task.state == "FAILURE":
+                info = task.info or {}
+                steps = build_steps_from_result(info)
                 return IngestionJob(  # type: ignore[call-arg]
-job_id=job_id,
+                    job_id=job_id,
                     status=JobStatus.FAILED,
                     created_at=int(time.time()) - 60,  # Estimate
                     updated_at=int(time.time()),
@@ -264,11 +339,12 @@ job_id=job_id,
                     message=str(task.result) if task.result else "Task failed",
                     result=None,
                     error=str(task.result) if task.result else "Unknown error",
+                    steps=steps,
                 )
 
             if task.state == "REVOKED":
                 return IngestionJob(  # type: ignore[call-arg]
-job_id=job_id,
+                    job_id=job_id,
                     status=JobStatus.CANCELLED,
                     created_at=int(time.time()) - 60,  # Estimate
                     updated_at=int(time.time()),
@@ -281,7 +357,7 @@ job_id=job_id,
 
             # Default case for unknown state
             return IngestionJob(  # type: ignore[call-arg]
-job_id=job_id,
+                job_id=job_id,
                 status=JobStatus.UNKNOWN,
                 created_at=int(time.time()) - 60,  # Estimate
                 updated_at=int(time.time()),

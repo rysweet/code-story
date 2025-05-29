@@ -243,3 +243,26 @@
 - `git commit -m "Fix Azure OpenAI Health Check for Reasoning Models (o1) and Add Comprehensive Support..."` - Commit Azure OpenAI reasoning model fixes with comprehensive description
 - `git push origin feature/azure-openai-reasoning-models` - Push feature branch to remote repository for pull request creation
 - `gh pr create --title "Fix Azure OpenAI Health Check for Reasoning Models (o1) and Add Comprehensive Support" --body-file pr_description_azure_openai.md` - Create pull request #47 with comprehensive description
+
+## May 28, 2025 (Service Availability Check Verification)
+- `codestory status` - Test service status to verify all components are healthy before testing ingestion
+- `codestory ingest start .` - Test ingestion command to verify service availability check fix is working
+
+## May 28, 2025 (Docker Connectivity Fix Implementation)
+- Updated [`docker-compose.yml`](docker-compose.yml:46) worker service to add Docker daemon access for blarify step
+- **Changes Made:**
+  1. **Added Docker socket volume mount**: `/var/run/docker.sock:/var/run/docker.sock` to enable Docker daemon access
+  2. **Added Docker group configuration**: `group_add: [docker]` for proper group permissions
+  3. **Installed Docker CLI**: Added `docker.io` package to apt-get install command
+  4. **Added user to docker group**: `usermod -aG docker appuser` for proper Docker permissions
+  5. **Set Docker socket permissions**: `chown root:docker /var/run/docker.sock && chmod 660 /var/run/docker.sock`
+- **Problem Solved**: Worker container can now access Docker daemon, preventing blarify step failures
+- **Preserved Functionality**: All existing volumes, environment variables, Celery worker, and Python environment remain intact
+## May 29, 2025 (Milestone 4 – Dependency Tracking & Ordering Start)
+- Updated Specifications/status.md to set current task to Milestone 4: Dependency Tracking & Ordering - project status update
+
+## May 29, 2025
+
+- `ruff check --fix tests/integration/test_ingestion_pipeline/test_cancellation.py` - Auto-fixed import sorting to resolve ruff linter error before running checks/tests
+
+- `poe check && poe test` - Ran all checks and tests after fixing type errors in the CLI client to validate the codebase before proceeding to the next milestone.
