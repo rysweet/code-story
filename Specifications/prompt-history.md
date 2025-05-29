@@ -842,3 +842,71 @@ Based on the debug analysis, the issue is in `src/codestory_service/infrastructu
 - Creating feature branch `feature/azure-openai-reasoning-models`
 - Staging and committing changes with descriptive message about reasoning model fixes and test coverage
 - Pushing branch to remote repository and creating pull request with comprehensive description
+
+## Prompt 90 (May 28, 2025)
+
+**Prompt**: Test and verify that the service availability check fix resolves the ingestion issue.
+
+The fix has been applied to `src/codestory/cli/require_service_available.py` to eliminate the discrepancy between `codestory status` and `codestory ingest start` service availability checks.
+
+Your task is to:
+
+1. Test that the `codestory ingest start .` command now works correctly when services are running
+2. Create a simple test script that demonstrates the fix is working
+3. Update any related documentation if needed
+4. Verify that both commands now use consistent service checking
+
+The user should now be able to run `codestory ingest start .` successfully when the services are healthy, matching the behavior indicated by `codestory status`.
+
+Focus only on verification and testing - the core fix has already been implemented in the debug task.
+
+**Response**:
+- Updated prompt history with service availability check verification task
+- Examining the fixed require_service_available.py to understand the implemented changes
+- Testing codestory status and codestory ingest start commands for consistency
+- Creating verification test script to demonstrate the fix is working
+- Documenting results and updating any related documentation
+## Prompt 91 (May 28, 2025)
+
+**Prompt**: I need you to implement the Docker connectivity fix for the codestory worker based on the architectural plan.
+
+**Problem**: Worker container cannot access Docker daemon, causing blarify step to fail with Docker connectivity errors.
+
+**Solution to Implement**: Update the docker-compose.yml file to add Docker socket mounting and Docker CLI installation to the worker service.
+
+Please implement these specific changes:
+
+1. **Update [`docker-compose.yml`](docker-compose.yml:46) worker service**:
+   - Add Docker socket volume mount: `/var/run/docker.sock:/var/run/docker.sock`
+   - Add Docker group configuration: `group_add: [docker]`
+   - Update the worker command to install Docker CLI and configure permissions
+
+2. **The updated worker configuration should**:
+   - Install docker.io package during container startup
+   - Configure Docker group permissions for the appuser
+   - Maintain all existing functionality (Celery worker, Python environment, etc.)
+
+3. **Preserve all existing configuration**:
+   - Keep all current volumes, environment variables, and dependencies
+   - Maintain the existing command structure, just enhance it with Docker setup
+   - Ensure backward compatibility
+
+Focus on implementing the immediate fix (Phase 1 from the architectural plan). Test the configuration by examining if the changes are syntactically correct for docker-compose.
+
+**Response**:
+- Updated prompt history with Docker connectivity fix implementation task
+- Reading current docker-compose.yml to understand worker service configuration
+- Implementing Docker socket mounting and CLI installation for worker service
+- Adding Docker group configuration and permission setup
+- Maintaining all existing functionality while enabling Docker daemon access
+## Prompt 92 (May 28, 2025)
+
+**Prompt**: please proceed with some of those updates. Remove references to the infra. Update Getting Started to reference the demos. 'docs/' (see below for folder content) 'specs/' (see below for folder content)
+
+**Response**:
+- Switched from Ask to Code mode to allow file edits  
+- Read [`README.md`](README.md:1) and identified sections to modify  
+- Removed infra-specific deployment instructions and Azure details  
+- Re-wrote “Installation” to highlight demos and docs, dropped `infra/scripts/start.sh` reference  
+- Added “Learn More” section linking to docs and specs  
+- Applied changes via `apply_diff`, update succeeded

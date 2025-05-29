@@ -126,86 +126,25 @@ graph TD
    cd code-story
    ```
 
-2. Create a `.env` file from the template:
+2. (Optional) create a `.env` file from the template if you plan to run services locally:
    ```bash
    cp .env-template .env
    # Edit .env with your settings
    ```
 
-3. Start the services with the provided script:
-   ```bash
-   ./infra/scripts/start.sh
-   ```
+3. Explore the interactive demos to get a feel for the system:
 
-4. Access the GUI at http://localhost:5173
+   - CLI Demo: [docs/demos/cli_demo.md](docs/demos/cli_demo.md)
+   - GUI Demo: [docs/demos/gui_demo.md](docs/demos/gui_demo.md)
+   - MCP Demo: [docs/demos/mcp_demo.md](docs/demos/mcp_demo.md)
 
-### Production Deployment
+Refer to the full documentation at [docs/index.md](docs/index.md) for additional walkthroughs.
 
-For production deployment, use the production Docker Compose file:
+### Learn More
 
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
-
-### Azure Deployment
-
-#### Option 1: Using Bicep directly
-
-Deploy Code Story to Azure Container Apps using the provided Bicep templates:
-
-1. Login to Azure:
-   ```bash
-   az login
-   ```
-
-2. Deploy the infrastructure:
-   ```bash
-   ./infra/scripts/deploy_azure.sh -e dev -g code-story-dev
-   ```
-
-3. Build and push Docker images to the Azure Container Registry:
-   ```bash
-   ./infra/scripts/build_push_acr.sh -r <registry-name> -e dev
-   ```
-
-#### Option 2: Using Azure Developer CLI (azd)
-
-For a simplified deployment experience, you can use the Azure Developer CLI:
-
-1. Install the Azure Developer CLI:
-   ```bash
-   curl -fsSL https://aka.ms/install-azd.sh | bash
-   ```
-
-2. Login to Azure:
-   ```bash
-   azd auth login
-   ```
-
-3. Initialize a new environment:
-   ```bash
-   azd init --template .
-   ```
-
-4. Configure the environment:
-   ```bash
-   azd env set NEO4J_PASSWORD <your-neo4j-password>
-   ```
-
-5. Deploy the application:
-   ```bash
-   azd up
-   ```
-
-The Azure deployment creates:
-- Container Apps for Service, Worker, MCP, and GUI
-- Managed Neo4j database
-- Redis Cache
-- Key Vault for secrets
-- Log Analytics and Application Insights
-- Container Registry
-
-For detailed infrastructure documentation and architecture diagrams, see the [Infrastructure README](./infra/README.md).
+- Interactive demos overview: [docs/demos/index.md](docs/demos/index.md)
+- Complete documentation site: [docs/index.md](docs/index.md)
+- Specification suite: [specs/Main.md](specs/Main.md)
 
 ### Development Setup
 
