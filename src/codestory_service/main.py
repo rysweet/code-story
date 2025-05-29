@@ -146,10 +146,10 @@ def create_app() -> FastAPI:
         response_class=HTMLResponse,
         include_in_schema=False,  # Hide from API docs
     )
-    async def visualize_legacy(  # type: ignore[no-untyped-def]
+    async def visualize_legacy([no-untyped-def]
         type: str = Query("force"),
         theme: str = Query("auto"),
-        request: Request = None,  # type: ignore[assignment]
+        request: Request = None,[assignment]
         graph_service: GraphService = Depends(get_graph_service),
         user: dict[str, Any] | None = Depends(get_optional_user),
     ):

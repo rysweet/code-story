@@ -272,7 +272,7 @@ async def generate_visualization(
             theme=theme,
             focus_node_id=focus_node_id,
             depth=depth,
-            filter={  # type: ignore[arg-type]
+            filter={[arg-type]
                 "node_types": parsed_node_types,
                 "search_query": search_query,
                 "max_nodes": max_nodes,

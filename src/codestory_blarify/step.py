@@ -57,7 +57,7 @@ class BlarifyStep(PipelineStep):
             logger.info("Docker client initialized successfully")
         except DockerException as e:
             logger.warning(f"Docker client initialization failed: {e}. Will use Celery task.")
-            self.docker_client = None  # type: ignore  # TODO: Fix None assignment
+            self.docker_client = None  # TODO: Fix None assignment
 
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the Blarify step.
@@ -420,8 +420,8 @@ class BlarifyStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_blarify.step.run_blarify")  # type: ignore[misc]
-def run_blarify(  # type: ignore[no-untyped-def]
+@shared_task(bind=True, name="codestory_blarify.step.run_blarify")[misc]
+def run_blarify([no-untyped-def]
     self,  # Celery task instance
     repository_path: str,
     job_id: str,
@@ -492,12 +492,12 @@ def run_blarify(  # type: ignore[no-untyped-def]
                 pass
             else:
                 # Try to map host path to container path
-                for host_path, container_path in os.environ.get(  # type: ignore[misc]
+                for host_path, container_path in os.environ.get([misc]
                     "CODESTORY_MOUNT_MAPPINGS", ""
                 ).split(";"):
-                    if host_path and container_path and repository_path.startswith(host_path):  # type: ignore[has-type]
+                    if host_path and container_path and repository_path.startswith(host_path):[has-type]
                         container_repository_path = repository_path.replace(
-                            host_path, container_path, 1  # type: ignore[has-type]
+                            host_path, container_path, 1[has-type]
                         )
                         logger.info(
                             f"Mapped repository path from {repository_path} to "
@@ -746,7 +746,7 @@ def run_blarify(  # type: ignore[no-untyped-def]
 
         logger.info(f"Blarify task completed: {result['message']}")
 
-        return result  # type: ignore[no-any-return]
+        return result[no-any-return]
     except (docker.errors.DockerException, TimeoutError) as e:
         logger.error(f"Docker error: {e}")
         # Return error result

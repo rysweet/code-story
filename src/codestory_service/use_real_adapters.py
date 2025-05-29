@@ -107,6 +107,6 @@ def apply_overrides() -> None:
     # Override the factory functions
     neo4j_adapter.get_neo4j_adapter = get_real_neo4j_adapter
     celery_adapter.get_celery_adapter = get_real_celery_adapter
-    openai_adapter.get_openai_adapter = get_real_openai_adapter  # type: ignore  # TODO: Fix type compatibility
+    openai_adapter.get_openai_adapter = get_real_openai_adapter  # TODO: Fix type compatibility
 
     logger.info("Applied real adapter overrides - demo/mock adapters are disabled")

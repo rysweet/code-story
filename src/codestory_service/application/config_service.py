@@ -101,12 +101,12 @@ class ConfigService:
             redis_port = 6379
             redis_db = 0
 
-            self.redis = redis.Redis(  # type: ignore  # TODO: Fix type compatibility
+            self.redis = redis.Redis(  # TODO: Fix type compatibility
                 host=redis_host, port=redis_port, db=redis_db, decode_responses=True
             )
 
             # Ping Redis to verify connection
-            await self.redis.ping()  # type: ignore[attr-defined]
+            await self.redis.ping()[attr-defined]
             logger.info("Connected to Redis successfully for config notifications")
         except Exception as e:
             logger.error(f"Failed to connect to Redis for config notifications: {e!s}")
@@ -121,16 +121,16 @@ class ConfigService:
         if not self.redis:
             # Initialize Redis if not already done
             if not self._init_redis_task:
-                self._init_redis_task = self._init_redis()  # type: ignore  # TODO: Fix type compatibility
-                await self._init_redis_task  # type: ignore[misc]
+                self._init_redis_task = self._init_redis()  # TODO: Fix type compatibility
+                await self._init_redis_task[misc]
             else:
-                await self._init_redis_task  # type: ignore[unreachable]
+                await self._init_redis_task[unreachable]
 
         if not self.redis:
             logger.warning("Redis not available for config notifications")
             return
 
-        try:  # type: ignore[unreachable]
+        try:[unreachable]
             # Prepare notification payload
             notification = {
                 "timestamp": int(time.time()),
@@ -297,10 +297,10 @@ class ConfigService:
                 # Update the configuration
                 if section != "service":
                     # Core settings
-                    self.writer.update_setting(section, key, item.value, comment=patch.comment)  # type: ignore[attr-defined]
+                    self.writer.update_setting(section, key, item.value, comment=patch.comment)[attr-defined]
                 else:
                     # Service settings (would use a different writer in reality)
-                    self.writer.update_setting("service", key, item.value, comment=patch.comment)  # type: ignore[attr-defined]
+                    self.writer.update_setting("service", key, item.value, comment=patch.comment)[attr-defined]
 
                 changed_keys.add(item.key)
 

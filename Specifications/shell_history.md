@@ -317,3 +317,5 @@
 ## May 29, 2025
 
 - `poetry run python nuclear_mypy_fix.py` - Ran the nuclear MyPy fixer script to aggressively annotate all functions in src/ and tests/ with missing type hints, aiming to dramatically reduce no-untyped-def and similar errors as part of the mypy cleanup process.
+- `poetry run mypy --show-error-codes --pretty -p codestory -p codestory_service -p codestory_docgrapher -p codestory_filesystem -p codestory_mcp -p codestory_summarizer -p codestory_blarify tests > mypy_final_check.txt; wc -l < mypy_final_check.txt` - Attempted to run MyPy on all packages and tests in a single command, but failed due to argument conflict (cannot mix -p with directory argument).
+- `poetry run mypy --show-error-codes --pretty -p codestory -p codestory_service -p codestory_docgrapher -p codestory_filesystem -p codestory_mcp -p codestory_summarizer -p codestory_blarify > mypy_final_check.txt && poetry run mypy --show-error-codes --pretty tests >> mypy_final_check.txt && wc -l < mypy_final_check.txt` - Ran MyPy on all packages and tests, appending results to mypy_final_check.txt, then counted error lines; exit code 1 indicates errors remain.

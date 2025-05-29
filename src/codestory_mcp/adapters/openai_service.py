@@ -105,7 +105,7 @@ class OpenAIServiceAdapter:
             duration = time.time() - start_time
             self.metrics.record_service_api_call("openai_summary", "success", duration)
 
-            return summary  # type: ignore[no-any-return]
+            return summary[no-any-return]
 
         except Exception as e:
             # Record metrics
@@ -196,7 +196,7 @@ class OpenAIServiceAdapter:
             duration = time.time() - start_time
             self.metrics.record_service_api_call("openai_path_explanation", "success", duration)
 
-            return explanation  # type: ignore[no-any-return]
+            return explanation[no-any-return]
 
         except Exception as e:
             # Record metrics

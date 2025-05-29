@@ -436,7 +436,7 @@ class DummyNeo4jConnector:
     This allows basic service functionality without Neo4j available.
     """
 
-    def __init__(self) -> Any:  # type: ignore[misc]
+    def __init__(self) -> Any:[misc]
         """Initialize the dummy connector."""
         logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
 
@@ -466,7 +466,7 @@ class DummyNeo4jAdapter(Neo4jAdapter):
     This allows basic service functionality without Neo4j being available.
     """
 
-    def __init__(self) -> Any:  # type: ignore[misc]
+    def __init__(self) -> Any:[misc]
         """Initialize with a dummy connector."""
         self.connector = DummyNeo4jConnector()
 

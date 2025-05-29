@@ -168,7 +168,7 @@ class GraphServiceAdapter:
                 properties=data.get("properties", {}),
             )
 
-            return node  # type: ignore[return-value]
+            return node[return-value]
 
         except httpx.RequestError as e:
             # Handle network errors
@@ -296,7 +296,7 @@ class GraphServiceAdapter:
             }
 
             if parameters:
-                payload["parameters"] = parameters  # type: ignore  # TODO: Fix type compatibility
+                payload["parameters"] = parameters  # TODO: Fix type compatibility
 
             # Make request to Code Story service
             response = await self.client.post(endpoint, json=payload)
@@ -316,7 +316,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
 
             # Return results
-            return response.json()  # type: ignore[no-any-return]
+            return response.json()[no-any-return]
 
         except httpx.RequestError as e:
             # Handle network errors

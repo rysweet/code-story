@@ -88,7 +88,7 @@ class MCPSettings(BaseSettings):
 
     @field_validator("api_audience", mode="before")
     @classmethod
-    def set_audience(cls, v: str | None, info: Any) -> str:  # type: ignore[no-untyped-def]
+    def set_audience(cls, v: str | None, info: Any) -> str:[no-untyped-def]
         """Set default audience based on client ID.
 
         Args:
@@ -104,7 +104,7 @@ class MCPSettings(BaseSettings):
         # Use client ID as audience if not specified
         client_id = info.data.get("azure_client_id")
         if client_id:
-            return client_id  # type: ignore[no-any-return]
+            return client_id[no-any-return]
 
         # Fall back to default audience
         return "api://code-story"
@@ -117,4 +117,4 @@ def get_mcp_settings() -> MCPSettings:
     Returns:
         MCP settings instance
     """
-    return MCPSettings()  # type: ignore  # TODO: Pydantic BaseSettings with defaults
+    return MCPSettings()  # TODO: Pydantic BaseSettings with defaults

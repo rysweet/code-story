@@ -363,9 +363,9 @@ class OpenAIClient:
         azure_openai_kwargs = {k: v for k, v in azure_openai_kwargs.items() if v is not None}
         logger.info(f"AzureOpenAI instantiation kwargs: {azure_openai_kwargs}")
         try:
-            self._sync_client = AzureOpenAI(**azure_openai_kwargs)  # type: ignore[call-overload]
+            self._sync_client = AzureOpenAI(**azure_openai_kwargs)[call-overload]
             logger.info("Sync client created successfully")
-            self._async_client = AsyncAzureOpenAI(**azure_openai_kwargs)  # type: ignore[call-overload]
+            self._async_client = AsyncAzureOpenAI(**azure_openai_kwargs)[call-overload]
             logger.info("Async client created successfully")
             logger.info("=== OpenAI Client Initialization Complete ===")
         except Exception as e:
@@ -377,7 +377,7 @@ class OpenAIClient:
                 logger.error("Authentication error during client creation - check credentials")
             raise
 
-    def _prepare_request_data(self, request) -> None:  # type: ignore[no-untyped-def]
+    def _prepare_request_data(self, request) -> None:[no-untyped-def]
         """Extract model name and prepare request data, removing internal parameters.
 
         Args:
@@ -398,7 +398,7 @@ class OpenAIClient:
             if key in request_data:
                 request_data.pop(key)
 
-        return model_name, request_data  # type: ignore[return-value]
+        return model_name, request_data[return-value]
 
     def _is_reasoning_model(self, model: str) -> bool:
         """Check if the model is a reasoning model that requires special parameter handling.
@@ -492,7 +492,7 @@ class OpenAIClient:
         try:
             # Make API request
             # Extract model name and prepare request data
-            model_name, request_data = self._prepare_request_data(request)  # type: ignore[func-returns-value]
+            model_name, request_data = self._prepare_request_data(request)[func-returns-value]
             response = self._sync_client.completions.create(
                 model=model_name,  # Use model instead of deployment_name
                 prompt=prompt,
@@ -556,7 +556,7 @@ class OpenAIClient:
         try:
             # Make API request
             # Extract model name and prepare request data
-            model_name, request_data = self._prepare_request_data(request)  # type: ignore[func-returns-value]
+            model_name, request_data = self._prepare_request_data(request)[func-returns-value]
 
             # Adjust parameters for reasoning models
             request_data = self._adjust_params_for_reasoning_model(request_data, model_name)
@@ -616,7 +616,7 @@ class OpenAIClient:
         try:
             # Make API request
             # Extract model name and prepare request data
-            model_name, request_data = self._prepare_request_data(request)  # type: ignore[func-returns-value]
+            model_name, request_data = self._prepare_request_data(request)[func-returns-value]
             response = self._sync_client.embeddings.create(
                 model=model_name,  # Use model instead of deployment_name
                 input=texts,
@@ -678,7 +678,7 @@ class OpenAIClient:
         try:
             # Make API request
             # Extract model name and prepare request data
-            model_name, request_data = self._prepare_request_data(request)  # type: ignore[func-returns-value]
+            model_name, request_data = self._prepare_request_data(request)[func-returns-value]
             response = await self._async_client.completions.create(
                 model=model_name,  # Use model instead of deployment_name
                 prompt=prompt,
@@ -742,7 +742,7 @@ class OpenAIClient:
         try:
             # Make API request
             # Extract model name and prepare request data
-            model_name, request_data = self._prepare_request_data(request)  # type: ignore[func-returns-value]
+            model_name, request_data = self._prepare_request_data(request)[func-returns-value]
 
             # Adjust parameters for reasoning models
             request_data = self._adjust_params_for_reasoning_model(request_data, model_name)
@@ -802,7 +802,7 @@ class OpenAIClient:
         try:
             # Make API request
             # Extract model name and prepare request data
-            model_name, request_data = self._prepare_request_data(request)  # type: ignore[func-returns-value]
+            model_name, request_data = self._prepare_request_data(request)[func-returns-value]
             response = await self._async_client.embeddings.create(
                 model=model_name,  # Use model instead of deployment_name
                 input=texts,

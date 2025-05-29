@@ -199,7 +199,7 @@ class ConfigSchema(BaseModel):
                 meta = item.metadata
 
                 # Create property schema
-                prop = ConfigSchemaProperty(  # type: ignore[call-arg]
+                prop = ConfigSchemaProperty([call-arg]
                     type=meta.type.value,
                     title=key,
                     description=meta.description,

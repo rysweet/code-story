@@ -10,17 +10,17 @@ from click_didyoumean import DYMGroup
 # Import rich_click if available, otherwise create a stub with click
 rich_click_module = None
 try:
-    import rich_click as rich_click_module  # type: ignore[assignment]
+    import rich_click as rich_click_module[assignment]
 except ImportError:
     # Create fake attributes on click module for fallback
     import click as _click_for_rich
 
     # Add required rich_click attributes to click module
-    _click_for_rich.USE_RICH_MARKUP = False  # type: ignore[attr-defined]
-    _click_for_rich.SHOW_ARGUMENTS = False  # type: ignore[attr-defined]
-    _click_for_rich.GROUP_ARGUMENTS_OPTIONS = False  # type: ignore[attr-defined]
-    _click_for_rich.STYLE_ERRORS_SUGGESTION = ""  # type: ignore[attr-defined]
-    _click_for_rich.ERRORS_SUGGESTION = ""  # type: ignore[attr-defined]
+    _click_for_rich.USE_RICH_MARKUP = False[attr-defined]
+    _click_for_rich.SHOW_ARGUMENTS = False[attr-defined]
+    _click_for_rich.GROUP_ARGUMENTS_OPTIONS = False[attr-defined]
+    _click_for_rich.STYLE_ERRORS_SUGGESTION = ""[attr-defined]
+    _click_for_rich.ERRORS_SUGGESTION = ""[attr-defined]
 
     # Set our module variable
     rich_click_module = _click_for_rich
@@ -31,11 +31,11 @@ from codestory.config import get_settings
 from .client import ServiceClient, ServiceError
 
 # Set up Rich for Click
-rich_click_module.USE_RICH_MARKUP = True  # type: ignore[union-attr]
-rich_click_module.SHOW_ARGUMENTS = True  # type: ignore[union-attr]
-rich_click_module.GROUP_ARGUMENTS_OPTIONS = True  # type: ignore[union-attr]
-rich_click_module.STYLE_ERRORS_SUGGESTION = "yellow italic"  # type: ignore[union-attr]
-rich_click_module.ERRORS_SUGGESTION = (  # type: ignore[union-attr]
+rich_click_module.USE_RICH_MARKUP = True[union-attr]
+rich_click_module.SHOW_ARGUMENTS = True[union-attr]
+rich_click_module.GROUP_ARGUMENTS_OPTIONS = True[union-attr]
+rich_click_module.STYLE_ERRORS_SUGGESTION = "yellow italic"[union-attr]
+rich_click_module.ERRORS_SUGGESTION = ([union-attr]
     "Try running the command with --help to see available options."
 )
 
@@ -46,10 +46,10 @@ console = Console()
 class CodeStoryCommandGroup(DYMGroup):
     """Custom command group that shows help when a command fails."""
 
-    def __call__(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+    def __call__(self, *args, **kwargs) -> None:[no-untyped-def]
         """Override to catch and customize error handling."""
         try:
-            return super().__call__(*args, **kwargs)  # type: ignore[no-any-return]
+            return super().__call__(*args, **kwargs)[no-any-return]
         except click.exceptions.UsageError as e:
             # Get the context
             ctx = getattr(e, "ctx", None)
@@ -185,11 +185,11 @@ register_commands()
 
 
 # Create a wrapper function that will intercept UsageError exceptions
-def _wrap_click_command(cmd: Any) -> None:  # type: ignore[no-untyped-def]
+def _wrap_click_command(cmd: Any) -> None:[no-untyped-def]
     """Create a wrapper around a Click command to intercept UsageError exceptions."""
     original_main = cmd.main
 
-    def wrapped_main(*args, **kwargs) -> Any:  # type: ignore[no-untyped-def]
+    def wrapped_main(*args, **kwargs) -> Any:[no-untyped-def]
         try:
             return original_main(*args, **kwargs)
         except click.exceptions.UsageError as e:
@@ -244,11 +244,11 @@ def _wrap_click_command(cmd: Any) -> None:  # type: ignore[no-untyped-def]
             console.print(f"[bold red]Error:[/] {error_msg}")
             sys.exit(e.exit_code)
 
-    return wrapped_main  # type: ignore[return-value]
+    return wrapped_main[return-value]
 
 
 # Apply the wrapper to the Click app
-app.main = _wrap_click_command(app)  # type: ignore[func-returns-value]
+app.main = _wrap_click_command(app)[func-returns-value]
 
 
 def main() -> None:
@@ -257,7 +257,7 @@ def main() -> None:
     original_error_callback = click.exceptions.UsageError.show
 
     # Define our custom error handler
-    def custom_error_callback(self, file: Any=None) -> None:  # type: ignore[no-untyped-def]
+    def custom_error_callback(self, file: Any=None) -> None:[no-untyped-def]
         """Custom error formatter that shows error first, then suggestions, then help."""
         # Get the context
         ctx = getattr(self, "ctx", None)
@@ -321,7 +321,7 @@ def main() -> None:
 
     try:
         # Replace the error handler
-        click.exceptions.UsageError.show = custom_error_callback  # type: ignore[method-assign]
+        click.exceptions.UsageError.show = custom_error_callback[method-assign]
 
         # Run the app with our enhanced error handling
         app()
@@ -334,7 +334,7 @@ def main() -> None:
         sys.exit(1)
     finally:
         # Restore the original error handler
-        click.exceptions.UsageError.show = original_error_callback  # type: ignore[method-assign]
+        click.exceptions.UsageError.show = original_error_callback[method-assign]
 
 
 if __name__ == "__main__":

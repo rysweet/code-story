@@ -416,3 +416,139 @@ No manual edits besides running the script.
 - Will re-run MyPy with explicit package list and capture output/error count
 - Will stage, commit, and push all changes with the specified message
 - Will summarize files changed, new MyPy error count, error code breakdown, and recommend next steps
+## Prompt 109 (May 29, 2025)
+
+**Prompt**: 
+Context:
+• Branch `fix/mypy-cleanup` is current and pushed.
+• Multiple syntax-error fixes landed; we haven’t yet re-measured the type-check status.
+Goal for this pass – verify whether **all** MyPy errors are now resolved.
+
+Scope – do ONLY:
+1. Run MyPy over the packages and tests (same explicit command) and save output:
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_final_check.txt
+   ERRORS=$(wc -l < mypy_final_check.txt)
+   ```
+2. If $ERRORS equals 0:
+   • Commit `mypy_final_check.txt` (optional) with message  
+     `docs: record zero-error mypy baseline`.
+   • Push, then use attempt_completion summarizing success (zero errors, diff stat).
+3. If $ERRORS > 0:
+   • Do NOT commit anything yet.
+   • Use attempt_completion summarizing:
+     – Remaining error count  
+     – First 30 lines of `mypy_final_check.txt`  
+     – Dominant error codes  
+   This will inform next corrective step.
+
+No code edits beyond optionally committing the baseline when clean.
+These instructions supersede any conflicting general rules.
+
+**Response**:
+- Logged Prompt 109 before any CLI or MyPy actions
+- Will run MyPy with the explicit package list and save output to mypy_final_check.txt
+- Will count the number of error lines in the output file
+- If error count is zero, will commit and push the baseline file, then summarize success and diff stat
+- If error count is nonzero, will not commit, but will summarize error count, first 30 lines, and dominant error codes
+- Will update shell history after running the MyPy command
+- Will strictly follow the scope and not perform any code edits
+## Prompt 110 (May 29, 2025)
+
+**Prompt**: 
+Context:
+• 111 MyPy errors remain, dominated by unused-ignore, import-untyped (kombu), and a handful of dict-item/attr-defined issues.
+• A helper script [`final_cleanup.py`](final_cleanup.py) exists; it deletes redundant `# type: ignore` lines and can inject `ignore_missing_imports` stubs in mypy.ini.
+
+Scope – execute final cleanup and retest:
+
+1. Run the cleanup script:
+   ```bash
+   poetry run python final_cleanup.py
+   ```
+2. Update `.mypy.ini` to silence kombu stubs:
+   Add section  
+   ```
+   [mypy-kombu.*]
+   ignore_missing_imports = True
+   ```
+3. Re-run MyPy with the same explicit package list + tests:
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_after_cleanup.txt
+   ERRORS=$(wc -l < mypy_after_cleanup.txt)
+   ```
+4. Stage and commit all edits with message:
+   ```
+   chore: final mypy cleanup pass
+   ```
+5. Push to origin/fix/mypy-cleanup.
+6. In attempt_completion summarize:
+   • New MyPy error count ($ERRORS) and delta from 111.  
+   • `git diff --stat origin/main..HEAD` for this commit.  
+   • If $ERRORS == 0, declare cleanup complete.
+
+No manual code edits beyond `.mypy.ini` change; rely on script for file-level fixes.
+
+**Response**:
+- Logged Prompt 110 before any code or CLI actions
+- Will run `final_cleanup.py` using Poetry to remove redundant ignores and update stubs
+- Will update `.mypy.ini` to silence kombu import errors
+- Will re-run MyPy with the explicit package list and capture the new error count
+- Will stage, commit, and push all changes with the specified message
+- Will summarize new MyPy error count, diff stat, and declare cleanup complete if zero errors remain
+## Prompt 111 (May 29, 2025)
+
+**Prompt**: 
+Context:
+• `final_cleanup.py` is present in repository root (visible in VS Code tabs). Prior attempt likely failed due to path or venv issues, not missing file.
+• 111 MyPy errors remain, dominated by [unused-ignore], [import-untyped] for kombu, and a handful of dict/attr errors.
+
+Objective: run the final cleanup script, relax kombu import, and re-measure.
+
+Actions – perform EXACTLY:
+
+1. Verify script location: `ls -l ./final_cleanup.py` (root).
+2. Execute:  
+   ```bash
+   poetry run python ./final_cleanup.py
+   ```
+3. Append kombu ignore section to `.mypy.ini` if not already present:  
+   ```
+   [mypy-kombu.*]
+   ignore_missing_imports = True
+   ```
+4. Re-run MyPy:  
+   ```bash
+   poetry run mypy --show-error-codes --pretty \
+     -p codestory -p codestory_service -p codestory_docgrapher \
+     -p codestory_filesystem -p codestory_mcp -p codestory_summarizer \
+     -p codestory_blarify tests > mypy_after_cleanup.txt
+   ERRORS=$(wc -l < mypy_after_cleanup.txt)
+   ```
+5. Stage and commit all modifications with message:  
+   ```
+   chore: final mypy cleanup pass
+   ```
+6. Push to origin/fix/mypy-cleanup.
+7. Use attempt_completion summarizing:  
+   • New MyPy error count ($ERRORS) and delta from 111.  
+   • `git diff --stat origin/main..HEAD` summary for this commit.  
+   • If $ERRORS == 0, declare cleanup complete; otherwise list dominant remaining error codes from first 20 lines.
+
+No manual code edits besides `.mypy.ini`.
+These instructions supersede any conflicting general rules.
+
+**Response**:
+- Logged Prompt 111 before any CLI or code actions
+- Will verify presence of `final_cleanup.py` in repo root
+- Will run the script using Poetry to remove redundant ignores and update stubs
+- Will append kombu ignore section to `.mypy.ini` if missing
+- Will re-run MyPy and capture new error count
+- Will stage, commit, and push all changes with the specified message
+- Will summarize new MyPy error count, diff stat, and declare cleanup complete if zero errors remain

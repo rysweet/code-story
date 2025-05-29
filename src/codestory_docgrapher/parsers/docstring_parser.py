@@ -88,7 +88,7 @@ class DocstringParser(Parser):
             docstrings = self._extract_javadoc_docstrings(content, file_path)
         else:
             # Try all extraction methods
-            docstrings: list[Any] = []  # type: ignore[no-redef]
+            docstrings: list[Any] = [][no-redef]
             docstrings.extend(self._extract_python_docstrings(content, file_path))
             docstrings.extend(self._extract_js_docstrings(content, file_path))
             docstrings.extend(self._extract_javadoc_docstrings(content, file_path))
@@ -461,7 +461,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    param_section: list[Any] = []  # type: ignore[no-redef]
+                    param_section: list[Any] = [][no-redef]
 
                 in_params = True
                 param_section.append(line)
@@ -485,7 +485,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    param_section: list[Any] = []  # type: ignore[no-redef]
+                    param_section: list[Any] = [][no-redef]
                 in_params = False
 
         # Add last section if it exists
@@ -539,7 +539,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    return_section: list[Any] = []  # type: ignore[no-redef]
+                    return_section: list[Any] = [][no-redef]
 
                 in_returns = True
                 return_section.append(line)
@@ -563,7 +563,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    return_section: list[Any] = []  # type: ignore[no-redef]
+                    return_section: list[Any] = [][no-redef]
                 in_returns = False
 
         # Add last section if it exists
@@ -617,7 +617,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    raises_section: list[Any] = []  # type: ignore[no-redef]
+                    raises_section: list[Any] = [][no-redef]
 
                 in_raises = True
                 raises_section.append(line)
@@ -641,7 +641,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    raises_section: list[Any] = []  # type: ignore[no-redef]
+                    raises_section: list[Any] = [][no-redef]
                 in_raises = False
 
         # Add last section if it exists
@@ -695,7 +695,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    example_section: list[Any] = []  # type: ignore[no-redef]
+                    example_section: list[Any] = [][no-redef]
 
                 in_example = True
                 example_section.append(line)
@@ -719,7 +719,7 @@ class DocstringParser(Parser):
                         metadata={},
                     )
                     sections.append(entity)
-                    example_section: list[Any] = []  # type: ignore[no-redef]
+                    example_section: list[Any] = [][no-redef]
                 in_example = False
 
         # Add last section if it exists

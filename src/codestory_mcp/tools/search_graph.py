@@ -102,7 +102,7 @@ class SearchGraphTool(BaseTool):
             # Log success
             logger.info("Search completed", query=query, result_count=len(response["matches"]))
 
-            return response  # type: ignore[no-any-return]
+            return response[no-any-return]
 
         except Exception as e:
             # Log error

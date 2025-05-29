@@ -62,12 +62,12 @@ class IngestionService:
             redis_port = 6379
             redis_db = 0
 
-            self.redis = redis.Redis(  # type: ignore  # TODO: Fix type compatibility
+            self.redis = redis.Redis(  # TODO: Fix type compatibility
                 host=redis_host, port=redis_port, db=redis_db, decode_responses=True
             )
 
             # Ping Redis to verify connection
-            await self.redis.ping()  # type: ignore[attr-defined]
+            await self.redis.ping()[attr-defined]
             logger.info("Connected to Redis successfully")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e!s}")
@@ -87,7 +87,7 @@ class IngestionService:
             logger.warning("Redis not available for publishing progress")
             return
 
-        try:  # type: ignore[unreachable]
+        try:[unreachable]
             # Create channel name specific to this job
             channel = f"{self.pubsub_channel}:{job_id}"
 
@@ -118,7 +118,7 @@ class IngestionService:
             await websocket.close(code=1011, reason="Service unavailable")
             return
 
-        try:  # type: ignore[unreachable]
+        try:[unreachable]
             # Create channel name specific to this job
             channel = f"{self.pubsub_channel}:{job_id}"
 
@@ -244,7 +244,7 @@ class IngestionService:
                     message="Preparing to start ingestion",
                     cpu_percent=None,
                     memory_mb=None,
-                    timestamp=ingestion_started.eta if ingestion_started.eta else None,  # type: ignore[arg-type]
+                    timestamp=ingestion_started.eta if ingestion_started.eta else None,[arg-type]
                 )
 
                 await self.publish_progress(ingestion_started.job_id, initial_event)
@@ -321,7 +321,7 @@ class IngestionService:
                 message="Job was cancelled by user",
                 cpu_percent=None,
                 memory_mb=None,
-                timestamp=job.updated_at if job.updated_at else None,  # type: ignore[arg-type]
+                timestamp=job.updated_at if job.updated_at else None,[arg-type]
             )
 
             await self.publish_progress(job_id, cancel_event)
@@ -381,7 +381,7 @@ class IngestionService:
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,  # type: ignore[union-attr]
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,[union-attr]
                 detail=f"Failed to list jobs: {e!s}",
             ) from e
 

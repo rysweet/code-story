@@ -119,7 +119,7 @@ async def health_check(
 
         # Attach any errors to the report
         if error_package:
-            health_report.error_package = error_package  # type: ignore  # TODO: Fix type compatibility
+            health_report.error_package = error_package  # TODO: Fix type compatibility
             health_report.status = "unhealthy"
 
         # Handle Azure auth renewal if requested
@@ -179,7 +179,7 @@ async def health_check(
     except TimeoutError:
         # Return a degraded status if health check times out
         logger.error("Health check timed out after 30 seconds")
-        return HealthReport(  # type: ignore[call-arg]
+        return HealthReport([call-arg]
             status="degraded",
             timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             version=SERVICE_VERSION,
@@ -207,7 +207,7 @@ async def health_check(
     except Exception as e:
         # Return an unhealthy status if health check fails unexpectedly
         logger.error(f"Unexpected error in health check: {e}")
-        return HealthReport(  # type: ignore[call-arg]
+        return HealthReport([call-arg]
             status="unhealthy",
             timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             version=SERVICE_VERSION,
@@ -383,7 +383,7 @@ async def auth_renew(
         response["tenant_id"] = tenant_id
         response["tenant_source"] = "Found in environment configuration or settings"
         response["auth_message"] = f"Using tenant ID: {tenant_id} from configuration"
-        response["auth_details"] = {  # type: ignore  # TODO: Fix type compatibility
+        response["auth_details"] = {  # TODO: Fix type compatibility
             "tenant_id": tenant_id,
             "scope": "https://cognitiveservices.azure.com/.default",
             "browser_login": True,
@@ -410,7 +410,7 @@ async def auth_renew(
                 response["token_injection"] = {
                     "status": "failed",
                     "message": "Token injection script not found",
-                }  # type: ignore
+                }
             else:
                 # Build the command
                 cmd = [sys.executable, str(script_path)]
@@ -435,7 +435,7 @@ async def auth_renew(
 
                 # Wait for process to complete with timeout
                 class AsyncSubprocessResult:
-                    def __init__(self, returncode: Any, stdout: Any, stderr: Any) -> None:  # type: ignore[no-untyped-def]
+                    def __init__(self, returncode: Any, stdout: Any, stderr: Any) -> None:[no-untyped-def]
                         self.returncode = returncode
                         self.stdout = stdout
                         self.stderr = stderr
@@ -449,7 +449,7 @@ async def auth_renew(
                         injection_result_code, injection_stdout, injection_stderr
                     )
                     if injection_result.returncode == 0:
-                        response["token_injection"] = {  # type: ignore  # TODO: Fix type compatibility
+                        response["token_injection"] = {  # TODO: Fix type compatibility
                             "status": "success",
                             "message": "Azure tokens successfully injected into containers",
                             "restart": "Containers restarted successfully"
@@ -457,7 +457,7 @@ async def auth_renew(
                             else None,
                         }
                     else:
-                        response["token_injection"] = {  # type: ignore  # TODO: Fix type compatibility
+                        response["token_injection"] = {  # TODO: Fix type compatibility
                             "status": "failed",
                             "message": "Failed to inject Azure tokens into containers",
                             "error": injection_stderr,
@@ -467,13 +467,13 @@ async def auth_renew(
                         with contextlib.suppress(Exception):
                             proc.terminate()
                     logger.error("Token injection process timed out after 30 seconds")
-                    response["token_injection"] = {  # type: ignore  # TODO: Fix type compatibility
+                    response["token_injection"] = {  # TODO: Fix type compatibility
                         "status": "timeout",
                         "message": "Token injection process timed out after 30 seconds",
                     }
                 except Exception as e:
                     logger.error(f"Error running token injection process: {e}")
-                    response["token_injection"] = {  # type: ignore  # TODO: Fix type compatibility
+                    response["token_injection"] = {  # TODO: Fix type compatibility
                         "status": "error",
                         "message": f"Error running token injection process: {e!s}",
                     }
@@ -482,7 +482,7 @@ async def auth_renew(
             response["token_injection"] = {
                 "status": "error",
                 "message": f"Failed to inject tokens into containers: {e!s}",
-            }  # type: ignore
+            }
 
     # Return response dict
     return response
@@ -508,14 +508,14 @@ async def _health_check_impl(
     logger.info("Performing health check")
 
     # Define component health check with timeout
-    async def check_component_health(component_name, check_func, timeout_seconds=5) -> None:  # type: ignore[no-untyped-def]
+    async def check_component_health(component_name, check_func, timeout_seconds=5) -> None:[no-untyped-def]
         try:
             # Use asyncio.wait_for to apply timeout to each health check
             result = await asyncio.wait_for(check_func(), timeout=timeout_seconds)
-            return result  # type: ignore[no-any-return]
+            return result[no-any-return]
         except TimeoutError:
             logger.error(f"{component_name} health check timed out after {timeout_seconds} seconds")
-            return {  # type: ignore[return-value]
+            return {[return-value]
                 "status": "unhealthy",
                 "details": {
                     "error": f"Health check timed out after {timeout_seconds} seconds",
@@ -524,7 +524,7 @@ async def _health_check_impl(
             }
         except Exception as e:
             logger.error(f"{component_name} health check failed with exception: {e}")
-            return {  # type: ignore[return-value]
+            return {[return-value]
                 "status": "unhealthy",
                 "details": {"error": str(e), "type": type(e).__name__},
             }
@@ -612,9 +612,9 @@ async def _health_check_impl(
 
     # Determine overall status
     components = {
-        "neo4j": ComponentHealth(**neo4j_health),  # type: ignore[arg-type]
-        "celery": ComponentHealth(**celery_health),  # type: ignore[arg-type]
-        "openai": ComponentHealth(**openai_health),  # type: ignore[arg-type]
+        "neo4j": ComponentHealth(**neo4j_health),[arg-type]
+        "celery": ComponentHealth(**celery_health),[arg-type]
+        "openai": ComponentHealth(**openai_health),[arg-type]
         "redis": ComponentHealth(**redis_health),
     }
 
@@ -640,7 +640,7 @@ async def _health_check_impl(
     # Ensure overall_status is a valid literal
     overall_status_literal = cast("Literal['healthy', 'degraded', 'unhealthy']", overall_status)
 
-    return HealthReport(  # type: ignore[call-arg]
+    return HealthReport([call-arg]
         status=overall_status_literal,
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         version=SERVICE_VERSION,

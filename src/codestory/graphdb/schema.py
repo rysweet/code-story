@@ -121,7 +121,7 @@ def get_schema_initialization_queries() -> list[str]:
     return initialization_queries
 
 
-def create_custom_vector_index(  # type: ignore[no-untyped-def]
+def create_custom_vector_index([no-untyped-def]
     connector,
     label: str,
     property_name: str,
@@ -181,7 +181,7 @@ def create_custom_vector_index(  # type: ignore[no-untyped-def]
         ) from e
 
 
-def initialize_schema(connector: Any, force: bool = False) -> None:  # type: ignore[no-untyped-def]
+def initialize_schema(connector: Any, force: bool = False) -> None:[no-untyped-def]
     """Initialize the Neo4j database schema with constraints and indexes.
 
     Args:
@@ -255,7 +255,7 @@ def initialize_schema(connector: Any, force: bool = False) -> None:  # type: ign
             raise SchemaError("Failed to initialize schema", details=details, cause=e) from e
 
 
-def verify_schema(connector: Any) -> dict[str, dict[str, bool]]:  # type: ignore[no-untyped-def]
+def verify_schema(connector: Any) -> dict[str, dict[str, bool]]:[no-untyped-def]
     """Verify that all required schema elements exist.
 
     Args:
@@ -305,7 +305,7 @@ def verify_schema(connector: Any) -> dict[str, dict[str, bool]]:  # type: ignore
                         name_part = parts[1].split("IF NOT EXISTS")[0].strip()
                         verification_results["indexes"][name_part] = name_part in existing_indexes
 
-        return verification_results  # type: ignore[no-any-return]
+        return verification_results[no-any-return]
 
     except Exception as e:
         raise SchemaError("Failed to verify schema", operation="verify_schema", cause=e) from e

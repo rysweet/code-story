@@ -1,0 +1,2 @@
+src/codestory/cli/client/service_client.py: error: Source file found twice under different module names: "src.codestory.cli.client.service_client" and "codestory.cli.client.service_client"
+Found 1 error in 1 file (errors prevented further checking)

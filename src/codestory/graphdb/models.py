@@ -87,7 +87,7 @@ class FileNode(BaseNode):
     content_hash: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize FileNode with the File label."""
         super().__init__(**data)
         if NodeType.FILE.value not in self.labels:
@@ -100,7 +100,7 @@ class DirectoryNode(BaseNode):
     path: str
     name: str
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize DirectoryNode with the Directory label."""
         super().__init__(**data)
         if NodeType.DIRECTORY.value not in self.labels:
@@ -124,7 +124,7 @@ class ClassNode(CodeNode):
     methods: list[str] = Field(default_factory=list)
     base_classes: list[str] = Field(default_factory=list)
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize ClassNode with the Class label."""
         super().__init__(**data)
         if NodeType.CLASS.value not in self.labels:
@@ -138,7 +138,7 @@ class FunctionNode(CodeNode):
     parameters: list[dict[str, Any]] = Field(default_factory=list)
     return_type: str | None = None
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize FunctionNode with the Function label."""
         super().__init__(**data)
         if NodeType.FUNCTION.value not in self.labels:
@@ -150,7 +150,7 @@ class MethodNode(FunctionNode):
 
     class_name: str
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize MethodNode with the Method label."""
         super().__init__(**data)
         if NodeType.METHOD.value not in self.labels:
@@ -162,7 +162,7 @@ class ModuleNode(CodeNode):
 
     imports: list[str] = Field(default_factory=list)
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize ModuleNode with the Module label."""
         super().__init__(**data)
         if NodeType.MODULE.value not in self.labels:
@@ -176,7 +176,7 @@ class SummaryNode(BaseNode):
     embedding: list[float] | None = None
     summary_type: str = "general"  # general, function, class, etc.
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize SummaryNode with the Summary label."""
         super().__init__(**data)
         if NodeType.SUMMARY.value not in self.labels:
@@ -190,7 +190,7 @@ class DocumentationNode(BaseNode):
     doc_type: str = "inline"  # inline, docstring, markdown, etc.
     embedding: list[float] | None = None
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize DocumentationNode with the Documentation label."""
         super().__init__(**data)
         if NodeType.DOCUMENTATION.value not in self.labels:
@@ -203,7 +203,7 @@ class DocumentationNode(BaseNode):
 class ContainsRelationship(BaseRelationship):
     """Represents a CONTAINS relationship between nodes."""
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize ContainsRelationship with the CONTAINS type."""
         if "type" not in data:
             data["type"] = RelationshipType.CONTAINS.value
@@ -213,7 +213,7 @@ class ContainsRelationship(BaseRelationship):
 class ImportsRelationship(BaseRelationship):
     """Represents an IMPORTS relationship between modules."""
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize ImportsRelationship with the IMPORTS type."""
         if "type" not in data:
             data["type"] = RelationshipType.IMPORTS.value
@@ -225,7 +225,7 @@ class CallsRelationship(BaseRelationship):
 
     call_line: int | None = None
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize CallsRelationship with the CALLS type."""
         if "type" not in data:
             data["type"] = RelationshipType.CALLS.value
@@ -235,7 +235,7 @@ class CallsRelationship(BaseRelationship):
 class InheritsFromRelationship(BaseRelationship):
     """Represents an INHERITS_FROM relationship between classes."""
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize InheritsFromRelationship with the INHERITS_FROM type."""
         if "type" not in data:
             data["type"] = RelationshipType.INHERITS_FROM.value
@@ -245,7 +245,7 @@ class InheritsFromRelationship(BaseRelationship):
 class DocumentedByRelationship(BaseRelationship):
     """Represents a DOCUMENTED_BY relationship."""
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize DocumentedByRelationship with the DOCUMENTED_BY type."""
         if "type" not in data:
             data["type"] = RelationshipType.DOCUMENTED_BY.value
@@ -255,7 +255,7 @@ class DocumentedByRelationship(BaseRelationship):
 class SummarizedByRelationship(BaseRelationship):
     """Represents a SUMMARIZED_BY relationship."""
 
-    def __init__(self, **data) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, **data) -> None:[no-untyped-def]
         """Initialize SummarizedByRelationship with the SUMMARIZED_BY type."""
         if "type" not in data:
             data["type"] = RelationshipType.SUMMARIZED_BY.value

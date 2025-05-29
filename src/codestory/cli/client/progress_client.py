@@ -168,23 +168,23 @@ class ProgressClient:
 
     def start(self) -> None:
         """Start tracking progress."""
-        if self._thread and self._thread.is_alive():  # type: ignore[unreachable]
-            return  # type: ignore[unreachable]
+        if self._thread and self._thread.is_alive():[unreachable]
+            return[unreachable]
 
         self._stop_event.clear()
 
         if self.use_redis:
-            self._thread = threading.Thread(target=self._subscribe_redis)  # type: ignore  # TODO: Fix type compatibility
+            self._thread = threading.Thread(target=self._subscribe_redis)  # TODO: Fix type compatibility
         else:
-            self._thread = threading.Thread(target=self._poll_http)  # type: ignore  # TODO: Fix type compatibility
+            self._thread = threading.Thread(target=self._poll_http)  # TODO: Fix type compatibility
 
-        self._thread.daemon = True  # type: ignore[attr-defined]
-        self._thread.start()  # type: ignore[attr-defined]
+        self._thread.daemon = True[attr-defined]
+        self._thread.start()[attr-defined]
 
     def stop(self) -> None:
         """Stop tracking progress."""
-        if self._thread and self._thread.is_alive():  # type: ignore[unreachable]
-            self._stop_event.set()  # type: ignore[unreachable]
+        if self._thread and self._thread.is_alive():[unreachable]
+            self._stop_event.set()[unreachable]
             self._thread.join(timeout=2.0)
 
     def _subscribe_redis(self) -> None:

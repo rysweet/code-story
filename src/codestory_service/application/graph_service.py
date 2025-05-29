@@ -184,7 +184,7 @@ class GraphService:
                 node_query = CypherQuery(
                     query="MATCH (n) WHERE elementId(n) = $id RETURN n",
                     parameters={"id": result.id},
-                    query_type="read",  # type: ignore[arg-type]
+                    query_type="read",[arg-type]
                 )
 
                 node_result = await self.neo4j.execute_cypher_query(node_query)
@@ -196,10 +196,10 @@ class GraphService:
 
             # Generate the answer using the OpenAI adapter
             logger.info(f"Generating answer using {len(context_items)} context items")
-            answer = await self.openai.answer_question(request, context_items)  # type: ignore[attr-defined]
+            answer = await self.openai.answer_question(request, context_items)[attr-defined]
 
             logger.info("Answer generated successfully")
-            return answer  # type: ignore[no-any-return]
+            return answer[no-any-return]
         except Exception as e:
             logger.error(f"Error answering question: {e!s}")
             if isinstance(e, HTTPException):
@@ -311,7 +311,7 @@ class GraphService:
                 properties: properties(rel)
               }) as relationships
             """
-            params["focus_node_id"] = request.focus_node_id  # type: ignore  # TODO: Fix type compatibility
+            params["focus_node_id"] = request.focus_node_id  # TODO: Fix type compatibility
             params["depth"] = request.depth
 
         # Apply node type filtering if specified
@@ -321,7 +321,7 @@ class GraphService:
                 "WHERE n.name IS NOT NULL",
                 "WHERE n.name IS NOT NULL AND labels(n)[0] IN $node_types",
             )
-            params["node_types"] = node_types  # type: ignore  # TODO: Fix type compatibility
+            params["node_types"] = node_types  # TODO: Fix type compatibility
 
         # Apply search query filtering if specified
         if request.filter and request.filter.search_query:
@@ -332,7 +332,7 @@ class GraphService:
                 "WHERE n.name IS NOT NULL AND "
                 "(n.name CONTAINS $search_query OR n.path CONTAINS $search_query)",
             )
-            params["search_query"] = search_query  # type: ignore  # TODO: Fix type compatibility
+            params["search_query"] = search_query  # TODO: Fix type compatibility
 
         # Include/exclude orphan nodes (nodes with no relationships)
         if request.filter and not request.filter.include_orphans:
@@ -345,7 +345,7 @@ class GraphService:
         query = CypherQuery(
             query=cypher_query,
             parameters=params,
-            query_type="read",  # type: ignore[arg-type]
+            query_type="read",[arg-type]
         )
         result = await self.neo4j.execute_cypher_query(query)
 
@@ -1146,7 +1146,7 @@ class GraphService:
             logger.warning("Clearing all data from database")
 
             # Create a delete query to remove all nodes and relationships
-            delete_query = CypherQuery(query="MATCH (n) DETACH DELETE n", query_type="write")  # type: ignore[arg-type]
+            delete_query = CypherQuery(query="MATCH (n) DETACH DELETE n", query_type="write")[arg-type]
 
             # Execute the query
             await self.execute_cypher_query(delete_query)
@@ -1155,7 +1155,7 @@ class GraphService:
             if request.preserve_schema:
                 logger.info("Preserving schema - reinitializing")
                 schema_query = CypherQuery(
-                    query="CALL apoc.schema.assert({}, {})", query_type="write"  # type: ignore[arg-type]
+                    query="CALL apoc.schema.assert({}, {})", query_type="write"[arg-type]
                 )
                 await self.execute_cypher_query(schema_query)
 

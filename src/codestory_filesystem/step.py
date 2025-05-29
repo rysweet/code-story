@@ -97,7 +97,7 @@ class FileSystemStep(PipelineStep):
     of directories and files in Neo4j, which can be linked to AST nodes.
     """
 
-    def __init__(self) -> Any:  # type: ignore[misc]
+    def __init__(self) -> Any:[misc]
         """Initialize the filesystem step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
@@ -195,7 +195,7 @@ class FileSystemStep(PipelineStep):
                 f"repository {repository_path}",
                 job_id,
             )
-            return job_id  # type: ignore[no-any-return]
+            return job_id[no-any-return]
 
         except Exception as e:
             error_msg = "Failed to initiate filesystem step"
@@ -454,13 +454,13 @@ class FileSystemStep(PipelineStep):
         return job_id
 
 
-@shared_task(  # type: ignore[misc]
+@shared_task([misc]
     # Register the task with a clear, consistent name that matches the router pattern
     name="codestory_filesystem.step.process_filesystem",
     bind=True,
     queue="ingestion",  # Explicitly set the queue
 )
-def process_filesystem(  # type: ignore[no-untyped-def]
+def process_filesystem([no-untyped-def]
     self,
     repository_path: str,  # Required positional parameter
     ignore_patterns: list[str] | None = None,
@@ -1184,25 +1184,25 @@ def process_filesystem(  # type: ignore[no-untyped-def]
             f"Detailed Timing Stats:\n"
             f"Total Duration: {duration:.2f}s\n"
             f"Directory Operations ({dir_count} dirs):\n"
-            f"  - Total: {overall_timing_stats['directory_operations']['total']:.2f}s\n"  # type: ignore[index]
+            f"  - Total: {overall_timing_stats['directory_operations']['total']:.2f}s\n"[index]
             f"  - Node creation: "
-            f"{overall_timing_stats['directory_operations']['node_creation']:.2f}s\n"  # type: ignore[index]
-            f"  - Linking: {overall_timing_stats['directory_operations']['linking']:.2f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['directory_operations']['node_creation']:.2f}s\n"[index]
+            f"  - Linking: {overall_timing_stats['directory_operations']['linking']:.2f}s\n"[index]
             f"  - Avg per directory: "
-            f"{overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s\n"[index]
             f"File Operations ({file_count} files):\n"
-            f"  - Total: {overall_timing_stats['file_operations']['total']:.2f}s\n"  # type: ignore[index]
-            f"  - Metadata: {overall_timing_stats['file_operations']['metadata']:.2f}s\n"  # type: ignore[index]
-            f"  - Node creation: {overall_timing_stats['file_operations']['node_creation']:.2f}s\n"  # type: ignore[index]
-            f"  - Linking: {overall_timing_stats['file_operations']['linking']:.2f}s\n"  # type: ignore[index]
-            f"  - Avg per file: {overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"  # type: ignore[index]
+            f"  - Total: {overall_timing_stats['file_operations']['total']:.2f}s\n"[index]
+            f"  - Metadata: {overall_timing_stats['file_operations']['metadata']:.2f}s\n"[index]
+            f"  - Node creation: {overall_timing_stats['file_operations']['node_creation']:.2f}s\n"[index]
+            f"  - Linking: {overall_timing_stats['file_operations']['linking']:.2f}s\n"[index]
+            f"  - Avg per file: {overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"[index]
             f"Neo4j Operations:\n"
             f"  - Node creation total: "
-            f"{overall_timing_stats['neo4j_operations']['node_creation']:.2f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['neo4j_operations']['node_creation']:.2f}s\n"[index]
             f"  - Relationship creation total: "
-            f"{overall_timing_stats['neo4j_operations']['relationship_creation']:.2f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['neo4j_operations']['relationship_creation']:.2f}s\n"[index]
             f"  - Avg operation time: "
-            f"{overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"[index]
         )
 
         log_info(f"Performance Analysis:\n{detailed_timing}", job_id)
@@ -1232,11 +1232,11 @@ def process_filesystem(  # type: ignore[no-untyped-def]
                 "file_count": file_count,
                 "dir_count": dir_count,
                 "performance": {
-                    "avg_file_time": overall_timing_stats["file_operations"]["avg_per_file"],  # type: ignore[index]
-                    "avg_dir_time": overall_timing_stats["directory_operations"][  # type: ignore[index]
+                    "avg_file_time": overall_timing_stats["file_operations"]["avg_per_file"],[index]
+                    "avg_dir_time": overall_timing_stats["directory_operations"][[index]
                         "avg_per_directory"
                     ],
-                    "avg_neo4j_op_time": overall_timing_stats["neo4j_operations"][  # type: ignore[index]
+                    "avg_neo4j_op_time": overall_timing_stats["neo4j_operations"][[index]
                         "avg_operation_time"
                     ],
                 },
@@ -1254,11 +1254,11 @@ def process_filesystem(  # type: ignore[no-untyped-def]
             f"Completed filesystem processing for {repository_path}:\n"
             f"- {file_count} files, {dir_count} directories in {duration:.2f} seconds\n"
             f"- Average Neo4j operation time: "
-            f"{overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"[index]
             f"- Average file processing time: "
-            f"{overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"  # type: ignore[index]
+            f"{overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n"[index]
             f"- Average directory processing time: "
-            f"{overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s"  # type: ignore[index]
+            f"{overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s"[index]
         )
         log_info(completion_msg, job_id)
 

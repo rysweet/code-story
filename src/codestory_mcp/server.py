@@ -66,7 +66,7 @@ async def get_current_user(request: Request) -> dict[str, Any]:
         validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)
         claims = await validator.validate_token(token)
         metrics.record_auth_attempt("success")
-        return claims  # type: ignore[no-any-return]
+        return claims[no-any-return]
     except Exception as e:
         metrics.record_auth_attempt("error")
         raise HTTPException(
@@ -114,7 +114,7 @@ def tool_executor(func: Callable[..., Any]) -> Callable[..., Any]:
             duration = time.time() - start_time
             metrics.record_tool_call(tool_name, "success", duration)
 
-            return result  # type: ignore[no-any-return]
+            return result[no-any-return]
         except KeyError as err:
             metrics.record_tool_call(tool_name, "error", time.time() - start_time)
             raise HTTPException(
@@ -206,7 +206,7 @@ def create_app() -> FastAPI:
         response_model=dict[str, Any],
     )
     @tool_executor
-    async def execute_tool(  # type: ignore[empty-body]
+    async def execute_tool([empty-body]
         tool_name: str,
         params: dict[str, Any],
         user: dict[str, Any] = Depends(get_current_user),

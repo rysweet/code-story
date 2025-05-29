@@ -192,7 +192,7 @@ class EntityLinker:
         # Check cache first
         cache_key = f"{entity_type}:{entity_name}"
         if cache_key in self.entity_cache:
-            return self.entity_cache[cache_key]  # type: ignore[no-any-return]
+            return self.entity_cache[cache_key][no-any-return]
 
         results: list[Any] = []
 

@@ -26,7 +26,7 @@ try:
     from ..config.settings import get_settings
 except ImportError:
     # For testing environments where settings might not be available
-    get_settings = None  # type: ignore  # TODO: Fix None assignment
+    get_settings = None  # TODO: Fix None assignment
 
 from .exceptions import (
     ConnectionError,
@@ -85,7 +85,7 @@ def create_connector() -> "Neo4jConnector":
         database=settings.neo4j.database,
         max_connection_pool_size=settings.neo4j.max_connection_pool_size,
         connection_timeout=settings.neo4j.connection_timeout,
-        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time,  # type: ignore[attr-defined]
+        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time,[attr-defined]
     )
 
     # Auto-initialize schema if configured
@@ -255,8 +255,8 @@ class Neo4jConnector:
 
             # Initialize driver
             self.driver = GraphDatabase.driver(
-                self.uri,  # type: ignore[arg-type]
-                auth=(self.username, self.password),  # type: ignore[arg-type]
+                self.uri,[arg-type]
+                auth=(self.username, self.password),[arg-type]
                 max_connection_pool_size=self.max_connection_pool_size,
                 connection_timeout=self.connection_timeout,
                 **{
@@ -298,7 +298,7 @@ class Neo4jConnector:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:  # type: ignore[no-untyped-def]
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:[no-untyped-def]
         """Exit the context manager.
 
         This method is called when exiting a 'with' block. It ensures
@@ -344,9 +344,9 @@ class Neo4jConnector:
                 # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
-                    return session.execute_write()  # type: ignore[no-any-return]
+                    return session.execute_write()[no-any-return]
                 else:
-                    return session.execute_read()  # type: ignore[no-any-return]
+                    return session.execute_read()[no-any-return]
 
             # Create a session with the database name
             session = self.driver.session(database=self.database)
@@ -356,7 +356,7 @@ class Neo4jConnector:
                 else:
                     result = session.execute_read(self._transaction_function, query, params or {})
 
-                return result  # type: ignore[no-any-return]
+                return result[no-any-return]
             finally:
                 session.close()
 
@@ -413,9 +413,9 @@ class Neo4jConnector:
                 # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
-                    return session.execute_write()  # type: ignore[no-any-return]
+                    return session.execute_write()[no-any-return]
                 else:
-                    return session.execute_read()  # type: ignore[no-any-return]
+                    return session.execute_read()[no-any-return]
 
             # Create a session with the database name
             session = self.driver.session(database=self.database)
@@ -430,7 +430,7 @@ class Neo4jConnector:
                     )
 
                 record_transaction(success=True)
-                return results  # type: ignore[no-any-return]
+                return results[no-any-return]
             finally:
                 session.close()
 
@@ -451,7 +451,7 @@ class Neo4jConnector:
                 cause=e,
             ) from e
 
-    def _transaction_function(self, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:  # type: ignore[no-untyped-def]
+    def _transaction_function(self, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:[no-untyped-def]
         """Execute a single query in a transaction.
 
         Args:
@@ -465,7 +465,7 @@ class Neo4jConnector:
         result = tx.run(query, params)
         return [dict(record) for record in result]
 
-    def _transaction_function_many(  # type: ignore[no-untyped-def]
+    def _transaction_function_many([no-untyped-def]
         self, tx, queries: list[str], params_list: list[dict[str, Any]]
     ) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a transaction.
@@ -548,7 +548,7 @@ class Neo4jConnector:
         """
         query = f"CREATE (n:{label} $props) RETURN n"
         result = self.execute_query(query, params={"props": properties}, write=True)
-        return result[0]["n"] if result else None  # type: ignore[return-value]
+        return result[0]["n"] if result else None[return-value]
 
     def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
         """Find a node with the given label and properties.
@@ -565,7 +565,7 @@ class Neo4jConnector:
 
         query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
         result = self.execute_query(query, params=properties)
-        return result[0]["n"] if result else None  # type: ignore[return-value]
+        return result[0]["n"] if result else None[return-value]
 
     def create_relationship(
         self,
@@ -608,7 +608,7 @@ class Neo4jConnector:
             },
             write=True,
         )
-        return result[0]["r"] if result else None  # type: ignore[return-value]
+        return result[0]["r"] if result else None[return-value]
 
     def semantic_search(
         self,
@@ -728,9 +728,9 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return session.execute_write.return_value  # type: ignore[no-any-return]
+                return session.execute_write.return_value[no-any-return]
             else:
-                return session.execute_read.return_value  # type: ignore[no-any-return]
+                return session.execute_read.return_value[no-any-return]
 
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
@@ -758,9 +758,9 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return session.execute_write.return_value  # type: ignore[no-any-return]
+                return session.execute_write.return_value[no-any-return]
             else:
-                return session.execute_read.return_value  # type: ignore[no-any-return]
+                return session.execute_read.return_value[no-any-return]
 
         # Prepare query and params lists
         query_list = [q["query"] for q in queries]

@@ -32,7 +32,7 @@ class DocumentationGrapherStep(PipelineStep):
     entities and relationships, and links them to code entities.
     """
 
-    def __init__(self) -> Any:  # type: ignore[misc]
+    def __init__(self) -> Any:[misc]
         """Initialize the DocumentationGrapher step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
@@ -255,8 +255,8 @@ class DocumentationGrapherStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_docgrapher.step.run_docgrapher")  # type: ignore[misc]
-def run_docgrapher(  # type: ignore[no-untyped-def]
+@shared_task(bind=True, name="codestory_docgrapher.step.run_docgrapher")[misc]
+def run_docgrapher([no-untyped-def]
     self,  # Celery task instance
     repository_path: str,
     job_id: str,

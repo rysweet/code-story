@@ -144,4 +144,4 @@ def get_service_settings() -> ServiceSettings:
     Returns:
         ServiceSettings instance with service-specific configuration
     """
-    return ServiceSettings()  # type: ignore  # TODO: Pydantic BaseSettings with defaults
+    return ServiceSettings()  # TODO: Pydantic BaseSettings with defaults
