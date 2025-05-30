@@ -3,17 +3,26 @@ set -e
 
 echo "Setting up Code Story development environment for Codespaces..."
 
+# Get the workspace directory dynamically
+WORKSPACE_DIR="${PWD}"
+if [ -z "$WORKSPACE_DIR" ] || [ "$WORKSPACE_DIR" = "/" ]; then
+    # Fallback to standard Codespaces workspace path
+    WORKSPACE_DIR="/workspaces/code-story"
+fi
+
+echo "Working in directory: $WORKSPACE_DIR"
+
 # Ensure we're in the workspace directory
-cd /workspace
+cd "$WORKSPACE_DIR"
 
 # Create virtual environment
-if [ ! -d "/workspace/.venv" ]; then
+if [ ! -d "$WORKSPACE_DIR/.venv" ]; then
     echo "Creating Python virtual environment..."
-    python3 -m venv /workspace/.venv
+    python3 -m venv "$WORKSPACE_DIR/.venv"
 fi
 
 # Activate virtual environment
-source /workspace/.venv/bin/activate
+source "$WORKSPACE_DIR/.venv/bin/activate"
 
 # Upgrade pip
 echo "Upgrading pip..."
@@ -42,14 +51,14 @@ if ! groups vscode | grep -q docker; then
 fi
 
 # Create default configuration files if they don't exist
-if [ ! -f "/workspace/.env" ]; then
+if [ ! -f "$WORKSPACE_DIR/.env" ]; then
     echo "Creating default .env file..."
-    if [ -f "/workspace/.env.template" ]; then
-        cp /workspace/.env.template /workspace/.env
+    if [ -f "$WORKSPACE_DIR/.env.template" ]; then
+        cp "$WORKSPACE_DIR/.env.template" "$WORKSPACE_DIR/.env"
         echo "Default .env file created from template."
     else
         echo "No .env.template found, creating minimal .env..."
-        cat > /workspace/.env << EOF
+        cat > "$WORKSPACE_DIR/.env" << EOF
 # Core settings
 APP_NAME=code-story
 VERSION=0.1.0
@@ -74,14 +83,14 @@ EOF
     fi
 fi
 
-if [ ! -f "/workspace/.codestory.toml" ]; then
+if [ ! -f "$WORKSPACE_DIR/.codestory.toml" ]; then
     echo "Creating default configuration file..."
-    if [ -f "/workspace/.codestory.default.toml" ]; then
-        cp /workspace/.codestory.default.toml /workspace/.codestory.toml
+    if [ -f "$WORKSPACE_DIR/.codestory.default.toml" ]; then
+        cp "$WORKSPACE_DIR/.codestory.default.toml" "$WORKSPACE_DIR/.codestory.toml"
         echo "Default configuration created from template."
     else
         echo "No default template found, creating minimal configuration..."
-        cat > /workspace/.codestory.toml << EOF
+        cat > "$WORKSPACE_DIR/.codestory.toml" << EOF
 [general]
 app_name = "code-story"
 version = "0.1.0"
@@ -114,17 +123,17 @@ EOF
 fi
 
 # Install Node.js dependencies for GUI development
-if [ -f "/workspace/package.json" ]; then
+if [ -f "$WORKSPACE_DIR/package.json" ]; then
     echo "Installing Node.js dependencies..."
-    npm install
+    cd "$WORKSPACE_DIR" && npm install
 fi
 
 # Set correct permissions
-sudo chown -R vscode:vscode /workspace/.venv 2>/dev/null || true
-sudo chmod +x /workspace/scripts/*.sh 2>/dev/null || true
+sudo chown -R vscode:vscode "$WORKSPACE_DIR/.venv" 2>/dev/null || true
+sudo chmod +x "$WORKSPACE_DIR/scripts"/*.sh 2>/dev/null || true
 
 # Create a script to easily start the development environment
-cat > /workspace/start-dev.sh << 'EOF'
+cat > "$WORKSPACE_DIR/start-dev.sh" << 'EOF'
 #!/bin/bash
 echo "Starting Code Story development environment..."
 
@@ -149,7 +158,7 @@ echo "For GUI development:"
 echo "  npm run dev"
 EOF
 
-chmod +x /workspace/start-dev.sh
+chmod +x "$WORKSPACE_DIR/start-dev.sh"
 
 echo "Development environment setup complete!"
 echo ""
