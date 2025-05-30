@@ -6,15 +6,60 @@ including request counts, latencies, token usage, and errors.
 
 import functools
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Sequence
+from contextlib import contextmanager
 from enum import Enum
-from typing import Any, TypeVar, cast
+from typing import Any, Protocol, TypeVar, Union, cast
 
 from prometheus_client import Counter, Gauge, Histogram
-from prometheus_client.registry import REGISTRY
+from prometheus_client.registry import REGISTRY, CollectorRegistry
 
 # Type variable for decorated functions
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+class CounterLike(Protocol):
+    """Protocol for counter-like objects."""
+    
+    def inc(self, amount: float = 1.0) -> None:
+        """Increment counter."""
+        ...
+    
+    def labels(self, **kwargs: Any) -> "CounterLike":
+        """Get labeled instance."""
+        ...
+
+
+class GaugeLike(Protocol):
+    """Protocol for gauge-like objects."""
+    
+    def inc(self, amount: float = 1.0) -> None:
+        """Increment gauge."""
+        ...
+    
+    def dec(self, amount: float = 1.0) -> None:
+        """Decrement gauge."""
+        ...
+    
+    def set(self, value: float) -> None:
+        """Set gauge value."""
+        ...
+    
+    def labels(self, **kwargs: Any) -> "GaugeLike":
+        """Get labeled instance."""
+        ...
+
+
+class HistogramLike(Protocol):
+    """Protocol for histogram-like objects."""
+    
+    def observe(self, amount: float, exemplar: Any = None) -> None:
+        """Record an observation."""
+        ...
+    
+    def labels(self, **kwargs: Any) -> "HistogramLike":
+        """Get labeled instance."""
+        ...
 
 
 class OperationType(str, Enum):
@@ -26,9 +71,14 @@ class OperationType(str, Enum):
 
 
 # Function to get or create metrics to avoid duplicate registration issues
-def _get_or_create_counter(name: Any, description: Any, labels: Any=None) -> Any:
+def _get_or_create_counter(
+    name: str,
+    description: str,
+    labels: Iterable[str] | None = None
+) -> CounterLike:
+    """Get or create a Counter metric, handling registration conflicts."""
     try:
-        return Counter(name, description, labels)
+        return Counter(name, description, labels or [])
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
@@ -41,15 +91,18 @@ def _get_or_create_counter(name: Any, description: Any, labels: Any=None) -> Any
 
         # If we can't find it or it's not a Counter, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
-        from prometheus_client import CollectorRegistry
-
         private_registry = CollectorRegistry()
-        return Counter(name, description, labels, registry=private_registry)
+        return Counter(name, description, labels or [], registry=private_registry)
 
 
-def _get_or_create_gauge(name: Any, description: Any, labels: Any=None) -> Any:
+def _get_or_create_gauge(
+    name: str,
+    description: str,
+    labels: Iterable[str] | None = None
+) -> GaugeLike:
+    """Get or create a Gauge metric, handling registration conflicts."""
     try:
-        return Gauge(name, description, labels)
+        return Gauge(name, description, labels or [])
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
@@ -62,15 +115,20 @@ def _get_or_create_gauge(name: Any, description: Any, labels: Any=None) -> Any:
 
         # If we can't find it or it's not a Gauge, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
-        from prometheus_client import CollectorRegistry
-
         private_registry = CollectorRegistry()
-        return Gauge(name, description, labels, registry=private_registry)
+        return Gauge(name, description, labels or [], registry=private_registry)
 
 
-def _get_or_create_histogram(name: Any, description: Any, labels: Any=None, buckets: Any=None) -> Any:
+def _get_or_create_histogram(
+    name: str,
+    description: str,
+    labels: Iterable[str] | None = None,
+    buckets: Sequence[Union[float, str]] | None = None
+) -> HistogramLike:
+    """Get or create a Histogram metric, handling registration conflicts."""
+    histogram_buckets = buckets if buckets is not None else ()
     try:
-        return Histogram(name, description, labels, buckets=buckets)
+        return Histogram(name, description, labels or [], buckets=histogram_buckets)
     except ValueError:
         # If already registered, try to find the existing collector
         for collector in list(REGISTRY._names_to_collectors.values()):
@@ -83,45 +141,43 @@ def _get_or_create_histogram(name: Any, description: Any, labels: Any=None, buck
 
         # If we can't find it or it's not a Histogram, create one with a private registry
         # This is particularly useful for tests where metrics might be registered multiple times
-        from prometheus_client import CollectorRegistry
-
         private_registry = CollectorRegistry()
-        return Histogram(name, description, labels, buckets=buckets, registry=private_registry)
+        return Histogram(name, description, labels or [], buckets=histogram_buckets, registry=private_registry)
 
 
 # Prometheus metrics
-REQUEST_COUNT = _get_or_create_counter(
+REQUEST_COUNT: CounterLike = _get_or_create_counter(
     "openai_request_total",
     "Total number of requests to OpenAI API",
     ["operation", "model", "status"],
 )
 
-ERROR_COUNT = _get_or_create_counter(
+ERROR_COUNT: CounterLike = _get_or_create_counter(
     "openai_error_total",
     "Total number of errors from OpenAI API",
     ["operation", "model", "error_type"],
 )
 
-RETRY_COUNT = _get_or_create_counter(
+RETRY_COUNT: CounterLike = _get_or_create_counter(
     "openai_retry_total",
     "Total number of retried requests to OpenAI API",
     ["operation", "model"],
 )
 
-REQUEST_DURATION = _get_or_create_histogram(
+REQUEST_DURATION: HistogramLike = _get_or_create_histogram(
     "openai_request_duration_seconds",
     "Time taken for OpenAI API requests",
     ["operation", "model"],
     buckets=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0),
 )
 
-TOKEN_USAGE = _get_or_create_counter(
+TOKEN_USAGE: CounterLike = _get_or_create_counter(
     "openai_token_usage_total",
     "Token usage for OpenAI API",
     ["operation", "model", "token_type"],
 )
 
-CURRENT_REQUESTS = _get_or_create_gauge(
+CURRENT_REQUESTS: GaugeLike = _get_or_create_gauge(
     "openai_current_requests",
     "Number of currently executing OpenAI API requests",
     ["operation", "model"],

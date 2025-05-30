@@ -6,17 +6,27 @@ and other shared functionalities for the ingestion pipeline.
 
 import importlib
 import logging
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 # Use importlib.metadata instead of pkg_resources (which is deprecated)
-try:
-    from importlib.metadata import entry_points
-except ImportError:
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points, EntryPoint
+    USE_IMPORTLIB = True
+elif sys.version_info >= (3, 8):
+    from importlib.metadata import entry_points, EntryPoint
+    USE_IMPORTLIB = True
+else:
     # Fallback for Python < 3.8
-    import pkg_resources
+    try:
+        import pkg_resources  # type: ignore[import-untyped]
+        USE_IMPORTLIB = False
+    except ImportError:
+        USE_IMPORTLIB = True
+        from importlib.metadata import entry_points, EntryPoint
 
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -45,10 +55,10 @@ def _get_or_create_counter(
 
         # Return a no-op counter if we can't find or create the real one
         class NoOpCounter:
-            def labels(self, **kwargs: Any) -> Any:
+            def labels(self, **kwargs: Any) -> "NoOpCounter":
                 return self
 
-            def inc(self, amount: int = 1) -> Any:
+            def inc(self, amount: int = 1) -> None:
                 pass
 
         return NoOpCounter()
@@ -77,10 +87,10 @@ def _get_or_create_histogram(
 
         # Return a no-op histogram if we can't find or create the real one
         class NoOpHistogram:
-            def labels(self, **kwargs: Any) -> Any:
+            def labels(self, **kwargs: Any) -> "NoOpHistogram":
                 return self
 
-            def observe(self, amount: float) -> Any:
+            def observe(self, amount: float) -> None:
                 pass
 
         return NoOpHistogram()
@@ -107,13 +117,13 @@ def _get_or_create_gauge(
             def inc(self, amount: int = 1) -> None:
                 pass
 
-            def dec(self, amount: int = 1) -> Any:
+            def dec(self, amount: int = 1) -> None:
                 pass
 
-            def set(self, value: float) -> Any:
+            def set(self, value: float) -> None:
                 pass
 
-            def labels(self, **kwargs: Any) -> Any:
+            def labels(self, **kwargs: Any) -> "NoOpGauge":
                 return self
 
         return NoOpGauge()
@@ -213,20 +223,26 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
     Returns:
         Dict[str, Type[PipelineStep]]: Dictionary mapping step names to step classes
     """
-    steps: dict[Any, Any] = {}
+    steps: dict[str, type[PipelineStep]] = {}
     entry_point_group = "codestory.pipeline.steps"
 
     try:
-        # Use importlib.metadata if available, otherwise fall back to pkg_resources
-        if "entry_points" in globals():
-            # Python 3.8+ with importlib.metadata
-            eps = entry_points(group=entry_point_group)
-            try:
+        if USE_IMPORTLIB:
+            # Use importlib.metadata for Python 3.8+
+            if sys.version_info >= (3, 10):
                 # Python 3.10+ API
+                eps = entry_points(group=entry_point_group)
                 entry_points_list = list(eps)
-            except TypeError:
+            else:
                 # Python 3.8-3.9 API
-                entry_points_list = eps.get(entry_point_group, [])
+                all_eps = entry_points()
+                entry_points_list = []
+                if hasattr(all_eps, 'select'):
+                    # Some versions have select method
+                    entry_points_list = list(all_eps.select(group=entry_point_group))
+                else:
+                    # Fallback for older 3.8 versions
+                    entry_points_list = all_eps.get(entry_point_group, [])
 
             for entry_point in entry_points_list:
                 step_name = entry_point.name
@@ -243,21 +259,25 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
                 steps[step_name] = step_class
                 logger.info(f"Discovered pipeline step: {step_name}")
         else:
-            # Python < 3.8 with pkg_resources
-            for entry_point in pkg_resources.iter_entry_points(entry_point_group):
-                step_name = entry_point.name
-                step_class = entry_point.load()
+            # Python < 3.8 with pkg_resources - only if it was successfully imported
+            try:
+                import pkg_resources  # type: ignore[import-untyped]
+                for entry_point in pkg_resources.iter_entry_points(entry_point_group):
+                    step_name = entry_point.name
+                    step_class = entry_point.load()
 
-                # Validate that it's a PipelineStep subclass
-                if not issubclass(step_class, PipelineStep):
-                    logger.warning(
-                        f"Entry point {step_name} does not provide a PipelineStep "
-                        f"subclass, skipping"
-                    )
-                    continue
+                    # Validate that it's a PipelineStep subclass
+                    if not issubclass(step_class, PipelineStep):
+                        logger.warning(
+                            f"Entry point {step_name} does not provide a PipelineStep "
+                            f"subclass, skipping"
+                        )
+                        continue
 
-                steps[step_name] = step_class
-                logger.info(f"Discovered pipeline step: {step_name}")
+                    steps[step_name] = step_class
+                    logger.info(f"Discovered pipeline step: {step_name}")
+            except ImportError:
+                logger.warning("pkg_resources not available and importlib.metadata failed")
     except Exception as e:
         logger.error(f"Error discovering pipeline steps: {e}")
 

@@ -10,10 +10,10 @@ import logging
 import time
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar, Union, cast
 from unittest.mock import AsyncMock, MagicMock
 
-from neo4j import GraphDatabase
+from neo4j import Driver, GraphDatabase, Result, Session
 from neo4j.exceptions import (
     Neo4jError as Neo4jDriverError,
 )
@@ -26,7 +26,7 @@ try:
     from ..config.settings import get_settings
 except ImportError:
     # For testing environments where settings might not be available
-    get_settings = None  # TODO: Fix None assignment
+    get_settings: Union[Callable[[], Any], None] = None
 
 from .exceptions import (
     ConnectionError,
@@ -85,7 +85,6 @@ def create_connector() -> "Neo4jConnector":
         database=settings.neo4j.database,
         max_connection_pool_size=settings.neo4j.max_connection_pool_size,
         connection_timeout=settings.neo4j.connection_timeout,
-        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time,
     )
 
     # Auto-initialize schema if configured
@@ -182,6 +181,14 @@ class Neo4jConnector:
     the 'with' statement to ensure proper cleanup of resources.
     """
 
+    driver: Driver
+    uri: str
+    username: str
+    password: str
+    database: str
+    max_connection_pool_size: int
+    connection_timeout: int
+
     def __init__(
         self,
         uri: str | None = None,
@@ -252,6 +259,14 @@ class Neo4jConnector:
                             f"parameters: {e!s}",
                             cause=e,
                         ) from e
+
+            # Ensure we have required connection parameters
+            if not self.uri:
+                raise ConnectionError("URI is required for Neo4j connection")
+            if not self.username:
+                raise ConnectionError("Username is required for Neo4j connection")
+            if not self.password:
+                raise ConnectionError("Password is required for Neo4j connection")
 
             # Initialize driver
             # Filter out custom config options that aren't valid Neo4j driver options
@@ -352,9 +367,9 @@ class Neo4jConnector:
                 # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
-                    return session.execute_write()
+                    return cast(list[dict[str, Any]], session.execute_write())
                 else:
-                    return session.execute_read()
+                    return cast(list[dict[str, Any]], session.execute_read())
 
             # Create a session with the database name
             session = self.driver.session(database=self.database)
@@ -364,7 +379,7 @@ class Neo4jConnector:
                 else:
                     result = session.execute_read(self._transaction_function, query, params or {})
 
-                return result
+                return cast(list[dict[str, Any]], result)
             finally:
                 session.close()
 
@@ -421,9 +436,9 @@ class Neo4jConnector:
                 # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
-                    return session.execute_write()
+                    return cast(list[list[dict[str, Any]]], session.execute_write())
                 else:
-                    return session.execute_read()
+                    return cast(list[list[dict[str, Any]]], session.execute_read())
 
             # Create a session with the database name
             session = self.driver.session(database=self.database)
@@ -438,7 +453,7 @@ class Neo4jConnector:
                     )
 
                 record_transaction(success=True)
-                return results
+                return cast(list[list[dict[str, Any]]], results)
             finally:
                 session.close()
 
@@ -474,7 +489,7 @@ class Neo4jConnector:
         return [dict(record) for record in result]
 
     def _transaction_function_many(
-        self, tx, queries: list[str], params_list: list[dict[str, Any]]
+        self, tx: Any, queries: list[str], params_list: list[dict[str, Any]]
     ) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a transaction.
 
@@ -544,7 +559,7 @@ class Neo4jConnector:
                 similarity=similarity,
             ) from e
 
-    def create_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
+    def create_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
         """Create a node in the Neo4j database.
 
         Args:
@@ -558,7 +573,7 @@ class Neo4jConnector:
         result = self.execute_query(query, params={"props": properties}, write=True)
         return result[0]["n"] if result else None
 
-    def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
+    def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
         """Find a node with the given label and properties.
 
         Args:
@@ -581,7 +596,7 @@ class Neo4jConnector:
         end_node: dict[str, Any],
         rel_type: str,
         properties: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         """Create a relationship between two nodes.
 
         Args:
@@ -736,9 +751,9 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return session.execute_write.return_value
+                return cast(list[dict[str, Any]], session.execute_write.return_value)
             else:
-                return session.execute_read.return_value
+                return cast(list[dict[str, Any]], session.execute_read.return_value)
 
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
@@ -766,9 +781,9 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return session.execute_write.return_value
+                return cast(list[list[dict[str, Any]]], session.execute_write.return_value)
             else:
-                return session.execute_read.return_value
+                return cast(list[list[dict[str, Any]]], session.execute_read.return_value)
 
         # Prepare query and params lists
         query_list = [q["query"] for q in queries]

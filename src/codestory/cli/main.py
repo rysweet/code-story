@@ -1,58 +1,59 @@
-from typing import Any
-
 """Main CLI application for Code Story."""
 
 import sys
+from typing import Any, Callable, Dict, List, Optional, Union, IO
+import types
 
 import click
-from click_didyoumean import DYMGroup
-
-# Import rich_click if available, otherwise create a stub with click
-rich_click_module = None
-try:
-    import rich_click as rich_click_module
-except ImportError:
-    # Create fake attributes on click module for fallback
-    import click as _click_for_rich
-
-    # Add required rich_click attributes to click module
-    _click_for_rich.USE_RICH_MARKUP = False
-    _click_for_rich.SHOW_ARGUMENTS = False
-    _click_for_rich.GROUP_ARGUMENTS_OPTIONS = False
-    _click_for_rich.STYLE_ERRORS_SUGGESTION = ""
-    _click_for_rich.ERRORS_SUGGESTION = ""
-
-    # Set our module variable
-    rich_click_module = _click_for_rich
+from click_didyoumean import DYMGroup  # type: ignore[import-untyped]
 from rich.console import Console
 
 from codestory.config import get_settings
 
 from .client import ServiceClient, ServiceError
 
+# Import rich_click if available, otherwise create a stub with click
+rich_click_module: Optional[types.ModuleType] = None
+try:
+    import rich_click as rich_click_module
+except ImportError:
+    # Create fake attributes on click module for fallback
+    import click as _click_for_rich
+    
+    # Add required rich_click attributes to click module
+    setattr(_click_for_rich, 'USE_RICH_MARKUP', False)
+    setattr(_click_for_rich, 'SHOW_ARGUMENTS', False)
+    setattr(_click_for_rich, 'GROUP_ARGUMENTS_OPTIONS', False)
+    setattr(_click_for_rich, 'STYLE_ERRORS_SUGGESTION', "")
+    setattr(_click_for_rich, 'ERRORS_SUGGESTION', "")
+    
+    # Set our module variable
+    rich_click_module = _click_for_rich
+
 # Set up Rich for Click
-rich_click_module.USE_RICH_MARKUP = True
-rich_click_module.SHOW_ARGUMENTS = True
-rich_click_module.GROUP_ARGUMENTS_OPTIONS = True
-rich_click_module.STYLE_ERRORS_SUGGESTION = "yellow italic"
-rich_click_module.ERRORS_SUGGESTION = (
-    "Try running the command with --help to see available options."
-)
+if rich_click_module is not None:
+    setattr(rich_click_module, 'USE_RICH_MARKUP', True)
+    setattr(rich_click_module, 'SHOW_ARGUMENTS', True)
+    setattr(rich_click_module, 'GROUP_ARGUMENTS_OPTIONS', True)
+    setattr(rich_click_module, 'STYLE_ERRORS_SUGGESTION', "yellow italic")
+    setattr(rich_click_module, 'ERRORS_SUGGESTION', (
+        "Try running the command with --help to see available options."
+    ))
 
 # Create console
-console = Console()
+console: Console = Console()
 
 
 class CodeStoryCommandGroup(DYMGroup):
     """Custom command group that shows help when a command fails."""
 
-    def __call__(self, *args, **kwargs) -> None:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Override to catch and customize error handling."""
         try:
             return super().__call__(*args, **kwargs)
         except click.exceptions.UsageError as e:
             # Get the context
-            ctx = getattr(e, "ctx", None)
+            ctx: Optional[click.Context] = getattr(e, "ctx", None)
             if ctx is None:
                 ctx = click.Context(self)
 
@@ -64,14 +65,14 @@ class CodeStoryCommandGroup(DYMGroup):
             click.echo("")  # Add a blank line
 
             # Then show the error with custom formatting
-            error_msg = str(e)
+            error_msg: str = str(e)
             # Add suggestions for command-not-found errors if not already present
             if "No such command" in error_msg and "Did you mean" not in error_msg:
-                cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
+                cmd_name: str = error_msg.split("'")[1] if "'" in error_msg else ""
                 if cmd_name:
                     # Find similar commands
-                    commands = list(self.commands.keys())
-                    similar = [
+                    commands: List[str] = list(self.commands.keys())
+                    similar: List[str] = [
                         cmd
                         for cmd in commands
                         if (cmd.startswith(cmd_name[:1]) or cmd_name.lower() in cmd.lower())
@@ -106,7 +107,7 @@ class CodeStoryCommandGroup(DYMGroup):
     envvar="CODESTORY_API_KEY",
 )
 @click.pass_context
-def app(ctx: click.Context, service_url: str | None = None, api_key: str | None = None) -> None:
+def app(ctx: click.Context, service_url: Optional[str] = None, api_key: Optional[str] = None) -> None:
     """
     Code Story CLI application.
 
@@ -119,7 +120,7 @@ def app(ctx: click.Context, service_url: str | None = None, api_key: str | None 
     # Create service client
     settings = get_settings()
 
-    base_url = service_url if service_url else f"http://localhost:{settings.service.port}/v1"
+    base_url: str = service_url if service_url else f"http://localhost:{settings.service.port}/v1"
 
     client = ServiceClient(
         base_url=base_url,
@@ -185,18 +186,19 @@ register_commands()
 
 
 # Create a wrapper function that will intercept UsageError exceptions
-def _wrap_click_command(cmd: Any) -> None:
+def _wrap_click_command(cmd: click.BaseCommand) -> Callable[..., Any]:
     """Create a wrapper around a Click command to intercept UsageError exceptions."""
-    original_main = cmd.main
+    original_main: Callable[..., Any] = cmd.main
 
-    def wrapped_main(*args, **kwargs) -> Any:
+    def wrapped_main(*args: Any, **kwargs: Any) -> Any:
         try:
             return original_main(*args, **kwargs)
         except click.exceptions.UsageError as e:
             # Extract relevant context information
-            ctx = getattr(e, "ctx", None)
+            ctx: Optional[click.Context] = getattr(e, "ctx", None)
 
             # Get appropriate help text
+            help_text: str
             if ctx and ctx.command:
                 # Get help text for the specific command context
                 help_text = ctx.get_help()
@@ -206,16 +208,16 @@ def _wrap_click_command(cmd: Any) -> None:
                 help_text = app.get_help(ctx)
 
             # Format the error message
-            error_msg = str(e)
+            error_msg: str = str(e)
 
             # Check if we're dealing with an invalid command
             if "No such command" in error_msg:
                 # Extract the command name that wasn't found
-                cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
+                cmd_name: str = error_msg.split("'")[1] if "'" in error_msg else ""
                 if cmd_name:
                     # Find similar commands (already registered and common aliases)
-                    commands = list(app.commands.keys())
-                    similar = [
+                    commands: List[str] = list(app.commands.keys())
+                    similar: List[str] = [
                         cmd
                         for cmd in commands
                         if (
@@ -257,12 +259,13 @@ def main() -> None:
     original_error_callback = click.exceptions.UsageError.show
 
     # Define our custom error handler
-    def custom_error_callback(self, file: Any=None) -> None:
+    def custom_error_callback(self: click.exceptions.UsageError, file: Optional[IO[Any]] = None) -> None:
         """Custom error formatter that shows error first, then suggestions, then help."""
         # Get the context
-        ctx = getattr(self, "ctx", None)
+        ctx: Optional[click.Context] = getattr(self, "ctx", None)
 
         # Get appropriate help text
+        help_text: str
         if ctx and ctx.command:
             # Get help text for the specific command context
             help_text = ctx.get_help()
@@ -272,16 +275,16 @@ def main() -> None:
             help_text = app.get_help(ctx)
 
         # Format the error message first
-        error_msg = str(self)
+        error_msg: str = str(self)
 
         # Check if we're dealing with an invalid command
-        suggestions = ""
+        suggestions: str = ""
         if "No such command" in error_msg:
             # Extract the command name that wasn't found
-            cmd_name = error_msg.split("'")[1] if "'" in error_msg else ""
+            cmd_name: str = error_msg.split("'")[1] if "'" in error_msg else ""
             if cmd_name:
                 # Find commands to search in
-                commands: list[Any] = []
+                commands: List[str] = []
 
                 # Get the current command context to find available subcommands
                 if ctx and hasattr(ctx, "command") and hasattr(ctx.command, "commands"):
@@ -292,7 +295,7 @@ def main() -> None:
                     commands = list(app.commands.keys())
 
                 # Find similar commands
-                similar = [
+                similar: List[str] = [
                     cmd
                     for cmd in commands
                     if (
@@ -321,7 +324,7 @@ def main() -> None:
 
     try:
         # Replace the error handler
-        click.exceptions.UsageError.show = custom_error_callback
+        click.exceptions.UsageError.show = custom_error_callback  # type: ignore[method-assign]
 
         # Run the app with our enhanced error handling
         app()
@@ -334,7 +337,7 @@ def main() -> None:
         sys.exit(1)
     finally:
         # Restore the original error handler
-        click.exceptions.UsageError.show = original_error_callback
+        click.exceptions.UsageError.show = original_error_callback  # type: ignore[method-assign]
 
 
 if __name__ == "__main__":
