@@ -1,10 +1,12 @@
-from typing import Any
 """Configuration for the MCP Adapter.
 
 This module provides configuration management for the MCP Adapter.
 """
 
+from __future__ import annotations
+
 from functools import lru_cache
+from typing import Any
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -104,7 +106,7 @@ class MCPSettings(BaseSettings):
         # Use client ID as audience if not specified
         client_id = info.data.get("azure_client_id")
         if client_id:
-            return client_id
+            return str(client_id)  # Explicitly cast to str
 
         # Fall back to default audience
         return "api://code-story"
@@ -117,4 +119,4 @@ def get_mcp_settings() -> MCPSettings:
     Returns:
         MCP settings instance
     """
-    return MCPSettings()  # TODO: Pydantic BaseSettings with defaults
+    return MCPSettings()  # type: ignore[call-arg]  # Pydantic BaseSettings with defaults
