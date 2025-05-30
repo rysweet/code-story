@@ -2,7 +2,7 @@
 
 import contextlib
 import json
-from typing import Any
+from typing import Any, Union
 
 import click
 
@@ -375,7 +375,7 @@ def _display_query_result(
                 panel = Panel(
                     _format_object(item, color),
                     title=f"Result {i}",
-                    border_style="cyan" if color else None
+                    border_style="cyan" if color else "none"
                 )
                 console.print(panel)
         else:
@@ -383,7 +383,7 @@ def _display_query_result(
             panel = Panel(
                 _format_object(results, color),
                 title="Result",
-                border_style="cyan" if color else None
+                border_style="cyan" if color else "none"
             )
             console.print(panel)
 
@@ -418,7 +418,7 @@ def _display_results_as_tree(console: Console, result: dict[str, Any], color: bo
             console.print("[yellow]No results found.[/]" if color else "No results found.")
             return
 
-        tree = Tree("Query Results", style="bold cyan" if color else None)
+        tree = Tree("Query Results", style="bold cyan" if color else "none")
 
         for i, record in enumerate(records, 1):
             record_tree = tree.add(f"Record {i}")
@@ -444,7 +444,7 @@ def _display_results_as_tree(console: Console, result: dict[str, Any], color: bo
         # MCP tool call results
         results = result["results"]
 
-        tree = Tree("Query Results", style="bold cyan" if color else None)
+        tree = Tree("Query Results", style="bold cyan" if color else "none")
 
         if isinstance(results, list):
             for i, item in enumerate(results, 1):
@@ -528,12 +528,12 @@ def _results_to_csv(result: dict[str, Any]) -> str:
 
         if isinstance(results, list) and results and isinstance(results[0], dict):
             # Try to extract common keys for a table
-            columns: set[Any] = set()
+            common_columns: set[str] = set()
             for item in results:
                 if isinstance(item, dict):
-                    columns.update(item.keys())
+                    common_columns.update(item.keys())
 
-            columns = sorted(columns)
+            columns = sorted(common_columns)
 
             # Write header
             writer.writerow(columns)
@@ -541,17 +541,17 @@ def _results_to_csv(result: dict[str, Any]) -> str:
             # Write rows
             for item in results:
                 if isinstance(item, dict):
-                    row: list[Any] = []
+                    result_row: list[Any] = []
                     for column in columns:
                         value = item.get(column)
                         if isinstance(value, dict | list):
-                            row.append(json.dumps(value))
+                            result_row.append(json.dumps(value))
                         elif value is None:
-                            row.append("")
+                            result_row.append("")
                         else:
-                            row.append(str(value))
+                            result_row.append(str(value))
 
-                    writer.writerow(row)
+                    writer.writerow(result_row)
         else:
             # Can't format as CSV
             writer.writerow(["results"])
@@ -584,7 +584,7 @@ def _format_value(value: Any, color: bool = True) -> str:
         return str(value)
 
 
-def _format_object(obj: Any, color: bool = True) -> str:
+def _format_object(obj: Any, color: bool = True) -> Union[str, Syntax]:
     """
     Format an object for display in a panel.
 
@@ -593,7 +593,7 @@ def _format_object(obj: Any, color: bool = True) -> str:
         color: Whether to use colored output
 
     Returns:
-        Formatted string representation
+        Formatted string representation or Syntax object
     """
     if isinstance(obj, dict):
         if "code" in obj:
@@ -602,7 +602,7 @@ def _format_object(obj: Any, color: bool = True) -> str:
             if color:
                 return Syntax(obj["code"], lang, theme="monokai", line_numbers=True)
             else:
-                return obj["code"]
+                return str(obj["code"])
 
         # Format as JSON
         return json.dumps(obj, indent=2)
