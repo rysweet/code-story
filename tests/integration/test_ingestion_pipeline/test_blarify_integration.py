@@ -81,7 +81,7 @@ def ensure_blarify_image() -> None:
                 images = client.images.list(name=img_name)
                 if images:
                     print(f'Found Blarify image: {img_name}')
-                    return img_name
+                    return img_name  # type: ignore[return-value]
             except Exception as e:
                 print(f'Error checking for {img_name}: {e}')
         print('No Blarify image found locally, attempting to pull...')
@@ -89,7 +89,7 @@ def ensure_blarify_image() -> None:
             try:
                 client.images.pull(img_name)
                 print(f'Successfully pulled {img_name}')
-                return img_name
+                return img_name  # type: ignore[return-value]
             except Exception as e:
                 print(f'Failed to pull {img_name}: {e}')
         print('Building minimal Blarify-compatible image for testing...')
@@ -104,7 +104,7 @@ def ensure_blarify_image() -> None:
             try:
                 client.images.build(path=tmp_dir, tag=test_image_name, rm=True)
                 print(f'Successfully built test Blarify image: {test_image_name}')
-                return test_image_name
+                return test_image_name  # type: ignore[return-value]
             except Exception as e:
                 print(f'Failed to build test image: {e}')
                 pytest.fail(f'Could not build test Blarify image: {e}')

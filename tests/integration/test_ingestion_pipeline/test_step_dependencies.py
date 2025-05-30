@@ -213,7 +213,7 @@ async def test_job_dependency_orchestration(sample_repo: Any) -> None:
 
         async def start_ingestion(self, request):
             from codestory_service.domain.ingestion import IngestionStarted
-            return IngestionStarted(job_id=f'job-{int(time.time() * 1000)}', status=JobStatus.COMPLETED, source=request.source, started_at=None, steps=request.steps or [], message='Mock job completed', eta=None)
+            return IngestionStarted(job_id=f'job-{int(time.time() * 1000)}', status=JobStatus.COMPLETED, source=request.source, started_at=None, steps=request.steps or [], message='Mock job completed', eta=None)  # type: ignore[arg-type]
 
         async def get_job_status(self, job_id):
             from codestory_service.domain.ingestion import IngestionJob
@@ -221,11 +221,11 @@ async def test_job_dependency_orchestration(sample_repo: Any) -> None:
 
         async def list_jobs(self, *args, **kwargs):
             return []
-    service = IngestionService(MockCeleryAdapter())
-    req_a = IngestionRequest(source_type='local_path', source=sample_repo, steps=None, dependencies=None)
+    service = IngestionService(MockCeleryAdapter())  # type: ignore[arg-type]
+    req_a = IngestionRequest(source_type='local_path', source=sample_repo, steps=None, dependencies=None)  # type: ignore[arg-type,call-arg]
     started_a = await service.start_ingestion(req_a)
     job_a_id = started_a.job_id
-    req_b = IngestionRequest(source_type='local_path', source=sample_repo, steps=None, dependencies=[job_a_id])
+    req_b = IngestionRequest(source_type='local_path', source=sample_repo, steps=None, dependencies=[job_a_id])  # type: ignore[arg-type,call-arg]
     started_b = await service.start_ingestion(req_b)
     job_b_id = started_b.job_id
     assert started_b.status == JobStatus.PENDING

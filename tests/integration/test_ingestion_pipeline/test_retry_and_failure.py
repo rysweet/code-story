@@ -22,9 +22,9 @@ def test_retry_and_failure_reporting(tmp_path: Any) -> None:
 
     def flaky_status(self, job_id: Any) -> None:
         if retry_attempts['count'] < 2:
-            return {'status': StepStatus.FAILED, 'progress': 0, 'error': 'Simulated transient error', 'retry_count': retry_attempts['count'], 'last_error': 'Simulated transient error'}
+            return {'status': StepStatus.FAILED, 'progress': 0, 'error': 'Simulated transient error', 'retry_count': retry_attempts['count'], 'last_error': 'Simulated transient error'}  # type: ignore[return-value]
         else:
-            return {'status': StepStatus.COMPLETED, 'progress': 100, 'retry_count': retry_attempts['count'], 'last_error': None}
+            return {'status': StepStatus.COMPLETED, 'progress': 100, 'retry_count': retry_attempts['count'], 'last_error': None}  # type: ignore[return-value]
     from codestory_filesystem.step import FileSystemStep
     with patch.object(FileSystemStep, 'run', flaky_run), patch.object(FileSystemStep, 'status', flaky_status):
         manager = PipelineManager()

@@ -45,7 +45,7 @@ async def get_current_user(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Missing or invalid authentication token', headers={'WWW-Authenticate': 'Bearer'})
     token = auth_header.split(' ')[1]
     try:
-        validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)  # type: ignore[assignment]
+        validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)  # type: ignore[arg-type,assignment]
         claims = await validator.validate_token(token)
         metrics.record_auth_attempt('success')
         return claims

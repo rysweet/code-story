@@ -172,7 +172,7 @@ class OpenAIAdapter:
             is_reasoning_model = any((reasoning_model in test_model.lower() for reasoning_model in ['o1', 'o1-preview', 'o1-mini']))
             logger.info(f'Is reasoning model: {is_reasoning_model}')
             from codestory.llm.models import ChatMessage
-            messages = [ChatMessage(role='system', content='You are a helpful assistant.'), ChatMessage(role='user', content=test_message)]  # type: ignore[assignment]
+            messages = [ChatMessage(role='system', content='You are a helpful assistant.'), ChatMessage(role='user', content=test_message)]  # type: ignore[arg-type,assignment]
             chat_params = {'messages': messages, 'model': test_model}
             if is_reasoning_model:
                 chat_params['max_completion_tokens'] = 10

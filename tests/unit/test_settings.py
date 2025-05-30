@@ -7,12 +7,12 @@ from codestory.config.settings import AzureOpenAISettings, AzureSettings, Ingest
 
 def create_test_settings() -> Any:
     """Create a fully-initialized settings object for tests."""
-    neo4j = Neo4jSettings(uri='bolt://localhost:7687', username='neo4j', password='password', database='testdb')
+    neo4j = Neo4jSettings(uri='bolt://localhost:7687', username='neo4j', password='password', database='testdb')  # type: ignore[arg-type,call-arg]
     redis = RedisSettings(uri='redis://localhost:6379/0')
-    openai = OpenAISettings(api_key=SecretStr('sk-test-key-openai'), endpoint='https://api.openai.com/v1', embedding_model='text-embedding-3-small', chat_model='gpt-4o', reasoning_model='gpt-4o')
+    openai = OpenAISettings(api_key=SecretStr('sk-test-key-openai'), endpoint='https://api.openai.com/v1', embedding_model='text-embedding-3-small', chat_model='gpt-4o', reasoning_model='gpt-4o')  # type: ignore[call-arg]
     azure_openai = AzureOpenAISettings(api_key=SecretStr('test-azure-key'), endpoint='<your-endpoint>', deployment_id='gpt-4o', api_version='2024-05-01', embedding_model='text-embedding-3-small', chat_model='gpt-4o', reasoning_model='gpt-4o')
     service = ServiceSettings(host='127.0.0.1', port=8000, workers=1, log_level='DEBUG', enable_telemetry=False, worker_concurrency=1)
-    ingestion = IngestionSettings(config_path='pipeline_config.yml', chunk_size=1024, chunk_overlap=200, embedding_model='text-embedding-3-small', embedding_dimensions=1536, max_retries=3, retry_backoff_factor=2.0, concurrency=1, steps={})
+    ingestion = IngestionSettings(config_path='pipeline_config.yml', chunk_size=1024, chunk_overlap=200, embedding_model='text-embedding-3-small', embedding_dimensions=1536, max_retries=3, retry_backoff_factor=2.0, concurrency=1, steps={})  # type: ignore[call-arg]
     plugins = PluginSettings(enabled=['filesystem'], plugin_directory='plugins')
     telemetry = TelemetrySettings(metrics_port=9090, metrics_endpoint='/metrics', trace_sample_rate=1.0, log_format='json')
     interface = InterfaceSettings(theme='light', default_view='graph', graph_layout='force', max_nodes=1000, max_edges=5000, auto_refresh=False, refresh_interval=30)

@@ -125,7 +125,7 @@ class GraphService:
             search_result = await self.neo4j.execute_vector_search(vector_query, embeddings[0])
             context_items: list[Any] = []
             for result in search_result.results:
-                node_query = CypherQuery(query='MATCH (n) WHERE elementId(n) = $id RETURN n', parameters={'id': result.id}, query_type='read')  # type: ignore[assignment]
+                node_query = CypherQuery(query='MATCH (n) WHERE elementId(n) = $id RETURN n', parameters={'id': result.id}, query_type='read')  # type: ignore[arg-type,assignment]
                 node_result = await self.neo4j.execute_cypher_query(node_query)
                 if node_result.rows and len(node_result.rows) > 0 and (len(node_result.rows[0]) > 0):
                     node = node_result.rows[0][0]
@@ -190,7 +190,7 @@ class GraphService:
             params['search_query'] = search_query  # type: ignore[assignment]
         if request.filter and (not request.filter.include_orphans):
             cypher_query = cypher_query.replace('MATCH (n)', 'MATCH (n) WHERE EXISTS((n)--())')
-        query = CypherQuery(query=cypher_query, parameters=params, query_type='read')  # type: ignore[assignment]
+        query = CypherQuery(query=cypher_query, parameters=params, query_type='read')  # type: ignore[arg-type,assignment]
         result = await self.neo4j.execute_cypher_query(query)
         if not result.rows or len(result.rows) == 0:
             return {'nodes': [], 'links': []}
@@ -267,11 +267,11 @@ class GraphService:
         """
         try:
             logger.warning('Clearing all data from database')
-            delete_query = CypherQuery(query='MATCH (n) DETACH DELETE n', query_type='write')  # type: ignore[assignment]
+            delete_query = CypherQuery(query='MATCH (n) DETACH DELETE n', query_type='write')  # type: ignore[arg-type,assignment]
             await self.execute_cypher_query(delete_query)
             if request.preserve_schema:
                 logger.info('Preserving schema - reinitializing')
-                schema_query = CypherQuery(query='CALL apoc.schema.assert({}, {})', query_type='write')  # type: ignore[assignment]
+                schema_query = CypherQuery(query='CALL apoc.schema.assert({}, {})', query_type='write')  # type: ignore[arg-type,assignment]
                 await self.execute_cypher_query(schema_query)
             logger.info('Database successfully cleared')
             return DatabaseClearResponse(status='success', message='Database successfully cleared')

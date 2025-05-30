@@ -82,10 +82,10 @@ def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector
                     rel_query = '\n                    MATCH (d:Directory {path: $dir_path})\n                    MATCH (f:File {path: $file_path})\n                    MERGE (d)-[:CONTAINS]->(f)\n                    '
                     neo4j_connector.execute_query(rel_query, params={'dir_path': dir_path, 'file_path': file_path}, write=True)
                 file_count += 1
-        return {'status': StepStatus.COMPLETED, 'job_id': job_id, 'file_count': file_count, 'dir_count': dir_count}
+        return {'status': StepStatus.COMPLETED, 'job_id': job_id, 'file_count': file_count, 'dir_count': dir_count}  # type: ignore[return-value]
     except Exception as e:
         print(f'Error processing filesystem: {e}')
-        return {'status': StepStatus.FAILED, 'error': f'Error processing filesystem: {e!s}', 'job_id': job_id}
+        return {'status': StepStatus.FAILED, 'error': f'Error processing filesystem: {e!s}', 'job_id': job_id}  # type: ignore[return-value]
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j, pytest.mark.celery]
 
 @pytest.fixture

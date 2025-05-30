@@ -11,7 +11,7 @@ from codestory_mcp.utils.config import MCPSettings, get_mcp_settings
 
 def test_mcp_settings_defaults() -> None:
     """Test the default settings."""
-    settings = MCPSettings()
+    settings = MCPSettings()  # type: ignore[call-arg]
 
     assert settings.port == 8001
     assert settings.host == "0.0.0.0"
@@ -33,19 +33,19 @@ def test_mcp_settings_defaults() -> None:
 def test_audience_validator() -> None:
     """Test the audience validator."""
     # When audience is provided, it should use that
-    settings = MCPSettings(
+    settings = MCPSettings(  # type: ignore[call-arg]
         code_story_service_url="http://localhost:8000", api_audience="custom-audience"
     )
     assert settings.api_audience == "custom-audience"
 
     # When client ID is provided but no audience, it should use client ID
-    settings = MCPSettings(
+    settings = MCPSettings(  # type: ignore[call-arg]
         code_story_service_url="http://localhost:8000", azure_client_id="test-client-id"
     )
     assert settings.api_audience == "test-client-id"
 
     # When neither is provided, falls back to "api://code-story"
-    settings = MCPSettings(code_story_service_url="http://localhost:8000")
+    settings = MCPSettings(code_story_service_url="http://localhost:8000")  # type: ignore[call-arg]
     assert settings.api_audience == "api://code-story"
 
 
@@ -83,7 +83,7 @@ def test_audience_validator() -> None:
 def test_settings_from_env(env_vars: Any, expected: Any) -> None:
     """Test loading settings from environment variables."""
     with mock.patch.dict(os.environ, env_vars, clear=True):
-        settings = MCPSettings()
+        settings = MCPSettings()  # type: ignore[call-arg]
 
         for key, value in expected.items():
             assert getattr(settings, key) == value

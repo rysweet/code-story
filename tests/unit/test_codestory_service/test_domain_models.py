@@ -45,21 +45,21 @@ class TestConfigModels:
 
     def test_config_item_is_sensitive(self: Any) -> None:
         """Test that ConfigItem correctly identifies sensitive items."""
-        sensitive_meta = ConfigMetadata(section=ConfigSection.SECURITY, key='password', type=ConfigValueType.SECRET, description='API password', source='env', permission=ConfigPermission.SENSITIVE)
+        sensitive_meta = ConfigMetadata(section=ConfigSection.SECURITY, key='password', type=ConfigValueType.SECRET, description='API password', source='env', permission=ConfigPermission.SENSITIVE)  # type: ignore[arg-type]
         sensitive_item = ConfigItem(value='secret123', metadata=sensitive_meta)
         assert sensitive_item.is_sensitive is True
-        non_sensitive_meta = ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source='config_file', permission=ConfigPermission.READ_WRITE)
+        non_sensitive_meta = ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source='config_file', permission=ConfigPermission.READ_WRITE)  # type: ignore[arg-type]
         non_sensitive_item = ConfigItem(value=True, metadata=non_sensitive_meta)
         assert non_sensitive_item.is_sensitive is False
 
     def test_config_item_redact_if_sensitive(self: Any) -> None:
         """Test that ConfigItem redacts sensitive values."""
-        sensitive_meta = ConfigMetadata(section=ConfigSection.SECURITY, key='password', type=ConfigValueType.SECRET, description='API password', source='env', permission=ConfigPermission.SENSITIVE)
+        sensitive_meta = ConfigMetadata(section=ConfigSection.SECURITY, key='password', type=ConfigValueType.SECRET, description='API password', source='env', permission=ConfigPermission.SENSITIVE)  # type: ignore[arg-type]
         sensitive_item = ConfigItem(value='secret123', metadata=sensitive_meta)
         redacted_item = sensitive_item.redact_if_sensitive()
         assert redacted_item.value == '***REDACTED***'
         assert redacted_item.metadata == sensitive_meta
-        non_sensitive_meta = ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source='config_file', permission=ConfigPermission.READ_WRITE)
+        non_sensitive_meta = ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source='config_file', permission=ConfigPermission.READ_WRITE)  # type: ignore[arg-type]
         non_sensitive_item = ConfigItem(value=True, metadata=non_sensitive_meta)
         non_redacted_item = non_sensitive_item.redact_if_sensitive()
         assert non_redacted_item.value is True
@@ -109,15 +109,15 @@ class TestIngestionModels:
     def test_ingestion_request_validation(self: Any) -> None:
         """Test that IngestionRequest validates inputs correctly."""
         with mock.patch('os.path.exists', return_value=True):
-            valid_request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo', options={'ignore_patterns': ['node_modules', '.git']}, steps=['filesystem', 'summarizer'])
+            valid_request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo', options={'ignore_patterns': ['node_modules', '.git']}, steps=['filesystem', 'summarizer'])  # type: ignore[call-arg]
             assert valid_request.source_type == IngestionSourceType.LOCAL_PATH
             assert valid_request.source == '/path/to/repo'
             assert 'ignore_patterns' in valid_request.options
             assert 'filesystem' in valid_request.steps
             with pytest.raises(ValidationError):
-                IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='')
+                IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='')  # type: ignore[call-arg]
             with pytest.raises(ValueError):
-                IngestionRequest(source_type=IngestionSourceType.GITHUB_REPO, source='invalid-format')
+                IngestionRequest(source_type=IngestionSourceType.GITHUB_REPO, source='invalid-format')  # type: ignore[call-arg]
 
     def test_ingestion_started(self: Any) -> None:
         """Test IngestionStarted model."""
@@ -129,7 +129,7 @@ class TestIngestionModels:
 
     def test_step_progress(self: Any) -> None:
         """Test StepProgress model."""
-        progress = StepProgress(name='filesystem', status=StepStatus.RUNNING, progress=75.0, message='Processing files', started_at=datetime.now())
+        progress = StepProgress(name='filesystem', status=StepStatus.RUNNING, progress=75.0, message='Processing files', started_at=datetime.now())  # type: ignore[call-arg]
         assert progress.name == 'filesystem'
         assert progress.status == StepStatus.RUNNING
         assert progress.progress == 75.0

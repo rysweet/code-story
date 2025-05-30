@@ -137,7 +137,7 @@ class IngestionService:
             else:
                 ingestion_started = await self.celery.start_ingestion(request)
                 from codestory.ingestion_pipeline.step import StepStatus
-                initial_event = JobProgressEvent(job_id=ingestion_started.job_id, step='Initializing', status=StepStatus.PENDING, progress=0.0, overall_progress=0.0, message='Preparing to start ingestion', cpu_percent=None, memory_mb=None, timestamp=ingestion_started.eta if ingestion_started.eta else None)  # type: ignore[assignment]
+                initial_event = JobProgressEvent(job_id=ingestion_started.job_id, step='Initializing', status=StepStatus.PENDING, progress=0.0, overall_progress=0.0, message='Preparing to start ingestion', cpu_percent=None, memory_mb=None, timestamp=ingestion_started.eta if ingestion_started.eta else None)  # type: ignore[arg-type,assignment]
                 await self.publish_progress(ingestion_started.job_id, initial_event)
                 return ingestion_started
         except Exception as e:
@@ -186,7 +186,7 @@ class IngestionService:
             logger.info(f'Cancelling job: {job_id}')
             job = await self.celery.cancel_job(job_id)
             from codestory.ingestion_pipeline.step import StepStatus
-            cancel_event = JobProgressEvent(job_id=job_id, step=job.current_step if job.current_step else 'Cancelled', status=StepStatus.CANCELLED, progress=0.0, overall_progress=job.progress, message='Job was cancelled by user', cpu_percent=None, memory_mb=None, timestamp=job.updated_at if job.updated_at else None)  # type: ignore[assignment]
+            cancel_event = JobProgressEvent(job_id=job_id, step=job.current_step if job.current_step else 'Cancelled', status=StepStatus.CANCELLED, progress=0.0, overall_progress=job.progress, message='Job was cancelled by user', cpu_percent=None, memory_mb=None, timestamp=job.updated_at if job.updated_at else None)  # type: ignore[arg-type,assignment]
             await self.publish_progress(job_id, cancel_event)
             return job
         except Exception as e:

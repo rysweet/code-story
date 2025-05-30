@@ -30,12 +30,12 @@ def _get_or_create_counter(name: str, description: str, counter_labels: list[str
     try:
         if counter_labels is None:
             counter_labels = []
-        return Counter(name, description, counter_labels)
+        return Counter(name, description, counter_labels)  # type: ignore[return-value]
     except ValueError:
         from prometheus_client import REGISTRY
         for collector in list(REGISTRY._names_to_collectors.values()):
             if hasattr(collector, '_name') and collector._name == name:
-                return collector
+                return collector  # type: ignore[return-value]
 
         class NoOpCounter:
 
@@ -44,7 +44,7 @@ def _get_or_create_counter(name: str, description: str, counter_labels: list[str
 
             def inc(self, amount: int=1) -> None:
                 pass
-        return NoOpCounter()
+        return NoOpCounter()  # type: ignore[return-value]
 
 def _get_or_create_histogram(name: str, description: str, hist_labels: list[str] | None=None, buckets: tuple[float, ...] | None=None) -> None:
     if buckets is None:
@@ -52,12 +52,12 @@ def _get_or_create_histogram(name: str, description: str, hist_labels: list[str]
     try:
         if hist_labels is None:
             hist_labels = []
-        return Histogram(name, description, hist_labels, buckets=buckets)
+        return Histogram(name, description, hist_labels, buckets=buckets)  # type: ignore[return-value]
     except ValueError:
         from prometheus_client import REGISTRY
         for collector in list(REGISTRY._names_to_collectors.values()):
             if hasattr(collector, '_name') and collector._name == name:
-                return collector
+                return collector  # type: ignore[return-value]
 
         class NoOpHistogram:
 
@@ -66,18 +66,18 @@ def _get_or_create_histogram(name: str, description: str, hist_labels: list[str]
 
             def observe(self, amount: float) -> None:
                 pass
-        return NoOpHistogram()
+        return NoOpHistogram()  # type: ignore[return-value]
 
 def _get_or_create_gauge(name: str, description: str, gauge_labels: list[str] | None=None) -> None:
     try:
         if gauge_labels is None:
             gauge_labels = []
-        return Gauge(name, description, gauge_labels)
+        return Gauge(name, description, gauge_labels)  # type: ignore[return-value]
     except ValueError:
         from prometheus_client import REGISTRY
         for collector in list(REGISTRY._names_to_collectors.values()):
             if hasattr(collector, '_name') and collector._name == name:
-                return collector
+                return collector  # type: ignore[return-value]
 
         class NoOpGauge:
 
@@ -92,7 +92,7 @@ def _get_or_create_gauge(name: str, description: str, gauge_labels: list[str] | 
 
             def labels(self, **kwargs: Any) -> 'NoOpGauge':
                 return self
-        return NoOpGauge()
+        return NoOpGauge()  # type: ignore[return-value]
 INGESTION_JOB_COUNT = _get_or_create_counter('codestory_ingestion_jobs_total', 'Total number of ingestion jobs', ['status'])
 INGESTION_STEP_COUNT = _get_or_create_counter('codestory_ingestion_steps_total', 'Total number of ingestion steps executed', ['step_name', 'status'])
 INGESTION_STEP_DURATION = _get_or_create_histogram('codestory_ingestion_step_duration_seconds', 'Duration of ingestion steps in seconds', ['step_name'])

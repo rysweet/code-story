@@ -100,11 +100,11 @@ class CeleryAdapter:
                     eta = request.eta
                 else:
                     try:
-                        eta = datetime.fromtimestamp(int(request.eta))  # type: ignore[assignment]
+                        eta = datetime.fromtimestamp(int(request.eta))  # type: ignore[arg-type,assignment]
                     except Exception:
                         eta = None
             elif getattr(request, 'countdown', None):
-                countdown = int(request.countdown)  # type: ignore[assignment]
+                countdown = int(request.countdown)  # type: ignore[arg-type,assignment]
             task = task_func.apply_async(args=[repository_path, step_configs, job_id], queue=queue_name, eta=eta, countdown=countdown if eta is None else None, expires=3600 * 24)
             return IngestionStarted(job_id=task.id, status=JobStatus.PENDING, source=request.source, steps=request.steps or ['default_pipeline'], message='Ingestion job submitted successfully', eta=int(eta.timestamp()) if eta else int(time.time()) + countdown if countdown else int(time.time()))
         except Exception as e:
@@ -134,7 +134,7 @@ class CeleryAdapter:
                         steps[name] = StepProgress(name=name, status=StepStatus(step.get('status', StepStatus.UNKNOWN)), progress=step.get('progress', 0.0), message=step.get('message'), error=step.get('error'), started_at=datetime.fromtimestamp(step.get('start_time')) if step.get('start_time') else None, completed_at=datetime.fromtimestamp(step.get('end_time')) if step.get('end_time') else None, duration=step.get('duration'), cpu_percent=step.get('cpu_percent'), memory_mb=step.get('memory_mb'), retry_count=step.get('retry_count'), last_error=step.get('last_error'))  # type: ignore[attr-defined]
                 elif isinstance(result, dict) and 'step' in result:
                     name = result.get('step') or result.get('name') or 'unknown'
-                    steps[name] = StepProgress(name=name, status=StepStatus(result.get('status', StepStatus.UNKNOWN)), progress=result.get('progress', 0.0), message=result.get('message'), error=result.get('error'), started_at=datetime.fromtimestamp(result.get('start_time')) if result.get('start_time') else None, completed_at=datetime.fromtimestamp(result.get('end_time')) if result.get('end_time') else None, duration=result.get('duration'), cpu_percent=result.get('cpu_percent'), memory_mb=result.get('memory_mb'), retry_count=result.get('retry_count'), last_error=result.get('last_error'))  # type: ignore[attr-defined]  # type: ignore[assignment]
+                    steps[name] = StepProgress(name=name, status=StepStatus(result.get('status', StepStatus.UNKNOWN)), progress=result.get('progress', 0.0), message=result.get('message'), error=result.get('error'), started_at=datetime.fromtimestamp(result.get('start_time')) if result.get('start_time') else None, completed_at=datetime.fromtimestamp(result.get('end_time')) if result.get('end_time') else None, duration=result.get('duration'), cpu_percent=result.get('cpu_percent'), memory_mb=result.get('memory_mb'), retry_count=result.get('retry_count'), last_error=result.get('last_error'))  # type: ignore[arg-type,attr-defined]  # type: ignore[arg-type,attr-defined]
                 return steps
             if task.state == 'PENDING':
                 return IngestionJob(job_id=job_id, status=JobStatus.PENDING, source=None, source_type=None, branch=None, created_at=int(time.time()), updated_at=int(time.time()), started_at=None, completed_at=None, duration=None, steps=None, progress=0.0, current_step='Waiting to start', message='Task is waiting for execution', result=None, error=None)
@@ -146,20 +146,20 @@ class CeleryAdapter:
                 cpu_percent = info.get('cpu_percent')
                 memory_mb = info.get('memory_mb')
                 steps = build_steps_from_result(info)
-                return IngestionJob(job_id=job_id, status=JobStatus.RUNNING, created_at=info.get('created_at', int(time.time())), updated_at=int(time.time()), progress=progress, current_step=current_step, message=message, result=None, error=None, steps=steps, cpu_percent=cpu_percent, memory_mb=memory_mb)
+                return IngestionJob(job_id=job_id, status=JobStatus.RUNNING, created_at=info.get('created_at', int(time.time())), updated_at=int(time.time()), progress=progress, current_step=current_step, message=message, result=None, error=None, steps=steps, cpu_percent=cpu_percent, memory_mb=memory_mb)  # type: ignore[call-arg]
             if task.state == 'SUCCESS':
                 result = task.result or {}
                 cpu_percent = result.get('cpu_percent')
                 memory_mb = result.get('memory_mb')
                 steps = build_steps_from_result(result)
-                return IngestionJob(job_id=job_id, status=JobStatus.COMPLETED, created_at=result.get('created_at', int(time.time()) - 60), updated_at=int(time.time()), progress=100.0, current_step='Completed', message='Ingestion completed successfully', result=result, error=None, steps=steps, cpu_percent=cpu_percent, memory_mb=memory_mb)
+                return IngestionJob(job_id=job_id, status=JobStatus.COMPLETED, created_at=result.get('created_at', int(time.time()) - 60), updated_at=int(time.time()), progress=100.0, current_step='Completed', message='Ingestion completed successfully', result=result, error=None, steps=steps, cpu_percent=cpu_percent, memory_mb=memory_mb)  # type: ignore[call-arg]
             if task.state == 'FAILURE':
                 info = task.info or {}
                 steps = build_steps_from_result(info)
-                return IngestionJob(job_id=job_id, status=JobStatus.FAILED, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step='Failed', message=str(task.result) if task.result else 'Task failed', result=None, error=str(task.result) if task.result else 'Unknown error', steps=steps)
+                return IngestionJob(job_id=job_id, status=JobStatus.FAILED, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step='Failed', message=str(task.result) if task.result else 'Task failed', result=None, error=str(task.result) if task.result else 'Unknown error', steps=steps)  # type: ignore[call-arg]
             if task.state == 'REVOKED':
-                return IngestionJob(job_id=job_id, status=JobStatus.CANCELLED, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step='Cancelled', message='Task was cancelled', result=None, error=None)
-            return IngestionJob(job_id=job_id, status=JobStatus.UNKNOWN, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step=task.state, message=f'Unknown task state: {task.state}', result=None, error=None)
+                return IngestionJob(job_id=job_id, status=JobStatus.CANCELLED, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step='Cancelled', message='Task was cancelled', result=None, error=None)  # type: ignore[call-arg]
+            return IngestionJob(job_id=job_id, status=JobStatus.UNKNOWN, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step=task.state, message=f'Unknown task state: {task.state}', result=None, error=None)  # type: ignore[call-arg]
         except Exception as e:
             logger.error(f'Failed to get job status for {job_id}: {e!s}')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to get job status: {e!s}') from e
@@ -182,7 +182,7 @@ class CeleryAdapter:
                 status_map = {'SUCCESS': JobStatus.COMPLETED, 'FAILURE': JobStatus.FAILED, 'REVOKED': JobStatus.CANCELLED}
                 return IngestionJob(job_id=job_id, status=status_map.get(task.state, JobStatus.UNKNOWN), source=None, source_type=None, branch=None, started_at=None, completed_at=None, duration=None, steps=None, created_at=int(time.time() - 60), updated_at=int(time.time()), progress=100.0 if task.state == 'SUCCESS' else 0.0, current_step=task.state.capitalize(), message=f'Job already in terminal state: {task.state}', result=task.result if task.state == 'SUCCESS' else None, error=str(task.result) if task.state == 'FAILURE' else None)
             self.app.control.revoke(job_id, terminate=True)
-            return IngestionJob(job_id=job_id, status=JobStatus.CANCELLING, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step='Cancelling', message='Job cancellation requested', result=None, error=None)
+            return IngestionJob(job_id=job_id, status=JobStatus.CANCELLING, created_at=int(time.time()) - 60, updated_at=int(time.time()), progress=0.0, current_step='Cancelling', message='Job cancellation requested', result=None, error=None)  # type: ignore[call-arg]
         except Exception as e:
             logger.error(f'Failed to cancel job {job_id}: {e!s}')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to cancel job: {e!s}') from e

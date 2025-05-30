@@ -11,7 +11,7 @@ from codestory_service.settings import ServiceSettings, get_service_settings
 
 def test_service_settings_default_values() -> None:
     """Test that default values are set correctly."""
-    settings = ServiceSettings()
+    settings = ServiceSettings()  # type: ignore[call-arg]
 
     # Check that default values are set correctly
     assert settings.title == "Code Story API"
@@ -35,7 +35,7 @@ def test_service_settings_from_env() -> None:
     }
 
     with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()
+        settings = ServiceSettings()  # type: ignore[call-arg]
 
         # Check that values from environment variables were used
         assert settings.title == "Custom API Title"
@@ -53,7 +53,7 @@ def test_service_settings_cors_origins_parsing() -> None:
         "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com", "api.example.org", "localhost:3000"]',
     }
     with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()
+        settings = ServiceSettings()  # type: ignore[call-arg]
         assert settings.cors_origins == [
             "example.com",
             "api.example.org",
@@ -65,7 +65,7 @@ def test_service_settings_cors_origins_parsing() -> None:
         "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com"]',
     }
     with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()
+        settings = ServiceSettings()  # type: ignore[call-arg]
         assert settings.cors_origins == ["example.com"]
 
     # Test with a single wildcard in JSON format
@@ -73,7 +73,7 @@ def test_service_settings_cors_origins_parsing() -> None:
         "CODESTORY_SERVICE_CORS_ORIGINS": '["*"]',
     }
     with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()
+        settings = ServiceSettings()  # type: ignore[call-arg]
         assert settings.cors_origins == ["*"]
 
 
@@ -92,7 +92,7 @@ def test_service_settings_cors_origins_validation() -> None:
 
         with mock.patch.dict(os.environ, env_vars):
             with mock.patch("codestory_service.settings.logger") as mock_logger:
-                ServiceSettings()
+                ServiceSettings()  # type: ignore[call-arg]
 
                 # Check that a warning was logged
                 mock_logger.warning.assert_called_once()

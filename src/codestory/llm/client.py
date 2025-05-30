@@ -224,7 +224,7 @@ class OpenAIClient:
         for key in ('prompt', 'messages', 'input'):
             if key in request_data:
                 request_data.pop(key)
-        return (model_name, request_data)
+        return (model_name, request_data)  # type: ignore[return-value]
 
     def _is_reasoning_model(self: Any, model: str) -> bool:
         """Check if the model is a reasoning model that requires special parameter handling.

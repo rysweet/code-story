@@ -29,7 +29,7 @@ class TestFullPipelineIntegration(BasePipelineTest):
         config_content = '\n# For testing, we\'ll use only filesystem step to avoid task parameter mismatches\nsteps:\n  - name: filesystem\n    concurrency: 1\n    ignore_patterns:\n      - ".git/"\n      - "__pycache__/"\n    \ndependencies:\n  filesystem: []\n\nretry:\n  max_retries: 2\n  back_off_seconds: 1\n'
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
             f.write(config_content)
-            return f.name
+            return f.name  # type: ignore[return-value]
 
     def test_full_pipeline_execution(self: Any) -> None:
         """Test that the full pipeline creates filesystem nodes in Neo4j."""

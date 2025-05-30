@@ -23,7 +23,7 @@ class TestIngestAPI:
     @pytest.mark.asyncio
     async def test_start_ingestion(self: Any, mock_service: Any) -> None:
         """Test starting an ingestion job."""
-        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')
+        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')  # type: ignore[call-arg]
         user = {'name': 'testuser'}
         result = await ingest.start_ingestion(request, mock_service, user)
         mock_service.start_ingestion.assert_called_once()
@@ -163,7 +163,7 @@ class TestAuthAPI:
         """Test getting user info."""
         from codestory_service.domain.auth import UserInfo
         user = {'sub': 'user123', 'name': 'Test User', 'roles': ['user']}
-        mock_service.get_user_info.return_value = UserInfo(id='user123', name='Test User', roles=['user'], is_authenticated=True)
+        mock_service.get_user_info.return_value = UserInfo(id='user123', name='Test User', roles=['user'], is_authenticated=True)  # type: ignore[call-arg]
         result = await auth.get_user_info(mock_service, user)
         mock_service.get_user_info.assert_called_once_with(user)
         assert result.id == 'user123'

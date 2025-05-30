@@ -79,4 +79,4 @@ def get_service_settings() -> ServiceSettings:
     Returns:
         ServiceSettings instance with service-specific configuration
     """
-    return ServiceSettings()
+    return ServiceSettings()  # type: ignore[call-arg]

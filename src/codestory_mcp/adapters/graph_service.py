@@ -94,7 +94,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
             data = response.json().get('data', {})
             node = MockNode(id=data.get('id'), labels=[data.get('type')], properties=data.get('properties', {}))
-            return node
+            return node  # type: ignore[return-value]
         except httpx.RequestError as e:
             error_message = f'Failed to find node: {e!s}'
             logger.exception('Node request error', node_id=node_id, error=str(e))

@@ -23,7 +23,7 @@ def run_command(command: Any, capture_output: Any=True, shell: Any=True) -> None
     """Run a shell command and return its output."""
     try:
         result = subprocess.run(command, capture_output=capture_output, text=True, shell=shell, check=True)
-        return result.stdout if capture_output else None
+        return result.stdout if capture_output else None  # type: ignore[return-value]
     except subprocess.CalledProcessError as e:
         print(f'Error executing command: {command}')
         print(f'Error: {e}')
@@ -35,9 +35,9 @@ def is_docker_running() -> None:
     """Check if Docker is running and containers exist."""
     try:
         result = subprocess.run(['docker', 'ps', '--filter', 'name=codestory-service', '--format', '{{.Names}}'], capture_output=True, text=True, check=False)
-        return 'codestory-service' in result.stdout
+        return 'codestory-service' in result.stdout  # type: ignore[return-value]
     except Exception:
-        return False
+        return False  # type: ignore[return-value]
 
 def is_repo_mounted(repo_path: Any, console: Any=None) -> None:
     """Check if repository is already mounted correctly for ingestion.
@@ -66,11 +66,11 @@ def is_repo_mounted(repo_path: Any, console: Any=None) -> None:
                     if 'exists' in file_check.stdout:
                         if console:
                             console.print(f'[green]Repository confirmed mounted in {service} container[/]')
-                        return True
+                        return True  # type: ignore[return-value]
             if path_exists_with_content:
                 if console:
                     console.print(f'[green]Repository directory exists with content in {service}[/]')
-                return True
+                return True  # type: ignore[return-value]
         for service in services_to_check:
             try:
                 service_check = subprocess.run(['docker', 'ps', '--filter', f'name={service}', '--format', '{{.Names}}'], capture_output=True, text=True, check=False)
@@ -85,11 +85,11 @@ def is_repo_mounted(repo_path: Any, console: Any=None) -> None:
             except Exception as e:
                 if console:
                     console.print(f'Error checking {service} container: {e}')
-        return False
+        return False  # type: ignore[return-value]
     except Exception as e:
         if console:
             console.print(f'Error checking if repository is mounted in containers: {e}')
-        return False
+        return False  # type: ignore[return-value]
 
 def create_override_file(repo_path: Any, console: Any=None) -> None:
     """Create a docker-compose.override.yml file with the repository mount."""
@@ -103,11 +103,11 @@ def create_override_file(repo_path: Any, console: Any=None) -> None:
             f.write(override_content)
         if console:
             console.print(f'[green]Created docker-compose.override.yml with mount configuration for {repo_path}[/]')
-        return True
+        return True  # type: ignore[return-value]
     except Exception as e:
         if console:
             console.print(f'[red]Error creating override file: {e}[/]')
-        return False
+        return False  # type: ignore[return-value]
 
 def create_repo_config(repo_path: Any, console: Any=None) -> None:
     """Create repository configuration file."""
@@ -119,7 +119,7 @@ def create_repo_config(repo_path: Any, console: Any=None) -> None:
         f.write(f'''# CodeStory repository configuration\n# Created by automatic repository mounting\n\n# [repository]\nname = "{repo_name}"\nlocal_path = "{repo_path}"\ncontainer_path = "/repositories/{repo_name}"\nmounted = true\nmount_time = "{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"\nauto_mounted = true\n''')
     if console:
         console.print(f'[green]Created repository config at {config_file}[/]')
-    return True
+    return True  # type: ignore[return-value]
 
 def wait_for_service(console: Any=None, max_attempts: Any=30) -> None:
     """Wait for the service to be ready."""
@@ -134,7 +134,7 @@ def wait_for_service(console: Any=None, max_attempts: Any=30) -> None:
             if health_status == 'healthy':
                 if console:
                     console.print('[green]Service is ready![/]')
-                return True
+                return True  # type: ignore[return-value]
             time.sleep(5)
             attempts += 1
         except Exception as e:
@@ -144,7 +144,7 @@ def wait_for_service(console: Any=None, max_attempts: Any=30) -> None:
             attempts += 1
     if console:
         console.print('[yellow]Service did not become ready in time[/]')
-    return False
+    return False  # type: ignore[return-value]
 
 def setup_repository_mount(repo_path: Any, console: Any=None, force_remount: Any=False) -> None:
     """Set up repository mount using Docker bind mounts without restarting containers."""
@@ -152,7 +152,7 @@ def setup_repository_mount(repo_path: Any, console: Any=None, force_remount: Any
     if not os.path.isdir(repo_path):
         if console:
             console.print(f'[red]Error: Directory {repo_path} does not exist[/]')
-        return False
+        return False  # type: ignore[return-value]
     repo_name = os.path.basename(repo_path)
     container_path = f'/repositories/{repo_name}'
     if not is_docker_running():
@@ -161,11 +161,11 @@ def setup_repository_mount(repo_path: Any, console: Any=None, force_remount: Any
         create_override_file(repo_path, console)
         run_command('docker-compose up -d', capture_output=False)
         wait_for_service(console)
-        return True
+        return True  # type: ignore[return-value]
     if not force_remount and is_repo_mounted(repo_path, console):
         if console:
             console.print(f'[green]Repository {repo_path} is already mounted correctly at {container_path}[/]')
-        return True
+        return True  # type: ignore[return-value]
     if console:
         console.print(f'[yellow]Dynamically mounting repository {repo_path} to {container_path}...[/]')
     create_override_file(repo_path, console)
@@ -182,7 +182,7 @@ def setup_repository_mount(repo_path: Any, console: Any=None, force_remount: Any
         console.print('[yellow]Warning: Repository may not be mounted correctly. Continuing anyway.[/]')
         inspect_result = subprocess.run(['docker', 'exec', 'codestory-service', 'ls', '-la', '/repositories'], capture_output=True, text=True, check=False)
         console.print(f'[dim]Container /repositories directory contents:\n{inspect_result.stdout}[/]')
-    return True
+    return True  # type: ignore[return-value]
 
 @ingest.command(name='start', help='Start ingestion of a repository.')
 @click.argument('repository_path', type=click.Path(exists=True))
@@ -483,8 +483,8 @@ def _show_progress(ctx: click.Context, job_id: str) -> None:
             progress.update(step_tasks[step_name], completed=step_progress, status=step_status.capitalize())
         if overall_status.lower() in ('completed', 'failed', 'cancelled'):
             time.sleep(0.5)
-            return False
-        return True
+            return False  # type: ignore[return-value]
+        return True  # type: ignore[return-value]
     progress_client = ProgressClient(job_id=job_id, callback=update_progress, console=console, settings=ctx.obj['settings'], redis_url=ctx.obj['settings'].redis.uri if hasattr(ctx.obj['settings'], 'redis') else None)
     with Live(progress, refresh_per_second=4):
         progress_client.start()

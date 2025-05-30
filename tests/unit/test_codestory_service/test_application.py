@@ -197,7 +197,7 @@ class TestIngestionService:
     async def test_start_ingestion(self: Any, service: Any, mock_celery: Any) -> None:
         """Test starting an ingestion job."""
         service.publish_progress = mock.AsyncMock()
-        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')
+        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')  # type: ignore[call-arg]
         result = await service.start_ingestion(request)
         mock_celery.start_ingestion.assert_called_once_with(request)
         assert result.job_id == 'job123'

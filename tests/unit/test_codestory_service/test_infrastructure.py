@@ -273,7 +273,7 @@ class TestCeleryAdapter:
     @pytest.mark.asyncio
     async def test_start_ingestion(self: Any, adapter: Any, mock_app: Any) -> None:
         """Test starting an ingestion job."""
-        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')
+        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')  # type: ignore[call-arg]
         response = await adapter.start_ingestion(request)
         assert response.job_id == 'job123'
         assert response.status == 'pending'
@@ -281,7 +281,7 @@ class TestCeleryAdapter:
     @pytest.mark.asyncio
     async def test_parameter_filtering(self: Any, adapter: Any, mock_app: Any) -> None:
         """Test that parameter filtering is applied correctly to different steps."""
-        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo', steps=['filesystem', 'blarify', 'summarizer', 'docgrapher'], options={'concurrency': 5, 'timeout': 300, 'job_id': 'test-job', 'ignore_patterns': ['.git'], 'custom_option': 'value', 'incremental': True})
+        request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo', steps=['filesystem', 'blarify', 'summarizer', 'docgrapher'], options={'concurrency': 5, 'timeout': 300, 'job_id': 'test-job', 'ignore_patterns': ['.git'], 'custom_option': 'value', 'incremental': True})  # type: ignore[call-arg]
         mock_apply_async = mock.MagicMock()
         mock_apply_async.return_value = mock.MagicMock(id='job123')
         adapter._run_ingestion_pipeline.apply_async = mock_apply_async
@@ -325,7 +325,7 @@ class TestMSALValidator:
             validator.jwt_secret = 'test_secret'
             validator.jwt_algorithm = 'HS256'
             validator.settings = settings
-            return validator
+            return validator  # type: ignore[return-value]
 
     @pytest.mark.asyncio
     async def test_validate_token_auth_disabled(self: Any, validator: Any) -> None:
