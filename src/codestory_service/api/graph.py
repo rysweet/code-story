@@ -267,17 +267,20 @@ async def generate_visualization(
             parsed_node_types or search_query is not None or max_nodes != 100 or include_orphans
         )
 
+        # Import NodeFilter here to avoid circular imports
+        from ..domain.graph import NodeFilter
+
         request = VisualizationRequest(
             type=type,
             theme=theme,
             focus_node_id=focus_node_id,
             depth=depth,
-            filter={
-                "node_types": parsed_node_types,
-                "search_query": search_query,
-                "max_nodes": max_nodes,
-                "include_orphans": include_orphans,
-            }
+            filter=NodeFilter(
+                node_types=parsed_node_types,
+                search_query=search_query,
+                max_nodes=max_nodes,
+                include_orphans=include_orphans,
+            )
             if has_custom_filter
             else None,
         )
