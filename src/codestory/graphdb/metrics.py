@@ -30,53 +30,53 @@ class QueryType(str, Enum):
 class HistogramLike(Protocol):
     """Protocol for histogram-like objects."""
 
-    def observe(self, amount: float, exemplar: Any=None) -> None:
+    def observe(self: Any, amount: float, exemplar: Any=None) -> None:
         """Record an observation."""
         ...
 
-    def labels(self, *labelvalues: Any, **labelkwargs: Any) -> 'HistogramLike':
+    def labels(self: Any, *labelvalues: Any, **labelkwargs: Any) -> 'HistogramLike':
         """Get labeled instance."""
         ...
 
 class DummyHistogram:
     """Dummy histogram class for when Prometheus is not available."""
 
-    def observe(self, amount: float, exemplar: Any=None) -> None:
+    def observe(self: Any, amount: float, exemplar: Any=None) -> None:
         """Dummy observe method that does nothing."""
         pass
 
-    def labels(self, *labelvalues: Any, **labelkwargs: Any) -> 'DummyHistogram':
+    def labels(self: Any, *labelvalues: Any, **labelkwargs: Any) -> 'DummyHistogram':
         """Return self for method chaining."""
         return self
 
-    def inc(self, amount: float=1.0) -> None:
+    def inc(self: Any, amount: float=1.0) -> None:
         """Dummy inc method that does nothing."""
         pass
 
-    def set(self, value: float) -> None:
+    def set(self: Any, value: float) -> None:
         """Dummy set method that does nothing."""
         pass
 
     @contextmanager
-    def time(self) -> None:
+    def time(self: Any) -> None:
         """Dummy timer method that returns a dummy timer context."""
         yield
 
 class CounterLike(Protocol):
     """Protocol for counter-like objects."""
 
-    def inc(self, amount: float=1.0) -> None:
+    def inc(self: Any, amount: float=1.0) -> None:
         """Increment counter."""
         ...
 
-    def labels(self, **kwargs: Any) -> 'CounterLike':
+    def labels(self: Any, **kwargs: Any) -> 'CounterLike':
         """Get labeled instance."""
         ...
 
 class GaugeLike(Protocol):
     """Protocol for gauge-like objects."""
 
-    def set(self, value: float) -> None:
+    def set(self: Any, value: float) -> None:
         """Set gauge value."""
         ...
 QUERY_DURATION: HistogramLike

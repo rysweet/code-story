@@ -202,7 +202,7 @@ def test_error_handling_in_dependency_chain() -> None:
     assert 'dependency failed: filesystem' in blarify_job['error'].lower(), f"Error should mention dependency failure: {blarify_job['error']}"
 
 @pytest.mark.asyncio
-async def test_job_dependency_orchestration(sample_repo) -> None:
+async def test_job_dependency_orchestration(sample_repo: Any) -> None:
     """
     Integration test: Job B should not start until Job A (its dependency) completes.
     """

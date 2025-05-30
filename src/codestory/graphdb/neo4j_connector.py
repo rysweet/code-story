@@ -115,7 +115,7 @@ class Neo4jConnector:
     max_connection_pool_size: int
     connection_timeout: int
 
-    def __init__(self, uri: str | None=None, username: str | None=None, password: str | None=None, database: str | None=None, async_mode: bool=False, **config_options: Any) -> None:
+    def __init__(self: Any, uri: str | None=None, username: str | None=None, password: str | None=None, database: str | None=None, async_mode: bool=False, **config_options: Any) -> None:
         """Initialize the Neo4j connector.
 
         Args:
@@ -176,13 +176,13 @@ class Neo4jConnector:
             logger.error(f'Failed to connect to Neo4j: {e!s}')
             raise ConnectionError(f'Failed to connect to Neo4j: {e!s}', uri=self.uri, cause=e) from e
 
-    def close(self) -> None:
+    def close(self: Any) -> None:
         """Close all connections in the pool."""
         if hasattr(self, 'driver') and self.driver:
             self.driver.close()
             logger.debug('Neo4j driver closed')
 
-    def __enter__(self) -> 'Neo4jConnector':
+    def __enter__(self: Any) -> 'Neo4jConnector':
         """Enter the context manager.
 
         Returns:
@@ -190,7 +190,7 @@ class Neo4jConnector:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self: Any, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit the context manager.
 
         This method is called when exiting a 'with' block. It ensures
@@ -206,7 +206,7 @@ class Neo4jConnector:
 
     @instrument_query(query_type=QueryType.READ)
     @retry_on_transient()
-    def execute_query(self, query: str, params: dict[str, Any] | None=None, write: bool=False, retry_count: int=3) -> list[dict[str, Any]]:
+    def execute_query(self: Any, query: str, params: dict[str, Any] | None=None, write: bool=False, retry_count: int=3) -> list[dict[str, Any]]:
         """Execute a Cypher query with automatic connection management.
 
         Args:
@@ -248,7 +248,7 @@ class Neo4jConnector:
 
     @instrument_query(query_type=QueryType.WRITE)
     @retry_on_transient()
-    def execute_many(self, queries: list[str], params_list: list[dict[str, Any]] | None=None, write: bool=False) -> list[list[dict[str, Any]]]:
+    def execute_many(self: Any, queries: list[str], params_list: list[dict[str, Any]] | None=None, write: bool=False) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a single transaction.
 
         Args:
@@ -294,7 +294,7 @@ class Neo4jConnector:
             logger.error(f'Unexpected error in transaction: {e!s}')
             raise TransactionError(f'Unexpected error: {e!s}', operation='execute_many', cause=e) from e
 
-    def _transaction_function(self, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+    def _transaction_function(self: Any, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         """Execute a single query in a transaction.
 
         Args:
@@ -308,7 +308,7 @@ class Neo4jConnector:
         result = tx.run(query, params)
         return [dict(record) for record in result]
 
-    def _transaction_function_many(self, tx: Any, queries: list[str], params_list: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    def _transaction_function_many(self: Any, tx: Any, queries: list[str], params_list: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a transaction.
 
         Args:
@@ -326,7 +326,7 @@ class Neo4jConnector:
         return results
 
     @instrument_query(query_type=QueryType.SCHEMA)
-    def initialize_schema(self) -> None:
+    def initialize_schema(self: Any) -> None:
         """Create constraints, indexes, and schema elements.
 
         Raises:
@@ -340,7 +340,7 @@ class Neo4jConnector:
             raise SchemaError(f'Schema initialization failed: {e!s}', operation='initialize_schema', cause=e) from e
 
     @instrument_query(query_type=QueryType.SCHEMA)
-    def create_vector_index(self, label: str, property_name: str, dimensions: int=1536, similarity: str='cosine') -> None:
+    def create_vector_index(self: Any, label: str, property_name: str, dimensions: int=1536, similarity: str='cosine') -> None:
         """Create a vector index for semantic search.
 
         Args:
@@ -359,7 +359,7 @@ class Neo4jConnector:
             logger.error(f'Failed to create vector index: {e!s}')
             raise SchemaError(f'Vector index creation failed: {e!s}', operation='create_vector_index', cause=e, label=label, property=property_name, dimensions=dimensions, similarity=similarity) from e
 
-    def create_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
+    def create_node(self: Any, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
         """Create a node in the Neo4j database.
 
         Args:
@@ -373,7 +373,7 @@ class Neo4jConnector:
         result = self.execute_query(query, params={'props': properties}, write=True)
         return result[0]['n'] if result else None
 
-    def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
+    def find_node(self: Any, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
         """Find a node with the given label and properties.
 
         Args:
@@ -388,7 +388,7 @@ class Neo4jConnector:
         result = self.execute_query(query, params=properties)
         return result[0]['n'] if result else None
 
-    def create_relationship(self, start_node: dict[str, Any], end_node: dict[str, Any], rel_type: str, properties: dict[str, Any] | None=None) -> dict[str, Any] | None:
+    def create_relationship(self: Any, start_node: dict[str, Any], end_node: dict[str, Any], rel_type: str, properties: dict[str, Any] | None=None) -> dict[str, Any] | None:
         """Create a relationship between two nodes.
 
         Args:
@@ -405,7 +405,7 @@ class Neo4jConnector:
         result = self.execute_query(query, params={'start_id': start_node.element_id if hasattr(start_node, 'element_id') else start_node['id'], 'end_id': end_node.element_id if hasattr(end_node, 'element_id') else end_node['id'], 'props': props}, write=True)
         return result[0]['r'] if result else None
 
-    def semantic_search(self, query_embedding: list[float], node_label: str, property_name: str='embedding', limit: int=10, similarity_cutoff: float | None=None) -> list[dict[str, Any]]:
+    def semantic_search(self: Any, query_embedding: list[float], node_label: str, property_name: str='embedding', limit: int=10, similarity_cutoff: float | None=None) -> list[dict[str, Any]]:
         """Perform vector similarity search using the provided embedding.
 
         Args:
@@ -434,7 +434,7 @@ class Neo4jConnector:
             logger.error(f'Vector search failed: {e!s}')
             raise QueryError(f'Vector search failed: {e!s}', query=f'vector_search({node_label}, {property_name})', parameters={'limit': limit, 'cutoff': similarity_cutoff}, cause=e) from e
 
-    def check_connection(self) -> dict[str, Any]:
+    def check_connection(self: Any) -> dict[str, Any]:
         """Check if database is accessible and return basic info.
 
         Returns:
@@ -455,7 +455,7 @@ class Neo4jConnector:
             logger.error(f'Connection check failed: {e!s}')
             raise ConnectionError(f'Connection check failed: {e!s}', uri=self.uri, cause=e) from e
 
-    async def execute_query_async(self, query: str, params: dict[str, Any] | None=None, write: bool=False) -> list[dict[str, Any]]:
+    async def execute_query_async(self: Any, query: str, params: dict[str, Any] | None=None, write: bool=False) -> list[dict[str, Any]]:
         """Execute a Cypher query asynchronously.
 
         Args:
@@ -478,7 +478,7 @@ class Neo4jConnector:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, lambda: self.execute_query(query, params, write))
 
-    async def execute_many_async(self, queries: list[dict[str, Any]], write: bool=False) -> list[list[dict[str, Any]]]:
+    async def execute_many_async(self: Any, queries: list[dict[str, Any]], write: bool=False) -> list[list[dict[str, Any]]]:
         """Execute multiple queries asynchronously.
 
         Args:
@@ -502,7 +502,7 @@ class Neo4jConnector:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, lambda: self.execute_many(query_list, params_list, write))
 
-    def with_transaction(self, func: Callable[..., Any], write: bool=False, **kwargs: Any) -> None:
+    def with_transaction(self: Any, func: Callable[..., Any], write: bool=False, **kwargs: Any) -> None:
         """Execute a function within a Neo4j transaction.
 
         Args:
@@ -538,7 +538,7 @@ class Neo4jConnector:
             logger.error(f'Unexpected error in transaction: {e!s}')
             raise TransactionError(f'Unexpected error: {e!s}', operation='with_transaction', cause=e) from e
 
-    def get_session(self) -> None:
+    def get_session(self: Any) -> None:
         """Get a Neo4j session for direct operations.
 
         Returns:

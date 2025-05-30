@@ -13,7 +13,7 @@ class TestIngestAPI:
     """Tests for ingestion API endpoints."""
 
     @pytest.fixture
-    def mock_service(self):
+    def mock_service(self: Any) -> Any:
         """Create a mock ingestion service."""
         service = mock.AsyncMock()
         service.start_ingestion.return_value = mock.MagicMock(job_id='job123', status=JobStatus.PENDING, message='Job submitted successfully', eta=1620000000)
@@ -21,7 +21,7 @@ class TestIngestAPI:
         return service
 
     @pytest.mark.asyncio
-    async def test_start_ingestion(self, mock_service) -> None:
+    async def test_start_ingestion(self: Any, mock_service: Any) -> None:
         """Test starting an ingestion job."""
         request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')
         user = {'name': 'testuser'}
@@ -35,7 +35,7 @@ class TestIngestAPI:
         assert result.status == JobStatus.PENDING
 
     @pytest.mark.asyncio
-    async def test_get_job_status(self, mock_service) -> None:
+    async def test_get_job_status(self: Any, mock_service: Any) -> None:
         """Test getting job status."""
         result = await ingest.get_job_status('job123', mock_service, {})
         mock_service.get_job_status.assert_called_once_with('job123')
@@ -44,7 +44,7 @@ class TestIngestAPI:
         assert result.progress == 0.5
 
     @pytest.mark.asyncio
-    async def test_cancel_job(self, mock_service) -> None:
+    async def test_cancel_job(self: Any, mock_service: Any) -> None:
         """Test cancelling a job."""
         mock_service.cancel_job.return_value = mock.MagicMock(job_id='job123', status=JobStatus.CANCELLING)
         result = await ingest.cancel_job('job123', mock_service, {})
@@ -56,7 +56,7 @@ class TestGraphAPI:
     """Tests for graph API endpoints."""
 
     @pytest.fixture
-    def mock_service(self):
+    def mock_service(self: Any) -> Any:
         """Create a mock graph service."""
         service = mock.AsyncMock()
         service.execute_cypher_query.return_value = mock.MagicMock(columns=['name', 'value'], rows=[['test', 123]], row_count=1)
@@ -64,7 +64,7 @@ class TestGraphAPI:
         return service
 
     @pytest.mark.asyncio
-    async def test_execute_cypher_query(self, mock_service) -> None:
+    async def test_execute_cypher_query(self: Any, mock_service: Any) -> None:
         """Test executing a Cypher query."""
         query = CypherQuery(query='MATCH (n) RETURN n.name, n.value', parameters={}, query_type=QueryType.READ)
         user = {'roles': ['user']}
@@ -74,7 +74,7 @@ class TestGraphAPI:
         assert result.row_count == 1
 
     @pytest.mark.asyncio
-    async def test_execute_cypher_query_write_permission(self, mock_service) -> None:
+    async def test_execute_cypher_query_write_permission(self: Any, mock_service: Any) -> None:
         """Test that only admins can execute write queries."""
         query = CypherQuery(query='CREATE (n:Test) RETURN n', parameters={}, query_type=QueryType.WRITE)
         user = {'roles': ['user']}
@@ -87,7 +87,7 @@ class TestGraphAPI:
         mock_service.execute_cypher_query.assert_called_once_with(query)
 
     @pytest.mark.asyncio
-    async def test_execute_vector_search(self, mock_service) -> None:
+    async def test_execute_vector_search(self: Any, mock_service: Any) -> None:
         """Test executing a vector search."""
         query = VectorQuery(query='Find authentication functions', limit=10)
         user = {'roles': ['user']}
@@ -99,7 +99,7 @@ class TestConfigAPI:
     """Tests for configuration API endpoints."""
 
     @pytest.fixture
-    def mock_service(self):
+    def mock_service(self: Any) -> Any:
         """Create a mock config service."""
         from codestory_service.domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPermission, ConfigSection, ConfigSource, ConfigValueType
         service = mock.MagicMock()
@@ -109,7 +109,7 @@ class TestConfigAPI:
         service.update_config = mock.AsyncMock(return_value=config_dump)
         return service
 
-    def test_get_config(self, mock_service: Any) -> None:
+    def test_get_config(self: Any, mock_service: Any) -> None:
         """Test getting configuration."""
         from codestory_service.domain.config import ConfigSection
         result = config.get_config(include_sensitive=False, config_service=mock_service, user={'roles': ['user']})
@@ -117,7 +117,7 @@ class TestConfigAPI:
         assert result.version == '1.0.0'
         assert ConfigSection.GENERAL in result.groups
 
-    def test_get_config_sensitive(self, mock_service: Any) -> None:
+    def test_get_config_sensitive(self: Any, mock_service: Any) -> None:
         """Test that only admins can view sensitive values."""
         with pytest.raises(HTTPException) as exc_info:
             config.get_config(include_sensitive=True, config_service=mock_service, user={'name': 'user', 'roles': ['user']})
@@ -127,7 +127,7 @@ class TestConfigAPI:
         mock_service.get_config_dump.assert_called_with(include_sensitive=True)
 
     @pytest.mark.asyncio
-    async def test_update_config(self, mock_service) -> None:
+    async def test_update_config(self: Any, mock_service: Any) -> None:
         """Test updating configuration."""
         from codestory_service.domain.config import ConfigPatch, ConfigSection
         patch = ConfigPatch(items=[{'key': 'general.debug', 'value': False}], comment='Disable debug mode')
@@ -141,7 +141,7 @@ class TestAuthAPI:
     """Tests for authentication API endpoints."""
 
     @pytest.fixture
-    def mock_service(self):
+    def mock_service(self: Any) -> Any:
         """Create a mock auth service."""
         service = mock.AsyncMock()
         service.login.return_value = mock.MagicMock(access_token='test.jwt.token', token_type='Bearer', expires_in=3600, scope='api')
@@ -149,7 +149,7 @@ class TestAuthAPI:
         return service
 
     @pytest.mark.asyncio
-    async def test_login(self, mock_service) -> None:
+    async def test_login(self: Any, mock_service: Any) -> None:
         """Test login endpoint."""
         request = LoginRequest(username='testuser', password='password')
         result = await auth.login(request, mock_service)
@@ -159,7 +159,7 @@ class TestAuthAPI:
         assert result.expires_in == 3600
 
     @pytest.mark.asyncio
-    async def test_get_user_info(self, mock_service) -> None:
+    async def test_get_user_info(self: Any, mock_service: Any) -> None:
         """Test getting user info."""
         from codestory_service.domain.auth import UserInfo
         user = {'sub': 'user123', 'name': 'Test User', 'roles': ['user']}
@@ -174,19 +174,19 @@ class TestVisualizationAPI:
     """Tests for visualization API."""
 
     @pytest.fixture
-    def mock_graph_service(self):
+    def mock_graph_service(self: Any) -> Any:
         """Create a mock graph service for visualization tests."""
         service = mock.AsyncMock()
         service.generate_visualization.return_value = '<html>Test Visualization</html>'
         return service
 
     @pytest.fixture
-    def mock_request(self):
+    def mock_request(self: Any) -> Any:
         """Create a mock request object."""
         return mock.MagicMock()
 
     @pytest.mark.asyncio
-    async def test_generate_visualization(self, mock_request, mock_graph_service) -> None:
+    async def test_generate_visualization(self: Any, mock_request: Any, mock_graph_service: Any) -> None:
         """Test generate visualization endpoint."""
         result = await graph.generate_visualization(type=graph.VisualizationType.FORCE, theme=graph.VisualizationTheme.DARK, focus_node_id=None, depth=2, max_nodes=100, node_types=None, search_query=None, include_orphans=False, graph_service=mock_graph_service, user={'id': 'test-user'})
         mock_graph_service.generate_visualization.assert_called_once()
@@ -199,7 +199,7 @@ class TestVisualizationAPI:
         assert result.body == b'<html>Test Visualization</html>'
 
     @pytest.mark.asyncio
-    async def test_generate_visualization_with_filters(self, mock_request, mock_graph_service) -> None:
+    async def test_generate_visualization_with_filters(self: Any, mock_request: Any, mock_graph_service: Any) -> None:
         """Test generate visualization endpoint with filters."""
         result = await graph.generate_visualization(type=graph.VisualizationType.HIERARCHY, theme=graph.VisualizationTheme.LIGHT, focus_node_id='node123', depth=3, max_nodes=50, node_types='File,Class,Function', search_query='test', include_orphans=True, graph_service=mock_graph_service, user={'id': 'test-user'})
         mock_graph_service.generate_visualization.assert_called_once()
@@ -216,7 +216,7 @@ class TestVisualizationAPI:
         assert result.media_type == 'text/html'
 
     @pytest.mark.asyncio
-    async def test_generate_visualization_error(self, mock_request, mock_graph_service) -> None:
+    async def test_generate_visualization_error(self: Any, mock_request: Any, mock_graph_service: Any) -> None:
         """Test generate visualization endpoint with error."""
         mock_graph_service.generate_visualization.side_effect = Exception('Test error')
         with pytest.raises(HTTPException) as excinfo:
@@ -228,7 +228,7 @@ class TestHealthAPI:
     """Tests for health API endpoints."""
 
     @pytest.fixture
-    def mock_adapters(self):
+    def mock_adapters(self: Any) -> Any:
         """Create mock adapters for health check."""
         neo4j = mock.AsyncMock()
         neo4j.check_health.return_value = {'status': 'healthy', 'details': {'database': 'neo4j'}}
@@ -239,7 +239,7 @@ class TestHealthAPI:
         return (neo4j, celery, openai)
 
     @pytest.mark.asyncio
-    async def test_health_check_all_healthy(self, mock_adapters, monkeypatch) -> None:
+    async def test_health_check_all_healthy(self: Any, mock_adapters: Any, monkeypatch: Any) -> None:
         """Test health check when all components are healthy."""
         neo4j, celery, openai = mock_adapters
 
@@ -270,7 +270,7 @@ class TestHealthAPI:
         assert result.components['redis'].status == 'healthy'
 
     @pytest.mark.asyncio
-    async def test_health_check_one_unhealthy(self, mock_adapters, monkeypatch) -> None:
+    async def test_health_check_one_unhealthy(self: Any, mock_adapters: Any, monkeypatch: Any) -> None:
         """Test health check when one component is unhealthy."""
         neo4j, celery, openai = mock_adapters
 
@@ -298,7 +298,7 @@ class TestHealthAPI:
         assert result.components['redis'].status == 'healthy'
 
     @pytest.mark.asyncio
-    async def test_health_check_one_degraded(self, mock_adapters, monkeypatch) -> None:
+    async def test_health_check_one_degraded(self: Any, mock_adapters: Any, monkeypatch: Any) -> None:
         """Test health check when one component is degraded."""
         neo4j, celery, openai = mock_adapters
 
@@ -326,7 +326,7 @@ class TestHealthAPI:
         assert result.components['redis'].status == 'healthy'
 
     @pytest.mark.asyncio
-    async def test_health_check_with_auto_fix(self, mock_adapters, monkeypatch) -> None:
+    async def test_health_check_with_auto_fix(self: Any, mock_adapters: Any, monkeypatch: Any) -> None:
         """Test health check with auto_fix parameter when there's an Azure auth issue."""
         neo4j, celery, openai = mock_adapters
 
@@ -352,7 +352,7 @@ class TestHealthAPI:
         assert openai.check_health.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_health_check_with_auto_fix_failure(self, mock_adapters, monkeypatch) -> None:
+    async def test_health_check_with_auto_fix_failure(self: Any, mock_adapters: Any, monkeypatch: Any) -> None:
         """Test health check when auto_fix attempt fails."""
         neo4j, celery, openai = mock_adapters
 
@@ -382,7 +382,7 @@ class TestHealthAPI:
         assert result.components['openai'].details['renewal_attempted'] is True
 
     @pytest.mark.asyncio
-    async def test_health_check_with_auto_fix_timeout(self, mock_adapters, monkeypatch) -> None:
+    async def test_health_check_with_auto_fix_timeout(self: Any, mock_adapters: Any, monkeypatch: Any) -> None:
         """Test health check when auto_fix times out."""
         neo4j, celery, openai = mock_adapters
 

@@ -4,8 +4,9 @@ import tempfile
 from pathlib import Path
 import pytest
 from codestory_filesystem.step import get_combined_ignore_spec
+from typing import Any
 
-def create_test_tree(root) -> None:
+def create_test_tree(root: Any) -> None:
     (Path(root) / 'main.py').write_text('# main')
     (Path(root) / 'notes.log').write_text('log')
     (Path(root) / 'build').mkdir()
@@ -17,7 +18,7 @@ def create_test_tree(root) -> None:
     (Path(root) / 'src').mkdir()
     (Path(root) / 'src' / 'keep.py').write_text('# keep')
 
-def walk_files(root, ignore_spec):
+def walk_files(root: Any, ignore_spec: Any) -> Any:
     result = []
     for dirpath, dirs, files in os.walk(root):
         rel_dir = os.path.relpath(dirpath, root)
@@ -29,19 +30,19 @@ def walk_files(root, ignore_spec):
                 result.append(rel_file)
     return sorted(result)
 
-def test_builtin_ignore_patterns(tmp_path) -> None:
+def test_builtin_ignore_patterns(tmp_path: Any) -> None:
     create_test_tree(tmp_path)
     ignore_spec = get_combined_ignore_spec(str(tmp_path))
     found = walk_files(str(tmp_path), ignore_spec)
     assert set(found) == {'main.py', 'src/keep.py'}
 
-def test_builtin_and_extra_patterns(tmp_path) -> None:
+def test_builtin_and_extra_patterns(tmp_path: Any) -> None:
     create_test_tree(tmp_path)
     ignore_spec = get_combined_ignore_spec(str(tmp_path), extra_patterns=['*.py'])
     found = walk_files(str(tmp_path), ignore_spec)
     assert set(found) == set()
 
-def test_builtin_and_gitignore(tmp_path) -> None:
+def test_builtin_and_gitignore(tmp_path: Any) -> None:
     create_test_tree(tmp_path)
     (Path(tmp_path) / '.gitignore').write_text('src/\n')
     ignore_spec = get_combined_ignore_spec(str(tmp_path))

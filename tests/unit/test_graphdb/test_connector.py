@@ -7,7 +7,7 @@ from codestory.graphdb.exceptions import QueryError, TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 @pytest.fixture
-def mock_driver():
+def mock_driver() -> Any:
     """Create a mock Neo4j driver."""
     driver = MagicMock()
     session = MagicMock()
@@ -20,7 +20,7 @@ def mock_driver():
     return driver
 
 @pytest.fixture
-def mock_async_driver():
+def mock_async_driver() -> Any:
     """Create a mock Neo4j async driver."""
     driver = AsyncMock()
     session = AsyncMock()
@@ -111,7 +111,7 @@ def test_semantic_search(connector: Any, mock_driver: Any) -> None:
     assert results[0]['score'] == 0.95
 
 @pytest.mark.asyncio
-async def test_execute_query_async(async_connector, mock_async_driver) -> None:
+async def test_execute_query_async(async_connector: Any, mock_async_driver: Any) -> None:
     """Test async query execution."""
     session = mock_async_driver.session.return_value.__aenter__.return_value
     session.execute_read.return_value = [{'async': 'result'}]
@@ -119,7 +119,7 @@ async def test_execute_query_async(async_connector, mock_async_driver) -> None:
     assert result == [{'async': 'result'}]
 
 @pytest.mark.asyncio
-async def test_execute_many_async(async_connector, mock_async_driver) -> None:
+async def test_execute_many_async(async_connector: Any, mock_async_driver: Any) -> None:
     """Test async batch query execution."""
     session = mock_async_driver.session.return_value.__aenter__.return_value
     session.execute_read.return_value = [[{'async': 'result1'}], [{'async': 'result2'}]]

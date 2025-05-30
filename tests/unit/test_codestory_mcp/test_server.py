@@ -50,7 +50,7 @@ def mock_tool() -> None:
         yield tool
 
 @pytest.mark.asyncio
-async def test_get_current_user_with_auth_disabled(mock_settings, mock_metrics) -> None:
+async def test_get_current_user_with_auth_disabled(mock_settings: Any, mock_metrics: Any) -> None:
     """Test get_current_user with authentication disabled."""
     mock_settings.auth_enabled = False
     request = mock.Mock()
@@ -61,7 +61,7 @@ async def test_get_current_user_with_auth_disabled(mock_settings, mock_metrics) 
     assert not mock_metrics.record_auth_attempt.called
 
 @pytest.mark.asyncio
-async def test_get_current_user_without_auth_header(mock_settings, mock_metrics) -> None:
+async def test_get_current_user_without_auth_header(mock_settings: Any, mock_metrics: Any) -> None:
     """Test get_current_user without auth header."""
     mock_settings.auth_enabled = True
     request = mock.Mock()
@@ -73,7 +73,7 @@ async def test_get_current_user_without_auth_header(mock_settings, mock_metrics)
     mock_metrics.record_auth_attempt.assert_called_once_with('error')
 
 @pytest.mark.asyncio
-async def test_get_current_user_with_valid_token(mock_settings, mock_metrics, mock_entra_validator) -> None:
+async def test_get_current_user_with_valid_token(mock_settings: Any, mock_metrics: Any, mock_entra_validator: Any) -> None:
     """Test get_current_user with valid token."""
     mock_settings.auth_enabled = True
     request = mock.Mock()
@@ -88,7 +88,7 @@ async def test_get_current_user_with_valid_token(mock_settings, mock_metrics, mo
     mock_metrics.record_auth_attempt.assert_called_once_with('success')
 
 @pytest.mark.asyncio
-async def test_get_current_user_with_invalid_token(mock_settings, mock_metrics, mock_entra_validator) -> None:
+async def test_get_current_user_with_invalid_token(mock_settings: Any, mock_metrics: Any, mock_entra_validator: Any) -> None:
     """Test get_current_user with invalid token."""
     mock_settings.auth_enabled = True
     request = mock.Mock()
@@ -103,7 +103,7 @@ async def test_get_current_user_with_invalid_token(mock_settings, mock_metrics, 
     mock_metrics.record_auth_attempt.assert_called_once_with('error')
 
 @pytest.mark.asyncio
-async def test_tool_executor_success(mock_metrics, mock_tool) -> None:
+async def test_tool_executor_success(mock_metrics: Any, mock_tool: Any) -> None:
     """Test tool executor with successful execution."""
     executor = tool_executor(lambda tool_name, params, user: None)
     future = asyncio.Future()
@@ -118,7 +118,7 @@ async def test_tool_executor_success(mock_metrics, mock_tool) -> None:
     assert result == {'result': 'success'}
 
 @pytest.mark.asyncio
-async def test_tool_executor_tool_not_found(mock_metrics, mock_tool) -> None:
+async def test_tool_executor_tool_not_found(mock_metrics: Any, mock_tool: Any) -> None:
     """Test tool executor with tool not found."""
     executor = tool_executor(lambda tool_name, params, user: None)
     with mock.patch('codestory_mcp.server.get_tool', side_effect=KeyError('Tool not found')):
@@ -131,7 +131,7 @@ async def test_tool_executor_tool_not_found(mock_metrics, mock_tool) -> None:
         assert mock_metrics.record_tool_call.call_args[0][1] == 'error'
 
 @pytest.mark.asyncio
-async def test_tool_executor_tool_error(mock_metrics, mock_tool) -> None:
+async def test_tool_executor_tool_error(mock_metrics: Any, mock_tool: Any) -> None:
     """Test tool executor with tool error."""
     executor = tool_executor(lambda tool_name, params, user: None)
     future = asyncio.Future()
@@ -146,7 +146,7 @@ async def test_tool_executor_tool_error(mock_metrics, mock_tool) -> None:
     assert mock_metrics.record_tool_call.call_args[0][1] == 'error'
 
 @pytest.mark.asyncio
-async def test_tool_executor_validation_error(mock_metrics, mock_tool) -> None:
+async def test_tool_executor_validation_error(mock_metrics: Any, mock_tool: Any) -> None:
     """Test tool executor with validation error."""
     executor = tool_executor(lambda tool_name, params, user: None)
     mock_tool.validate_parameters.side_effect = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid parameters')
@@ -159,7 +159,7 @@ async def test_tool_executor_validation_error(mock_metrics, mock_tool) -> None:
     assert mock_metrics.record_tool_call.call_args[0][1] == 'error'
 
 @pytest.mark.asyncio
-async def test_tool_executor_unexpected_error(mock_metrics, mock_tool) -> None:
+async def test_tool_executor_unexpected_error(mock_metrics: Any, mock_tool: Any) -> None:
     """Test tool executor with unexpected error."""
     executor = tool_executor(lambda tool_name, params, user: None)
     future = asyncio.Future()

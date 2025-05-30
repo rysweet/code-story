@@ -13,7 +13,7 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
 
-def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_patterns=None, **config) -> None:
+def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector: Any, ignore_patterns: Any=None, **config: Any) -> None:
     """Custom implementation of process_filesystem for testing.
 
     This function uses the provided Neo4j connector instead of creating a new one,

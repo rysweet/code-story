@@ -17,7 +17,7 @@ logger = structlog.get_logger(__name__)
 class GraphServiceAdapter:
     """Adapter for the Code Story Graph Service."""
 
-    def __init__(self, base_url: str | None=None) -> None:
+    def __init__(self: Any, base_url: str | None=None) -> None:
         """Initialize the adapter.
 
         Args:
@@ -28,7 +28,7 @@ class GraphServiceAdapter:
         self.metrics = get_metrics()
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0, follow_redirects=True)
 
-    async def search(self, query: str, node_types: list[str] | None=None, limit: int=10) -> list[tuple[Node, float]]:
+    async def search(self: Any, query: str, node_types: list[str] | None=None, limit: int=10) -> list[tuple[Node, float]]:
         """Search for nodes in the graph database.
 
         Args:
@@ -68,7 +68,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
-    async def find_node(self, node_id: str) -> Node:
+    async def find_node(self: Any, node_id: str) -> Node:
         """Find a node by ID.
 
         Args:
@@ -101,7 +101,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
-    async def find_paths(self, from_id: str, to_id: str, max_paths: int=3) -> list[list[Node | Relationship]]:
+    async def find_paths(self: Any, from_id: str, to_id: str, max_paths: int=3) -> list[list[Node | Relationship]]:
         """Find paths between two nodes.
 
         Args:
@@ -146,7 +146,7 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
-    async def execute_cypher(self, query: str, parameters: dict[str, Any] | None=None) -> dict[str, Any]:
+    async def execute_cypher(self: Any, query: str, parameters: dict[str, Any] | None=None) -> dict[str, Any]:
         """Execute a Cypher query.
 
         Args:
@@ -179,14 +179,14 @@ class GraphServiceAdapter:
             self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
-    async def close(self) -> None:
+    async def close(self: Any) -> None:
         """Close the HTTP client."""
         await self.client.aclose()
 
 class MockNode:
     """Mock Neo4j Node for use with the adapter."""
 
-    def __init__(self, id: str, labels: list[str], properties: dict[str, Any]) -> None:
+    def __init__(self: Any, id: str, labels: list[str], properties: dict[str, Any]) -> None:
         """Initialize the mock node.
 
         Args:
@@ -198,7 +198,7 @@ class MockNode:
         self.labels = labels
         self.properties = properties
 
-    def get(self, key: str, default: Any=None) -> Any:
+    def get(self: Any, key: str, default: Any=None) -> Any:
         """Get a property value.
 
         Args:
@@ -210,7 +210,7 @@ class MockNode:
         """
         return self.properties.get(key, default)
 
-    def items(self) -> list[tuple[str, Any]]:
+    def items(self: Any) -> list[tuple[str, Any]]:
         """Get all properties as key-value pairs.
 
         Returns:
@@ -218,7 +218,7 @@ class MockNode:
         """
         return list(self.properties.items())
 
-    def __getitem__(self, key: str) -> None:
+    def __getitem__(self: Any, key: str) -> None:
         """Get a property value.
 
         Args:
@@ -237,7 +237,7 @@ class MockNode:
 class MockRelationship:
     """Mock Neo4j Relationship for use with the adapter."""
 
-    def __init__(self, id: str, type: str, start_node_id: str, end_node_id: str, properties: dict[str, Any]) -> None:
+    def __init__(self: Any, id: str, type: str, start_node_id: str, end_node_id: str, properties: dict[str, Any]) -> None:
         """Initialize the mock relationship.
 
         Args:
@@ -253,7 +253,7 @@ class MockRelationship:
         self.start_node = MockNode(start_node_id, [], {})
         self.end_node = MockNode(end_node_id, [], {})
 
-    def get(self, key: str, default: Any=None) -> Any:
+    def get(self: Any, key: str, default: Any=None) -> Any:
         """Get a property value.
 
         Args:
@@ -265,7 +265,7 @@ class MockRelationship:
         """
         return self.properties.get(key, default)
 
-    def items(self) -> list[tuple[str, Any]]:
+    def items(self: Any) -> list[tuple[str, Any]]:
         """Get all properties as key-value pairs.
 
         Returns:
@@ -273,7 +273,7 @@ class MockRelationship:
         """
         return list(self.properties.items())
 
-    def __getitem__(self, key: str) -> None:
+    def __getitem__(self: Any, key: str) -> None:
         """Get a property value.
 
         Args:

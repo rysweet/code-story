@@ -14,7 +14,7 @@ from codestory_mcp.tools.summarize_node import SummarizeNodeTool
 class TestToolsRegistry:
     """Tests for the tools registry."""
 
-    def test_register_tool(self) -> None:
+    def test_register_tool(self: Any) -> None:
         """Test registering a tool."""
 
         class MockTool(BaseTool):
@@ -28,12 +28,12 @@ class TestToolsRegistry:
         assert registered is MockTool
         assert get_tool('mockTool') is MockTool
 
-    def test_get_tool_not_found(self) -> None:
+    def test_get_tool_not_found(self: Any) -> None:
         """Test getting a non-existent tool."""
         with pytest.raises(KeyError):
             get_tool('nonexistentTool')
 
-    def test_get_all_tools(self) -> None:
+    def test_get_all_tools(self: Any) -> None:
         """Test getting all tools."""
 
         class MockTool1(BaseTool):
@@ -61,7 +61,7 @@ class TestSearchGraphTool:
     """Tests for the SearchGraphTool."""
 
     @pytest.fixture
-    def graph_service(self) -> None:
+    def graph_service(self: Any) -> None:
         """Create a mock graph service."""
         with mock.patch('codestory_mcp.tools.search_graph.get_graph_service') as mock_get_service:
             service = mock.Mock()
@@ -69,7 +69,7 @@ class TestSearchGraphTool:
             yield service
 
     @pytest.fixture
-    def metrics(self) -> None:
+    def metrics(self: Any) -> None:
         """Create a mock metrics object."""
         with mock.patch('codestory_mcp.tools.search_graph.get_metrics') as mock_get_metrics:
             metrics = mock.Mock()
@@ -77,18 +77,18 @@ class TestSearchGraphTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, graph_service: Any, metrics: Any):
+    def tool(self: Any, graph_service: Any, metrics: Any) -> Any:
         """Create a SearchGraphTool instance."""
         return SearchGraphTool()
 
-    def test_init(self, graph_service: Any, metrics: Any) -> None:
+    def test_init(self: Any, graph_service: Any, metrics: Any) -> None:
         """Test initialization."""
         tool = SearchGraphTool()
         assert tool.graph_service is graph_service
         assert tool.metrics is metrics
 
     @pytest.mark.asyncio
-    async def test_call_with_empty_query(self, tool) -> None:
+    async def test_call_with_empty_query(self: Any, tool: Any) -> None:
         """Test calling the tool with an empty query."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'query': ''})
@@ -96,7 +96,7 @@ class TestSearchGraphTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_with_invalid_limit(self, tool) -> None:
+    async def test_call_with_invalid_limit(self: Any, tool: Any) -> None:
         """Test calling the tool with an invalid limit."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'query': 'test', 'limit': 0})
@@ -104,7 +104,7 @@ class TestSearchGraphTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_success(self, tool, graph_service) -> None:
+    async def test_call_success(self: Any, tool: Any, graph_service: Any) -> None:
         """Test successful tool execution."""
         mock_node = mock.Mock()
         mock_node.id = 'node-123'
@@ -137,7 +137,7 @@ class TestSearchGraphTool:
         assert result['metadata']['result_count'] == 1
 
     @pytest.mark.asyncio
-    async def test_call_with_search_error(self, tool, graph_service) -> None:
+    async def test_call_with_search_error(self: Any, tool: Any, graph_service: Any) -> None:
         """Test tool execution with search error."""
         future = asyncio.Future()
         future.set_exception(Exception('Search failed'))
@@ -151,7 +151,7 @@ class TestSummarizeNodeTool:
     """Tests for the SummarizeNodeTool."""
 
     @pytest.fixture
-    def graph_service(self) -> None:
+    def graph_service(self: Any) -> None:
         """Create a mock graph service."""
         with mock.patch('codestory_mcp.tools.summarize_node.get_graph_service') as mock_get_service:
             service = mock.Mock()
@@ -159,7 +159,7 @@ class TestSummarizeNodeTool:
             yield service
 
     @pytest.fixture
-    def openai_service(self) -> None:
+    def openai_service(self: Any) -> None:
         """Create a mock OpenAI service."""
         with mock.patch('codestory_mcp.tools.summarize_node.get_openai_service') as mock_get_service:
             service = mock.Mock()
@@ -167,7 +167,7 @@ class TestSummarizeNodeTool:
             yield service
 
     @pytest.fixture
-    def metrics(self) -> None:
+    def metrics(self: Any) -> None:
         """Create a mock metrics object."""
         with mock.patch('codestory_mcp.tools.summarize_node.get_metrics') as mock_get_metrics:
             metrics = mock.Mock()
@@ -175,11 +175,11 @@ class TestSummarizeNodeTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, graph_service: Any, openai_service: Any, metrics: Any):
+    def tool(self: Any, graph_service: Any, openai_service: Any, metrics: Any) -> Any:
         """Create a SummarizeNodeTool instance."""
         return SummarizeNodeTool()
 
-    def test_init(self, graph_service: Any, openai_service: Any, metrics: Any) -> None:
+    def test_init(self: Any, graph_service: Any, openai_service: Any, metrics: Any) -> None:
         """Test initialization."""
         tool = SummarizeNodeTool()
         assert tool.graph_service is graph_service
@@ -187,7 +187,7 @@ class TestSummarizeNodeTool:
         assert tool.metrics is metrics
 
     @pytest.mark.asyncio
-    async def test_call_with_empty_node_id(self, tool) -> None:
+    async def test_call_with_empty_node_id(self: Any, tool: Any) -> None:
         """Test calling the tool with an empty node ID."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'node_id': ''})
@@ -195,7 +195,7 @@ class TestSummarizeNodeTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_with_node_without_content(self, tool, graph_service) -> None:
+    async def test_call_with_node_without_content(self: Any, tool: Any, graph_service: Any) -> None:
         """Test calling the tool with a node that has no content."""
         mock_node = mock.Mock()
         mock_node.id = 'node-123'
@@ -210,7 +210,7 @@ class TestSummarizeNodeTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_success(self, tool, graph_service, openai_service) -> None:
+    async def test_call_success(self: Any, tool: Any, graph_service: Any, openai_service: Any) -> None:
         """Test successful tool execution."""
         mock_node = mock.Mock()
         mock_node.id = 'node-123'
@@ -236,7 +236,7 @@ class TestPathToTool:
     """Tests for the PathToTool."""
 
     @pytest.fixture
-    def graph_service(self) -> None:
+    def graph_service(self: Any) -> None:
         """Create a mock graph service."""
         with mock.patch('codestory_mcp.tools.path_to.get_graph_service') as mock_get_service:
             service = mock.Mock()
@@ -244,7 +244,7 @@ class TestPathToTool:
             yield service
 
     @pytest.fixture
-    def openai_service(self) -> None:
+    def openai_service(self: Any) -> None:
         """Create a mock OpenAI service."""
         with mock.patch('codestory_mcp.tools.path_to.get_openai_service') as mock_get_service:
             service = mock.Mock()
@@ -252,7 +252,7 @@ class TestPathToTool:
             yield service
 
     @pytest.fixture
-    def metrics(self) -> None:
+    def metrics(self: Any) -> None:
         """Create a mock metrics object."""
         with mock.patch('codestory_mcp.tools.path_to.get_metrics') as mock_get_metrics:
             metrics = mock.Mock()
@@ -260,12 +260,12 @@ class TestPathToTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, graph_service: Any, openai_service: Any, metrics: Any):
+    def tool(self: Any, graph_service: Any, openai_service: Any, metrics: Any) -> Any:
         """Create a PathToTool instance."""
         return PathToTool()
 
     @pytest.mark.asyncio
-    async def test_call_with_empty_from_id(self, tool) -> None:
+    async def test_call_with_empty_from_id(self: Any, tool: Any) -> None:
         """Test calling the tool with an empty from_id."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'from_id': '', 'to_id': 'node-456'})
@@ -273,7 +273,7 @@ class TestPathToTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_with_empty_to_id(self, tool) -> None:
+    async def test_call_with_empty_to_id(self: Any, tool: Any) -> None:
         """Test calling the tool with an empty to_id."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'from_id': 'node-123', 'to_id': ''})
@@ -281,7 +281,7 @@ class TestPathToTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_with_invalid_max_paths(self, tool) -> None:
+    async def test_call_with_invalid_max_paths(self: Any, tool: Any) -> None:
         """Test calling the tool with an invalid max_paths."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'from_id': 'node-123', 'to_id': 'node-456', 'max_paths': 0})
@@ -289,7 +289,7 @@ class TestPathToTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_success(self, tool, graph_service, openai_service) -> None:
+    async def test_call_success(self: Any, tool: Any, graph_service: Any, openai_service: Any) -> None:
         """Test successful tool execution."""
         mock_node1 = mock.Mock()
         mock_node1.id = 'node-123'
@@ -359,7 +359,7 @@ class TestSimilarCodeTool:
     """Tests for the SimilarCodeTool."""
 
     @pytest.fixture
-    def openai_service(self) -> None:
+    def openai_service(self: Any) -> None:
         """Create a mock OpenAI service."""
         with mock.patch('codestory_mcp.tools.similar_code.get_openai_service') as mock_get_service:
             service = mock.Mock()
@@ -367,7 +367,7 @@ class TestSimilarCodeTool:
             yield service
 
     @pytest.fixture
-    def metrics(self) -> None:
+    def metrics(self: Any) -> None:
         """Create a mock metrics object."""
         with mock.patch('codestory_mcp.tools.similar_code.get_metrics') as mock_get_metrics:
             metrics = mock.Mock()
@@ -375,12 +375,12 @@ class TestSimilarCodeTool:
             yield metrics
 
     @pytest.fixture
-    def tool(self, openai_service: Any, metrics: Any):
+    def tool(self: Any, openai_service: Any, metrics: Any) -> Any:
         """Create a SimilarCodeTool instance."""
         return SimilarCodeTool()
 
     @pytest.mark.asyncio
-    async def test_call_with_empty_code(self, tool) -> None:
+    async def test_call_with_empty_code(self: Any, tool: Any) -> None:
         """Test calling the tool with empty code."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'code': ''})
@@ -388,7 +388,7 @@ class TestSimilarCodeTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_with_invalid_limit(self, tool) -> None:
+    async def test_call_with_invalid_limit(self: Any, tool: Any) -> None:
         """Test calling the tool with an invalid limit."""
         with pytest.raises(ToolError) as excinfo:
             await tool({'code': 'def test(): pass', 'limit': 0})
@@ -396,7 +396,7 @@ class TestSimilarCodeTool:
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
-    async def test_call_success(self, tool, openai_service) -> None:
+    async def test_call_success(self: Any, tool: Any, openai_service: Any) -> None:
         """Test successful tool execution."""
         similar_code = [{'id': 'node-123', 'type': 'Function', 'name': 'test1', 'content': 'def test1(): pass', 'path': '/path/to/test1.py', 'score': 0.95}, {'id': 'node-456', 'type': 'Function', 'name': 'test2', 'content': 'def test2(): pass', 'path': '/path/to/test2.py', 'score': 0.85}]
         future = asyncio.Future()

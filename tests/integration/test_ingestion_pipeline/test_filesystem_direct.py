@@ -38,7 +38,7 @@ def sample_repo() -> None:
         (repo_dir / 'src' / '__pycache__' / 'app.cpython-310.pyc').write_text('# Bytecode')
         yield str(repo_dir)
 
-def custom_process_filesystem(repository_path, job_id, neo4j_connector, ignore_patterns=None, **config) -> None:
+def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector: Any, ignore_patterns: Any=None, **config: Any) -> None:
     """Modified version of process_filesystem that uses the test connector.
 
     This function is a simplified version of the original process_filesystem

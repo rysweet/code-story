@@ -25,12 +25,12 @@ class DocumentationGrapherStep(PipelineStep):
     entities and relationships, and links them to code entities.
     """
 
-    def __init__(self) -> None:
+    def __init__(self: Any) -> None:
         """Initialize the DocumentationGrapher step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
 
-    def run(self, repository_path: str, **config: Any) -> str:
+    def run(self: Any, repository_path: str, **config: Any) -> str:
         """Run the DocumentationGrapher step.
 
         Args:
@@ -56,7 +56,7 @@ class DocumentationGrapherStep(PipelineStep):
         logger.info(f'Started DocumentationGrapher job {job_id} for repository: {repository_path}')
         return job_id
 
-    def status(self, job_id: str) -> dict[str, Any]:
+    def status(self: Any, job_id: str) -> dict[str, Any]:
         """Check the status of a job.
 
         Args:
@@ -102,7 +102,7 @@ class DocumentationGrapherStep(PipelineStep):
                 status_info.update(result.info)
             return status_info
 
-    def stop(self, job_id: str) -> dict[str, Any]:
+    def stop(self: Any, job_id: str) -> dict[str, Any]:
         """Stop a running job.
 
         Args:
@@ -125,7 +125,7 @@ class DocumentationGrapherStep(PipelineStep):
         job_info['end_time'] = time.time()
         return {'status': StepStatus.STOPPED, 'message': f'Job {job_id} has been stopped', 'job_id': job_id}
 
-    def cancel(self, job_id: str) -> dict[str, Any]:
+    def cancel(self: Any, job_id: str) -> dict[str, Any]:
         """Cancel a job.
 
         Unlike stop(), cancel attempts to immediately terminate the job
@@ -146,7 +146,7 @@ class DocumentationGrapherStep(PipelineStep):
         result['message'] = f'Job {job_id} has been cancelled'
         return result
 
-    def ingestion_update(self, repository_path: str, **config: Any) -> str:
+    def ingestion_update(self: Any, repository_path: str, **config: Any) -> str:
         """Update the documentation graph for a repository.
 
         Args:
@@ -164,7 +164,7 @@ class DocumentationGrapherStep(PipelineStep):
         return self.run(repository_path, **config)
 
 @shared_task(bind=True, name='codestory_docgrapher.step.run_docgrapher')
-def run_docgrapher(self, repository_path: str, job_id: str, ignore_patterns: list[str] | None=None, use_llm: bool=True, config: dict[str, Any] | None=None) -> dict[str, Any]:
+def run_docgrapher(self: Any, repository_path: str, job_id: str, ignore_patterns: list[str] | None=None, use_llm: bool=True, config: dict[str, Any] | None=None) -> dict[str, Any]:
     """Run the DocumentationGrapher workflow step as a Celery task.
 
     Args:

@@ -63,12 +63,12 @@ def load_env_vars() -> None:
     os.environ['CODESTORY_TEST_ENV'] = 'true'
 
 @pytest.fixture(scope='function')
-def celery_config():
+def celery_config() -> Any:
     """Configure Celery for testing."""
     return {'broker_url': 'memory://', 'result_backend': 'rpc://', 'task_always_eager': True, 'task_eager_propagates': True, 'task_ignore_result': False}
 
 @pytest.fixture(scope='function')
-def celery_app():
+def celery_app() -> Any:
     """Provide a Celery app configured for unit testing."""
     from codestory.ingestion_pipeline.celery_app import app
     app.conf.update(broker_url='memory://', result_backend='rpc://', task_always_eager=True, task_eager_propagates=True, task_ignore_result=False)

@@ -13,7 +13,7 @@ from codestory.config import Settings, get_settings
 class ServiceClient:
     """Client for interacting with the Code Story service API."""
 
-    def __init__(self, base_url: str | None=None, api_key: str | None=None, console: Console | None=None, settings: Settings | None=None) -> None:
+    def __init__(self: Any, base_url: str | None=None, api_key: str | None=None, console: Console | None=None, settings: Settings | None=None) -> None:
         """
         Initialize the service client.
 
@@ -49,7 +49,7 @@ class ServiceClient:
         self.client = httpx.Client(base_url=self.base_url, timeout=30.0, headers=self._get_headers())
         self.session = self.client
 
-    def _get_headers(self) -> dict[str, str]:
+    def _get_headers(self: Any) -> dict[str, str]:
         """
         Get headers for API requests.
 
@@ -61,7 +61,7 @@ class ServiceClient:
             headers['Authorization'] = f'Bearer {self.api_key}'
         return headers
 
-    def check_service_health(self, auto_fix: bool=False, timeout: int | None=None) -> dict[str, Any]:
+    def check_service_health(self: Any, auto_fix: bool=False, timeout: int | None=None) -> dict[str, Any]:
         """
         Check if the service is healthy.
 
@@ -114,7 +114,7 @@ class ServiceClient:
             self.console.print(f'[dim]Health check failed: {e!s}[/]', style='dim')
             raise ServiceError(f'Health check failed: {e!s}') from e
 
-    def _check_for_azure_auth_issues(self, health_data: dict[str, Any]) -> None:
+    def _check_for_azure_auth_issues(self: Any, health_data: dict[str, Any]) -> None:
         """
         Check if health data indicates Azure authentication issues and provide guidance.
 
@@ -164,7 +164,7 @@ class ServiceClient:
         except Exception as e:
             self.console.print(f'[dim]Error checking for Azure auth issues: {e!s}[/dim]', style='dim')
 
-    def _handle_error_package(self, data: dict[str, Any]) -> dict[str, Any]:
+    def _handle_error_package(self: Any, data: dict[str, Any]) -> dict[str, Any]:
         """Detects service-side errors in response and handles them.
         
         - Prints errors
@@ -180,7 +180,7 @@ class ServiceClient:
             self.console.print(json.dumps(status_data, indent=2))
         return data
 
-    def start_ingestion(self, repository_path: str, priority: str='default', dependencies: list[str] | None=None) -> dict[str, Any]:
+    def start_ingestion(self: Any, repository_path: str, priority: str='default', dependencies: list[str] | None=None) -> dict[str, Any]:
         """
         Start an ingestion job for the given repository path.
 
@@ -235,7 +235,7 @@ class ServiceClient:
                 error_detail += f'\n     - {abs_repository_path}:/repositories/{repo_name}'
             raise ServiceError(f'Failed to start ingestion: {error_detail}') from None
 
-    def get_ingestion_status(self, job_id: str) -> dict[str, Any]:
+    def get_ingestion_status(self: Any, job_id: str) -> dict[str, Any]:
         """
         Get the status of an ingestion job.
 
@@ -253,7 +253,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to get ingestion status: {e!s}') from e
 
-    def stop_ingestion(self, job_id: str) -> dict[str, Any]:
+    def stop_ingestion(self: Any, job_id: str) -> dict[str, Any]:
         """
         Stop an ingestion job.
 
@@ -271,7 +271,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to stop ingestion: {e!s}') from e
 
-    def list_ingestion_jobs(self) -> list[dict[str, Any]]:
+    def list_ingestion_jobs(self: Any) -> list[dict[str, Any]]:
         """
         List all ingestion jobs.
 
@@ -304,7 +304,7 @@ class ServiceClient:
         except (KeyError, json.JSONDecodeError) as e:
             raise ServiceError(f'Invalid response format: {e!s}') from e
 
-    def execute_query(self, query: str, parameters: dict[str, Any] | None=None, query_type: str | None=None) -> dict[str, Any]:
+    def execute_query(self: Any, query: str, parameters: dict[str, Any] | None=None, query_type: str | None=None) -> dict[str, Any]:
         """
         Execute a Cypher query or MCP tool call.
 
@@ -337,7 +337,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Query execution failed: {e!s}') from e
 
-    def ask_question(self, question: str) -> dict[str, Any]:
+    def ask_question(self: Any, question: str) -> dict[str, Any]:
         """
         Ask a natural language question about the codebase.
 
@@ -355,7 +355,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to ask question: {e!s}') from e
 
-    def get_config(self, include_sensitive: bool=False) -> dict[str, Any]:
+    def get_config(self: Any, include_sensitive: bool=False) -> dict[str, Any]:
         """
         Get the current configuration.
 
@@ -375,7 +375,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to get configuration: {e!s}') from e
 
-    def update_config(self, updates: dict[str, Any]) -> dict[str, Any]:
+    def update_config(self: Any, updates: dict[str, Any]) -> dict[str, Any]:
         """
         Update configuration values.
 
@@ -392,7 +392,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to update configuration: {e!s}') from e
 
-    def start_service(self) -> dict[str, Any]:
+    def start_service(self: Any) -> dict[str, Any]:
         """
         Start the Code Story service.
 
@@ -406,7 +406,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to start service: {e!s}') from e
 
-    def stop_service(self) -> dict[str, Any]:
+    def stop_service(self: Any) -> dict[str, Any]:
         """
         Stop the Code Story service.
 
@@ -420,7 +420,7 @@ class ServiceClient:
         except httpx.HTTPError as e:
             raise ServiceError(f'Failed to stop service: {e!s}') from e
 
-    def get_service_status(self, renew_auth: bool=False) -> dict[str, Any]:
+    def get_service_status(self: Any, renew_auth: bool=False) -> dict[str, Any]:
         """Query the health endpoint and return the status of the Code Story service.
         
         Returns the status of the service and its dependencies.
@@ -449,7 +449,7 @@ class ServiceClient:
             console.log(tb)
             raise
 
-    def generate_visualization(self, params: dict[str, Any] | None=None) -> str:
+    def generate_visualization(self: Any, params: dict[str, Any] | None=None) -> str:
         """
         Generate a graph visualization.
 
@@ -503,7 +503,7 @@ class ServiceClient:
                 raise e
             raise ServiceError(f'Failed to generate visualization: {e!s}') from e
 
-    def open_ui(self) -> None:
+    def open_ui(self: Any) -> None:
         """Open the GUI in the default web browser."""
         try:
             ui_url = getattr(self.settings.service, 'ui_url', None)
@@ -513,7 +513,7 @@ class ServiceClient:
             ui_url = 'http://localhost:5173'
         webbrowser.open(ui_url)
 
-    def renew_azure_auth(self, tenant_id: str | None=None) -> dict[str, Any]:
+    def renew_azure_auth(self: Any, tenant_id: str | None=None) -> dict[str, Any]:
         """
         Renew Azure authentication tokens.
 
@@ -556,7 +556,7 @@ class ServiceClient:
             else:
                 raise ServiceError(f'Azure authentication renewal failed: {error_detail}') from None
 
-    def clear_database(self, confirm: bool=False) -> dict[str, Any]:
+    def clear_database(self: Any, confirm: bool=False) -> dict[str, Any]:
         """
         Clear all data from the database by executing a delete query.
 

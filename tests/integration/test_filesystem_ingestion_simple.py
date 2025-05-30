@@ -14,7 +14,7 @@ class TestFilesystemIngestionSimple:
     """Simplified filesystem ingestion tests that run the step directly."""
 
     @pytest.fixture(autouse=True)
-    def setup_and_cleanup(self) -> None:
+    def setup_and_cleanup(self: Any) -> None:
         """Set up test environment and clean up afterwards."""
         self.temp_dir = tempfile.mkdtemp(prefix='codestory_fs_simple_')
         self.test_repo_path = Path(self.temp_dir)
@@ -27,7 +27,7 @@ class TestFilesystemIngestionSimple:
         except Exception as e:
             logger.warning(f'Failed to clean up test directory: {e}')
 
-    def create_test_repository(self) -> None:
+    def create_test_repository(self: Any) -> None:
         """Create a simple test repository structure."""
         logger.info(f'Creating test repository at {self.test_repo_path}')
         dirs = ['src/main', 'src/test', 'docs', 'config']
@@ -46,7 +46,7 @@ class TestFilesystemIngestionSimple:
         (self.test_repo_path / 'build/output.js').write_text('compiled output')
         logger.info(f"Test repository created with {len(list(self.test_repo_path.rglob('*')))} items")
 
-    def test_filesystem_step_direct(self) -> None:
+    def test_filesystem_step_direct(self: Any) -> None:
         """Test filesystem step execution directly."""
         logger.info('Starting direct filesystem step test')
         self.create_test_repository()
@@ -71,7 +71,7 @@ class TestFilesystemIngestionSimple:
             assert any(('app.py' in path for path in processed_paths)), 'Should process app.py'
         logger.info('Direct filesystem step test completed successfully')
 
-    def test_filesystem_step_with_various_file_types(self) -> None:
+    def test_filesystem_step_with_various_file_types(self: Any) -> None:
         """Test filesystem step with various file types."""
         logger.info('Testing filesystem step with various file types')
         (self.test_repo_path / 'text_file.txt').write_text('Simple text content')
@@ -99,7 +99,7 @@ class TestFilesystemIngestionSimple:
             assert len(found_extensions) >= 4, f'Should process multiple file types, found: {found_extensions}'
         logger.info('Various file types test completed successfully')
 
-    def test_filesystem_step_error_handling(self) -> None:
+    def test_filesystem_step_error_handling(self: Any) -> None:
         """Test filesystem step error handling."""
         logger.info('Testing filesystem step error handling')
         filesystem_step = FileSystemStep()

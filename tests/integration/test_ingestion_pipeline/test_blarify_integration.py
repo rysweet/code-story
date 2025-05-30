@@ -113,7 +113,7 @@ def ensure_blarify_image() -> None:
         pytest.fail(f'Docker not available for testing: {e}')
 
 @pytest.fixture(scope='function')
-def blarify_celery_app(celery_app: Any):
+def blarify_celery_app(celery_app: Any) -> Any:
     """Provide a Celery app configured for BlarifyStep testing.
 
     This fixture depends on the celery_app fixture from conftest.py

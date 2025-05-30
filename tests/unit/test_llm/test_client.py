@@ -41,7 +41,7 @@ def client() -> None:
 class TestReasoningModelSupport:
     """Tests for reasoning model parameter adjustment logic."""
 
-    def test_is_reasoning_model(self, client: Any) -> None:
+    def test_is_reasoning_model(self: Any, client: Any) -> None:
         """Test reasoning model detection."""
         assert client._is_reasoning_model('o1')
         assert client._is_reasoning_model('o1-preview')
@@ -55,7 +55,7 @@ class TestReasoningModelSupport:
         assert not client._is_reasoning_model('text-embedding-3-small')
         assert not client._is_reasoning_model('claude-3')
 
-    def test_adjust_params_for_reasoning_model_o1(self, client: Any) -> None:
+    def test_adjust_params_for_reasoning_model_o1(self: Any, client: Any) -> None:
         """Test parameter adjustment for o1 reasoning models."""
         original_params = {'max_tokens': 100, 'temperature': 0.7, 'top_p': 0.9, 'other_param': 'value'}
         adjusted_params = client._adjust_params_for_reasoning_model(original_params, 'o1')
@@ -66,7 +66,7 @@ class TestReasoningModelSupport:
         assert adjusted_params['top_p'] == 0.9
         assert adjusted_params['other_param'] == 'value'
 
-    def test_adjust_params_for_reasoning_model_o1_preview(self, client: Any) -> None:
+    def test_adjust_params_for_reasoning_model_o1_preview(self: Any, client: Any) -> None:
         """Test parameter adjustment for o1-preview model."""
         original_params = {'max_tokens': 50, 'temperature': 1.0}
         adjusted_params = client._adjust_params_for_reasoning_model(original_params, 'o1-preview')
@@ -75,7 +75,7 @@ class TestReasoningModelSupport:
         assert 'max_tokens' not in adjusted_params
         assert 'temperature' not in adjusted_params
 
-    def test_adjust_params_for_reasoning_model_regular_model(self, client: Any) -> None:
+    def test_adjust_params_for_reasoning_model_regular_model(self: Any, client: Any) -> None:
         """Test parameter adjustment for regular (non-reasoning) models."""
         original_params = {'max_tokens': 100, 'temperature': 0.7, 'top_p': 0.9}
         adjusted_params = client._adjust_params_for_reasoning_model(original_params, 'gpt-4o')
@@ -86,7 +86,7 @@ class TestReasoningModelSupport:
         assert adjusted_params['temperature'] == 0.7
         assert 'max_completion_tokens' not in adjusted_params
 
-    def test_adjust_params_for_reasoning_model_no_max_tokens(self, client: Any) -> None:
+    def test_adjust_params_for_reasoning_model_no_max_tokens(self: Any, client: Any) -> None:
         """Test parameter adjustment when max_tokens is not present."""
         original_params = {'temperature': 0.5, 'top_p': 0.8}
         adjusted_params = client._adjust_params_for_reasoning_model(original_params, 'o1')
@@ -96,7 +96,7 @@ class TestReasoningModelSupport:
         assert 'max_completion_tokens' not in adjusted_params
         assert 'max_tokens' not in adjusted_params
 
-    def test_adjust_params_for_reasoning_model_none_max_tokens(self, client: Any) -> None:
+    def test_adjust_params_for_reasoning_model_none_max_tokens(self: Any, client: Any) -> None:
         """Test parameter adjustment when max_tokens is None."""
         original_params = {'max_tokens': None, 'temperature': 0.3}
         adjusted_params = client._adjust_params_for_reasoning_model(original_params, 'o1-mini')
@@ -104,7 +104,7 @@ class TestReasoningModelSupport:
         assert 'max_completion_tokens' not in adjusted_params
         assert 'temperature' not in adjusted_params
 
-    def test_chat_with_reasoning_model_parameter_adjustment(self, client: Any) -> None:
+    def test_chat_with_reasoning_model_parameter_adjustment(self: Any, client: Any) -> None:
         """Test that chat method properly adjusts parameters for reasoning models."""
         with patch.object(client._sync_client.chat.completions, 'create') as mock_create:
             mock_response = MagicMock()
@@ -123,7 +123,7 @@ class TestReasoningModelSupport:
             assert len(call_args['messages']) == 1
 
     @pytest.mark.asyncio
-    async def test_chat_async_with_reasoning_model_parameter_adjustment(self, client) -> None:
+    async def test_chat_async_with_reasoning_model_parameter_adjustment(self: Any, client: Any) -> None:
         """Test that chat_async method properly adjusts parameters for reasoning models."""
         mock_response = MagicMock()
         mock_response.model_dump.return_value = {'id': 'chatcmpl-123', 'object': 'chat.completion', 'created': 1616782565, 'model': 'o1-preview', 'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': 'Async response'}, 'finish_reason': 'stop'}], 'usage': {'prompt_tokens': 10, 'completion_tokens': 5, 'total_tokens': 15}}
@@ -145,7 +145,7 @@ class TestReasoningModelSupport:
 class TestOpenAIClient:
     """Tests for the OpenAIClient class."""
 
-    def test_init(self) -> None:
+    def test_init(self: Any) -> None:
         """Test client initialization."""
         with patch('openai.AzureOpenAI'), patch('openai.AsyncAzureOpenAI'), patch('codestory.llm.client.DefaultAzureCredential'), patch('codestory.llm.client.get_bearer_token_provider'):
             client = OpenAIClient(endpoint='https://test-endpoint.openai.azure.com')
@@ -158,12 +158,12 @@ class TestOpenAIClient:
             assert client.chat_model == 'custom-chat-model'
             assert client.reasoning_model == 'custom-reasoning-model'
 
-    def test_init_missing_credentials(self) -> None:
+    def test_init_missing_credentials(self: Any) -> None:
         """Test client initialization with missing credentials."""
         with patch('codestory.llm.client.get_settings', side_effect=Exception('No settings')), patch('codestory.llm.client.DefaultAzureCredential'), patch('codestory.llm.client.get_bearer_token_provider'), pytest.raises(AuthenticationError):
             OpenAIClient()
 
-    def test_complete(self, client: Any) -> None:
+    def test_complete(self: Any, client: Any) -> None:
         """Test text completion."""
         with patch.object(client._sync_client.completions, 'create') as mock_create:
             mock_response = MagicMock()
@@ -182,7 +182,7 @@ class TestOpenAIClient:
             assert call_args['model'] == 'gpt-4o'
             assert call_args['prompt'] == 'Test prompt'
 
-    def test_chat(self, client: Any) -> None:
+    def test_chat(self: Any, client: Any) -> None:
         """Test chat completion."""
         with patch.object(client._sync_client.chat.completions, 'create') as mock_create:
             mock_response = MagicMock()
@@ -203,7 +203,7 @@ class TestOpenAIClient:
             assert call_args['model'] == 'gpt-4o'
             assert len(call_args['messages']) == 2
 
-    def test_embed(self, client: Any) -> None:
+    def test_embed(self: Any, client: Any) -> None:
         """Test embedding generation."""
         with patch.object(client._sync_client.embeddings, 'create') as mock_create:
             mock_response = MagicMock()
@@ -221,7 +221,7 @@ class TestOpenAIClient:
             assert call_args['model'] == 'text-embedding-3-small'
             assert call_args['input'] == ['Test text']
 
-    def test_error_handling_complete(self) -> None:
+    def test_error_handling_complete(self: Any) -> None:
         """Test error handling in completion."""
         with patch('openai.AzureOpenAI') as mock_azure_openai, patch('openai.AsyncAzureOpenAI'), patch('codestory.llm.backoff.retry_on_openai_errors'), patch('codestory.llm.client.DefaultAzureCredential'), patch('codestory.llm.client.get_bearer_token_provider'), patch('codestory.llm.client.instrument_request', lambda op: lambda f: f):
             mock_completions = MagicMock()
@@ -235,7 +235,7 @@ class TestOpenAIClient:
                     client.complete('Test prompt')
 
     @pytest.mark.asyncio
-    async def test_complete_async(self, client) -> None:
+    async def test_complete_async(self: Any, client: Any) -> None:
         """Test async text completion."""
         mock_response = MagicMock()
         mock_response.model_dump.return_value = {'id': 'cmpl-123', 'object': 'text_completion', 'created': 1616782565, 'model': 'gpt-4o', 'choices': [{'text': 'This is a test completion.', 'index': 0, 'finish_reason': 'stop'}], 'usage': {'prompt_tokens': 5, 'completion_tokens': 7, 'total_tokens': 12}}
@@ -254,7 +254,7 @@ class TestOpenAIClient:
 class TestCreateClient:
     """Tests for the create_client function."""
 
-    def test_create_client(self, mock_settings: Any) -> None:
+    def test_create_client(self: Any, mock_settings: Any) -> None:
         """Test client creation with default settings."""
         with patch('openai.AzureOpenAI'), patch('openai.AsyncAzureOpenAI'), patch('codestory.llm.client.DefaultAzureCredential'), patch('codestory.llm.client.get_bearer_token_provider'), patch('codestory.llm.client.instrument_request', lambda op: lambda f: f), patch('codestory.llm.client.instrument_async_request', lambda op: lambda f: f), patch('codestory.llm.client.retry_on_openai_errors', lambda **kw: lambda f: f), patch('codestory.llm.client.retry_on_openai_errors_async', lambda **kw: lambda f: f):
             client = create_client()
@@ -263,7 +263,7 @@ class TestCreateClient:
             assert client.chat_model == 'gpt-4o'
             assert client.reasoning_model == 'gpt-4o'
 
-    def test_create_client_override(self) -> None:
+    def test_create_client_override(self: Any) -> None:
         """Test client creation with overridden settings."""
         with patch('codestory.llm.client.OpenAIClient') as mock_client_class:
             mock_client = MagicMock()

@@ -29,7 +29,7 @@ console: Console = Console()
 class CodeStoryCommandGroup(DYMGroup):
     """Custom command group that shows help when a command fails."""
 
-    def __call__(self, *args: Any, **kwargs: Any) -> None:
+    def __call__(self: Any, *args: Any, **kwargs: Any) -> None:
         """Override to catch and customize error handling."""
         try:
             return super().__call__(*args, **kwargs)

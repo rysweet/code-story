@@ -12,29 +12,29 @@ class TestServiceCommand:
     """Tests for the service command group."""
 
     @pytest.fixture
-    def mock_client(self):
+    def mock_client(self: Any) -> Any:
         """Create a mock ServiceClient."""
         client = mock.MagicMock(spec=ServiceClient)
         client.check_service_health.return_value = {'status': 'healthy', 'components': {'neo4j': {'status': 'healthy'}, 'redis': {'status': 'healthy'}, 'celery': {'status': 'healthy'}, 'openai': {'status': 'healthy'}}}
         return client
 
     @pytest.fixture
-    def cli_runner(self):
+    def cli_runner(self: Any) -> Any:
         """Create a CLI test runner."""
         return CliRunner()
 
     @pytest.fixture
-    def ctx_obj(self, mock_client: Any):
+    def ctx_obj(self: Any, mock_client: Any) -> Any:
         """Create a Click context object."""
         console = Console(width=100, color_system=None)
         return {'client': mock_client, 'console': console}
 
-    def test_auth_renew_command_exists(self) -> None:
+    def test_auth_renew_command_exists(self: Any) -> None:
         """Test that auth-renew command exists."""
         commands = service.commands
         assert 'auth-renew' in commands
 
-    def test_auth_renew_help(self, cli_runner: Any) -> None:
+    def test_auth_renew_help(self: Any, cli_runner: Any) -> None:
         """Test that auth-renew command has correct help text."""
         result = cli_runner.invoke(service, ['auth-renew', '--help'])
         assert result.exit_code == 0
@@ -46,7 +46,7 @@ class TestServiceCommand:
     @mock.patch('codestory.cli.commands.service.subprocess.run')
     @mock.patch('codestory.cli.commands.service.get_running_containers')
     @mock.patch('codestory.cli.commands.service.os.path.exists')
-    def test_auth_renew_inside_container(self, mock_exists, mock_get_containers, mock_run, cli_runner, ctx_obj) -> None:
+    def test_auth_renew_inside_container(self: Any, mock_exists: Any, mock_get_containers: Any, mock_run: Any, cli_runner: Any, ctx_obj: Any) -> None:
         """Test auth-renew command when run inside a container."""
         mock_exists.return_value = True
         mock_run.return_value = mock.MagicMock(returncode=0)
@@ -60,7 +60,7 @@ class TestServiceCommand:
     @mock.patch('codestory.cli.commands.service.subprocess.run')
     @mock.patch('codestory.cli.commands.service.get_running_containers')
     @mock.patch('codestory.cli.commands.service.os.path.exists')
-    def test_auth_renew_specific_tenant(self, mock_exists, mock_get_containers, mock_run, cli_runner, ctx_obj) -> None:
+    def test_auth_renew_specific_tenant(self: Any, mock_exists: Any, mock_get_containers: Any, mock_run: Any, cli_runner: Any, ctx_obj: Any) -> None:
         """Test auth-renew command with specific tenant ID."""
         mock_exists.return_value = True
         mock_run.return_value = mock.MagicMock(returncode=0)
@@ -76,7 +76,7 @@ class TestServiceCommand:
     @mock.patch('codestory.cli.commands.service.subprocess.run')
     @mock.patch('codestory.cli.commands.service.get_running_containers')
     @mock.patch('codestory.cli.commands.service.os.path.exists')
-    def test_auth_renew_check_only(self, mock_exists, mock_get_containers, mock_run, cli_runner, ctx_obj) -> None:
+    def test_auth_renew_check_only(self: Any, mock_exists: Any, mock_get_containers: Any, mock_run: Any, cli_runner: Any, ctx_obj: Any) -> None:
         """Test auth-renew command with check-only flag."""
         mock_exists.return_value = True
         mock_run.return_value = mock.MagicMock(returncode=0)
@@ -90,7 +90,7 @@ class TestServiceCommand:
     @mock.patch('codestory.cli.commands.service.subprocess.run')
     @mock.patch('codestory.cli.commands.service.get_running_containers')
     @mock.patch('codestory.cli.commands.service.os.path.exists')
-    def test_auth_renew_error_handling(self, mock_exists, mock_get_containers, mock_run, cli_runner, ctx_obj) -> None:
+    def test_auth_renew_error_handling(self: Any, mock_exists: Any, mock_get_containers: Any, mock_run: Any, cli_runner: Any, ctx_obj: Any) -> None:
         """Test auth-renew error handling."""
         mock_exists.return_value = True
         mock_run.return_value = mock.MagicMock(returncode=1)
@@ -102,7 +102,7 @@ class TestServiceCommand:
     @mock.patch('codestory.cli.commands.service.subprocess.run')
     @mock.patch('codestory.cli.commands.service.get_running_containers')
     @mock.patch('codestory.cli.commands.service.os.path.exists')
-    def test_auth_renew_outside_container(self, mock_exists, mock_get_containers, mock_run, cli_runner, ctx_obj) -> None:
+    def test_auth_renew_outside_container(self: Any, mock_exists: Any, mock_get_containers: Any, mock_run: Any, cli_runner: Any, ctx_obj: Any) -> None:
         """Test auth-renew command when run on host (outside container)."""
         mock_exists.return_value = False
         mock_get_containers.return_value = ['codestory-service', 'codestory-worker']
@@ -118,7 +118,7 @@ class TestServiceCommand:
     @mock.patch('codestory.cli.commands.service.subprocess.run')
     @mock.patch('codestory.cli.commands.service.get_running_containers')
     @mock.patch('codestory.cli.commands.service.os.path.exists')
-    def test_auth_renew_no_containers(self, mock_exists, mock_get_containers, mock_run, cli_runner, ctx_obj) -> None:
+    def test_auth_renew_no_containers(self: Any, mock_exists: Any, mock_get_containers: Any, mock_run: Any, cli_runner: Any, ctx_obj: Any) -> None:
         """Test auth-renew when no containers are running."""
         mock_exists.return_value = False
         mock_get_containers.return_value = []

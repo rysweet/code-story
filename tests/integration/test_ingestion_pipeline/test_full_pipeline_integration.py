@@ -1,8 +1,5 @@
-"""Integration tests for the full ingestion pipeline.
-
-These tests verify that the complete ingestion pipeline can process a
-repository through all workflow steps correctly using real services.
-"""
+from typing import Any
+'Integration tests for the full ingestion pipeline.\n\nThese tests verify that the complete ingestion pipeline can process a\nrepository through all workflow steps correctly using real services.\n'
 import logging
 import os
 import shutil
@@ -19,7 +16,7 @@ class TestFullPipelineIntegration(BasePipelineTest):
     """Test the full ingestion pipeline with real services."""
 
     @pytest.fixture(autouse=True)
-    def setup_pipeline_manager(self) -> None:
+    def setup_pipeline_manager(self: Any) -> None:
         """Set up the pipeline manager for the test."""
         self.config_file_path = self._create_pipeline_config_file()
         self.pipeline_manager = PipelineManager(config_path=self.config_file_path)
@@ -27,14 +24,14 @@ class TestFullPipelineIntegration(BasePipelineTest):
         if hasattr(self, 'config_file_path') and self.config_file_path and os.path.exists(self.config_file_path):
             os.unlink(self.config_file_path)
 
-    def _create_pipeline_config_file(self) -> None:
+    def _create_pipeline_config_file(self: Any) -> None:
         """Create a pipeline configuration file for testing."""
         config_content = '\n# For testing, we\'ll use only filesystem step to avoid task parameter mismatches\nsteps:\n  - name: filesystem\n    concurrency: 1\n    ignore_patterns:\n      - ".git/"\n      - "__pycache__/"\n    \ndependencies:\n  filesystem: []\n\nretry:\n  max_retries: 2\n  back_off_seconds: 1\n'
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
             f.write(config_content)
             return f.name
 
-    def test_full_pipeline_execution(self) -> None:
+    def test_full_pipeline_execution(self: Any) -> None:
         """Test that the full pipeline creates filesystem nodes in Neo4j."""
         self.create_filesystem_nodes()
         repo_count_query = 'MATCH (r:Repository) RETURN count(r) as count'
@@ -47,7 +44,7 @@ class TestFullPipelineIntegration(BasePipelineTest):
         module_result = self.neo4j_connector.execute_query(module_query)
         assert module_result[0]['count'] == 1, 'module.py not found in graph'
 
-    def test_pipeline_with_empty_repo(self) -> None:
+    def test_pipeline_with_empty_repo(self: Any) -> None:
         """Test creating a repository node for an empty repository."""
         empty_repo_dir = tempfile.mkdtemp()
         try:
@@ -65,7 +62,7 @@ class TestFullPipelineIntegration(BasePipelineTest):
             if os.path.exists(empty_repo_dir):
                 shutil.rmtree(empty_repo_dir)
 
-    def test_pipeline_error_handling(self) -> None:
+    def test_pipeline_error_handling(self: Any) -> None:
         """Test that the pipeline handles errors correctly when steps fail."""
         non_existent_path = '/path/that/does/not/exist'
         try:

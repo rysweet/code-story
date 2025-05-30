@@ -1,18 +1,9 @@
 from typing import Any
-
-"""Path matcher for resolving references to filesystem paths.
-
-This module provides functionality for matching references in documentation
-to actual filesystem paths in the repository.
-"""
-
+'Path matcher for resolving references to filesystem paths.\n\nThis module provides functionality for matching references in documentation\nto actual filesystem paths in the repository.\n'
 import logging
 import os
-
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-
 logger = logging.getLogger(__name__)
-
 
 class PathMatcher:
     """Matches documentation references to filesystem paths.
@@ -21,7 +12,7 @@ class PathMatcher:
     filesystem paths or entities in the repository.
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str) -> None:
+    def __init__(self: Any, connector: Neo4jConnector, repository_path: str) -> None:
         """Initialize the path matcher.
 
         Args:
@@ -31,55 +22,26 @@ class PathMatcher:
         self.connector = connector
         self.repository_path = repository_path
         self.path_cache: dict[Any, Any] = {}
-
-        # Load repository structure for faster matching
         self._load_repository_structure()
 
-    def _load_repository_structure(self) -> None:
+    def _load_repository_structure(self: Any) -> None:
         """Load repository structure from Neo4j."""
-        # Get all file paths
-        query = """
-        MATCH (f:File)
-        RETURN f.path as path
-        """
-
+        query = '\n        MATCH (f:File)\n        RETURN f.path as path\n        '
         files = self.connector.run_query(query, fetch_all=True)
-        self.file_paths = {record["path"] for record in files}
-
-        # Get all directory paths
-        query = """
-        MATCH (d:Directory)
-        RETURN d.path as path
-        """
-
+        self.file_paths = {record['path'] for record in files}
+        query = '\n        MATCH (d:Directory)\n        RETURN d.path as path\n        '
         dirs = self.connector.run_query(query, fetch_all=True)
-        self.dir_paths = {record["path"] for record in dirs}
-
-        # Get all class names
-        query = """
-        MATCH (c:Class)
-        RETURN c.name as name, c.qualified_name as qualified_name
-        """
-
+        self.dir_paths = {record['path'] for record in dirs}
+        query = '\n        MATCH (c:Class)\n        RETURN c.name as name, c.qualified_name as qualified_name\n        '
         classes = self.connector.run_query(query, fetch_all=True)
-        self.class_names = {record["name"] for record in classes}
-        self.qualified_class_names = {
-            record["qualified_name"] for record in classes if record["qualified_name"]
-        }
-
-        # Get all function names
-        query = """
-        MATCH (f:Function)
-        RETURN f.name as name, f.qualified_name as qualified_name
-        """
-
+        self.class_names = {record['name'] for record in classes}
+        self.qualified_class_names = {record['qualified_name'] for record in classes if record['qualified_name']}
+        query = '\n        MATCH (f:Function)\n        RETURN f.name as name, f.qualified_name as qualified_name\n        '
         funcs = self.connector.run_query(query, fetch_all=True)
-        self.func_names = {record["name"] for record in funcs}
-        self.qualified_func_names = {
-            record["qualified_name"] for record in funcs if record["qualified_name"]
-        }
+        self.func_names = {record['name'] for record in funcs}
+        self.qualified_func_names = {record['qualified_name'] for record in funcs if record['qualified_name']}
 
-    def match_path(self, path_reference: str) -> str | None:
+    def match_path(self: Any, path_reference: str) -> str | None:
         """Match a path reference to an actual path.
 
         Args:
@@ -88,35 +50,23 @@ class PathMatcher:
         Returns:
             Actual path if found, None otherwise
         """
-        # Check cache first
         if path_reference in self.path_cache:
             return self.path_cache[path_reference]
-
-        # Try exact match first
         if path_reference in self.file_paths:
             self.path_cache[path_reference] = path_reference
             return path_reference
-
         if path_reference in self.dir_paths:
             self.path_cache[path_reference] = path_reference
             return path_reference
-
-        # Try to find file by basename
         basename = os.path.basename(path_reference)
-        matching_paths = [p for p in self.file_paths if p.endswith(f"/{basename}")]
-
+        matching_paths = [p for p in self.file_paths if p.endswith(f'/{basename}')]
         if len(matching_paths) == 1:
-            # Unambiguous match
             self.path_cache[path_reference] = matching_paths[0]
             return matching_paths[0]
         elif len(matching_paths) > 1:
-            # Multiple matches, try to find the best one
-            # Check if any match contains directory components from the reference
-            dir_components = os.path.dirname(path_reference).split("/")
+            dir_components = os.path.dirname(path_reference).split('/')
             dir_components = [c for c in dir_components if c]
-
             if dir_components:
-                # Filter matches by directory components
                 filtered_paths: list[Any] = []
                 for p in matching_paths:
                     p_dir = os.path.dirname(p)
@@ -127,36 +77,26 @@ class PathMatcher:
                             break
                     if match:
                         filtered_paths.append(p)
-
                 if len(filtered_paths) == 1:
                     self.path_cache[path_reference] = filtered_paths[0]
                     return filtered_paths[0]
                 elif len(filtered_paths) > 1:
-                    # Still ambiguous, return the shortest path
                     shortest = min(filtered_paths, key=len)
                     self.path_cache[path_reference] = shortest
                     return shortest
-
-            # No directory components or still ambiguous, return the shortest path
             shortest = min(matching_paths, key=len)
             self.path_cache[path_reference] = shortest
             return shortest
-
-        # Try to match by extension
-        if "." in basename:
-            ext = basename.split(".")[-1]
-            matching_paths = [p for p in self.file_paths if p.endswith(f".{ext}")]
-
+        if '.' in basename:
+            ext = basename.split('.')[-1]
+            matching_paths = [p for p in self.file_paths if p.endswith(f'.{ext}')]
             if matching_paths:
-                # Return any one file with matching extension
                 self.path_cache[path_reference] = matching_paths[0]
                 return matching_paths[0]
-
-        # No match found
         self.path_cache[path_reference] = None
         return None
 
-    def match_class(self, class_reference: str) -> str | None:
+    def match_class(self: Any, class_reference: str) -> str | None:
         """Match a class reference to an actual class.
 
         Args:
@@ -165,53 +105,23 @@ class PathMatcher:
         Returns:
             Neo4j ID of the class if found, None otherwise
         """
-        # Check if the class exists by name
         if class_reference in self.class_names:
-            query = """
-            MATCH (c:Class)
-            WHERE c.name = $name
-            RETURN ID(c) as id
-            """
-
-            result = self.connector.run_query(
-                query, parameters={"name": class_reference}, fetch_one=True
-            )
-
+            query = '\n            MATCH (c:Class)\n            WHERE c.name = $name\n            RETURN ID(c) as id\n            '
+            result = self.connector.run_query(query, parameters={'name': class_reference}, fetch_one=True)
             if result:
-                return str(result["id"])
-
-        # Check if the class exists by qualified name
+                return str(result['id'])
         if class_reference in self.qualified_class_names:
-            query = """
-            MATCH (c:Class)
-            WHERE c.qualified_name = $name
-            RETURN ID(c) as id
-            """
-
-            result = self.connector.run_query(
-                query, parameters={"name": class_reference}, fetch_one=True
-            )
-
+            query = '\n            MATCH (c:Class)\n            WHERE c.qualified_name = $name\n            RETURN ID(c) as id\n            '
+            result = self.connector.run_query(query, parameters={'name': class_reference}, fetch_one=True)
             if result:
-                return str(result["id"])
-
-        # Try partial match on qualified name
-        query = """
-        MATCH (c:Class)
-        WHERE c.qualified_name ENDS WITH $name
-        RETURN ID(c) as id
-        """
-
-        result = self.connector.run_query(
-            query, parameters={"name": class_reference}, fetch_one=True
-        )
-
+                return str(result['id'])
+        query = '\n        MATCH (c:Class)\n        WHERE c.qualified_name ENDS WITH $name\n        RETURN ID(c) as id\n        '
+        result = self.connector.run_query(query, parameters={'name': class_reference}, fetch_one=True)
         if result:
-            return str(result["id"])
-
+            return str(result['id'])
         return None
 
-    def match_function(self, function_reference: str) -> str | None:
+    def match_function(self: Any, function_reference: str) -> str | None:
         """Match a function reference to an actual function.
 
         Args:
@@ -220,63 +130,19 @@ class PathMatcher:
         Returns:
             Neo4j ID of the function if found, None otherwise
         """
-        # Remove parentheses if present
-        function_reference = function_reference.rstrip("()")
-
-        # Check if the function exists by name
+        function_reference = function_reference.rstrip('()')
         if function_reference in self.func_names:
-            query = """
-            MATCH (f:Function)
-            WHERE f.name = $name
-            RETURN ID(f) as id
-            UNION
-            MATCH (m:Method)
-            WHERE m.name = $name
-            RETURN ID(m) as id
-            """
-
-            result = self.connector.run_query(
-                query, parameters={"name": function_reference}, fetch_one=True
-            )
-
+            query = '\n            MATCH (f:Function)\n            WHERE f.name = $name\n            RETURN ID(f) as id\n            UNION\n            MATCH (m:Method)\n            WHERE m.name = $name\n            RETURN ID(m) as id\n            '
+            result = self.connector.run_query(query, parameters={'name': function_reference}, fetch_one=True)
             if result:
-                return str(result["id"])
-
-        # Check if the function exists by qualified name
+                return str(result['id'])
         if function_reference in self.qualified_func_names:
-            query = """
-            MATCH (f:Function)
-            WHERE f.qualified_name = $name
-            RETURN ID(f) as id
-            UNION
-            MATCH (m:Method)
-            WHERE m.qualified_name = $name
-            RETURN ID(m) as id
-            """
-
-            result = self.connector.run_query(
-                query, parameters={"name": function_reference}, fetch_one=True
-            )
-
+            query = '\n            MATCH (f:Function)\n            WHERE f.qualified_name = $name\n            RETURN ID(f) as id\n            UNION\n            MATCH (m:Method)\n            WHERE m.qualified_name = $name\n            RETURN ID(m) as id\n            '
+            result = self.connector.run_query(query, parameters={'name': function_reference}, fetch_one=True)
             if result:
-                return str(result["id"])
-
-        # Try partial match on qualified name
-        query = """
-        MATCH (f:Function)
-        WHERE f.qualified_name ENDS WITH $name
-        RETURN ID(f) as id
-        UNION
-        MATCH (m:Method)
-        WHERE m.qualified_name ENDS WITH $name
-        RETURN ID(m) as id
-        """
-
-        result = self.connector.run_query(
-            query, parameters={"name": function_reference}, fetch_one=True
-        )
-
+                return str(result['id'])
+        query = '\n        MATCH (f:Function)\n        WHERE f.qualified_name ENDS WITH $name\n        RETURN ID(f) as id\n        UNION\n        MATCH (m:Method)\n        WHERE m.qualified_name ENDS WITH $name\n        RETURN ID(m) as id\n        '
+        result = self.connector.run_query(query, parameters={'name': function_reference}, fetch_one=True)
         if result:
-            return str(result["id"])
-
+            return str(result['id'])
         return None

@@ -102,12 +102,12 @@ class FileSystemStep(PipelineStep):
     of directories and files in Neo4j, which can be linked to AST nodes.
     """
 
-    def __init__(self) -> None:
+    def __init__(self: Any) -> None:
         """Initialize the filesystem step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
 
-    def run(self, repository_path: str, **config: Any) -> str:
+    def run(self: Any, repository_path: str, **config: Any) -> str:
         """Run the filesystem step.
 
         Args:
@@ -164,7 +164,7 @@ class FileSystemStep(PipelineStep):
             log_error(error_msg, error=e, job_id=job_id)
             raise
 
-    def status(self, job_id: str) -> dict[str, Any]:
+    def status(self: Any, job_id: str) -> dict[str, Any]:
         """Check the status of a job.
 
         Args:
@@ -229,7 +229,7 @@ class FileSystemStep(PipelineStep):
             job_info.update({'status': StepStatus.FAILED, 'error': f'Status check failed: {e!s}'})
             return job_info
 
-    def stop(self, job_id: str) -> dict[str, Any]:
+    def stop(self: Any, job_id: str) -> dict[str, Any]:
         """Stop a running job.
 
         Args:
@@ -262,7 +262,7 @@ class FileSystemStep(PipelineStep):
             job_info.update({'status': StepStatus.STOPPED, 'message': f'Job {job_id} marked as stopped, but encountered error: {e!s}', 'error': str(e)})
             return job_info
 
-    def cancel(self, job_id: str) -> dict[str, Any]:
+    def cancel(self: Any, job_id: str) -> dict[str, Any]:
         """Cancel a job.
 
         Args:
@@ -291,7 +291,7 @@ class FileSystemStep(PipelineStep):
                 log_error(f'Failed to cancel job {job_id}', error=e, job_id=job_id)
                 raise
 
-    def ingestion_update(self, repository_path: str, **config: Any) -> str:
+    def ingestion_update(self: Any, repository_path: str, **config: Any) -> str:
         """Update the graph with the results of this step only.
 
         Args:
@@ -307,7 +307,7 @@ class FileSystemStep(PipelineStep):
         return job_id
 
 @shared_task(name='codestory_filesystem.step.process_filesystem', bind=True, queue='ingestion')
-def process_filesystem(self, repository_path: str, ignore_patterns: list[str] | None=None, max_depth: int | None=None, include_extensions: list[str] | None=None, job_id: str | None=None, **config: Any) -> dict[str, Any]:
+def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[str] | None=None, max_depth: int | None=None, include_extensions: list[str] | None=None, job_id: str | None=None, **config: Any) -> dict[str, Any]:
     """Process the filesystem of a repository.
 
     Args:

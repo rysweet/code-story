@@ -1,4 +1,5 @@
-"""ResourceTokenManager for ingestion resource throttling using Redis."""
+from typing import Any
+'ResourceTokenManager for ingestion resource throttling using Redis.'
 import logging
 import os
 import time
@@ -10,7 +11,7 @@ class ResourceTokenManager:
     Implements a simple token bucket using Redis to throttle concurrent resource usage.
     """
 
-    def __init__(self, redis_url: str, token_key: str='codestory:ingestion:resource_tokens', max_tokens: int=4, acquire_timeout: int=30, token_ttl: int=3600) -> None:
+    def __init__(self: Any, redis_url: str, token_key: str='codestory:ingestion:resource_tokens', max_tokens: int=4, acquire_timeout: int=30, token_ttl: int=3600) -> None:
         self.redis_url = redis_url
         self.token_key = token_key
         self.max_tokens = max_tokens
@@ -18,7 +19,7 @@ class ResourceTokenManager:
         self.token_ttl = token_ttl
         self.redis = redis.from_url(redis_url, decode_responses=True)
 
-    def initialize_tokens(self) -> None:
+    def initialize_tokens(self: Any) -> None:
         """
         Initialize the token bucket in Redis if not already set.
         """
@@ -26,7 +27,7 @@ class ResourceTokenManager:
             self.redis.set(self.token_key, self.max_tokens, ex=self.token_ttl)
             logger.info(f'Initialized resource tokens: {self.max_tokens}')
 
-    def acquire_token(self) -> bool:
+    def acquire_token(self: Any) -> bool:
         """
         Attempt to acquire a token, blocking up to acquire_timeout seconds.
 
@@ -52,7 +53,7 @@ class ResourceTokenManager:
         logger.warning('Failed to acquire resource token: timeout')
         return False
 
-    def release_token(self) -> None:
+    def release_token(self: Any) -> None:
         """
         Release a token back to the bucket.
         """
@@ -73,7 +74,7 @@ class ResourceTokenManager:
                 except redis.WatchError:
                     continue
 
-    def get_status(self) -> dict:
+    def get_status(self: Any) -> dict:
         """
         Return current token count and max tokens.
         """

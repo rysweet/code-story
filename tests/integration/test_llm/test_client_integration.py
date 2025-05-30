@@ -71,7 +71,7 @@ def test_reasoning_model_parameter_handling(client: Any) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_reasoning_model_async_parameter_handling(client) -> None:
+async def test_reasoning_model_async_parameter_handling(client: Any) -> None:
     """Test async reasoning model parameter handling.
     
     This test verifies that the async version properly handles reasoning model
@@ -132,7 +132,7 @@ def test_embedding(client: Any) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_chat_async(client) -> None:
+async def test_chat_async(client: Any) -> None:
     """Test async chat completion with real API.
 
     This test verifies that the client can successfully make an async chat

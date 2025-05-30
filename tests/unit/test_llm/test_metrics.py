@@ -19,7 +19,7 @@ def mock_all_metrics_objects() -> None:
 class TestMetricsFunctions:
     """Tests for metrics utility functions."""
 
-    def test_record_request(self, mock_all_metrics_objects: Any) -> None:
+    def test_record_request(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test record_request function."""
         record_request = mock_all_metrics_objects['record_request']
         request_count = mock_all_metrics_objects['REQUEST_COUNT']
@@ -33,7 +33,7 @@ class TestMetricsFunctions:
             mock_duration_labels.assert_called_once_with(operation='chat', model='gpt-4o')
             mock_duration_labels.return_value.observe.assert_called_once_with(1.5)
 
-    def test_record_request_with_tokens(self, mock_all_metrics_objects: Any) -> None:
+    def test_record_request_with_tokens(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test record_request function with token usage."""
         record_request = mock_all_metrics_objects['record_request']
         request_count = mock_all_metrics_objects['REQUEST_COUNT']
@@ -50,7 +50,7 @@ class TestMetricsFunctions:
             mock_token_labels.assert_has_calls([call(operation='chat', model='gpt-4o', token_type='prompt'), call(operation='chat', model='gpt-4o', token_type='completion'), call(operation='chat', model='gpt-4o', token_type='total')], any_order=True)
             mock_token_labels.return_value.inc.assert_has_calls([call(100), call(50), call(150)], any_order=True)
 
-    def test_record_error(self, mock_all_metrics_objects: Any) -> None:
+    def test_record_error(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test record_error function."""
         record_error = mock_all_metrics_objects['record_error']
         error_count = mock_all_metrics_objects['ERROR_COUNT']
@@ -60,7 +60,7 @@ class TestMetricsFunctions:
             mock_error_labels.assert_called_once_with(operation='embedding', model='text-embedding-3-small', error_type='RateLimitError')
             mock_error_labels.return_value.inc.assert_called_once()
 
-    def test_record_retry(self, mock_all_metrics_objects: Any) -> None:
+    def test_record_retry(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test record_retry function."""
         record_retry = mock_all_metrics_objects['record_retry']
         retry_count = mock_all_metrics_objects['RETRY_COUNT']
@@ -73,7 +73,7 @@ class TestMetricsFunctions:
 class TestInstrumentRequestDecorator:
     """Tests for the instrument_request decorator."""
 
-    def test_instrument_request_success(self, mock_all_metrics_objects: Any) -> None:
+    def test_instrument_request_success(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test instrument_request decorator with successful response."""
         instrument_request = mock_all_metrics_objects['instrument_request']
         current_requests = mock_all_metrics_objects['CURRENT_REQUESTS']
@@ -96,7 +96,7 @@ class TestInstrumentRequestDecorator:
             assert 'duration' in kwargs
             assert kwargs['tokens'] == {'prompt': 100, 'completion': 50, 'total': 150}
 
-    def test_instrument_request_error(self, mock_all_metrics_objects: Any) -> None:
+    def test_instrument_request_error(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test instrument_request decorator with an error response."""
         instrument_request = mock_all_metrics_objects['instrument_request']
         current_requests = mock_all_metrics_objects['CURRENT_REQUESTS']
@@ -128,7 +128,7 @@ class TestInstrumentAsyncRequestDecorator:
     """Tests for the instrument_async_request decorator."""
 
     @pytest.mark.asyncio
-    async def test_instrument_async_request_success(self, mock_all_metrics_objects) -> None:
+    async def test_instrument_async_request_success(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test instrument_async_request decorator with successful response."""
         instrument_async_request = mock_all_metrics_objects['instrument_async_request']
         current_requests = mock_all_metrics_objects['CURRENT_REQUESTS']
@@ -155,7 +155,7 @@ class TestInstrumentAsyncRequestDecorator:
             assert kwargs['tokens'] == {'prompt': 100, 'completion': 50, 'total': 150}
 
     @pytest.mark.asyncio
-    async def test_instrument_async_request_error(self, mock_all_metrics_objects) -> None:
+    async def test_instrument_async_request_error(self: Any, mock_all_metrics_objects: Any) -> None:
         """Test instrument_async_request decorator with an error response."""
         instrument_async_request = mock_all_metrics_objects['instrument_async_request']
         current_requests = mock_all_metrics_objects['CURRENT_REQUESTS']

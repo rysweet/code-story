@@ -16,41 +16,41 @@ F = TypeVar('F', bound=Callable[..., Any])
 class CounterLike(Protocol):
     """Protocol for counter-like objects."""
 
-    def inc(self, amount: float=1.0) -> None:
+    def inc(self: Any, amount: float=1.0) -> None:
         """Increment counter."""
         ...
 
-    def labels(self, **kwargs: Any) -> 'CounterLike':
+    def labels(self: Any, **kwargs: Any) -> 'CounterLike':
         """Get labeled instance."""
         ...
 
 class GaugeLike(Protocol):
     """Protocol for gauge-like objects."""
 
-    def inc(self, amount: float=1.0) -> None:
+    def inc(self: Any, amount: float=1.0) -> None:
         """Increment gauge."""
         ...
 
-    def dec(self, amount: float=1.0) -> None:
+    def dec(self: Any, amount: float=1.0) -> None:
         """Decrement gauge."""
         ...
 
-    def set(self, value: float) -> None:
+    def set(self: Any, value: float) -> None:
         """Set gauge value."""
         ...
 
-    def labels(self, **kwargs: Any) -> 'GaugeLike':
+    def labels(self: Any, **kwargs: Any) -> 'GaugeLike':
         """Get labeled instance."""
         ...
 
 class HistogramLike(Protocol):
     """Protocol for histogram-like objects."""
 
-    def observe(self, amount: float, exemplar: Any=None) -> None:
+    def observe(self: Any, amount: float, exemplar: Any=None) -> None:
         """Record an observation."""
         ...
 
-    def labels(self, **kwargs: Any) -> 'HistogramLike':
+    def labels(self: Any, **kwargs: Any) -> 'HistogramLike':
         """Get labeled instance."""
         ...
 

@@ -135,7 +135,7 @@ def neo4j_connector() -> None:
     connector.close()
 
 @pytest.fixture
-def initialized_repo(sample_repo: Any, neo4j_connector: Any):
+def initialized_repo(sample_repo: Any, neo4j_connector: Any) -> Any:
     """Initialize the repository in Neo4j using a custom implementation of process_filesystem."""
     job_id = str(uuid.uuid4())
     result = custom_process_filesystem(repository_path=sample_repo, job_id=job_id, neo4j_connector=neo4j_connector, ignore_patterns=['.git/', '__pycache__/'])

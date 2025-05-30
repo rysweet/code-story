@@ -11,7 +11,7 @@ from codestory.config import Settings, get_settings
 class ProgressClient:
     """Client for tracking ingestion job progress."""
 
-    def __init__(self, job_id: str, callback: Callable[[dict[str, Any]], None], redis_url: str | None=None, console: Console | None=None, settings: Settings | None=None, poll_interval: float=1.0) -> None:
+    def __init__(self: Any, job_id: str, callback: Callable[[dict[str, Any]], None], redis_url: str | None=None, console: Console | None=None, settings: Settings | None=None, poll_interval: float=1.0) -> None:
         """
         Initialize the progress client.
 
@@ -88,7 +88,7 @@ class ProgressClient:
         self._stop_event = threading.Event()
         self._thread = None
 
-    def start(self) -> None:
+    def start(self: Any) -> None:
         """Start tracking progress."""
         if self._thread and self._thread.is_alive():
             return
@@ -100,13 +100,13 @@ class ProgressClient:
         self._thread.daemon = True
         self._thread.start()
 
-    def stop(self) -> None:
+    def stop(self: Any) -> None:
         """Stop tracking progress."""
         if self._thread and self._thread.is_alive():
             self._stop_event.set()
             self._thread.join(timeout=2.0)
 
-    def _subscribe_redis(self) -> None:
+    def _subscribe_redis(self: Any) -> None:
         """Subscribe to Redis channel for progress updates."""
         pubsub = self.redis.pubsub()
         pubsub.subscribe(self.channel)
@@ -139,7 +139,7 @@ class ProgressClient:
             pubsub.unsubscribe()
             pubsub.close()
 
-    def _poll_http(self) -> None:
+    def _poll_http(self: Any) -> None:
         """Poll service API for progress updates when Redis is unavailable."""
         from codestory.cli.client.service_client import ServiceClient, ServiceError
         client = ServiceClient(console=self.console, settings=self.settings)

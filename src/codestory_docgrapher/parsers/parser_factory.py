@@ -1,18 +1,9 @@
 from collections.abc import Callable
 from typing import Any
-
-"""Parser factory for creating appropriate parsers for different document types.
-
-This module provides a factory for creating the appropriate parser based on
-the type of documentation file.
-"""
-
+'Parser factory for creating appropriate parsers for different document types.\n\nThis module provides a factory for creating the appropriate parser based on\nthe type of documentation file.\n'
 import logging
-
 from ..models import DocumentationFile, DocumentType
-
 logger = logging.getLogger(__name__)
-
 
 class Parser:
     """Base class for document parsers.
@@ -20,7 +11,7 @@ class Parser:
     All document parsers should implement this interface.
     """
 
-    def parse(self, document: DocumentationFile) -> dict[str, Any]:
+    def parse(self: Any, document: DocumentationFile) -> dict[str, Any]:
         """Parse a documentation file and extract entities and relationships.
 
         Args:
@@ -29,19 +20,17 @@ class Parser:
         Returns:
             Dict containing extracted entities and relationships
         """
-        raise NotImplementedError("Subclasses must implement parse()")
-
+        raise NotImplementedError('Subclasses must implement parse()')
 
 class ParserFactory:
     """Factory for creating parsers based on document type.
 
     This class creates the appropriate parser for a given document type.
     """
-
     _parsers: dict[DocumentType, type[Parser]] = {}
 
     @classmethod
-    def register(cls, doc_type: DocumentType) -> Callable[[type[Parser]], type[Parser]]:
+    def register(cls: Any, doc_type: DocumentType) -> Callable[[type[Parser]], type[Parser]]:
         """Register a parser class for a document type.
 
         This is a decorator for registering parser classes.
@@ -56,11 +45,10 @@ class ParserFactory:
         def decorator(parser_class: type[Parser]) -> type[Parser]:
             cls._parsers[doc_type] = parser_class
             return parser_class
-
         return decorator
 
     @classmethod
-    def create(cls, doc_type: DocumentType) -> Parser | None:
+    def create(cls: Any, doc_type: DocumentType) -> Parser | None:
         """Create a parser for the given document type.
 
         Args:
@@ -71,11 +59,9 @@ class ParserFactory:
         """
         parser_class = cls._parsers.get(doc_type)
         if not parser_class:
-            logger.warning(f"No parser registered for document type: {doc_type}")
+            logger.warning(f'No parser registered for document type: {doc_type}')
             return None
-
         return parser_class()
-
 
 def get_parser_for_file(document: DocumentationFile) -> Parser | None:
     """Get a parser for the given documentation file.

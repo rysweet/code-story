@@ -12,21 +12,21 @@ from codestory_mcp.tools.base import ToolError
 class TestMockNode:
     """Tests for the MockNode class."""
 
-    def test_init(self) -> None:
+    def test_init(self: Any) -> None:
         """Test initialization."""
         node = MockNode('node-123', ['Class'], {'name': 'TestClass'})
         assert node.id == 'node-123'
         assert node.labels == ['Class']
         assert node.properties == {'name': 'TestClass'}
 
-    def test_get(self) -> None:
+    def test_get(self: Any) -> None:
         """Test get method."""
         node = MockNode('node-123', ['Class'], {'name': 'TestClass'})
         assert node.get('name') == 'TestClass'
         assert node.get('nonexistent') is None
         assert node.get('nonexistent', 'default') == 'default'
 
-    def test_items(self) -> None:
+    def test_items(self: Any) -> None:
         """Test items method."""
         node = MockNode('node-123', ['Class'], {'name': 'TestClass', 'path': '/path'})
         items = node.items()
@@ -34,7 +34,7 @@ class TestMockNode:
         assert ('name', 'TestClass') in items
         assert ('path', '/path') in items
 
-    def test_getitem(self) -> None:
+    def test_getitem(self: Any) -> None:
         """Test __getitem__ method."""
         node = MockNode('node-123', ['Class'], {'name': 'TestClass'})
         assert node['name'] == 'TestClass'
@@ -44,7 +44,7 @@ class TestMockNode:
 class TestMockRelationship:
     """Tests for the MockRelationship class."""
 
-    def test_init(self) -> None:
+    def test_init(self: Any) -> None:
         """Test initialization."""
         rel = MockRelationship('rel-123', 'CALLS', 'node-123', 'node-456', {'count': 5})
         assert rel.id == 'rel-123'
@@ -53,14 +53,14 @@ class TestMockRelationship:
         assert rel.start_node.id == 'node-123'
         assert rel.end_node.id == 'node-456'
 
-    def test_get(self) -> None:
+    def test_get(self: Any) -> None:
         """Test get method."""
         rel = MockRelationship('rel-123', 'CALLS', 'node-123', 'node-456', {'count': 5})
         assert rel.get('count') == 5
         assert rel.get('nonexistent') is None
         assert rel.get('nonexistent', 'default') == 'default'
 
-    def test_items(self) -> None:
+    def test_items(self: Any) -> None:
         """Test items method."""
         rel = MockRelationship('rel-123', 'CALLS', 'node-123', 'node-456', {'count': 5, 'timestamp': 'now'})
         items = rel.items()
@@ -68,7 +68,7 @@ class TestMockRelationship:
         assert ('count', 5) in items
         assert ('timestamp', 'now') in items
 
-    def test_getitem(self) -> None:
+    def test_getitem(self: Any) -> None:
         """Test __getitem__ method."""
         rel = MockRelationship('rel-123', 'CALLS', 'node-123', 'node-456', {'count': 5})
         assert rel['count'] == 5
@@ -79,7 +79,7 @@ class TestGraphServiceAdapter:
     """Tests for the GraphServiceAdapter class."""
 
     @pytest.fixture
-    def mock_settings(self) -> None:
+    def mock_settings(self: Any) -> None:
         """Create a mock settings object."""
         with mock.patch('codestory_mcp.adapters.graph_service.get_mcp_settings') as mock_get_settings:
             settings = mock.Mock()
@@ -88,7 +88,7 @@ class TestGraphServiceAdapter:
             yield settings
 
     @pytest.fixture
-    def mock_metrics(self) -> None:
+    def mock_metrics(self: Any) -> None:
         """Create a mock metrics object."""
         with mock.patch('codestory_mcp.adapters.graph_service.get_metrics') as mock_get_metrics:
             metrics = mock.Mock()
@@ -96,7 +96,7 @@ class TestGraphServiceAdapter:
             yield metrics
 
     @pytest.fixture
-    def mock_client(self) -> None:
+    def mock_client(self: Any) -> None:
         """Create a mock HTTP client."""
         with mock.patch('codestory_mcp.adapters.graph_service.httpx.AsyncClient') as mock_client_cls:
             client = mock.Mock()
@@ -104,18 +104,18 @@ class TestGraphServiceAdapter:
             yield client
 
     @pytest.fixture
-    def adapter(self, mock_settings: Any, mock_metrics: Any, mock_client: Any):
+    def adapter(self: Any, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> Any:
         """Create a GraphServiceAdapter instance."""
         return GraphServiceAdapter()
 
-    def test_init(self, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> None:
+    def test_init(self: Any, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> None:
         """Test initialization."""
         adapter = GraphServiceAdapter()
         assert adapter.base_url == 'http://localhost:8000'
         assert adapter.metrics is mock_metrics
         assert adapter.client is mock_client
 
-    def test_init_with_custom_url(self, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> None:
+    def test_init_with_custom_url(self: Any, mock_settings: Any, mock_metrics: Any, mock_client: Any) -> None:
         """Test initialization with custom URL."""
         mock_settings.code_story_service_url = 'http://default:8000'
         adapter = GraphServiceAdapter(base_url='http://custom:8000')
@@ -124,7 +124,7 @@ class TestGraphServiceAdapter:
         assert adapter.client is mock_client
 
     @pytest.mark.asyncio
-    async def test_search_success(self, adapter, mock_client) -> None:
+    async def test_search_success(self: Any, adapter: Any, mock_client: Any) -> None:
         """Test successful search."""
         response = mock.Mock()
         response.status_code = 200
@@ -147,7 +147,7 @@ class TestGraphServiceAdapter:
         assert results[1][1] == 0.85
 
     @pytest.mark.asyncio
-    async def test_search_error(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_search_error(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test search with error response."""
         response = mock.Mock()
         response.status_code = 500
@@ -164,7 +164,7 @@ class TestGraphServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == 'error'
 
     @pytest.mark.asyncio
-    async def test_search_network_error(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_search_network_error(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test search with network error."""
         future = asyncio.Future()
         future.set_exception(httpx.RequestError('Connection error'))
@@ -179,7 +179,7 @@ class TestGraphServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == 'error'
 
     @pytest.mark.asyncio
-    async def test_find_node_success(self, adapter, mock_client) -> None:
+    async def test_find_node_success(self: Any, adapter: Any, mock_client: Any) -> None:
         """Test successful node lookup."""
         response = mock.Mock()
         response.status_code = 200
@@ -197,7 +197,7 @@ class TestGraphServiceAdapter:
         assert node.properties['content'] == 'class TestClass:\n    pass'
 
     @pytest.mark.asyncio
-    async def test_find_node_not_found(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_find_node_not_found(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test node lookup with not found error."""
         response = mock.Mock()
         response.status_code = 404
@@ -214,7 +214,7 @@ class TestGraphServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == 'error'
 
     @pytest.mark.asyncio
-    async def test_find_paths_success(self, adapter, mock_client) -> None:
+    async def test_find_paths_success(self: Any, adapter: Any, mock_client: Any) -> None:
         """Test successful path finding."""
         response = mock.Mock()
         response.status_code = 200
@@ -240,7 +240,7 @@ class TestGraphServiceAdapter:
         assert paths[0][2].labels == ['Function']
         assert paths[0][2].properties['name'] == 'testFunction'
 
-    def test_get_graph_service_singleton(self, mock_settings: Any) -> None:
+    def test_get_graph_service_singleton(self: Any, mock_settings: Any) -> None:
         """Test that get_graph_service returns a singleton."""
         service1 = get_graph_service()
         service2 = get_graph_service()
@@ -250,7 +250,7 @@ class TestOpenAIServiceAdapter:
     """Tests for the OpenAIServiceAdapter class."""
 
     @pytest.fixture
-    def mock_client(self) -> None:
+    def mock_client(self: Any) -> None:
         """Create a mock OpenAI client."""
         with mock.patch('codestory_mcp.adapters.openai_service.OpenAIClient') as mock_client_cls:
             client = mock.Mock()
@@ -258,7 +258,7 @@ class TestOpenAIServiceAdapter:
             yield client
 
     @pytest.fixture
-    def mock_metrics(self) -> None:
+    def mock_metrics(self: Any) -> None:
         """Create a mock metrics object."""
         with mock.patch('codestory_mcp.adapters.openai_service.get_metrics') as mock_get_metrics:
             metrics = mock.Mock()
@@ -266,17 +266,17 @@ class TestOpenAIServiceAdapter:
             yield metrics
 
     @pytest.fixture
-    def adapter(self, mock_client: Any, mock_metrics: Any):
+    def adapter(self: Any, mock_client: Any, mock_metrics: Any) -> Any:
         """Create an OpenAIServiceAdapter instance."""
         return OpenAIServiceAdapter()
 
-    def test_init(self, mock_client: Any, mock_metrics: Any) -> None:
+    def test_init(self: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test initialization."""
         adapter = OpenAIServiceAdapter()
         assert adapter.client is mock_client
         assert adapter.metrics is mock_metrics
 
-    def test_init_with_custom_client(self, mock_metrics: Any) -> None:
+    def test_init_with_custom_client(self: Any, mock_metrics: Any) -> None:
         """Test initialization with custom client."""
         custom_client = mock.Mock()
         adapter = OpenAIServiceAdapter(client=custom_client)
@@ -284,7 +284,7 @@ class TestOpenAIServiceAdapter:
         assert adapter.metrics is mock_metrics
 
     @pytest.mark.asyncio
-    async def test_generate_code_summary_success(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_generate_code_summary_success(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test successful code summary generation."""
         response = mock.Mock()
         response.choices = [mock.Mock()]
@@ -310,7 +310,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == 'success'
 
     @pytest.mark.asyncio
-    async def test_generate_code_summary_error(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_generate_code_summary_error(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test code summary generation with error."""
         future = asyncio.Future()
         future.set_exception(Exception('API error'))
@@ -325,7 +325,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == 'error'
 
     @pytest.mark.asyncio
-    async def test_generate_path_explanation_success(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_generate_path_explanation_success(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test successful path explanation generation."""
         response = mock.Mock()
         response.choices = [mock.Mock()]
@@ -352,7 +352,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args[0][1] == 'success'
 
     @pytest.mark.asyncio
-    async def test_find_similar_code_success(self, adapter, mock_client, mock_metrics) -> None:
+    async def test_find_similar_code_success(self: Any, adapter: Any, mock_client: Any, mock_metrics: Any) -> None:
         """Test successful similar code search."""
         embed_future = asyncio.Future()
         embed_future.set_result([0.1, 0.2, 0.3])
@@ -368,7 +368,7 @@ class TestOpenAIServiceAdapter:
         assert mock_metrics.record_service_api_call.call_args_list[1][0][0] == 'similar_code'
         assert mock_metrics.record_graph_operation.called
 
-    def test_get_openai_service_singleton(self) -> None:
+    def test_get_openai_service_singleton(self: Any) -> None:
         """Test that get_openai_service returns a singleton."""
         service1 = get_openai_service()
         service2 = get_openai_service()

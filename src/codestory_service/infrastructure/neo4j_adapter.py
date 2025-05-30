@@ -21,7 +21,7 @@ class Neo4jAdapter:
     domain models and Neo4j data structures.
     """
 
-    def __init__(self, connector: Neo4jConnector | None=None) -> None:
+    def __init__(self: Any, connector: Neo4jConnector | None=None) -> None:
         """Initialize the Neo4j adapter.
 
         Args:
@@ -33,7 +33,7 @@ class Neo4jAdapter:
         """
         self.connector = connector or Neo4jConnector()
 
-    async def check_health(self) -> dict[str, Any]:
+    async def check_health(self: Any) -> dict[str, Any]:
         """Check Neo4j database health.
 
         Returns:
@@ -51,12 +51,12 @@ class Neo4jAdapter:
             logger.error(f'Neo4j health check failed: {e!s}')
             return {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}
 
-    async def close(self) -> None:
+    async def close(self: Any) -> None:
         """Close the Neo4j connection."""
         if self.connector:
             self.connector.close()
 
-    async def execute_cypher_query(self, query_model: CypherQuery) -> QueryResult:
+    async def execute_cypher_query(self: Any, query_model: CypherQuery) -> QueryResult:
         """Execute a Cypher query with the given parameters.
 
         Args:
@@ -87,7 +87,7 @@ class Neo4jAdapter:
             logger.error(f'Unexpected error in query execution: {e!s}')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Unexpected error: {e!s}') from e
 
-    async def execute_vector_search(self, query_model: VectorQuery, embedding: list[float]) -> VectorResult:
+    async def execute_vector_search(self: Any, query_model: VectorQuery, embedding: list[float]) -> VectorResult:
         """Execute a vector similarity search.
 
         Args:
@@ -148,7 +148,7 @@ class Neo4jAdapter:
             logger.error(f'Unexpected error in vector search: {e!s}')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Unexpected error: {e!s}') from e
 
-    async def find_path(self, path_request: PathRequest) -> PathResult:
+    async def find_path(self: Any, path_request: PathRequest) -> PathResult:
         """Find paths between nodes.
 
         Args:
@@ -214,19 +214,19 @@ class DummyNeo4jConnector:
     This allows basic service functionality without Neo4j available.
     """
 
-    def __init__(self) -> None:
+    def __init__(self: Any) -> None:
         """Initialize the dummy connector."""
         logger.warning('Using DummyNeo4jConnector - Neo4j functionality will be limited')
 
-    def check_connection(self) -> dict[str, Any]:
+    def check_connection(self: Any) -> dict[str, Any]:
         """Return dummy connection info."""
         return {'database': 'dummy', 'components': ['Dummy Neo4j Connector']}
 
-    def close(self) -> None:
+    def close(self: Any) -> None:
         """Dummy close method."""
         pass
 
-    def execute_query(self, query: str, params: dict[str, Any] | None=None, write: bool=False) -> list[dict[str, Any]]:
+    def execute_query(self: Any, query: str, params: dict[str, Any] | None=None, write: bool=False) -> list[dict[str, Any]]:
         """Return dummy query results."""
         logger.info(f'DummyNeo4jConnector.execute_query called with: {query[:100]}...')
         return []
@@ -237,7 +237,7 @@ class DummyNeo4jAdapter(Neo4jAdapter):
     This allows basic service functionality without Neo4j being available.
     """
 
-    def __init__(self) -> None:
+    def __init__(self: Any) -> None:
         """Initialize with a dummy connector."""
         self.connector = DummyNeo4jConnector()
 

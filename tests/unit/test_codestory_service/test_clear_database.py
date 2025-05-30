@@ -9,7 +9,7 @@ from codestory_service.domain.graph import DatabaseClearRequest
 from codestory_service.main import app
 
 @pytest.fixture
-def mock_graph_service():
+def mock_graph_service() -> Any:
     """Create a mock graph service."""
     service = MagicMock(spec=GraphService)
     service.clear_database = AsyncMock()

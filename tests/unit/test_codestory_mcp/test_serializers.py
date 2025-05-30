@@ -8,7 +8,7 @@ class TestNodeSerializer:
     """Tests for the NodeSerializer class."""
 
     @pytest.fixture
-    def mock_node(self):
+    def mock_node(self: Any) -> Any:
         """Create a mock Neo4j node."""
         node = mock.Mock()
         node.id = 'node-123'
@@ -30,7 +30,7 @@ class TestNodeSerializer:
         node.items = mock.Mock(return_value=node.properties.items())
         return node
 
-    def test_to_dict_basic(self, mock_node: Any) -> None:
+    def test_to_dict_basic(self: Any, mock_node: Any) -> None:
         """Test basic node serialization."""
         result = NodeSerializer.to_dict(mock_node)
         assert result['id'] == 'node-123'
@@ -42,19 +42,19 @@ class TestNodeSerializer:
         assert result['properties']['created_at'] == '2023-01-01'
         assert result['properties']['lines'] == 10
 
-    def test_to_dict_with_score(self, mock_node: Any) -> None:
+    def test_to_dict_with_score(self: Any, mock_node: Any) -> None:
         """Test node serialization with score."""
         result = NodeSerializer.to_dict(mock_node, score=0.95)
         assert result['score'] == 0.95
 
-    def test_to_dict_with_include_properties(self, mock_node: Any) -> None:
+    def test_to_dict_with_include_properties(self: Any, mock_node: Any) -> None:
         """Test node serialization with included properties."""
         result = NodeSerializer.to_dict(mock_node, include_properties=['created_at'])
         assert 'properties' in result
         assert 'created_at' in result['properties']
         assert 'lines' not in result['properties']
 
-    def test_to_dict_with_exclude_properties(self, mock_node: Any) -> None:
+    def test_to_dict_with_exclude_properties(self: Any, mock_node: Any) -> None:
         """Test node serialization with excluded properties."""
         result = NodeSerializer.to_dict(mock_node, exclude_properties=['content', 'lines'])
         assert 'content' not in result
@@ -62,7 +62,7 @@ class TestNodeSerializer:
         assert 'created_at' in result['properties']
         assert 'lines' not in result['properties']
 
-    def test_to_mcp_result_with_nodes(self, mock_node: Any) -> None:
+    def test_to_mcp_result_with_nodes(self: Any, mock_node: Any) -> None:
         """Test MCP result serialization with nodes."""
         mock_node2 = mock.Mock()
         mock_node2.id = 'node-456'
@@ -88,7 +88,7 @@ class TestNodeSerializer:
         assert result['matches'][0]['id'] == 'node-123'
         assert result['matches'][1]['id'] == 'node-456'
 
-    def test_to_mcp_result_with_scored_nodes(self, mock_node: Any) -> None:
+    def test_to_mcp_result_with_scored_nodes(self: Any, mock_node: Any) -> None:
         """Test MCP result serialization with nodes and scores."""
         mock_node2 = mock.Mock()
         mock_node2.id = 'node-456'
@@ -120,7 +120,7 @@ class TestRelationshipSerializer:
     """Tests for the RelationshipSerializer class."""
 
     @pytest.fixture
-    def mock_node(self):
+    def mock_node(self: Any) -> Any:
         """Create a mock Neo4j node."""
         node = mock.Mock()
         node.id = 'node-123'
@@ -143,7 +143,7 @@ class TestRelationshipSerializer:
         return node
 
     @pytest.fixture
-    def mock_relationship(self):
+    def mock_relationship(self: Any) -> Any:
         """Create a mock Neo4j relationship."""
         rel = mock.Mock()
         rel.id = 'rel-123'
@@ -171,7 +171,7 @@ class TestRelationshipSerializer:
         rel.items = mock.Mock(return_value=rel.properties.items())
         return rel
 
-    def test_to_dict_basic(self, mock_relationship: Any) -> None:
+    def test_to_dict_basic(self: Any, mock_relationship: Any) -> None:
         """Test basic relationship serialization."""
         result = RelationshipSerializer.to_dict(mock_relationship)
         assert result['id'] == 'rel-123'
@@ -182,14 +182,14 @@ class TestRelationshipSerializer:
         assert result['properties']['count'] == 5
         assert result['properties']['created_at'] == '2023-01-01'
 
-    def test_to_dict_with_include_properties(self, mock_relationship: Any) -> None:
+    def test_to_dict_with_include_properties(self: Any, mock_relationship: Any) -> None:
         """Test relationship serialization with included properties."""
         result = RelationshipSerializer.to_dict(mock_relationship, include_properties=['count'])
         assert 'properties' in result
         assert 'count' in result['properties']
         assert 'created_at' not in result['properties']
 
-    def test_to_dict_with_exclude_properties(self, mock_relationship: Any) -> None:
+    def test_to_dict_with_exclude_properties(self: Any, mock_relationship: Any) -> None:
         """Test relationship serialization with excluded properties."""
         result = RelationshipSerializer.to_dict(mock_relationship, exclude_properties=['count'])
         assert 'properties' in result
@@ -197,7 +197,7 @@ class TestRelationshipSerializer:
         assert 'created_at' in result['properties']
 
     @pytest.fixture
-    def mock_node2(self):
+    def mock_node2(self: Any) -> Any:
         """Create another mock Neo4j node."""
         node = mock.Mock()
         node.id = 'node-456'
@@ -220,11 +220,11 @@ class TestRelationshipSerializer:
         return node
 
     @pytest.fixture
-    def mock_path(self, mock_node: Any, mock_relationship: Any, mock_node2: Any):
+    def mock_path(self: Any, mock_node: Any, mock_relationship: Any, mock_node2: Any) -> Any:
         """Create a mock path of nodes and relationships."""
         return [[mock_node, mock_relationship, mock_node2]]
 
-    def test_to_mcp_path_result(self, mock_path: Any) -> None:
+    def test_to_mcp_path_result(self: Any, mock_path: Any) -> None:
         """Test MCP path result serialization."""
         result = RelationshipSerializer.to_mcp_path_result(mock_path)
         assert 'paths' in result

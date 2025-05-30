@@ -17,14 +17,14 @@ class TestAuthService:
     """Tests for Auth service."""
 
     @pytest.fixture
-    def mock_validator(self):
+    def mock_validator(self: Any) -> Any:
         """Create a mock MSAL validator."""
         validator = mock.AsyncMock()
         validator.create_dev_token.return_value = 'test.jwt.token'
         return validator
 
     @pytest.fixture
-    def service(self, mock_validator: Any):
+    def service(self: Any, mock_validator: Any) -> Any:
         """Create an AuthService with mock dependencies."""
         service = AuthService(mock_validator)
         service.settings = mock.MagicMock()
@@ -33,7 +33,7 @@ class TestAuthService:
         return service
 
     @pytest.mark.asyncio
-    async def test_login_success(self, service, mock_validator) -> None:
+    async def test_login_success(self: Any, service: Any, mock_validator: Any) -> None:
         """Test successful login with valid credentials."""
         request = LoginRequest(username='admin', password='password')
         response = await service.login(request)
@@ -44,7 +44,7 @@ class TestAuthService:
         mock_validator.create_dev_token.assert_called_once_with('admin', roles=['admin', 'user'])
 
     @pytest.mark.asyncio
-    async def test_login_invalid_credentials(self, service) -> None:
+    async def test_login_invalid_credentials(self: Any, service: Any) -> None:
         """Test login with invalid credentials."""
         request = LoginRequest(username='invalid', password='wrong')
         with pytest.raises(HTTPException) as exc_info:
@@ -53,7 +53,7 @@ class TestAuthService:
         assert 'Invalid username or password' in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_login_prod_mode(self, service, mock_validator) -> None:
+    async def test_login_prod_mode(self: Any, service: Any, mock_validator: Any) -> None:
         """Test login is not available in production mode."""
         service.settings.dev_mode = False
         request = LoginRequest(username='admin', password='password')
@@ -63,7 +63,7 @@ class TestAuthService:
         assert 'only available in development mode' in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_get_user_info(self, service) -> None:
+    async def test_get_user_info(self: Any, service: Any) -> None:
         """Test getting user info from claims."""
         claims = {'sub': 'user123', 'name': 'Test User', 'email': 'test@example.com', 'roles': ['admin', 'user']}
         user_info = await service.get_user_info(claims)
@@ -77,7 +77,7 @@ class TestConfigService:
     """Tests for Config service."""
 
     @pytest.fixture
-    def service(self):
+    def service(self: Any) -> Any:
         """Create a ConfigService with mocked settings."""
         service = ConfigService()
         service.core_settings = mock.MagicMock()
@@ -86,7 +86,7 @@ class TestConfigService:
         service.redis = mock.AsyncMock()
         return service
 
-    def test_get_config_dump(self, service: Any) -> None:
+    def test_get_config_dump(self: Any, service: Any) -> None:
         """Test getting configuration dump."""
         service.core_settings.model_dump.return_value = {'general': {'debug': True}, 'openai': {'api_key': 'sk_test_123456'}}
         service.service_settings.model_dump.return_value = {'service': {'title': 'Test API'}}
@@ -96,7 +96,7 @@ class TestConfigService:
         assert config.version == '1.0.0'
         assert 'last_updated' in config.model_dump()
 
-    def test_get_config_schema(self, service: Any) -> None:
+    def test_get_config_schema(self: Any, service: Any) -> None:
         """Test getting configuration schema."""
         from codestory_service.domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPermission, ConfigSection, ConfigSource, ConfigValueType
         groups = {ConfigSection.GENERAL: ConfigGroup(section=ConfigSection.GENERAL, items={'debug': ConfigItem(value=True, metadata=ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source=ConfigSource.CONFIG_FILE, permission=ConfigPermission.READ_WRITE, required=False))})}
@@ -108,7 +108,7 @@ class TestConfigService:
         assert hasattr(config_schema, 'json_schema')
 
     @pytest.mark.asyncio
-    async def test_update_config(self, service) -> None:
+    async def test_update_config(self: Any, service: Any) -> None:
         """Test updating configuration."""
         from codestory_service.domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPermission, ConfigSection, ConfigSource, ConfigValidationResult, ConfigValueType
         service._validate_config_patch = mock.MagicMock(return_value=ConfigValidationResult(valid=True, errors=[]))
@@ -127,26 +127,26 @@ class TestGraphService:
     """Tests for Graph service."""
 
     @pytest.fixture
-    def mock_neo4j(self):
+    def mock_neo4j(self: Any) -> Any:
         """Create a mock Neo4j adapter."""
         adapter = mock.AsyncMock()
         adapter.execute_cypher_query.return_value = mock.MagicMock(columns=['name', 'value'], rows=[['test', 123]], row_count=1)
         return adapter
 
     @pytest.fixture
-    def mock_openai(self):
+    def mock_openai(self: Any) -> Any:
         """Create a mock OpenAI adapter."""
         adapter = mock.AsyncMock()
         adapter.create_embeddings.return_value = [[0.1, 0.2, 0.3]]
         return adapter
 
     @pytest.fixture
-    def service(self, mock_neo4j: Any, mock_openai: Any):
+    def service(self: Any, mock_neo4j: Any, mock_openai: Any) -> Any:
         """Create a GraphService with mock dependencies."""
         return GraphService(mock_neo4j, mock_openai)
 
     @pytest.mark.asyncio
-    async def test_execute_cypher_query(self, service, mock_neo4j) -> None:
+    async def test_execute_cypher_query(self: Any, service: Any, mock_neo4j: Any) -> None:
         """Test executing a Cypher query."""
         query = CypherQuery(query='MATCH (n) RETURN n.name, n.value', parameters={}, query_type=QueryType.READ)
         result = await service.execute_cypher_query(query)
@@ -155,7 +155,7 @@ class TestGraphService:
         assert result.columns == ['name', 'value']
 
     @pytest.mark.asyncio
-    async def test_execute_vector_search(self, service, mock_neo4j, mock_openai) -> None:
+    async def test_execute_vector_search(self: Any, service: Any, mock_neo4j: Any, mock_openai: Any) -> None:
         """Test executing a vector search."""
         query = VectorQuery(query='Find authentication functions', limit=10)
         await service.execute_vector_search(query)
@@ -163,7 +163,7 @@ class TestGraphService:
         mock_neo4j.execute_vector_search.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_answer_question(self, service, mock_neo4j, mock_openai) -> None:
+    async def test_answer_question(self: Any, service: Any, mock_neo4j: Any, mock_openai: Any) -> None:
         """Test answering a natural language question."""
         request = AskRequest(question='How does authentication work?', context_size=3)
         mock_neo4j.execute_vector_search.return_value = mock.MagicMock(results=[mock.MagicMock(id='node1', score=0.9), mock.MagicMock(id='node2', score=0.8), mock.MagicMock(id='node3', score=0.7)])
@@ -178,7 +178,7 @@ class TestIngestionService:
     """Tests for Ingestion service."""
 
     @pytest.fixture
-    def mock_celery(self):
+    def mock_celery(self: Any) -> Any:
         """Create a mock Celery adapter."""
         adapter = mock.AsyncMock()
         adapter.start_ingestion.return_value = mock.MagicMock(job_id='job123', status=JobStatus.PENDING, eta=1620000000)
@@ -186,7 +186,7 @@ class TestIngestionService:
         return adapter
 
     @pytest.fixture
-    def service(self, mock_celery: Any):
+    def service(self: Any, mock_celery: Any) -> Any:
         """Create an IngestionService with mock dependencies."""
         service = IngestionService(mock_celery)
         service.redis = mock.AsyncMock()
@@ -194,7 +194,7 @@ class TestIngestionService:
         return service
 
     @pytest.mark.asyncio
-    async def test_start_ingestion(self, service, mock_celery) -> None:
+    async def test_start_ingestion(self: Any, service: Any, mock_celery: Any) -> None:
         """Test starting an ingestion job."""
         service.publish_progress = mock.AsyncMock()
         request = IngestionRequest(source_type=IngestionSourceType.LOCAL_PATH, source='/path/to/repo')
@@ -205,7 +205,7 @@ class TestIngestionService:
         service.publish_progress.assert_called_once_with('job123', mock.ANY)
 
     @pytest.mark.asyncio
-    async def test_get_job_status(self, service, mock_celery) -> None:
+    async def test_get_job_status(self: Any, service: Any, mock_celery: Any) -> None:
         """Test getting job status."""
         job = await service.get_job_status('job123')
         mock_celery.get_job_status.assert_called_once_with('job123')
@@ -214,7 +214,7 @@ class TestIngestionService:
         assert job.progress == 0.5
 
     @pytest.mark.asyncio
-    async def test_subscribe_to_progress(self, service) -> None:
+    async def test_subscribe_to_progress(self: Any, service: Any) -> None:
         """Test subscribing to progress events."""
         websocket = mock.AsyncMock(spec=WebSocket)
 

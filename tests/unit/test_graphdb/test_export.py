@@ -11,7 +11,7 @@ from codestory.graphdb.export import export_cypher_script, export_graph_data, ex
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 @pytest.fixture
-def mock_connector():
+def mock_connector() -> Any:
     """Create a mock Neo4jConnector."""
     connector = MagicMock(spec=Neo4jConnector)
     connector.execute_query.return_value = [{'id': 1, 'name': 'Node1', 'type': 'File'}, {'id': 2, 'name': 'Node2', 'type': 'Class'}]
