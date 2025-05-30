@@ -373,7 +373,7 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
         connection_uri = params['uri']
         try:
             log_debug(f'Trying Neo4j connection #{i + 1}/{len(connection_params)}: {connection_uri}', job_id)
-            neo4j = Neo4jConnector(**params)
+            neo4j = Neo4jConnector(**params)  # type: ignore[assignment]
             log_debug('Testing Neo4j connection with simple query', job_id)
             test_result = neo4j.execute_query('MATCH (n) RETURN count(n) as count LIMIT 1')
             log_info(f'Neo4j connection successful to {connection_uri}', job_id)

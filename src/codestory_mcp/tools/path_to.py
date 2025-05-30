@@ -59,7 +59,7 @@ class PathToTool(BaseTool):
                         path_elements.append({'element_type': 'relationship', 'id': str(element.id), 'type': element.type})
                 explanation = await self.openai_service.generate_path_explanation(path_elements=path_elements)
                 response['explanation'] = explanation
-            response['metadata'] = {'from_id': from_id, 'to_id': to_id, 'max_paths': max_paths, 'path_count': len(paths)}
+            response['metadata'] = {'from_id': from_id, 'to_id': to_id, 'max_paths': max_paths, 'path_count': len(paths)}  # type: ignore[assignment]
             logger.info('Path finding completed', from_id=from_id, to_id=to_id, path_count=len(paths))
             return response
         except Exception as e:

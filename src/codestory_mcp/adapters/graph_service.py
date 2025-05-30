@@ -164,7 +164,7 @@ class GraphServiceAdapter:
         try:
             payload = {'query': query}
             if parameters:
-                payload['parameters'] = parameters
+                payload['parameters'] = parameters  # type: ignore[assignment]
             response = await self.client.post(endpoint, json=payload)
             if response.status_code != 200:
                 error_message = f'Cypher query failed: {response.text}'

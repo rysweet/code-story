@@ -57,7 +57,7 @@ class DummyHistogram:
         """Dummy set method that does nothing."""
         pass
 
-    @contextmanager
+    @contextmanager  # type: ignore[assignment]
     def time(self: Any) -> None:
         """Dummy timer method that returns a dummy timer context."""
         yield

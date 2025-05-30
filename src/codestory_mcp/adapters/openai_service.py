@@ -41,12 +41,12 @@ class OpenAIServiceAdapter:
         """
         start_time = time.time()
         try:
-            messages = [ChatMessage(role='system', content='You are a helpful assistant that summarizes code. Provide a clear, concise explanation of what the code does, focusing on its purpose, functionality, and key components. Be specific and technical, but avoid unnecessary details.')]
+            messages = [ChatMessage(role='system', content='You are a helpful assistant that summarizes code. Provide a clear, concise explanation of what the code does, focusing on its purpose, functionality, and key components. Be specific and technical, but avoid unnecessary details.')]  # type: ignore[assignment]
             if context:
-                messages.append(ChatMessage(role='user', content=f'I need to understand this code in the context of: {context}\n\nPlease summarize what it does, its main purpose, and how it works.'))
+                messages.append(ChatMessage(role='user', content=f'I need to understand this code in the context of: {context}\n\nPlease summarize what it does, its main purpose, and how it works.'))  # type: ignore[assignment]
             else:
-                messages.append(ChatMessage(role='user', content='Please summarize what this code does, its main purpose, and how it works.'))
-            messages.append(ChatMessage(role='user', content=f'```\n{code}\n```'))
+                messages.append(ChatMessage(role='user', content='Please summarize what this code does, its main purpose, and how it works.'))  # type: ignore[assignment]
+            messages.append(ChatMessage(role='user', content=f'```\n{code}\n```'))  # type: ignore[assignment]
             request = ChatCompletionRequest(messages=messages, max_tokens=max_tokens, temperature=0.3, model='gpt-4-turbo')
             response = await self.client.create_chat_completion(request)
             summary = response.choices[0].message.content
@@ -82,7 +82,7 @@ class OpenAIServiceAdapter:
                         path_description += f"\nContent: {element['content'][:200]}..."
                 else:
                     path_description += f"\n--[{element.get('type', 'RELATED_TO')}]-->"
-            messages = [ChatMessage(role='system', content='You are a helpful assistant that explains relationships between code elements. Based on the path between code elements, explain how they are related and what this relationship means for the codebase.'), ChatMessage(role='user', content=f'Please explain the following path between code elements in a clear, concise way. Focus on how these elements interact and what this relationship reveals about the code structure and behavior.\n\n{path_description}')]
+            messages = [ChatMessage(role='system', content='You are a helpful assistant that explains relationships between code elements. Based on the path between code elements, explain how they are related and what this relationship means for the codebase.'), ChatMessage(role='user', content=f'Please explain the following path between code elements in a clear, concise way. Focus on how these elements interact and what this relationship reveals about the code structure and behavior.\n\n{path_description}')]  # type: ignore[assignment]
             request = ChatCompletionRequest(messages=messages, max_tokens=max_tokens, temperature=0.3, model='gpt-4-turbo')
             response = await self.client.create_chat_completion(request)
             explanation = response.choices[0].message.content

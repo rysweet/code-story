@@ -125,7 +125,7 @@ class GraphService:
             search_result = await self.neo4j.execute_vector_search(vector_query, embeddings[0])
             context_items: list[Any] = []
             for result in search_result.results:
-                node_query = CypherQuery(query='MATCH (n) WHERE elementId(n) = $id RETURN n', parameters={'id': result.id}, query_type='read')
+                node_query = CypherQuery(query='MATCH (n) WHERE elementId(n) = $id RETURN n', parameters={'id': result.id}, query_type='read')  # type: ignore[assignment]
                 node_result = await self.neo4j.execute_cypher_query(node_query)
                 if node_result.rows and len(node_result.rows) > 0 and (len(node_result.rows[0]) > 0):
                     node = node_result.rows[0][0]
@@ -178,19 +178,19 @@ class GraphService:
         params = {'max_nodes': request.filter.max_nodes if request.filter else 100}
         if request.focus_node_id:
             cypher_query = '\n            MATCH (focus_node) \n            WHERE elementId(focus_node) = $focus_node_id\n            OPTIONAL MATCH path = (focus_node)-[*1..$depth]-(related)\n            WHERE related.name IS NOT NULL  // Filter out unnamed nodes\n            WITH focus_node, collect(path) as paths\n            // Unwind paths to get all nodes and relationships\n            UNWIND paths as p\n            WITH focus_node, p, nodes(p) as path_nodes, relationships(p) as path_rels\n            // Collect all nodes including focus_node\n            WITH \n              collect(DISTINCT focus_node) + \n              [node IN path_nodes WHERE node <> focus_node | node] as all_nodes,\n              collect(DISTINCT path_rels) as all_rels\n            UNWIND all_nodes as node\n            WITH collect(DISTINCT {\n              id: toString(id(node)), \n              label: labels(node)[0], \n              properties: properties(node), \n              is_focus: node = focus_node\n            }) as nodes, \n            all_rels\n            UNWIND all_rels as rel\n            RETURN \n              nodes, \n              collect(DISTINCT {\n                id: toString(id(rel)), \n                source: toString(id(startNode(rel))), \n                target: toString(id(endNode(rel))), \n                type: type(rel), \n                properties: properties(rel)\n              }) as relationships\n            '
-            params['focus_node_id'] = request.focus_node_id
+            params['focus_node_id'] = request.focus_node_id  # type: ignore[assignment]
             params['depth'] = request.depth
         if request.filter and request.filter.node_types:
             node_types = request.filter.node_types
             cypher_query = cypher_query.replace('WHERE n.name IS NOT NULL', 'WHERE n.name IS NOT NULL AND labels(n)[0] IN $node_types')
-            params['node_types'] = node_types
+            params['node_types'] = node_types  # type: ignore[assignment]
         if request.filter and request.filter.search_query:
             search_query = request.filter.search_query
             cypher_query = cypher_query.replace('WHERE n.name IS NOT NULL', 'WHERE n.name IS NOT NULL AND (n.name CONTAINS $search_query OR n.path CONTAINS $search_query)')
-            params['search_query'] = search_query
+            params['search_query'] = search_query  # type: ignore[assignment]
         if request.filter and (not request.filter.include_orphans):
             cypher_query = cypher_query.replace('MATCH (n)', 'MATCH (n) WHERE EXISTS((n)--())')
-        query = CypherQuery(query=cypher_query, parameters=params, query_type='read')
+        query = CypherQuery(query=cypher_query, parameters=params, query_type='read')  # type: ignore[assignment]
         result = await self.neo4j.execute_cypher_query(query)
         if not result.rows or len(result.rows) == 0:
             return {'nodes': [], 'links': []}
@@ -267,11 +267,11 @@ class GraphService:
         """
         try:
             logger.warning('Clearing all data from database')
-            delete_query = CypherQuery(query='MATCH (n) DETACH DELETE n', query_type='write')
+            delete_query = CypherQuery(query='MATCH (n) DETACH DELETE n', query_type='write')  # type: ignore[assignment]
             await self.execute_cypher_query(delete_query)
             if request.preserve_schema:
                 logger.info('Preserving schema - reinitializing')
-                schema_query = CypherQuery(query='CALL apoc.schema.assert({}, {})', query_type='write')
+                schema_query = CypherQuery(query='CALL apoc.schema.assert({}, {})', query_type='write')  # type: ignore[assignment]
                 await self.execute_cypher_query(schema_query)
             logger.info('Database successfully cleared')
             return DatabaseClearResponse(status='success', message='Database successfully cleared')

@@ -44,7 +44,7 @@ class SearchGraphTool(BaseTool):
         try:
             results = await self.graph_service.search(query=query, node_types=node_types, limit=limit)
             response = NodeSerializer.to_mcp_result(results, exclude_properties=['content'])
-            response['metadata'] = {'query': query, 'node_types': node_types, 'limit': limit, 'result_count': len(response['matches'])}
+            response['metadata'] = {'query': query, 'node_types': node_types, 'limit': limit, 'result_count': len(response['matches'])}  # type: ignore[assignment]
             logger.info('Search completed', query=query, result_count=len(response['matches']))
             return response
         except Exception as e:

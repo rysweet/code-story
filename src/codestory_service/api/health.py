@@ -60,7 +60,7 @@ async def health_check(neo4j: Neo4jAdapter=Depends(get_neo4j_adapter), celery: C
         logger.info(f'Health check completed. Overall status: {health_report.status}')
         logger.info(f'Component statuses: {[(name, comp.status) for name, comp in health_report.components.items()]}')
         if error_package:
-            health_report.error_package = error_package
+            health_report.error_package = error_package  # type: ignore[assignment]
             health_report.status = 'unhealthy'
         if auto_fix and health_report.components.get('openai') and (health_report.components['openai'].status == 'unhealthy'):
             logger.info('Auto-fix requested and OpenAI is unhealthy - checking for Azure auth issues...')
@@ -177,7 +177,7 @@ async def auth_renew(openai: OpenAIAdapter=Depends(get_openai_adapter), tenant_i
         response['tenant_id'] = tenant_id
         response['tenant_source'] = 'Found in environment configuration or settings'
         response['auth_message'] = f'Using tenant ID: {tenant_id} from configuration'
-        response['auth_details'] = {'tenant_id': tenant_id, 'scope': 'https://cognitiveservices.azure.com/.default', 'browser_login': True, 'auto_inject': inject_into_containers}
+        response['auth_details'] = {'tenant_id': tenant_id, 'scope': 'https://cognitiveservices.azure.com/.default', 'browser_login': True, 'auto_inject': inject_into_containers}  # type: ignore[assignment]
     else:
         response['auth_message'] = 'No tenant ID found in configuration, using default login'
     if inject_into_containers:
@@ -188,7 +188,7 @@ async def auth_renew(openai: OpenAIAdapter=Depends(get_openai_adapter), tenant_i
             script_path = Path(__file__).parent.parent.parent.parent / 'scripts' / 'inject_azure_tokens.py'
             if not script_path.exists():
                 logger.warning(f'Token injection script not found at {script_path}')
-                response['token_injection'] = {'status': 'failed', 'message': 'Token injection script not found'}
+                response['token_injection'] = {'status': 'failed', 'message': 'Token injection script not found'}  # type: ignore[assignment]
             else:
                 cmd = [sys.executable, str(script_path)]
                 if tenant_id:
@@ -213,21 +213,21 @@ async def auth_renew(openai: OpenAIAdapter=Depends(get_openai_adapter), tenant_i
                     injection_stderr = stderr.decode('utf-8') if stderr else ''
                     injection_result = AsyncSubprocessResult(injection_result_code, injection_stdout, injection_stderr)
                     if injection_result.returncode == 0:
-                        response['token_injection'] = {'status': 'success', 'message': 'Azure tokens successfully injected into containers', 'restart': 'Containers restarted successfully' if restart_containers else None}
+                        response['token_injection'] = {'status': 'success', 'message': 'Azure tokens successfully injected into containers', 'restart': 'Containers restarted successfully' if restart_containers else None}  # type: ignore[assignment]
                     else:
-                        response['token_injection'] = {'status': 'failed', 'message': 'Failed to inject Azure tokens into containers', 'error': injection_stderr}
+                        response['token_injection'] = {'status': 'failed', 'message': 'Failed to inject Azure tokens into containers', 'error': injection_stderr}  # type: ignore[assignment]
                 except TimeoutError:
                     if proc.returncode is None:
                         with contextlib.suppress(Exception):
                             proc.terminate()
                     logger.error('Token injection process timed out after 30 seconds')
-                    response['token_injection'] = {'status': 'timeout', 'message': 'Token injection process timed out after 30 seconds'}
+                    response['token_injection'] = {'status': 'timeout', 'message': 'Token injection process timed out after 30 seconds'}  # type: ignore[assignment]
                 except Exception as e:
                     logger.error(f'Error running token injection process: {e}')
-                    response['token_injection'] = {'status': 'error', 'message': f'Error running token injection process: {e!s}'}
+                    response['token_injection'] = {'status': 'error', 'message': f'Error running token injection process: {e!s}'}  # type: ignore[assignment]
         except Exception as e:
             logger.error(f'Failed to inject tokens into containers: {e}')
-            response['token_injection'] = {'status': 'error', 'message': f'Failed to inject tokens into containers: {e!s}'}
+            response['token_injection'] = {'status': 'error', 'message': f'Failed to inject tokens into containers: {e!s}'}  # type: ignore[assignment]
     return response
 
 async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai: OpenAIAdapter) -> HealthReport:
@@ -283,7 +283,7 @@ async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai:
         logger.error(f'Redis health check failed: {e}')
         redis_health = {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}
     uptime = int(time.time() - SERVICE_START_TIME)
-    components = {'neo4j': ComponentHealth(**neo4j_health), 'celery': ComponentHealth(**celery_health), 'openai': ComponentHealth(**openai_health), 'redis': ComponentHealth(**redis_health)}
+    components = {'neo4j': ComponentHealth(**neo4j_health), 'celery': ComponentHealth(**celery_health), 'openai': ComponentHealth(**openai_health), 'redis': ComponentHealth(**redis_health)}  # type: ignore[assignment]
     unhealthy_count = sum((1 for c in components.values() if c.status == 'unhealthy'))
     degraded_count = sum((1 for c in components.values() if c.status == 'degraded'))
     if components['celery'].status == 'unhealthy':

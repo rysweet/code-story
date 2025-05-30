@@ -194,9 +194,9 @@ class OpenAIClient:
         azure_openai_kwargs = {k: v for k, v in azure_openai_kwargs.items() if v is not None}
         logger.info(f'AzureOpenAI instantiation kwargs: {azure_openai_kwargs}')
         try:
-            self._sync_client = AzureOpenAI(**azure_openai_kwargs)
+            self._sync_client = AzureOpenAI(**azure_openai_kwargs)  # type: ignore[assignment]
             logger.info('Sync client created successfully')
-            self._async_client = AsyncAzureOpenAI(**azure_openai_kwargs)
+            self._async_client = AsyncAzureOpenAI(**azure_openai_kwargs)  # type: ignore[assignment]
             logger.info('Async client created successfully')
             logger.info('=== OpenAI Client Initialization Complete ===')
         except Exception as e:

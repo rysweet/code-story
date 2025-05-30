@@ -53,8 +53,8 @@ class ConfigService:
             redis_host = 'localhost'
             redis_port = 6379
             redis_db = 0
-            self.redis = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
-            await self.redis.ping()[attr - defined]
+            self.redis = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)  # type: ignore[assignment]
+            await self.redis.ping()[attr - defined]  # type: ignore[attr-defined]
             logger.info('Connected to Redis successfully for config notifications')
         except Exception as e:
             logger.error(f'Failed to connect to Redis for config notifications: {e!s}')

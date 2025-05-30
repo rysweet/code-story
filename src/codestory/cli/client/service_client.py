@@ -203,7 +203,7 @@ class ServiceClient:
                 self.console.print(f'[dim]Repository config file found at [cyan]{repo_config_path}[/][/]', style='dim')
         data = {'source_type': 'local_path', 'source': abs_repository_path, 'description': f'CLI ingestion of repository: {abs_repository_path}', 'priority': priority}
         if dependencies:
-            data['dependencies'] = list(dependencies)
+            data['dependencies'] = list(dependencies)  # type: ignore[assignment]
         self.console.print(f'Starting ingestion for repository at [cyan]{abs_repository_path}[/]', style='dim')
         self.console.print(f'Repository directory exists: [cyan]{os.path.isdir(abs_repository_path)}[/]', style='dim')
         if is_container_path:
@@ -319,7 +319,7 @@ class ServiceClient:
         """
         data = {'query': query}
         if parameters:
-            data['parameters'] = parameters
+            data['parameters'] = parameters  # type: ignore[assignment]
         if query_type in ['read', 'write']:
             data['query_type'] = query_type
         try:

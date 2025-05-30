@@ -624,7 +624,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             # Check if any containers are unhealthy
             unhealthy_containers: list[Any] = []
             try:
-                process = subprocess.run(  # TODO: Fix type compatibility
+                process = subprocess.run(  # TODO: Fix type compatibility  # type: ignore[assignment]
                     [
                         "docker",
                         "ps",
@@ -639,7 +639,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 )
                 if process.returncode == 0:
                     unhealthy_containers = [
-                        c for c in process.stdout.strip().split("\n") if c and c in containers
+                        c for c in process.stdout.strip().split("\n") if c and c in containers  # type: ignore[assignment]
                     ]
             except Exception:
                 pass
@@ -832,7 +832,7 @@ def renew_azure_auth(
                 success = process.returncode == 0
             else:
                 # Capture output
-                process = subprocess.run(  # TODO: Fix type compatibility
+                process = subprocess.run(  # TODO: Fix type compatibility  # type: ignore[assignment]
                     cmd,
                     check=False,
                     capture_output=True,
@@ -850,7 +850,7 @@ def renew_azure_auth(
                     console.print("Run with --verbose for full output.")
                     # Show the last few lines of the error
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:]
+                        error_lines = process.stderr.strip().split("\n")[-5:]  # type: ignore[assignment]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
                             console.print(f"  {line}")
@@ -990,7 +990,7 @@ def renew_azure_auth(
                 process = subprocess.run(cmd, check=False)
                 success = process.returncode == 0
             else:
-                process = subprocess.run(  # TODO: Fix type compatibility
+                process = subprocess.run(  # TODO: Fix type compatibility  # type: ignore[assignment]
                     cmd,
                     check=False,
                     capture_output=True,
@@ -1007,7 +1007,7 @@ def renew_azure_auth(
                     console.print("[red]Token injection failed.[/]")
                     console.print("Run with --verbose for full output.")
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:]
+                        error_lines = process.stderr.strip().split("\n")[-5:]  # type: ignore[assignment]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
                             console.print(f"  {line}")

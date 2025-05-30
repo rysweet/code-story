@@ -45,7 +45,7 @@ async def get_current_user(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Missing or invalid authentication token', headers={'WWW-Authenticate': 'Bearer'})
     token = auth_header.split(' ')[1]
     try:
-        validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)
+        validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)  # type: ignore[assignment]
         claims = await validator.validate_token(token)
         metrics.record_auth_attempt('success')
         return claims
@@ -93,7 +93,7 @@ def tool_executor(func: Callable[..., Any]) -> Callable[..., Any]:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Tool execution error: {e!s}') from e
     return wrapper
 
-@asynccontextmanager
+@asynccontextmanager  # type: ignore[assignment]
 async def lifespan(app: FastAPI) -> None:
     """Application lifespan handler.
 
