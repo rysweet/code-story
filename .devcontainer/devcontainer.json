@@ -1,12 +1,8 @@
 {
   "name": "Code Story Development Environment",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "remoteUser": "vscode",
-  
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
-  ],
   
   "customizations": {
     "vscode": {
@@ -29,12 +25,12 @@
         "streetsidesoftware.code-spell-checker"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "python.defaultInterpreterPath": "/workspaces/${localWorkspaceFolderBasename}/.venv/bin/python",
         "python.linting.enabled": true,
         "python.linting.flake8Enabled": true,
         "python.linting.mypyEnabled": true,
         "python.formatting.provider": "black",
-        "python.formatting.blackPath": "/workspace/.venv/bin/black",
+        "python.formatting.blackPath": "/workspaces/${localWorkspaceFolderBasename}/.venv/bin/black",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
           "source.organizeImports": "explicit"
