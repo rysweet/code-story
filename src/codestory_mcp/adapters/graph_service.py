@@ -2,27 +2,22 @@
 
 This module provides an adapter for interacting with the Code Story Graph Service.
 """
-
 import time
 from functools import lru_cache
 from typing import Any
-
 import httpx
 import structlog
 from fastapi import status
 from neo4j.graph import Node, Relationship
-
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.config import get_mcp_settings
 from codestory_mcp.utils.metrics import get_metrics
-
 logger = structlog.get_logger(__name__)
-
 
 class GraphServiceAdapter:
     """Adapter for the Code Story Graph Service."""
 
-    def __init__(self, base_url: str | None = None) -> None:
+    def __init__(self, base_url: str | None=None) -> None:
         """Initialize the adapter.
 
         Args:
@@ -31,17 +26,9 @@ class GraphServiceAdapter:
         settings = get_mcp_settings()
         self.base_url = base_url or settings.code_story_service_url
         self.metrics = get_metrics()
+        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0, follow_redirects=True)
 
-        # Create HTTP client for API requests
-        self.client = httpx.AsyncClient(
-            base_url=self.base_url,
-            timeout=30.0,
-            follow_redirects=True,
-        )
-
-    async def search(
-        self, query: str, node_types: list[str] | None = None, limit: int = 10
-    ) -> list[tuple[Node, float]]:
+    async def search(self, query: str, node_types: list[str] | None=None, limit: int=10) -> list[tuple[Node, float]]:
         """Search for nodes in the graph database.
 
         Args:
@@ -56,64 +43,29 @@ class GraphServiceAdapter:
             ToolError: If the search fails
         """
         start_time = time.time()
-        endpoint = "/v1/query/search"
-
+        endpoint = '/v1/query/search'
         try:
-            # Prepare request payload
-            payload = {
-                "query": query,
-                "limit": limit,
-            }
-
+            payload = {'query': query, 'limit': limit}
             if node_types:
-                payload["node_types"] = node_types
-
-            # Make request to Code Story service
+                payload['node_types'] = node_types
             response = await self.client.post(endpoint, json=payload)
-
-            # Check for errors
             if response.status_code != 200:
-                error_message = f"Search failed: {response.text}"
-                logger.error(
-                    "Search failed",
-                    status_code=response.status_code,
-                    error=response.text,
-                )
-                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+                error_message = f'Search failed: {response.text}'
+                logger.error('Search failed', status_code=response.status_code, error=response.text)
+                self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
-
-            # Record successful API call
-            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
-
-            # Extract results
+            self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
             data = response.json()
-
-            # Convert to Node objects with scores
             results: list[Any] = []
-            for item in data.get("data", []):
-                # Create Node-like object
-                node = MockNode(
-                    id=item.get("id"),
-                    labels=[item.get("type")],
-                    properties=item.get("properties", {}),
-                )
-
-                # Add result to list
-                results.append((node, item.get("score", 1.0)))
-
-            # Record graph operation
-            self.metrics.record_graph_operation("search")
-
+            for item in data.get('data', []):
+                node = MockNode(id=item.get('id'), labels=[item.get('type')], properties=item.get('properties', {}))
+                results.append((node, item.get('score', 1.0)))
+            self.metrics.record_graph_operation('search')
             return results
-
         except httpx.RequestError as e:
-            # Handle network errors
-            error_message = f"Search failed: {e!s}"
-            logger.exception(
-                "Search request error",
-                error=str(e),
-            )
-            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            error_message = f'Search failed: {e!s}'
+            logger.exception('Search request error', error=str(e))
+            self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def find_node(self, node_id: str) -> Node:
@@ -129,61 +81,27 @@ class GraphServiceAdapter:
             ToolError: If the node is not found
         """
         start_time = time.time()
-        endpoint = f"/v1/query/node/{node_id}"
-
+        endpoint = f'/v1/query/node/{node_id}'
         try:
-            # Make request to Code Story service
             response = await self.client.get(endpoint)
-
-            # Check for errors
             if response.status_code != 200:
-                error_message = "Node not found"
+                error_message = 'Node not found'
                 if response.status_code != 404:
-                    error_message = f"Failed to find node: {response.text}"
-
-                logger.error(
-                    "Node not found",
-                    node_id=node_id,
-                    status_code=response.status_code,
-                    error=response.text,
-                )
-                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
-                raise ToolError(
-                    error_message,
-                    status_code=status.HTTP_404_NOT_FOUND
-                    if response.status_code == 404
-                    else status.HTTP_502_BAD_GATEWAY,
-                )
-
-            # Record successful API call
-            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
-
-            # Extract results
-            data = response.json().get("data", {})
-
-            # Create Node-like object
-            node = MockNode(
-                id=data.get("id"),
-                labels=[data.get("type")],
-                properties=data.get("properties", {}),
-            )
-
+                    error_message = f'Failed to find node: {response.text}'
+                logger.error('Node not found', node_id=node_id, status_code=response.status_code, error=response.text)
+                self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
+                raise ToolError(error_message, status_code=status.HTTP_404_NOT_FOUND if response.status_code == 404 else status.HTTP_502_BAD_GATEWAY)
+            self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
+            data = response.json().get('data', {})
+            node = MockNode(id=data.get('id'), labels=[data.get('type')], properties=data.get('properties', {}))
             return node
-
         except httpx.RequestError as e:
-            # Handle network errors
-            error_message = f"Failed to find node: {e!s}"
-            logger.exception(
-                "Node request error",
-                node_id=node_id,
-                error=str(e),
-            )
-            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            error_message = f'Failed to find node: {e!s}'
+            logger.exception('Node request error', node_id=node_id, error=str(e))
+            self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
-    async def find_paths(
-        self, from_id: str, to_id: str, max_paths: int = 3
-    ) -> list[list[Node | Relationship]]:
+    async def find_paths(self, from_id: str, to_id: str, max_paths: int=3) -> list[list[Node | Relationship]]:
         """Find paths between two nodes.
 
         Args:
@@ -198,82 +116,37 @@ class GraphServiceAdapter:
             ToolError: If path finding fails
         """
         start_time = time.time()
-        endpoint = "/v1/query/paths"
-
+        endpoint = '/v1/query/paths'
         try:
-            # Prepare request payload
-            payload = {
-                "from_id": from_id,
-                "to_id": to_id,
-                "max_paths": max_paths,
-            }
-
-            # Make request to Code Story service
+            payload = {'from_id': from_id, 'to_id': to_id, 'max_paths': max_paths}
             response = await self.client.post(endpoint, json=payload)
-
-            # Check for errors
             if response.status_code != 200:
-                error_message = f"Path finding failed: {response.text}"
-                logger.error(
-                    "Path finding failed",
-                    status_code=response.status_code,
-                    error=response.text,
-                )
-                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+                error_message = f'Path finding failed: {response.text}'
+                logger.error('Path finding failed', status_code=response.status_code, error=response.text)
+                self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
-
-            # Record successful API call
-            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
-
-            # Extract results
+            self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
             data = response.json()
-
-            # Convert to paths of nodes and relationships
             paths: list[Any] = []
-            for path_data in data.get("data", []):
+            for path_data in data.get('data', []):
                 path: list[Any] = []
-
-                # Process elements in the path
-                for element in path_data.get("elements", []):
-                    if element.get("element_type") == "node":
-                        # Create Node-like object
-                        node = MockNode(
-                            id=element.get("id"),
-                            labels=[element.get("type")],
-                            properties=element.get("properties", {}),
-                        )
+                for element in path_data.get('elements', []):
+                    if element.get('element_type') == 'node':
+                        node = MockNode(id=element.get('id'), labels=[element.get('type')], properties=element.get('properties', {}))
                         path.append(node)
-                    else:  # Relationship
-                        # Create Relationship-like object
-                        rel = MockRelationship(
-                            id=element.get("id"),
-                            type=element.get("type"),
-                            start_node_id=element.get("start_node_id"),
-                            end_node_id=element.get("end_node_id"),
-                            properties=element.get("properties", {}),
-                        )
+                    else:
+                        rel = MockRelationship(id=element.get('id'), type=element.get('type'), start_node_id=element.get('start_node_id'), end_node_id=element.get('end_node_id'), properties=element.get('properties', {}))
                         path.append(rel)
-
                 paths.append(path)
-
-            # Record graph operation
-            self.metrics.record_graph_operation("path_finding")
-
+            self.metrics.record_graph_operation('path_finding')
             return paths
-
         except httpx.RequestError as e:
-            # Handle network errors
-            error_message = f"Path finding failed: {e!s}"
-            logger.exception(
-                "Path finding request error",
-                error=str(e),
-            )
-            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            error_message = f'Path finding failed: {e!s}'
+            logger.exception('Path finding request error', error=str(e))
+            self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
-    async def execute_cypher(
-        self, query: str, parameters: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def execute_cypher(self, query: str, parameters: dict[str, Any] | None=None) -> dict[str, Any]:
         """Execute a Cypher query.
 
         Args:
@@ -287,51 +160,28 @@ class GraphServiceAdapter:
             ToolError: If query execution fails
         """
         start_time = time.time()
-        endpoint = "/v1/query/cypher"
-
+        endpoint = '/v1/query/cypher'
         try:
-            # Prepare request payload
-            payload = {
-                "query": query,
-            }
-
+            payload = {'query': query}
             if parameters:
-                payload["parameters"] = parameters  # TODO: Fix type compatibility
-
-            # Make request to Code Story service
+                payload['parameters'] = parameters
             response = await self.client.post(endpoint, json=payload)
-
-            # Check for errors
             if response.status_code != 200:
-                error_message = f"Cypher query failed: {response.text}"
-                logger.error(
-                    "Cypher query failed",
-                    status_code=response.status_code,
-                    error=response.text,
-                )
-                self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+                error_message = f'Cypher query failed: {response.text}'
+                logger.error('Cypher query failed', status_code=response.status_code, error=response.text)
+                self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
-
-            # Record successful API call
-            self.metrics.record_service_api_call(endpoint, "success", time.time() - start_time)
-
-            # Return results
+            self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
             return response.json()
-
         except httpx.RequestError as e:
-            # Handle network errors
-            error_message = f"Cypher query failed: {e!s}"
-            logger.exception(
-                "Cypher query request error",
-                error=str(e),
-            )
-            self.metrics.record_service_api_call(endpoint, "error", time.time() - start_time)
+            error_message = f'Cypher query failed: {e!s}'
+            logger.exception('Cypher query request error', error=str(e))
+            self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
             raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY) from e
 
     async def close(self) -> None:
         """Close the HTTP client."""
         await self.client.aclose()
-
 
 class MockNode:
     """Mock Neo4j Node for use with the adapter."""
@@ -348,7 +198,7 @@ class MockNode:
         self.labels = labels
         self.properties = properties
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Any=None) -> Any:
         """Get a property value.
 
         Args:
@@ -368,7 +218,7 @@ class MockNode:
         """
         return list(self.properties.items())
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> None:
         """Get a property value.
 
         Args:
@@ -384,18 +234,10 @@ class MockNode:
             return self.properties[key]
         raise KeyError(key)
 
-
 class MockRelationship:
     """Mock Neo4j Relationship for use with the adapter."""
 
-    def __init__(
-        self,
-        id: str,
-        type: str,
-        start_node_id: str,
-        end_node_id: str,
-        properties: dict[str, Any],
-    ) -> None:
+    def __init__(self, id: str, type: str, start_node_id: str, end_node_id: str, properties: dict[str, Any]) -> None:
         """Initialize the mock relationship.
 
         Args:
@@ -408,12 +250,10 @@ class MockRelationship:
         self.id = id
         self.type = type
         self.properties = properties
-
-        # Create mock nodes
         self.start_node = MockNode(start_node_id, [], {})
         self.end_node = MockNode(end_node_id, [], {})
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Any=None) -> Any:
         """Get a property value.
 
         Args:
@@ -433,7 +273,7 @@ class MockRelationship:
         """
         return list(self.properties.items())
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> None:
         """Get a property value.
 
         Args:
@@ -448,7 +288,6 @@ class MockRelationship:
         if key in self.properties:
             return self.properties[key]
         raise KeyError(key)
-
 
 @lru_cache
 def get_graph_service() -> GraphServiceAdapter:

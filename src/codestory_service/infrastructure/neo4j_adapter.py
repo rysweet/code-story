@@ -4,36 +4,14 @@ This module provides a service-specific adapter for Neo4j operations,
 building on the core Neo4jConnector with additional functionality required
 by the service layer.
 """
-
 import logging
 import time
 from typing import Any
-
 from fastapi import HTTPException, status
-
-from codestory.graphdb.exceptions import (
-    QueryError,
-    TransactionError,
-)
+from codestory.graphdb.exceptions import QueryError, TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-
-from ..domain.graph import (
-    CypherQuery,
-    Path,
-    PathNode,
-    PathRelationship,
-    PathRequest,
-    PathResult,
-    QueryResult,
-    QueryResultFormat,
-    SearchResult,
-    VectorQuery,
-    VectorResult,
-)
-
-# Set up logging
+from ..domain.graph import CypherQuery, Path, PathNode, PathRelationship, PathRequest, PathResult, QueryResult, QueryResultFormat, SearchResult, VectorQuery, VectorResult
 logger = logging.getLogger(__name__)
-
 
 class Neo4jAdapter:
     """Adapter for Neo4j operations specific to the service layer.
@@ -43,7 +21,7 @@ class Neo4jAdapter:
     domain models and Neo4j data structures.
     """
 
-    def __init__(self, connector: Neo4jConnector | None = None) -> None:
+    def __init__(self, connector: Neo4jConnector | None=None) -> None:
         """Initialize the Neo4j adapter.
 
         Args:
@@ -65,34 +43,17 @@ class Neo4jAdapter:
             HTTPException: If the health check fails
         """
         try:
-            # Use an executor to run the synchronous method in a thread pool
-            # to avoid blocking the async event loop
             import asyncio
-
             loop = asyncio.get_event_loop()
             connection_info = await loop.run_in_executor(None, self.connector.check_connection)
-
-            return {
-                "status": "healthy",
-                "details": {
-                    "database": connection_info.get("database", "unknown"),
-                    "components": connection_info.get("components", []),
-                },
-            }
+            return {'status': 'healthy', 'details': {'database': connection_info.get('database', 'unknown'), 'components': connection_info.get('components', [])}}
         except Exception as e:
-            logger.error(f"Neo4j health check failed: {e!s}")
-            return {
-                "status": "unhealthy",
-                "details": {
-                    "error": str(e),
-                    "type": type(e).__name__,
-                },
-            }
+            logger.error(f'Neo4j health check failed: {e!s}')
+            return {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}
 
     async def close(self) -> None:
         """Close the Neo4j connection."""
         if self.connector:
-            # Use synchronous method since async one is not available
             self.connector.close()
 
     async def execute_cypher_query(self, query_model: CypherQuery) -> QueryResult:
@@ -108,53 +69,25 @@ class Neo4jAdapter:
             HTTPException: If the query execution fails
         """
         start_time = time.time()
-
         try:
-            # Use synchronous method since async one is not available
-            result = self.connector.execute_query(
-                query_model.query,
-                params=query_model.parameters,
-                write=query_model.query_type.value == "write",
-            )
-
-            # Extract column names from the first record if available
+            result = self.connector.execute_query(query_model.query, params=query_model.parameters, write=query_model.query_type.value == 'write')
             columns: list[Any] = []
             if result and len(result) > 0:
                 columns = list(result[0].keys())
-
-            # Extract rows as lists to match the domain model
             rows: list[Any] = []
             for record in result:
                 row = [record.get(col) for col in columns]
                 rows.append(row)
-
             execution_time_ms = int((time.time() - start_time) * 1000)
-
-            return QueryResult(
-                columns=columns,
-                rows=rows,
-                row_count=len(rows),
-                execution_time_ms=execution_time_ms,
-                has_more=False,  # We don't support pagination in direct Cypher queries
-                format=QueryResultFormat.TABULAR,
-            )
-
+            return QueryResult(columns=columns, rows=rows, row_count=len(rows), execution_time_ms=execution_time_ms, has_more=False, format=QueryResultFormat.TABULAR)
         except (QueryError, TransactionError) as e:
-            logger.error(f"Query execution failed: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Query execution failed: {e!s}",
-            ) from e
+            logger.error(f'Query execution failed: {e!s}')
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Query execution failed: {e!s}') from e
         except Exception as e:
-            logger.error(f"Unexpected error in query execution: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error: {e!s}",
-            ) from e
+            logger.error(f'Unexpected error in query execution: {e!s}')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Unexpected error: {e!s}') from e
 
-    async def execute_vector_search(
-        self, query_model: VectorQuery, embedding: list[float]
-    ) -> VectorResult:
+    async def execute_vector_search(self, query_model: VectorQuery, embedding: list[float]) -> VectorResult:
         """Execute a vector similarity search.
 
         Args:
@@ -168,117 +101,52 @@ class Neo4jAdapter:
             HTTPException: If the search fails
         """
         start_time = time.time()
-        embedding_time = 0  # This would be set if we computed the embedding here
-
+        embedding_time = 0
         try:
-            # Determine node label based on entity type
-            node_label = "*"  # Default for any entity type
-            if query_model.entity_type and query_model.entity_type.value != "any":
-                # Map domain entity type to Neo4j label
-                entity_type_map = {
-                    "node": "*",
-                    "file": "File",
-                    "function": "Function",
-                    "class": "Class",
-                    "module": "Module",
-                    "directory": "Directory",
-                    "document": "Document",
-                }
-                node_label = entity_type_map.get(query_model.entity_type.value, "*")
-
-            # Execute vector search query with synchronous method
-            result = self.connector.execute_query(
-                f"""
-                MATCH (n{":" + node_label if node_label != "*" else ""})
-                WHERE n.embedding IS NOT NULL
-                WITH n, gds.similarity.cosine(n.embedding, $embedding) AS score
-                WHERE score >= $min_score
-                RETURN n, score
-                ORDER BY score DESC
-                LIMIT $limit
-                """,
-                params={
-                    "embedding": embedding,
-                    "min_score": query_model.min_score,
-                    "limit": query_model.limit,
-                },
-            )
-
-            # Map results to domain model
+            node_label = '*'
+            if query_model.entity_type and query_model.entity_type.value != 'any':
+                entity_type_map = {'node': '*', 'file': 'File', 'function': 'Function', 'class': 'Class', 'module': 'Module', 'directory': 'Directory', 'document': 'Document'}
+                node_label = entity_type_map.get(query_model.entity_type.value, '*')
+            result = self.connector.execute_query(f"\n                MATCH (n{(':' + node_label if node_label != '*' else '')})\n                WHERE n.embedding IS NOT NULL\n                WITH n, gds.similarity.cosine(n.embedding, $embedding) AS score\n                WHERE score >= $min_score\n                RETURN n, score\n                ORDER BY score DESC\n                LIMIT $limit\n                ", params={'embedding': embedding, 'min_score': query_model.min_score, 'limit': query_model.limit})
             search_results: list[Any] = []
             for item in result:
-                node = item.get("n", {})
-
-                # Extract path for file-based entities
+                node = item.get('n', {})
                 path = None
-                if "path" in node:
-                    path = node["path"]
-                elif "filePath" in node:
-                    path = node["filePath"]
-
-                # Determine entity type
-                entity_type = "unknown"
-                if "labels" in node and isinstance(node["labels"], list):
-                    if "File" in node["labels"]:
-                        entity_type = "file"
-                    elif "Function" in node["labels"]:
-                        entity_type = "function"
-                    elif "Class" in node["labels"]:
-                        entity_type = "class"
-                    elif "Module" in node["labels"]:
-                        entity_type = "module"
-                    elif "Directory" in node["labels"]:
-                        entity_type = "directory"
-                    elif "Document" in node["labels"]:
-                        entity_type = "document"
-
-                # Extract content snippet if available
+                if 'path' in node:
+                    path = node['path']
+                elif 'filePath' in node:
+                    path = node['filePath']
+                entity_type = 'unknown'
+                if 'labels' in node and isinstance(node['labels'], list):
+                    if 'File' in node['labels']:
+                        entity_type = 'file'
+                    elif 'Function' in node['labels']:
+                        entity_type = 'function'
+                    elif 'Class' in node['labels']:
+                        entity_type = 'class'
+                    elif 'Module' in node['labels']:
+                        entity_type = 'module'
+                    elif 'Directory' in node['labels']:
+                        entity_type = 'directory'
+                    elif 'Document' in node['labels']:
+                        entity_type = 'document'
                 content_snippet = None
-                for content_field in ["content", "body", "text", "code"]:
+                for content_field in ['content', 'body', 'text', 'code']:
                     if content_field in node:
                         content = node[content_field]
                         if content and isinstance(content, str):
-                            # Extract a small snippet (first 150 chars)
-                            content_snippet = (
-                                content[:150] + "..." if len(content) > 150 else content
-                            )
+                            content_snippet = content[:150] + '...' if len(content) > 150 else content
                             break
-
-                # Create search result
-                search_result = SearchResult(
-                    id=node.get("id", "unknown"),
-                    name=node.get("name", "Unnamed"),
-                    type=entity_type,
-                    score=item.get("score", 0.0),
-                    content_snippet=content_snippet,
-                    properties={
-                        k: v for k, v in node.items() if k not in ["id", "name", "path", "filePath"]
-                    },
-                    path=path,
-                )
+                search_result = SearchResult(id=node.get('id', 'unknown'), name=node.get('name', 'Unnamed'), type=entity_type, score=item.get('score', 0.0), content_snippet=content_snippet, properties={k: v for k, v in node.items() if k not in ['id', 'name', 'path', 'filePath']}, path=path)
                 search_results.append(search_result)
-
             execution_time_ms = int((time.time() - start_time) * 1000)
-
-            return VectorResult(
-                results=search_results,
-                total_count=len(search_results),
-                execution_time_ms=execution_time_ms,
-                query_embedding_time_ms=embedding_time if embedding_time > 0 else None,
-            )
-
+            return VectorResult(results=search_results, total_count=len(search_results), execution_time_ms=execution_time_ms, query_embedding_time_ms=embedding_time if embedding_time > 0 else None)
         except QueryError as e:
-            logger.error(f"Vector search failed: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Vector search failed: {e!s}",
-            ) from e
+            logger.error(f'Vector search failed: {e!s}')
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Vector search failed: {e!s}') from e
         except Exception as e:
-            logger.error(f"Unexpected error in vector search: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error: {e!s}",
-            ) from e
+            logger.error(f'Unexpected error in vector search: {e!s}')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Unexpected error: {e!s}') from e
 
     async def find_path(self, path_request: PathRequest) -> PathResult:
         """Find paths between nodes.
@@ -293,142 +161,52 @@ class Neo4jAdapter:
             HTTPException: If the path finding fails
         """
         start_time = time.time()
-
         try:
-            # Map algorithm to Cypher procedure
-            algorithm_map = {
-                "shortest": "shortestPath",
-                "dijkstra": "dijkstra",
-                "all_shortest": "allShortestPaths",
-                "all_simple": "allSimplePaths",
-            }
-            algo = algorithm_map.get(path_request.algorithm.value, "shortestPath")
-
-            # Map direction to Cypher syntax
-            direction_map = {"outgoing": ">", "incoming": "<", "both": ""}
-            direction_map.get(path_request.direction.value, "")
-
-            # Handle relationship types
-            rel_types = ""
+            algorithm_map = {'shortest': 'shortestPath', 'dijkstra': 'dijkstra', 'all_shortest': 'allShortestPaths', 'all_simple': 'allSimplePaths'}
+            algo = algorithm_map.get(path_request.algorithm.value, 'shortestPath')
+            direction_map = {'outgoing': '>', 'incoming': '<', 'both': ''}
+            direction_map.get(path_request.direction.value, '')
+            rel_types = ''
             if path_request.relationship_types:
-                rel_list = "|".join(
-                    [t.value for t in path_request.relationship_types if t.value != "any"]
-                )
+                rel_list = '|'.join([t.value for t in path_request.relationship_types if t.value != 'any'])
                 if rel_list:
-                    rel_types = f":{rel_list}"
-
-            # Build the query based on the algorithm
-            if algo in ["shortestPath", "allShortestPaths"]:
-                # For shortest path algorithms
-                query = f"""
-                MATCH (start), (end)
-                WHERE elementId(start) = $start_id AND elementId(end) = $end_id
-                CALL apoc.path.{algo}(start, end, $max_depth, 
-                    $relationship_pattern) YIELD path
-                RETURN path
-                LIMIT $limit
-                """
-                params = {
-                    "start_id": path_request.start_node_id,
-                    "end_id": path_request.end_node_id,
-                    "max_depth": path_request.max_depth,
-                    "relationship_pattern": f"{rel_types}" if rel_types else "",
-                    "limit": path_request.limit,
-                }
+                    rel_types = f':{rel_list}'
+            if algo in ['shortestPath', 'allShortestPaths']:
+                query = f'\n                MATCH (start), (end)\n                WHERE elementId(start) = $start_id AND elementId(end) = $end_id\n                CALL apoc.path.{algo}(start, end, $max_depth, \n                    $relationship_pattern) YIELD path\n                RETURN path\n                LIMIT $limit\n                '
+                params = {'start_id': path_request.start_node_id, 'end_id': path_request.end_node_id, 'max_depth': path_request.max_depth, 'relationship_pattern': f'{rel_types}' if rel_types else '', 'limit': path_request.limit}
             else:
-                # For more complex algorithms with direction
-                query = f"""
-                MATCH (start), (end)
-                WHERE elementId(start) = $start_id AND elementId(end) = $end_id
-                CALL apoc.path.{algo}(start, end, $relationship_pattern, null, $max_depth) 
-                YIELD path
-                RETURN path
-                LIMIT $limit
-                """
-                rel_pattern = ""
+                query = f'\n                MATCH (start), (end)\n                WHERE elementId(start) = $start_id AND elementId(end) = $end_id\n                CALL apoc.path.{algo}(start, end, $relationship_pattern, null, $max_depth) \n                YIELD path\n                RETURN path\n                LIMIT $limit\n                '
+                rel_pattern = ''
                 if rel_types:
-                    rel_pattern = f"{rel_types}"
-
-                params = {
-                    "start_id": path_request.start_node_id,
-                    "end_id": path_request.end_node_id,
-                    "relationship_pattern": rel_pattern,
-                    "max_depth": path_request.max_depth,
-                    "limit": path_request.limit,
-                }
-
-            # Execute the query with synchronous method
+                    rel_pattern = f'{rel_types}'
+                params = {'start_id': path_request.start_node_id, 'end_id': path_request.end_node_id, 'relationship_pattern': rel_pattern, 'max_depth': path_request.max_depth, 'limit': path_request.limit}
             result = self.connector.execute_query(query, params=params)
-
-            # Convert results to domain model
             paths: list[Any] = []
             for item in result:
-                if "path" not in item:
+                if 'path' not in item:
                     continue
-
-                path_data = item["path"]
-
-                # Extract nodes and relationships
+                path_data = item['path']
                 path_nodes: list[Any] = []
                 path_rels: list[Any] = []
-
-                # Process nodes in the path
-                if "nodes" in path_data:
-                    for node in path_data["nodes"]:
-                        path_node = PathNode(
-                            id=node.get("id", "unknown"),
-                            labels=node.get("labels", []),
-                            properties={k: v for k, v in node.items() if k not in ["id", "labels"]},
-                        )
+                if 'nodes' in path_data:
+                    for node in path_data['nodes']:
+                        path_node = PathNode(id=node.get('id', 'unknown'), labels=node.get('labels', []), properties={k: v for k, v in node.items() if k not in ['id', 'labels']})
                         path_nodes.append(path_node)
-
-                # Process relationships in the path
-                if "relationships" in path_data:
-                    for rel in path_data["relationships"]:
-                        path_rel = PathRelationship(
-                            id=rel.get("id", "unknown"),
-                            type=rel.get("type", "unknown"),
-                            properties={
-                                k: v
-                                for k, v in rel.items()
-                                if k not in ["id", "type", "startNode", "endNode"]
-                            },
-                            start_node_id=rel.get("startNode", "unknown"),
-                            end_node_id=rel.get("endNode", "unknown"),
-                        )
+                if 'relationships' in path_data:
+                    for rel in path_data['relationships']:
+                        path_rel = PathRelationship(id=rel.get('id', 'unknown'), type=rel.get('type', 'unknown'), properties={k: v for k, v in rel.items() if k not in ['id', 'type', 'startNode', 'endNode']}, start_node_id=rel.get('startNode', 'unknown'), end_node_id=rel.get('endNode', 'unknown'))
                         path_rels.append(path_rel)
-
-                # Create the Path object
-                cost = path_data.get("cost") if "cost" in path_data else None
-                path_obj = Path(
-                    nodes=path_nodes,
-                    relationships=path_rels,
-                    length=len(path_rels),
-                    cost=cost,
-                )
+                cost = path_data.get('cost') if 'cost' in path_data else None
+                path_obj = Path(nodes=path_nodes, relationships=path_rels, length=len(path_rels), cost=cost)
                 paths.append(path_obj)
-
             execution_time_ms = int((time.time() - start_time) * 1000)
-
-            return PathResult(
-                paths=paths,
-                execution_time_ms=execution_time_ms,
-                total_paths_found=len(paths),
-            )
-
+            return PathResult(paths=paths, execution_time_ms=execution_time_ms, total_paths_found=len(paths))
         except QueryError as e:
-            logger.error(f"Path finding failed: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Path finding failed: {e!s}",
-            ) from e
+            logger.error(f'Path finding failed: {e!s}')
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Path finding failed: {e!s}') from e
         except Exception as e:
-            logger.error(f"Unexpected error in path finding: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error: {e!s}",
-            ) from e
-
+            logger.error(f'Unexpected error in path finding: {e!s}')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Unexpected error: {e!s}') from e
 
 class DummyNeo4jConnector:
     """Dummy Neo4j connector for use when connection to Neo4j fails.
@@ -436,29 +214,22 @@ class DummyNeo4jConnector:
     This allows basic service functionality without Neo4j available.
     """
 
-    def __init__(self) -> Any:
+    def __init__(self) -> None:
         """Initialize the dummy connector."""
-        logger.warning("Using DummyNeo4jConnector - Neo4j functionality will be limited")
+        logger.warning('Using DummyNeo4jConnector - Neo4j functionality will be limited')
 
     def check_connection(self) -> dict[str, Any]:
         """Return dummy connection info."""
-        return {
-            "database": "dummy",
-            "components": ["Dummy Neo4j Connector"],
-        }
+        return {'database': 'dummy', 'components': ['Dummy Neo4j Connector']}
 
     def close(self) -> None:
         """Dummy close method."""
         pass
 
-    def execute_query(
-        self, query: str, params: dict[str, Any] | None = None, write: bool = False
-    ) -> list[dict[str, Any]]:
+    def execute_query(self, query: str, params: dict[str, Any] | None=None, write: bool=False) -> list[dict[str, Any]]:
         """Return dummy query results."""
-        logger.info(f"DummyNeo4jConnector.execute_query called with: {query[:100]}...")
-        # Return empty result
+        logger.info(f'DummyNeo4jConnector.execute_query called with: {query[:100]}...')
         return []
-
 
 class DummyNeo4jAdapter(Neo4jAdapter):
     """Neo4j adapter that uses a dummy connector.
@@ -466,10 +237,9 @@ class DummyNeo4jAdapter(Neo4jAdapter):
     This allows basic service functionality without Neo4j being available.
     """
 
-    def __init__(self) -> Any:
+    def __init__(self) -> None:
         """Initialize with a dummy connector."""
         self.connector = DummyNeo4jConnector()
-
 
 async def get_neo4j_adapter() -> Neo4jAdapter:
     """Factory function to create a Neo4j adapter.
@@ -480,15 +250,10 @@ async def get_neo4j_adapter() -> Neo4jAdapter:
         Neo4jAdapter instance (real or dummy)
     """
     try:
-        # Try to create a real adapter
         adapter = Neo4jAdapter()
-        # Test the connection
         await adapter.check_health()
         return adapter
     except Exception as e:
-        # Log the error but don't fail
-        logger.warning(f"Failed to create real Neo4j adapter: {e!s}")
-        logger.warning("Falling back to dummy Neo4j adapter for demo purposes")
-
-        # Return a dummy adapter instead
+        logger.warning(f'Failed to create real Neo4j adapter: {e!s}')
+        logger.warning('Falling back to dummy Neo4j adapter for demo purposes')
         return DummyNeo4jAdapter()

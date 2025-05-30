@@ -4,7 +4,6 @@ This module provides a unified interface for connecting to Neo4j and executing q
 with support for connection pooling, synchronous and asynchronous operations,
 vector search, and schema management.
 """
-
 import asyncio
 import logging
 import time
@@ -12,41 +11,18 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, Union, cast
 from unittest.mock import AsyncMock, MagicMock
-
 from neo4j import Driver, GraphDatabase, Result, Session
-from neo4j.exceptions import (
-    Neo4jError as Neo4jDriverError,
-)
-from neo4j.exceptions import (
-    ServiceUnavailable,
-    TransientError,
-)
-
+from neo4j.exceptions import Neo4jError as Neo4jDriverError
+from neo4j.exceptions import ServiceUnavailable, TransientError
 try:
     from ..config.settings import get_settings
 except ImportError:
-    # For testing environments where settings might not be available
     get_settings: Union[Callable[[], Any], None] = None
-
-from .exceptions import (
-    ConnectionError,
-    QueryError,
-    SchemaError,
-    TransactionError,
-)
-from .metrics import (
-    QueryType,
-    instrument_query,
-    record_connection_error,
-    record_retry,
-    record_transaction,
-    record_vector_search,
-    update_pool_metrics,
-)
+from .exceptions import ConnectionError, QueryError, SchemaError, TransactionError
+from .metrics import QueryType, instrument_query, record_connection_error, record_retry, record_transaction, record_vector_search, update_pool_metrics
 from .schema import create_custom_vector_index, initialize_schema
 
-
-def create_connector() -> "Neo4jConnector":
+def create_connector() -> 'Neo4jConnector':
     """Create a Neo4jConnector instance using application settings.
 
     Returns:
@@ -67,50 +43,24 @@ def create_connector() -> "Neo4jConnector":
             result = connector.execute_query("RETURN 1 as num")
         ```
     """
-    # Fail if get_settings is not available
     if get_settings is None:
-        raise RuntimeError(
-            "get_settings function not available. Make sure the config module "
-            "is properly installed."
-        )
-
-    # Get application settings
+        raise RuntimeError('get_settings function not available. Make sure the config module is properly installed.')
     settings = get_settings()
-
-    # Create connector with settings
-    connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        database=settings.neo4j.database,
-        max_connection_pool_size=settings.neo4j.max_connection_pool_size,
-        connection_timeout=settings.neo4j.connection_timeout,
-    )
-
-    # Auto-initialize schema if configured
+    connector = Neo4jConnector(uri=settings.neo4j.uri, username=settings.neo4j.username, password=settings.neo4j.password.get_secret_value(), database=settings.neo4j.database, max_connection_pool_size=settings.neo4j.max_connection_pool_size, connection_timeout=settings.neo4j.connection_timeout)
     try:
-        auto_initialize = getattr(settings.neo4j, "auto_initialize_schema", False)
-        force_update = getattr(settings.neo4j, "force_schema_update", False)
-
+        auto_initialize = getattr(settings.neo4j, 'auto_initialize_schema', False)
+        force_update = getattr(settings.neo4j, 'force_schema_update', False)
         if auto_initialize:
             from .schema import initialize_schema
-
             initialize_schema(connector, force=force_update)
-            logger.info("Neo4j schema initialized successfully")
+            logger.info('Neo4j schema initialized successfully')
     except Exception as e:
-        logger.warning(f"Failed to auto-initialize Neo4j schema: {e!s}")
-
+        logger.warning(f'Failed to auto-initialize Neo4j schema: {e!s}')
     return connector
-
-
-# Set up logging
 logger = logging.getLogger(__name__)
+F = TypeVar('F', bound=Callable[..., Any])
 
-# Define type for decorated functions
-F = TypeVar("F", bound=Callable[..., Any])
-
-
-def retry_on_transient(max_retries: int = 3, backoff_factor: float = 1.5) -> Callable[[F], F]:
+def retry_on_transient(max_retries: int=3, backoff_factor: float=1.5) -> Callable[[F], F]:
     """Decorator for retrying operations on transient Neo4j errors.
 
     Args:
@@ -122,54 +72,31 @@ def retry_on_transient(max_retries: int = 3, backoff_factor: float = 1.5) -> Cal
     """
 
     def decorator(func: F) -> F:
+
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> None:
             retries = 0
             latest_error = None
-
             while retries <= max_retries:
                 try:
                     return func(*args, **kwargs)
                 except (TransientError, ServiceUnavailable) as e:
                     retries += 1
                     latest_error = e
-
                     if retries <= max_retries:
-                        # Record retry in metrics
-                        query_type = getattr(
-                            kwargs.get("write", False), "value", QueryType.READ.value
-                        )
+                        query_type = getattr(kwargs.get('write', False), 'value', QueryType.READ.value)
                         record_retry(QueryType(query_type))
-
-                        # Calculate backoff time
-                        wait_time = backoff_factor**retries
-                        logger.warning(
-                            f"Transient Neo4j error, retrying in {wait_time:.2f} seconds "
-                            f"(attempt {retries}/{max_retries}): {e!s}"
-                        )
+                        wait_time = backoff_factor ** retries
+                        logger.warning(f'Transient Neo4j error, retrying in {wait_time:.2f} seconds (attempt {retries}/{max_retries}): {e!s}')
                         time.sleep(wait_time)
-
                 except Exception as e:
-                    # Non-transient errors are not retried
                     raise e
-
-            # If we get here, we've exhausted our retries
             if latest_error:
-                logger.error(
-                    f"Max retries ({max_retries}) reached for Neo4j operation: {latest_error!s}"
-                )
-                raise QueryError(
-                    f"Operation failed after {max_retries} retries",
-                    cause=latest_error,
-                )
-
-            # This should never happen
-            raise QueryError("Operation failed for unknown reason")
-
-        return cast("F", wrapper)
-
+                logger.error(f'Max retries ({max_retries}) reached for Neo4j operation: {latest_error!s}')
+                raise QueryError(f'Operation failed after {max_retries} retries', cause=latest_error)
+            raise QueryError('Operation failed for unknown reason')
+        return cast('F', wrapper)
     return decorator
-
 
 class Neo4jConnector:
     """Connector for interacting with Neo4j database.
@@ -180,7 +107,6 @@ class Neo4jConnector:
     This class implements the context manager protocol, allowing it to be used with
     the 'with' statement to ensure proper cleanup of resources.
     """
-
     driver: Driver
     uri: str
     username: str
@@ -189,15 +115,7 @@ class Neo4jConnector:
     max_connection_pool_size: int
     connection_timeout: int
 
-    def __init__(
-        self,
-        uri: str | None = None,
-        username: str | None = None,
-        password: str | None = None,
-        database: str | None = None,
-        async_mode: bool = False,
-        **config_options: Any,
-    ) -> None:
+    def __init__(self, uri: str | None=None, username: str | None=None, password: str | None=None, database: str | None=None, async_mode: bool=False, **config_options: Any) -> None:
         """Initialize the Neo4j connector.
 
         Args:
@@ -216,104 +134,55 @@ class Neo4jConnector:
             ConnectionError: If the connection to Neo4j fails
         """
         try:
-            # Use explicit parameters if provided
             self.uri = uri
             self.username = username
             self.password = password
-            self.database = database or "neo4j"
-
-            # Set default configuration options
-            self.max_connection_pool_size = config_options.get("max_connection_pool_size", 50)
-            self.connection_timeout = config_options.get("connection_timeout", 30)
-
-            # In tests we provide all required parameters
+            self.database = database or 'neo4j'
+            self.max_connection_pool_size = config_options.get('max_connection_pool_size', 50)
+            self.connection_timeout = config_options.get('connection_timeout', 30)
             all_params_provided = self.uri and self.username and self.password
-
-            # Try to get settings only if necessary and if settings module is available
-            if (
-                (not all_params_provided)
-                and get_settings
-                and not config_options.get("skip_settings", False)
-            ):
+            if not all_params_provided and get_settings and (not config_options.get('skip_settings', False)):
                 try:
                     settings = get_settings()
-
-                    # Fall back to settings if parameters not provided
                     self.uri = self.uri or settings.neo4j.uri
                     self.username = self.username or settings.neo4j.username
                     self.password = self.password or settings.neo4j.password.get_secret_value()
                     self.database = self.database or settings.neo4j.database
-
-                    # Get additional configuration from settings if not provided in config_options
-                    if "max_connection_pool_size" not in config_options:
+                    if 'max_connection_pool_size' not in config_options:
                         self.max_connection_pool_size = settings.neo4j.max_connection_pool_size
-
-                    if "connection_timeout" not in config_options:
+                    if 'connection_timeout' not in config_options:
                         self.connection_timeout = settings.neo4j.connection_timeout
                 except Exception as e:
-                    # Log the error but continue if we have minimum required parameters
-                    logger.warning(f"Failed to load settings: {e!s}")
+                    logger.warning(f'Failed to load settings: {e!s}')
                     if not all_params_provided:
-                        raise ConnectionError(
-                            f"Failed to load settings and missing required connection "
-                            f"parameters: {e!s}",
-                            cause=e,
-                        ) from e
-
-            # Ensure we have required connection parameters
+                        raise ConnectionError(f'Failed to load settings and missing required connection parameters: {e!s}', cause=e) from e
             if not self.uri:
-                raise ConnectionError("URI is required for Neo4j connection")
+                raise ConnectionError('URI is required for Neo4j connection')
             if not self.username:
-                raise ConnectionError("Username is required for Neo4j connection")
+                raise ConnectionError('Username is required for Neo4j connection')
             if not self.password:
-                raise ConnectionError("Password is required for Neo4j connection")
-
-            # Initialize driver
-            # Filter out custom config options that aren't valid Neo4j driver options
-            custom_options = {
-                "max_connection_pool_size",
-                "connection_timeout",
-                "skip_settings",
-                "skip_connection_check"
-            }
-            neo4j_config = {
-                k: v for k, v in config_options.items()
-                if k not in custom_options
-            }
-            
-            self.driver = GraphDatabase.driver(
-                self.uri,
-                auth=(self.username, self.password),
-                max_connection_pool_size=self.max_connection_pool_size,
-                connection_timeout=self.connection_timeout,
-                **neo4j_config,
-            )
-
-            # For testing, we'll skip connectivity verification
-            if not config_options.get("skip_connection_check", False):
+                raise ConnectionError('Password is required for Neo4j connection')
+            custom_options = {'max_connection_pool_size', 'connection_timeout', 'skip_settings', 'skip_connection_check'}
+            neo4j_config = {k: v for k, v in config_options.items() if k not in custom_options}
+            self.driver = GraphDatabase.driver(self.uri, auth=(self.username, self.password), max_connection_pool_size=self.max_connection_pool_size, connection_timeout=self.connection_timeout, **neo4j_config)
+            if not config_options.get('skip_connection_check', False):
                 try:
-                    # Just verify that driver exists
-                    if hasattr(self, "driver") and self.driver:
-                        logger.info(f"Connected to Neo4j at {self.uri}")
+                    if hasattr(self, 'driver') and self.driver:
+                        logger.info(f'Connected to Neo4j at {self.uri}')
                 except Exception as e:
-                    logger.error(f"Connection verification failed: {e!s}")
-
+                    logger.error(f'Connection verification failed: {e!s}')
         except Exception as e:
             record_connection_error()
-            logger.error(f"Failed to connect to Neo4j: {e!s}")
-            raise ConnectionError(
-                f"Failed to connect to Neo4j: {e!s}",
-                uri=self.uri,
-                cause=e,
-            ) from e
+            logger.error(f'Failed to connect to Neo4j: {e!s}')
+            raise ConnectionError(f'Failed to connect to Neo4j: {e!s}', uri=self.uri, cause=e) from e
 
     def close(self) -> None:
         """Close all connections in the pool."""
-        if hasattr(self, "driver") and self.driver:
+        if hasattr(self, 'driver') and self.driver:
             self.driver.close()
-            logger.debug("Neo4j driver closed")
+            logger.debug('Neo4j driver closed')
 
-    def __enter__(self) -> "Neo4jConnector":
+    def __enter__(self) -> 'Neo4jConnector':
         """Enter the context manager.
 
         Returns:
@@ -337,13 +206,7 @@ class Neo4jConnector:
 
     @instrument_query(query_type=QueryType.READ)
     @retry_on_transient()
-    def execute_query(
-        self,
-        query: str,
-        params: dict[str, Any] | None = None,
-        write: bool = False,
-        retry_count: int = 3,
-    ) -> list[dict[str, Any]]:
+    def execute_query(self, query: str, params: dict[str, Any] | None=None, write: bool=False, retry_count: int=3) -> list[dict[str, Any]]:
         """Execute a Cypher query with automatic connection management.
 
         Args:
@@ -360,54 +223,32 @@ class Neo4jConnector:
         """
         try:
             query_type = QueryType.WRITE if write else QueryType.READ
-            logger.debug(f"Executing {query_type.value} query: {query}")
-
-            # Special handling for mock driver in tests
+            logger.debug(f'Executing {query_type.value} query: {query}')
             if isinstance(self.driver, MagicMock):
-                # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
                     return cast(list[dict[str, Any]], session.execute_write())
                 else:
                     return cast(list[dict[str, Any]], session.execute_read())
-
-            # Create a session with the database name
             session = self.driver.session(database=self.database)
             try:
                 if write:
                     result = session.execute_write(self._transaction_function, query, params or {})
                 else:
                     result = session.execute_read(self._transaction_function, query, params or {})
-
                 return cast(list[dict[str, Any]], result)
             finally:
                 session.close()
-
         except Neo4jDriverError as e:
-            logger.error(f"Neo4j query error: {e!s}")
-            raise QueryError(
-                f"Query execution failed: {e!s}",
-                query=query,
-                parameters=params,
-                cause=e,
-            ) from e
+            logger.error(f'Neo4j query error: {e!s}')
+            raise QueryError(f'Query execution failed: {e!s}', query=query, parameters=params, cause=e) from e
         except Exception as e:
-            logger.error(f"Unexpected error executing query: {e!s}")
-            raise QueryError(
-                f"Unexpected error: {e!s}",
-                query=query,
-                parameters=params,
-                cause=e,
-            ) from e
+            logger.error(f'Unexpected error executing query: {e!s}')
+            raise QueryError(f'Unexpected error: {e!s}', query=query, parameters=params, cause=e) from e
 
     @instrument_query(query_type=QueryType.WRITE)
     @retry_on_transient()
-    def execute_many(
-        self,
-        queries: list[str],
-        params_list: list[dict[str, Any]] | None = None,
-        write: bool = False,
-    ) -> list[list[dict[str, Any]]]:
+    def execute_many(self, queries: list[str], params_list: list[dict[str, Any]] | None=None, write: bool=False) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a single transaction.
 
         Args:
@@ -423,56 +264,35 @@ class Neo4jConnector:
             ValueError: If queries and params_list have different lengths
         """
         if params_list and len(queries) != len(params_list):
-            raise ValueError("Number of queries and parameter sets must match")
-
+            raise ValueError('Number of queries and parameter sets must match')
         params_list = params_list or [{}] * len(queries)
-
         try:
             query_type = QueryType.WRITE if write else QueryType.READ
-            logger.debug(f"Executing {len(queries)} {query_type.value} queries in transaction")
-
-            # Special handling for mock driver in tests
+            logger.debug(f'Executing {len(queries)} {query_type.value} queries in transaction')
             if isinstance(self.driver, MagicMock):
-                # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
                     return cast(list[list[dict[str, Any]]], session.execute_write())
                 else:
                     return cast(list[list[dict[str, Any]]], session.execute_read())
-
-            # Create a session with the database name
             session = self.driver.session(database=self.database)
             try:
                 if write:
-                    results = session.execute_write(
-                        self._transaction_function_many, queries, params_list
-                    )
+                    results = session.execute_write(self._transaction_function_many, queries, params_list)
                 else:
-                    results = session.execute_read(
-                        self._transaction_function_many, queries, params_list
-                    )
-
+                    results = session.execute_read(self._transaction_function_many, queries, params_list)
                 record_transaction(success=True)
                 return cast(list[list[dict[str, Any]]], results)
             finally:
                 session.close()
-
         except Neo4jDriverError as e:
             record_transaction(success=False)
-            logger.error(f"Neo4j transaction error: {e!s}")
-            raise TransactionError(
-                f"Transaction failed: {e!s}",
-                operation="execute_many",
-                cause=e,
-            ) from e
+            logger.error(f'Neo4j transaction error: {e!s}')
+            raise TransactionError(f'Transaction failed: {e!s}', operation='execute_many', cause=e) from e
         except Exception as e:
             record_transaction(success=False)
-            logger.error(f"Unexpected error in transaction: {e!s}")
-            raise TransactionError(
-                f"Unexpected error: {e!s}",
-                operation="execute_many",
-                cause=e,
-            ) from e
+            logger.error(f'Unexpected error in transaction: {e!s}')
+            raise TransactionError(f'Unexpected error: {e!s}', operation='execute_many', cause=e) from e
 
     def _transaction_function(self, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         """Execute a single query in a transaction.
@@ -488,9 +308,7 @@ class Neo4jConnector:
         result = tx.run(query, params)
         return [dict(record) for record in result]
 
-    def _transaction_function_many(
-        self, tx: Any, queries: list[str], params_list: list[dict[str, Any]]
-    ) -> list[list[dict[str, Any]]]:
+    def _transaction_function_many(self, tx: Any, queries: list[str], params_list: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a transaction.
 
         Args:
@@ -516,23 +334,13 @@ class Neo4jConnector:
         """
         try:
             initialize_schema(self)
-            logger.info("Neo4j schema initialized successfully")
+            logger.info('Neo4j schema initialized successfully')
         except Exception as e:
-            logger.error(f"Failed to initialize schema: {e!s}")
-            raise SchemaError(
-                f"Schema initialization failed: {e!s}",
-                operation="initialize_schema",
-                cause=e,
-            ) from e
+            logger.error(f'Failed to initialize schema: {e!s}')
+            raise SchemaError(f'Schema initialization failed: {e!s}', operation='initialize_schema', cause=e) from e
 
     @instrument_query(query_type=QueryType.SCHEMA)
-    def create_vector_index(
-        self,
-        label: str,
-        property_name: str,
-        dimensions: int = 1536,
-        similarity: str = "cosine",
-    ) -> None:
+    def create_vector_index(self, label: str, property_name: str, dimensions: int=1536, similarity: str='cosine') -> None:
         """Create a vector index for semantic search.
 
         Args:
@@ -546,18 +354,10 @@ class Neo4jConnector:
         """
         try:
             create_custom_vector_index(self, label, property_name, dimensions, similarity)
-            logger.info(f"Vector index created for {label}.{property_name}")
+            logger.info(f'Vector index created for {label}.{property_name}')
         except Exception as e:
-            logger.error(f"Failed to create vector index: {e!s}")
-            raise SchemaError(
-                f"Vector index creation failed: {e!s}",
-                operation="create_vector_index",
-                cause=e,
-                label=label,
-                property=property_name,
-                dimensions=dimensions,
-                similarity=similarity,
-            ) from e
+            logger.error(f'Failed to create vector index: {e!s}')
+            raise SchemaError(f'Vector index creation failed: {e!s}', operation='create_vector_index', cause=e, label=label, property=property_name, dimensions=dimensions, similarity=similarity) from e
 
     def create_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
         """Create a node in the Neo4j database.
@@ -569,9 +369,9 @@ class Neo4jConnector:
         Returns:
             Dict: The created node data
         """
-        query = f"CREATE (n:{label} $props) RETURN n"
-        result = self.execute_query(query, params={"props": properties}, write=True)
-        return result[0]["n"] if result else None
+        query = f'CREATE (n:{label} $props) RETURN n'
+        result = self.execute_query(query, params={'props': properties}, write=True)
+        return result[0]['n'] if result else None
 
     def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any] | None:
         """Find a node with the given label and properties.
@@ -583,20 +383,12 @@ class Neo4jConnector:
         Returns:
             Dict: The found node data or None if not found
         """
-        # Create a match condition for each property
-        match_conditions = " AND ".join([f"n.{key} = ${key}" for key in properties])
-
-        query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
+        match_conditions = ' AND '.join([f'n.{key} = ${key}' for key in properties])
+        query = f'MATCH (n:{label}) WHERE {match_conditions} RETURN n'
         result = self.execute_query(query, params=properties)
-        return result[0]["n"] if result else None
+        return result[0]['n'] if result else None
 
-    def create_relationship(
-        self,
-        start_node: dict[str, Any],
-        end_node: dict[str, Any],
-        rel_type: str,
-        properties: dict[str, Any] | None = None,
-    ) -> dict[str, Any] | None:
+    def create_relationship(self, start_node: dict[str, Any], end_node: dict[str, Any], rel_type: str, properties: dict[str, Any] | None=None) -> dict[str, Any] | None:
         """Create a relationship between two nodes.
 
         Args:
@@ -608,39 +400,12 @@ class Neo4jConnector:
         Returns:
             Dict: The created relationship data
         """
-        # Use internal node IDs to create the relationship
         props = properties or {}
-        query = f"""
-        MATCH (start), (end)
-        WHERE elementId(start) = $start_id AND elementId(end) = $end_id
-        CREATE (start)-[r:{rel_type}]->(end)
-        SET r = $props
-        RETURN r
-        """
+        query = f'\n        MATCH (start), (end)\n        WHERE elementId(start) = $start_id AND elementId(end) = $end_id\n        CREATE (start)-[r:{rel_type}]->(end)\n        SET r = $props\n        RETURN r\n        '
+        result = self.execute_query(query, params={'start_id': start_node.element_id if hasattr(start_node, 'element_id') else start_node['id'], 'end_id': end_node.element_id if hasattr(end_node, 'element_id') else end_node['id'], 'props': props}, write=True)
+        return result[0]['r'] if result else None
 
-        result = self.execute_query(
-            query,
-            params={
-                "start_id": start_node.element_id
-                if hasattr(start_node, "element_id")
-                else start_node["id"],
-                "end_id": end_node.element_id
-                if hasattr(end_node, "element_id")
-                else end_node["id"],
-                "props": props,
-            },
-            write=True,
-        )
-        return result[0]["r"] if result else None
-
-    def semantic_search(
-        self,
-        query_embedding: list[float],
-        node_label: str,
-        property_name: str = "embedding",
-        limit: int = 10,
-        similarity_cutoff: float | None = None,
-    ) -> list[dict[str, Any]]:
+    def semantic_search(self, query_embedding: list[float], node_label: str, property_name: str='embedding', limit: int=10, similarity_cutoff: float | None=None) -> list[dict[str, Any]]:
         """Perform vector similarity search using the provided embedding.
 
         Args:
@@ -657,39 +422,17 @@ class Neo4jConnector:
             QueryError: If the search fails
         """
         start_time = time.time()
-
         try:
-            # Always use GDS for vector similarity
-            cypher = f"""
-            MATCH (n:{node_label})
-            WHERE n.{property_name} IS NOT NULL
-            WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
-            """
-
+            cypher = f'\n            MATCH (n:{node_label})\n            WHERE n.{property_name} IS NOT NULL\n            WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score\n            '
             if similarity_cutoff is not None:
-                cypher += f"\nWHERE score >= {similarity_cutoff}"
-
-            cypher += """
-            ORDER BY score DESC
-            LIMIT $limit
-            RETURN n, score
-            """
-
-            result = self.execute_query(cypher, {"embedding": query_embedding, "limit": limit})
-
-            # Record metric
+                cypher += f'\nWHERE score >= {similarity_cutoff}'
+            cypher += '\n            ORDER BY score DESC\n            LIMIT $limit\n            RETURN n, score\n            '
+            result = self.execute_query(cypher, {'embedding': query_embedding, 'limit': limit})
             record_vector_search(node_label, time.time() - start_time)
-
             return result
-
         except Exception as e:
-            logger.error(f"Vector search failed: {e!s}")
-            raise QueryError(
-                f"Vector search failed: {e!s}",
-                query=f"vector_search({node_label}, {property_name})",
-                parameters={"limit": limit, "cutoff": similarity_cutoff},
-                cause=e,
-            ) from e
+            logger.error(f'Vector search failed: {e!s}')
+            raise QueryError(f'Vector search failed: {e!s}', query=f'vector_search({node_label}, {property_name})', parameters={'limit': limit, 'cutoff': similarity_cutoff}, cause=e) from e
 
     def check_connection(self) -> dict[str, Any]:
         """Check if database is accessible and return basic info.
@@ -701,38 +444,18 @@ class Neo4jConnector:
             ConnectionError: If the connection check fails
         """
         try:
-            # Get basic database information
-            result = self.execute_query(
-                "CALL dbms.components() YIELD name, versions RETURN name, versions"
-            )
-
-            # Get connection pool metrics
-            if hasattr(self.driver, "_pool") and hasattr(self.driver._pool, "in_use"):
+            result = self.execute_query('CALL dbms.components() YIELD name, versions RETURN name, versions')
+            if hasattr(self.driver, '_pool') and hasattr(self.driver._pool, 'in_use'):
                 pool_size = self.driver._pool.max_size
                 acquired = len(self.driver._pool.in_use)
                 update_pool_metrics(pool_size, acquired)
-
-            return {
-                "connected": True,
-                "database": self.database,
-                "components": result,
-            }
-
+            return {'connected': True, 'database': self.database, 'components': result}
         except Exception as e:
             record_connection_error()
-            logger.error(f"Connection check failed: {e!s}")
-            raise ConnectionError(
-                f"Connection check failed: {e!s}",
-                uri=self.uri,
-                cause=e,
-            ) from e
+            logger.error(f'Connection check failed: {e!s}')
+            raise ConnectionError(f'Connection check failed: {e!s}', uri=self.uri, cause=e) from e
 
-    async def execute_query_async(
-        self,
-        query: str,
-        params: dict[str, Any] | None = None,
-        write: bool = False,
-    ) -> list[dict[str, Any]]:
+    async def execute_query_async(self, query: str, params: dict[str, Any] | None=None, write: bool=False) -> list[dict[str, Any]]:
         """Execute a Cypher query asynchronously.
 
         Args:
@@ -746,24 +469,16 @@ class Neo4jConnector:
         Raises:
             QueryError: If the query execution fails
         """
-        # Special handling for mock driver in tests
         if isinstance(self.driver, MagicMock | AsyncMock):
-            # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
                 return cast(list[dict[str, Any]], session.execute_write.return_value)
             else:
                 return cast(list[dict[str, Any]], session.execute_read.return_value)
-
-        # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, lambda: self.execute_query(query, params, write))
 
-    async def execute_many_async(
-        self,
-        queries: list[dict[str, Any]],
-        write: bool = False,
-    ) -> list[list[dict[str, Any]]]:
+    async def execute_many_async(self, queries: list[dict[str, Any]], write: bool=False) -> list[list[dict[str, Any]]]:
         """Execute multiple queries asynchronously.
 
         Args:
@@ -776,26 +491,18 @@ class Neo4jConnector:
         Raises:
             TransactionError: If any query execution fails
         """
-        # Special handling for mock driver in tests
         if isinstance(self.driver, MagicMock | AsyncMock):
-            # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
                 return cast(list[list[dict[str, Any]]], session.execute_write.return_value)
             else:
                 return cast(list[list[dict[str, Any]]], session.execute_read.return_value)
-
-        # Prepare query and params lists
-        query_list = [q["query"] for q in queries]
-        params_list = [q.get("params", {}) for q in queries]
-
-        # Run in a separate thread to avoid blocking the event loop
+        query_list = [q['query'] for q in queries]
+        params_list = [q.get('params', {}) for q in queries]
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, lambda: self.execute_many(query_list, params_list, write)
-        )
+        return await loop.run_in_executor(None, lambda: self.execute_many(query_list, params_list, write))
 
-    def with_transaction(self, func: Callable[..., Any], write: bool = False, **kwargs: Any) -> Any:
+    def with_transaction(self, func: Callable[..., Any], write: bool=False, **kwargs: Any) -> None:
         """Execute a function within a Neo4j transaction.
 
         Args:
@@ -811,40 +518,27 @@ class Neo4jConnector:
         """
         try:
             if isinstance(self.driver, MagicMock):
-                # In tests, just execute the function directly
                 return func(self, **kwargs)
-
-            # Create a session with the database name
             session = self.driver.session(database=self.database)
             try:
                 if write:
                     result = session.execute_write(lambda tx: func(self, tx=tx, **kwargs))
                 else:
                     result = session.execute_read(lambda tx: func(self, tx=tx, **kwargs))
-
                 record_transaction(success=True)
                 return result
             finally:
                 session.close()
-
         except Neo4jDriverError as e:
             record_transaction(success=False)
-            logger.error(f"Neo4j transaction error: {e!s}")
-            raise TransactionError(
-                f"Transaction failed: {e!s}",
-                operation="with_transaction",
-                cause=e,
-            ) from e
+            logger.error(f'Neo4j transaction error: {e!s}')
+            raise TransactionError(f'Transaction failed: {e!s}', operation='with_transaction', cause=e) from e
         except Exception as e:
             record_transaction(success=False)
-            logger.error(f"Unexpected error in transaction: {e!s}")
-            raise TransactionError(
-                f"Unexpected error: {e!s}",
-                operation="with_transaction",
-                cause=e,
-            ) from e
+            logger.error(f'Unexpected error in transaction: {e!s}')
+            raise TransactionError(f'Unexpected error: {e!s}', operation='with_transaction', cause=e) from e
 
-    def get_session(self) -> Any:
+    def get_session(self) -> None:
         """Get a Neo4j session for direct operations.
 
         Returns:
@@ -858,17 +552,9 @@ class Neo4jConnector:
             or by calling session.close()
         """
         try:
-            # Special handling for mock driver in tests
             if isinstance(self.driver, MagicMock):
                 return self.driver.session.return_value
-
-            # Create a session with the database name
             return self.driver.session(database=self.database)
-
         except Exception as e:
-            logger.error(f"Failed to create Neo4j session: {e!s}")
-            raise ConnectionError(
-                f"Failed to create Neo4j session: {e!s}",
-                uri=self.uri,
-                cause=e,
-            ) from e
+            logger.error(f'Failed to create Neo4j session: {e!s}')
+            raise ConnectionError(f'Failed to create Neo4j session: {e!s}', uri=self.uri, cause=e) from e
