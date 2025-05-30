@@ -11,13 +11,14 @@ Metrics are exposed through the Prometheus client library.
 
 import time
 from collections.abc import Callable
+from contextlib import contextmanager
 from enum import Enum
-from typing import Any, TypeVar, cast
+from typing import Any, Protocol, TypeVar, Union, cast
 
 # Use lazy import for prometheus_client to avoid hard dependency
 try:
-    from prometheus_client import Counter, Gauge, Histogram, Summary
-
+    from prometheus_client import Counter, Gauge, Histogram
+    
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -37,54 +38,81 @@ class QueryType(str, Enum):
     SCHEMA = "schema"
 
 
+class HistogramLike(Protocol):
+    """Protocol for histogram-like objects."""
+    
+    def observe(self, amount: float, exemplar: Any = None) -> None:
+        """Record an observation."""
+        ...
+    
+    def labels(self, *labelvalues: Any, **labelkwargs: Any) -> "HistogramLike":
+        """Get labeled instance."""
+        ...
+
+
+class DummyHistogram:
+    """Dummy histogram class for when Prometheus is not available."""
+    
+    def observe(self, amount: float, exemplar: Any = None) -> None:
+        """Dummy observe method that does nothing."""
+        pass
+
+    def labels(self, *labelvalues: Any, **labelkwargs: Any) -> "DummyHistogram":
+        """Return self for method chaining."""
+        return self
+
+    def inc(self, amount: float = 1.0) -> None:
+        """Dummy inc method that does nothing."""
+        pass
+
+    def set(self, value: float) -> None:
+        """Dummy set method that does nothing."""
+        pass
+
+    @contextmanager
+    def time(self) -> Any:
+        """Dummy timer method that returns a dummy timer context."""
+        yield
+
+
+class CounterLike(Protocol):
+    """Protocol for counter-like objects."""
+    
+    def inc(self, amount: float = 1.0) -> None:
+        """Increment counter."""
+        ...
+    
+    def labels(self, **kwargs: Any) -> "CounterLike":
+        """Get labeled instance."""
+        ...
+
+
+class GaugeLike(Protocol):
+    """Protocol for gauge-like objects."""
+    
+    def set(self, value: float) -> None:
+        """Set gauge value."""
+        ...
+
+
+# Initialize metrics as proper types
+QUERY_DURATION: HistogramLike
+QUERY_COUNT: CounterLike
+POOL_SIZE: GaugeLike
+POOL_ACQUIRED: GaugeLike
+RETRY_COUNT: CounterLike
+CONNECTION_ERRORS: CounterLike
+TRANSACTION_COUNT: CounterLike
+VECTOR_SEARCH_DURATION: HistogramLike
+
 # Initialize metrics if prometheus_client is available
 if PROMETHEUS_AVAILABLE:
-    # Use a custom registry to avoid conflicts with the default registry
-    from prometheus_client import REGISTRY
-
-    # Create metrics only once - check if they already exist
-    # and only define them if they don't
-    try:
-        # Try to get the metric from the registry
-        QUERY_DURATION = REGISTRY.get_sample_value(f"{METRIC_PREFIX}_query_duration_seconds_count")
-        # If we get here, the metric exists, so reuse it instead of creating a new one
-        from prometheus_client import metrics
-
-        for metric in metrics.REGISTRY._names_to_collectors.values():
-            if metric.name == f"{METRIC_PREFIX}_query_duration_seconds":
-                QUERY_DURATION = metric  # TODO: Fix type compatibility
-                break
-    except Exception:
-        # If we get an exception, the metric doesn't exist, so create it
-        try:
-            QUERY_DURATION = Histogram(  # TODO: Fix type compatibility
-                name=f"{METRIC_PREFIX}_query_duration_seconds",
-                documentation="Duration of Neo4j query execution in seconds",
-                labelnames=["query_type"],
-                buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
-            )
-        except ValueError:
-            # If there's a value error, the metric already exists somewhere
-            # Use a dummy version that can be called without affecting metrics
-            class DummyHistogram:
-                """Dummy histogram class for when Prometheus is not available."""
-                
-                def observe(self, value: Any, **kwargs) -> Any:
-                    """Dummy observe method that does nothing."""
-                    pass
-
-                def time(self) -> Any:
-                    """Dummy timer method that returns a dummy timer context."""
-                    class DummyTimer:
-                        def __enter__(self) -> None:
-                            return self
-
-                        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-                            pass
-
-                    return DummyTimer()
-
-            QUERY_DURATION = DummyHistogram()  # TODO: Fix type compatibility
+    QUERY_DURATION = Histogram(
+        name=f"{METRIC_PREFIX}_query_duration_seconds",
+        documentation="Duration of Neo4j query execution in seconds",
+        labelnames=["query_type"],
+        buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+    )
 
     QUERY_COUNT = Counter(
         name=f"{METRIC_PREFIX}_query_count_total",
@@ -124,29 +152,27 @@ if PROMETHEUS_AVAILABLE:
     )
 
     # Vector search metrics
-    try:
-        # Try to get the metric from the registry
-        VECTOR_SEARCH_DURATION = REGISTRY.get_sample_value(
-            f"{METRIC_PREFIX}_vector_search_duration_seconds_count"
-        )
-        # If we get here, the metric exists, so reuse it instead of creating a new one
-        for metric in metrics.REGISTRY._names_to_collectors.values():
-            if metric.name == f"{METRIC_PREFIX}_vector_search_duration_seconds":
-                VECTOR_SEARCH_DURATION = metric  # TODO: Fix type compatibility
-                break
-    except Exception:
-        # If we get an exception, the metric doesn't exist, so create it
-        try:
-            VECTOR_SEARCH_DURATION = Histogram(  # TODO: Fix type compatibility
-                name=f"{METRIC_PREFIX}_vector_search_duration_seconds",
-                documentation="Duration of Neo4j vector similarity search in seconds",
-                labelnames=["node_label"],
-                buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
-            )
-        except ValueError:
-            # If there's a value error, the metric already exists somewhere
-            # Use a dummy version that can be called without affecting metrics
-            VECTOR_SEARCH_DURATION = DummyHistogram()  # TODO: Fix type compatibility
+    VECTOR_SEARCH_DURATION = Histogram(
+        name=f"{METRIC_PREFIX}_vector_search_duration_seconds",
+        documentation="Duration of Neo4j vector similarity search in seconds",
+        labelnames=["node_label"],
+        buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+    )
+
+else:
+    # Create dummy implementations when prometheus is not available
+    _dummy_histogram = DummyHistogram()
+    _dummy_counter = cast(CounterLike, _dummy_histogram)  # DummyHistogram can act as counter too
+    _dummy_gauge = cast(GaugeLike, _dummy_histogram)  # DummyHistogram can act as gauge too
+    
+    QUERY_DURATION = _dummy_histogram
+    QUERY_COUNT = _dummy_counter
+    POOL_SIZE = _dummy_gauge
+    POOL_ACQUIRED = _dummy_gauge
+    RETRY_COUNT = _dummy_counter
+    CONNECTION_ERRORS = _dummy_counter
+    TRANSACTION_COUNT = _dummy_counter
+    VECTOR_SEARCH_DURATION = _dummy_histogram
 
 
 def instrument_query(
@@ -184,7 +210,7 @@ def instrument_query(
                 status = "success" if success else "error"
                 QUERY_COUNT.labels(query_type=query_type.value, status=status).inc()
 
-        return cast("F", wrapper)
+        return cast(F, wrapper)
 
     return decorator
 
@@ -224,8 +250,8 @@ def update_pool_metrics(pool_size: int, acquired: int) -> None:
         acquired: Number of connections currently acquired
     """
     if PROMETHEUS_AVAILABLE:
-        POOL_SIZE.set(pool_size)
-        POOL_ACQUIRED.set(acquired)
+        POOL_SIZE.set(float(pool_size))
+        POOL_ACQUIRED.set(float(acquired))
 
 
 def record_vector_search(node_label: str, duration: float) -> None:
