@@ -1,4 +1,4 @@
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 """Neo4j schema definitions and initialization.
 
@@ -7,9 +7,6 @@ including constraints, indexes, and vector indexes for embedding search.
 """
 
 from .exceptions import SchemaError
-
-if TYPE_CHECKING:
-    from .neo4j_connector import Neo4jConnector
 
 # Node label constraints
 FILE_CONSTRAINTS = ["CREATE CONSTRAINT IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE"]
@@ -117,7 +114,7 @@ def get_schema_initialization_queries() -> list[str]:
     schema_elements = get_all_schema_elements()
 
     # Flatten all queries into a single list
-    initialization_queries: list[str] = []
+    initialization_queries: list[Any] = []
     for _element_type, queries in schema_elements.items():
         initialization_queries.extend(queries)
 
@@ -125,7 +122,7 @@ def get_schema_initialization_queries() -> list[str]:
 
 
 def create_custom_vector_index(
-    connector: "Neo4jConnector",
+    connector,
     label: str,
     property_name: str,
     dimensions: int = 1536,
@@ -184,7 +181,7 @@ def create_custom_vector_index(
         ) from e
 
 
-def initialize_schema(connector: "Neo4jConnector", force: bool = False) -> None:
+def initialize_schema(connector: Any, force: bool = False) -> None:
     """Initialize the Neo4j database schema with constraints and indexes.
 
     Args:
@@ -258,7 +255,7 @@ def initialize_schema(connector: "Neo4jConnector", force: bool = False) -> None:
             raise SchemaError("Failed to initialize schema", details=details, cause=e) from e
 
 
-def verify_schema(connector: "Neo4jConnector") -> dict[str, dict[str, bool]]:
+def verify_schema(connector: Any) -> dict[str, dict[str, bool]]:
     """Verify that all required schema elements exist.
 
     Args:
@@ -281,7 +278,7 @@ def verify_schema(connector: "Neo4jConnector") -> dict[str, dict[str, bool]]:
 
         # Verify each schema element
         schema_elements = get_all_schema_elements()
-        verification_results: dict[str, dict[str, bool]] = {
+        verification_results: Any = {
             "constraints": {},
             "indexes": {},
             "vector_indexes": {},

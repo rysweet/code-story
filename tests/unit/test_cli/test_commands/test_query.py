@@ -130,7 +130,7 @@ class TestQueryCommands:
         module_nodes = {'records': [{'n': {'name': 'test_module', 'path': '/path/to/module'}}]}
         rel_types = {'records': [{'type': 'IMPORTS', 'count': 15}, {'type': 'DEFINES', 'count': 25}]}
 
-        def mock_execute_query(query, params: Any=None):
+        def mock_execute_query: Any(query, params: Any=None):
             if 'labels(n) as type' in query:
                 return node_counts
             elif 'MATCH (n:Class)' in query:
