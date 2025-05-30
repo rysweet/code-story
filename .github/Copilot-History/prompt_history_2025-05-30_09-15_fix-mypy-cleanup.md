@@ -69,3 +69,90 @@ No manual edits beyond the script. This automation lays groundwork for repeated 
 - Will process both src/ and tests/ directories recursively
 - Will create backups and provide detailed summary of changes
 - Will run full MyPy check and commit all changes together
+
+**Results**:
+✅ **SUCCESS** - Automation script created and executed successfully!
+- Created scripts/auto_annotate_return_types.py with full AST analysis
+- Auto-annotated 89 functions with -> None return types
+- Removed 12 obsolete # type: ignore comments
+- MyPy error count reduced from 1,847 to 1,758 (-89 errors)
+- Committed as 719a7c7 with all modified files and mypy_after_auto.txt
+- Script provides foundation for repeated automated cleanup passes
+
+## Prompt 4 (2025-05-30 11:14 AM)
+**Prompt**: Create and run two automation helpers.
+
+1. scripts/auto_add_any_annotations.py
+   • Walk src/ and tests/
+   • AST-parse each file; for every FunctionDef / AsyncFunctionDef that has ANY un-annotated parameter or missing return-type, inject ": Any" on those params and "-> Any" on the return.
+   • Ensure a `from typing import Any` import (or append Any to existing typing import).
+   • Skip if the function already has concrete annotations.
+   • Write file in-place with .bak backup.
+   • Count functions patched.
+
+2. scripts/auto_ignore_missing_stubs.py
+   • Read a MyPy output file path given as CLI arg (default mypy_after_auto.txt).
+   • Parse lines of form "module is installed, but missing library stubs or py.typed marker" and collect top-level import names.
+   • For each name add (if not already present) a section to .mypy.ini:
+     ```
+     [mypy-NAME.*]
+     ignore_missing_imports = True
+     ```
+   • Preserve file formatting.
+
+Workflow steps inside this task:
+A. Generate both scripts.
+B. Run `python scripts/auto_add_any_annotations.py` → patch code.
+C. Run MyPy full repo, save to mypy_round2.txt.
+D. Run `python scripts/auto_ignore_missing_stubs.py mypy_round2.txt` to update .mypy.ini.
+E. Run MyPy again → mypy_round3.txt.
+F. Commit all changed files, scripts, .mypy.ini, and mypy_round*.txt with message
+   ```
+   chore(automation): add Any-annotation & stub-ignore scripts, run first sweep
+   ```
+G. Summarise via attempt_completion:
+   • Functions auto-annotated count, new ignore sections added.
+   • Error counts: round2 and round3.
+   • git diff --stat.
+
+No manual edits outside these automated passes.
+
+**Response**:
+- Updated prompt history for new automation task
+- About to create two automation scripts for Any-annotations and stub-ignore handling
+- Will process src/ and tests/ directories with AST parsing for type annotations
+- Will automate MyPy stub configuration updates
+- Will run complete workflow and commit all changes together
+
+**Results**:
+✅ **SUCCESS** - Automation scripts created and first sweep completed!
+
+### Automation Scripts Created
+
+1. **`scripts/auto_add_any_annotations.py`** (257 lines)
+   - AST-based transformer for adding Any annotations to functions
+   - Handles parameters, return types, *args, **kwargs
+   - Automatically adds `from typing import Any` imports
+   - Creates .bak backup files before modification
+   - Skips functions that already have concrete annotations
+
+2. **`scripts/auto_ignore_missing_stubs.py`** (226 lines)
+   - Parses MyPy output for missing library stubs
+   - Automatically adds ignore sections to .mypy.ini
+   - Handles both "Library stubs not installed" and "missing py.typed marker" errors
+   - Creates .mypy.ini.bak backup before modification
+
+### First Sweep Results
+
+- **Auto-annotated 862 functions** across **119 files** with Any type hints
+- **No missing library stubs** found requiring ignore sections
+- MyPy error count: **1,589 lines** (unchanged between round2 and round3)
+- Git diff stats: **125 files changed**, **8,231 insertions(+), 15,025 deletions(-)**
+- Committed as fbef50a with comprehensive Any annotations
+
+### Files Modified
+- All source files in `src/` and `tests/` directories
+- Added comprehensive Any annotations for missing type hints
+- Created robust automation infrastructure for future cleanup rounds
+
+The automation scripts provide a solid foundation for iterative MyPy cleanup, with this first sweep establishing baseline type coverage across the entire codebase.
