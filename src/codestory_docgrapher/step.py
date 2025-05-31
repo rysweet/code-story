@@ -7,7 +7,7 @@ a knowledge graph of documentation and links it to code entities.
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from celery import shared_task
@@ -20,6 +20,7 @@ from .document_finder import DocumentFinder
 from .knowledge_graph import KnowledgeGraph
 from .parsers import get_parser_for_file
 from .utils.progress_tracker import ProgressTracker
+from .models import DocumentationEntity, DocumentationRelationship
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class DocumentationGrapherStep(PipelineStep):
     entities and relationships, and links them to code entities.
     """
 
-    def __init__(self) -> Any:
+    def __init__(self) -> None:
         """Initialize the DocumentationGrapher step."""
         self.settings = get_settings()
         self.active_jobs: dict[str, dict[str, Any]] = {}
@@ -255,9 +256,9 @@ class DocumentationGrapherStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_docgrapher.step.run_docgrapher")
+@shared_task(bind=True, name="codestory_docgrapher.step.run_docgrapher")  # type: ignore[misc]
 def run_docgrapher(
-    self,  # Celery task instance
+    self: Any,  # Celery task instance
     repository_path: str,
     job_id: str,
     ignore_patterns: list[str] | None = None,
@@ -290,7 +291,7 @@ def run_docgrapher(
     connector = Neo4jConnector(
         uri=settings.neo4j.uri,
         username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
+        password=(settings.neo4j.password.get_secret_value() if settings.neo4j.password is not None else ""),
         database=settings.neo4j.database,
     )
 
@@ -337,8 +338,10 @@ def run_docgrapher(
                 parsed_data = parser.parse(doc_file)
 
                 # Add entities and relationships to graph
-                knowledge_graph.add_entities(parsed_data.get("entities", []))
-                knowledge_graph.add_relationships(parsed_data.get("relationships", []))
+                entities = cast(list[DocumentationEntity], parsed_data.get("entities", []))
+                relationships = cast(list[DocumentationRelationship], parsed_data.get("relationships", []))
+                knowledge_graph.add_entities(entities)
+                knowledge_graph.add_relationships(relationships)
 
             # Mark document as processed
             tracker.document_processed()

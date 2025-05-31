@@ -5,7 +5,7 @@ in the knowledge graph.
 """
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 from pydantic import BaseModel, Field
 
 class NodeType(str, Enum):
@@ -42,7 +42,7 @@ class BaseNode(BaseModel):
         Returns:
             Dictionary representation of the node
         """
-        result = self.model_dump(exclude={'id'})
+        result = cast(dict[str, Any], self.model_dump(exclude={'id'}))
         result.update(self.properties)
         return result
 
@@ -61,7 +61,7 @@ class BaseRelationship(BaseModel):
         Returns:
             Dictionary representation of the relationship
         """
-        result = self.model_dump(exclude={'id', 'start_node_id', 'end_node_id'})
+        result = cast(dict[str, Any], self.model_dump(exclude={'id', 'start_node_id', 'end_node_id'}))
         result.update(self.properties)
         return result
 

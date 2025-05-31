@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Callable, Type, Dict, Optional
 'Parser factory for creating appropriate parsers for different document types.\n\nThis module provides a factory for creating the appropriate parser based on\nthe type of documentation file.\n'
 import logging
 from ..models import DocumentationFile, DocumentType
@@ -11,7 +11,7 @@ class Parser:
     All document parsers should implement this interface.
     """
 
-    def parse(self: Any, document: DocumentationFile) -> dict[str, Any]:
+    def parse(self, document: DocumentationFile) -> dict[str, object]:
         """Parse a documentation file and extract entities and relationships.
 
         Args:
@@ -27,10 +27,10 @@ class ParserFactory:
 
     This class creates the appropriate parser for a given document type.
     """
-    _parsers: dict[DocumentType, type[Parser]] = {}
+    _parsers: Dict[DocumentType, Type[Parser]] = {}
 
     @classmethod
-    def register(cls: Any, doc_type: DocumentType) -> Callable[[type[Parser]], type[Parser]]:
+    def register(cls, doc_type: DocumentType) -> Callable[[Type[Parser]], Type[Parser]]:
         """Register a parser class for a document type.
 
         This is a decorator for registering parser classes.
@@ -42,13 +42,13 @@ class ParserFactory:
             Decorator function
         """
 
-        def decorator(parser_class: type[Parser]) -> type[Parser]:
+        def decorator(parser_class: Type[Parser]) -> Type[Parser]:
             cls._parsers[doc_type] = parser_class
             return parser_class
         return decorator
 
     @classmethod
-    def create(cls: Any, doc_type: DocumentType) -> Parser | None:
+    def create(cls, doc_type: DocumentType) -> Optional[Parser]:
         """Create a parser for the given document type.
 
         Args:
@@ -58,12 +58,12 @@ class ParserFactory:
             An instance of the appropriate parser, or None if no parser is registered
         """
         parser_class = cls._parsers.get(doc_type)
-        if not parser_class:
+        if parser_class is None:
             logger.warning(f'No parser registered for document type: {doc_type}')
             return None
         return parser_class()
 
-def get_parser_for_file(document: DocumentationFile) -> Parser | None:
+def get_parser_for_file(document: DocumentationFile) -> Optional[Parser]:
     """Get a parser for the given documentation file.
 
     Args:

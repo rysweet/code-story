@@ -8,10 +8,11 @@ import time
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Protocol, TypeVar, Union, cast
+from typing import Any, Protocol, TypeVar, Union, cast, ParamSpec, Awaitable
 from prometheus_client import Counter, Gauge, Histogram
 from prometheus_client.registry import REGISTRY, CollectorRegistry
-F = TypeVar('F', bound=Callable[..., Any])
+P = ParamSpec("P")
+R = TypeVar("R")
 
 class CounterLike(Protocol):
     """Protocol for counter-like objects."""
@@ -135,7 +136,7 @@ def record_retry(operation: OperationType, model: str) -> None:
     """
     RETRY_COUNT.labels(operation=operation.value, model=model).inc()
 
-def instrument_request(operation: OperationType) -> Callable[[F], F]:
+def instrument_request(operation: OperationType) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator to instrument OpenAI API requests with metrics.
 
     Args:
@@ -145,11 +146,11 @@ def instrument_request(operation: OperationType) -> Callable[[F], F]:
         Decorator function that wraps an API call with metrics
     """
 
-    def decorator(func: F) -> F:
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
 
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> None:
-            model = kwargs.get('model', 'unknown')
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            model = str(kwargs.get('model', 'unknown'))
             CURRENT_REQUESTS.labels(operation=operation.value, model=model).inc()
             start_time = time.time()
             try:
@@ -170,10 +171,12 @@ def instrument_request(operation: OperationType) -> Callable[[F], F]:
                 raise
             finally:
                 CURRENT_REQUESTS.labels(operation=operation.value, model=model).dec()
-        return cast('F', wrapper)
+        return cast(Callable[P, R], wrapper)
     return decorator
 
-def instrument_async_request(operation: OperationType) -> Callable[[F], F]:
+R_async = TypeVar("R_async")
+
+def instrument_async_request(operation: OperationType) -> Callable[[Callable[P, Awaitable[R_async]]], Callable[P, Awaitable[R_async]]]:
     """Decorator to instrument async OpenAI API requests with metrics.
 
     Args:
@@ -183,11 +186,11 @@ def instrument_async_request(operation: OperationType) -> Callable[[F], F]:
         Decorator function that wraps an async API call with metrics
     """
 
-    def decorator(func: F) -> F:
+    def decorator(func: Callable[P, Awaitable[R_async]]) -> Callable[P, Awaitable[R_async]]:
 
         @functools.wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> None:
-            model = kwargs.get('model', 'unknown')
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R_async:
+            model = str(kwargs.get('model', 'unknown'))
             CURRENT_REQUESTS.labels(operation=operation.value, model=model).inc()
             start_time = time.time()
             try:
@@ -208,5 +211,5 @@ def instrument_async_request(operation: OperationType) -> Callable[[F], F]:
                 raise
             finally:
                 CURRENT_REQUESTS.labels(operation=operation.value, model=model).dec()
-        return cast('F', wrapper)
+        return cast(Callable[P, Awaitable[R_async]], wrapper)
     return decorator

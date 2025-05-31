@@ -1,19 +1,18 @@
-from typing import Any
+from codestory_mcp.utils.config import get_mcp_settings, MCPSettings
 'Scope management for MCP authentication.\n\nThis module provides utilities for managing authorization scopes in the MCP Adapter.\n'
-from codestory_mcp.utils.config import get_mcp_settings
 
 class ScopeManager:
     """Manage authorization scopes for the MCP Adapter."""
 
-    def __init__(self: Any, settings: Any=None) -> None:
+    def __init__(self, settings: MCPSettings | None = None) -> None:
         """Initialize the scope manager.
 
         Args:
             settings: Optional settings object for testing
         """
-        self.settings = settings or get_mcp_settings()
+        self.settings: MCPSettings = settings or get_mcp_settings()
 
-    def get_required_scopes(self: Any) -> list[str]:
+    def get_required_scopes(self) -> list[str]:
         """Get required scopes for authorization.
 
         Returns:
@@ -21,7 +20,7 @@ class ScopeManager:
         """
         return self.settings.required_scopes
 
-    def has_required_scope(self: Any, scopes: list[str]) -> bool:
+    def has_required_scope(self, scopes: list[str]) -> bool:
         """Check if the provided scopes include at least one required scope.
 
         Args:
@@ -36,7 +35,7 @@ class ScopeManager:
             return True
         return any((required_scope in scopes for required_scope in self.settings.required_scopes))
 
-    def can_execute_tool(self: Any, tool_name: str, scopes: list[str]) -> bool:
+    def can_execute_tool(self, tool_name: str, scopes: list[str]) -> bool:
         """Check if the provided scopes allow executing the specified tool.
 
         Args:

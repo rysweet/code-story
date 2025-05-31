@@ -7,7 +7,7 @@ import contextlib
 import logging
 import os
 import time
-from typing import Any, Literal, cast
+from typing import Any, Literal, cast, Callable
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
@@ -244,20 +244,31 @@ async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai:
     import asyncio
     logger.info('Performing health check')
 
-    async def check_component_health(component_name, check_func, timeout_seconds=5) -> None:
+    async def check_component_health(
+        component_name: str,
+        check_func: Callable[[], Any],
+        timeout_seconds: int = 5
+    ) -> dict[str, Any]:
         try:
             result = await asyncio.wait_for(check_func(), timeout=timeout_seconds)
-            return result
+            # Assume result is dict[str, Any], otherwise fallback to unhealthy
+            if isinstance(result, dict):
+                return result
+            return {'status': 'unhealthy', 'details': {'error': 'Health check did not return a dict', 'type': type(result).__name__}}
         except TimeoutError:
             logger.error(f'{component_name} health check timed out after {timeout_seconds} seconds')
-            return {'status': 'unhealthy', 'details': {'error': f'Health check timed out after {timeout_seconds} seconds', 'type': 'TimeoutError'}}  # type: ignore[return-value]
+            return {'status': 'unhealthy', 'details': {'error': f'Health check timed out after {timeout_seconds} seconds', 'type': 'TimeoutError'}}
         except Exception as e:
             logger.error(f'{component_name} health check failed with exception: {e}')
-            return {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}  # type: ignore[return-value]
-    tasks = [check_component_health('Neo4j', neo4j.check_health, 5), check_component_health('Celery', celery.check_health, 5), check_component_health('OpenAI', openai.check_health, 10)]
+            return {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}
+    tasks = [
+        check_component_health('Neo4j', neo4j.check_health, 5),
+        check_component_health('Celery', celery.check_health, 5),
+        check_component_health('OpenAI', openai.check_health, 10)
+    ]
     neo4j_health, celery_health, openai_health = await asyncio.gather(*tasks)
 
-    async def check_redis_health() -> None:
+    async def check_redis_health() -> dict[str, Any]:
         settings = get_service_settings()
         redis_host = getattr(settings, 'redis_host', 'redis')
         redis_port = getattr(settings, 'redis_port', 6379)
@@ -268,12 +279,19 @@ async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai:
             await redis_client.ping()
             info = await redis_client.info(section='server')
             await redis_client.close()
-            return {'status': 'healthy', 'details': {'connection': f'redis://{redis_host}:{redis_port}/{redis_db}', 'version': info.get('redis_version', 'unknown'), 'memory': info.get('used_memory_human', 'unknown')}}  # type: ignore[return-value]
+            return {
+                'status': 'healthy',
+                'details': {
+                    'connection': f'redis://{redis_host}:{redis_port}/{redis_db}',
+                    'version': info.get('redis_version', 'unknown'),
+                    'memory': info.get('used_memory_human', 'unknown')
+                }
+            }
         except Exception as e:
             logger.error(f'Redis health check failed with exception: {e}')
             with contextlib.suppress(Exception):
                 await redis_client.close()
-            return {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}  # type: ignore[return-value]
+            return {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}
     try:
         redis_health = await asyncio.wait_for(check_redis_health(), timeout=5)
     except TimeoutError:
@@ -283,7 +301,12 @@ async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai:
         logger.error(f'Redis health check failed: {e}')
         redis_health = {'status': 'unhealthy', 'details': {'error': str(e), 'type': type(e).__name__}}
     uptime = int(time.time() - SERVICE_START_TIME)
-    components = {'neo4j': ComponentHealth(**neo4j_health), 'celery': ComponentHealth(**celery_health), 'openai': ComponentHealth(**openai_health), 'redis': ComponentHealth(**redis_health)}  # type: ignore[arg-type,assignment]
+    components = {
+        'neo4j': ComponentHealth(**neo4j_health),
+        'celery': ComponentHealth(**celery_health),
+        'openai': ComponentHealth(**openai_health),
+        'redis': ComponentHealth(**redis_health)
+    }
     unhealthy_count = sum((1 for c in components.values() if c.status == 'unhealthy'))
     degraded_count = sum((1 for c in components.values() if c.status == 'degraded'))
     if components['celery'].status == 'unhealthy':
@@ -295,4 +318,11 @@ async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai:
     else:
         overall_status = 'healthy'
     overall_status_literal = cast("Literal['healthy', 'degraded', 'unhealthy']", overall_status)
-    return HealthReport(status=overall_status_literal, timestamp=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), version=SERVICE_VERSION, uptime=uptime, components=components)  # type: ignore[call-arg]
+    return HealthReport(
+        status=overall_status_literal,
+        timestamp=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        version=SERVICE_VERSION,
+        uptime=uptime,
+        components=components,
+        error_package=None
+    )

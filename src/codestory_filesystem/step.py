@@ -9,7 +9,7 @@ import pathlib
 import time
 import traceback
 from typing import Any
-import pathspec
+import pathspec  # type: ignore[import-not-found]
 from celery import shared_task
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -191,7 +191,7 @@ class FileSystemStep(PipelineStep):
             log_debug(f'Celery AsyncResult status: {result.status}, ready: {result.ready()}', job_id)
             if isinstance(result.info, dict):
                 log_debug(f'Celery AsyncResult info: {result.info}', job_id)
-            status_info = {'status': StepStatus.RUNNING, 'progress': None, 'message': None, 'error': None}
+            status_info: dict[str, Any] = {'status': StepStatus.RUNNING, 'progress': None, 'message': None, 'error': None}
             if result.ready():
                 log_debug(f'Task is ready. Successful: {result.successful()}', job_id)
                 if result.successful():
@@ -222,12 +222,12 @@ class FileSystemStep(PipelineStep):
                         log_info(f"Progress: {progress_info.get('progress'):.1f}%", job_id)
             job_info.update(status_info)
             log_debug(f"Updated job info with status: {status_info['status']}", job_id)
-            return job_info
+            return job_info  # type: ignore[no-any-return]
         except Exception as e:
             error_msg = 'Error checking job status'
             log_error(error_msg, error=e, job_id=job_id)
             job_info.update({'status': StepStatus.FAILED, 'error': f'Status check failed: {e!s}'})
-            return job_info
+            return job_info  # type: ignore[no-any-return]
 
     def stop(self: Any, job_id: str) -> dict[str, Any]:
         """Stop a running job.
@@ -255,12 +255,12 @@ class FileSystemStep(PipelineStep):
             app.control.revoke(task_id, terminate=True)
             job_info.update({'status': StepStatus.STOPPED, 'message': f'Job {job_id} has been stopped'})
             log_info(f'Successfully stopped job {job_id}', job_id)
-            return job_info
+            return job_info  # type: ignore[no-any-return]
         except Exception as e:
             error_msg = f'Error stopping job {job_id}'
             log_error(error_msg, error=e, job_id=job_id)
             job_info.update({'status': StepStatus.STOPPED, 'message': f'Job {job_id} marked as stopped, but encountered error: {e!s}', 'error': str(e)})
-            return job_info
+            return job_info  # type: ignore[no-any-return]
 
     def cancel(self: Any, job_id: str) -> dict[str, Any]:
         """Cancel a job.
@@ -280,13 +280,13 @@ class FileSystemStep(PipelineStep):
             result['status'] = StepStatus.CANCELLED
             result['message'] = f'Job {job_id} has been cancelled'
             log_info(f'Successfully cancelled job {job_id}', job_id)
-            return result
+            return result  # type: ignore[no-any-return]
         except Exception as e:
             if job_id in self.active_jobs:
                 job_info = self.active_jobs[job_id]
                 job_info.update({'status': StepStatus.CANCELLED, 'message': f'Job {job_id} marked as cancelled, but encountered error: {e!s}', 'error': str(e)})
                 log_error(f'Marked job {job_id} as cancelled with errors', error=e, job_id=job_id)
-                return job_info
+                return job_info  # type: ignore[no-any-return]
             else:
                 log_error(f'Failed to cancel job {job_id}', error=e, job_id=job_id)
                 raise
@@ -304,9 +304,9 @@ class FileSystemStep(PipelineStep):
         log_info(f'Initiating incremental update for repository: {repository_path}')
         job_id = self.run(repository_path, **config)
         log_info(f'Incremental update initiated with job ID: {job_id}')
-        return job_id
+        return job_id  # type: ignore[no-any-return]
 
-@shared_task(name='codestory_filesystem.step.process_filesystem', bind=True, queue='ingestion')
+@shared_task(name='codestory_filesystem.step.process_filesystem', bind=True, queue='ingestion')  # type: ignore[misc]
 def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[str] | None=None, max_depth: int | None=None, include_extensions: list[str] | None=None, job_id: str | None=None, **config: Any) -> dict[str, Any]:
     """Process the filesystem of a repository.
 
@@ -368,12 +368,17 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
     settings = get_settings()
     log_info('Attempting to connect to Neo4j database', job_id)
     log_debug(f'Neo4j settings from config: uri={settings.neo4j.uri}, database={settings.neo4j.database}', job_id)
-    connection_params = [{'uri': settings.neo4j.uri, 'username': settings.neo4j.username, 'password': settings.neo4j.password.get_secret_value(), 'database': settings.neo4j.database}, {'uri': 'bolt://neo4j:7687', 'username': 'neo4j', 'password': 'password', 'database': 'neo4j'}, {'uri': 'bolt://localhost:7689', 'username': 'neo4j', 'password': 'password', 'database': 'neo4j'}, {'uri': 'bolt://localhost:7688', 'username': 'neo4j', 'password': 'password', 'database': 'testdb'}]
+    connection_params: list[dict[str, str]] = [
+        {'uri': settings.neo4j.uri, 'username': settings.neo4j.username, 'password': settings.neo4j.password.get_secret_value(), 'database': settings.neo4j.database},
+        {'uri': 'bolt://neo4j:7687', 'username': 'neo4j', 'password': 'password', 'database': 'neo4j'},
+        {'uri': 'bolt://localhost:7689', 'username': 'neo4j', 'password': 'password', 'database': 'neo4j'},
+        {'uri': 'bolt://localhost:7688', 'username': 'neo4j', 'password': 'password', 'database': 'testdb'}
+    ]
     for i, params in enumerate(connection_params):
         connection_uri = params['uri']
         try:
             log_debug(f'Trying Neo4j connection #{i + 1}/{len(connection_params)}: {connection_uri}', job_id)
-            neo4j = Neo4jConnector(**params)  # type: ignore[assignment]
+            neo4j = Neo4jConnector(**params)  # type: ignore[arg-type]
             log_debug('Testing Neo4j connection with simple query', job_id)
             test_result = neo4j.execute_query('MATCH (n) RETURN count(n) as count LIMIT 1')
             log_info(f'Neo4j connection successful to {connection_uri}', job_id)
@@ -591,23 +596,28 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
         end_time = time.time()
         duration = end_time - start_time
         overall_timing_stats = {'total_duration': duration, 'directory_operations': {'total': dir_timing_stats.get('dir_total', 0), 'node_creation': dir_timing_stats.get('dir_node_creation', 0), 'linking': dir_timing_stats.get('dir_linking', 0), 'avg_per_directory': dir_timing_stats.get('dir_total', 0) / max(1, dir_count) if dir_count else 0}, 'file_operations': {'total': file_timing_stats.get('total', 0) if 'file_timing_stats' in locals() else 0, 'metadata': file_timing_stats.get('file_metadata', 0) if 'file_timing_stats' in locals() else 0, 'node_creation': file_timing_stats.get('file_node_creation', 0) if 'file_timing_stats' in locals() else 0, 'linking': file_timing_stats.get('linking', 0) if 'file_timing_stats' in locals() else 0, 'avg_per_file': file_timing_stats.get('total', 0) / max(1, file_count) if 'file_timing_stats' in locals() and file_count else 0}, 'neo4j_operations': {'node_creation': dir_timing_stats.get('dir_node_creation', 0) + (file_timing_stats.get('file_node_creation', 0) if 'file_timing_stats' in locals() else 0), 'relationship_creation': dir_timing_stats.get('dir_linking', 0) + (file_timing_stats.get('linking', 0) if 'file_timing_stats' in locals() else 0), 'avg_operation_time': (dir_timing_stats.get('dir_node_creation', 0) + dir_timing_stats.get('dir_linking', 0) + (file_timing_stats.get('file_node_creation', 0) if 'file_timing_stats' in locals() else 0) + (file_timing_stats.get('linking', 0) if 'file_timing_stats' in locals() else 0)) / max(1, dir_count * 2 + file_count * 2)}}
-        detailed_timing = f"Detailed Timing Stats:\nTotal Duration: {duration:.2f}s\nDirectory Operations ({dir_count} dirs):\n  - Total: {overall_timing_stats['directory_operations']['total']:.2f}s\n  - Node creation: {overall_timing_stats['directory_operations']['node_creation']:.2f}s\n  - Linking: {overall_timing_stats['directory_operations']['linking']:.2f}s\n  - Avg per directory: {overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s\nFile Operations ({file_count} files):\n  - Total: {overall_timing_stats['file_operations']['total']:.2f}s\n  - Metadata: {overall_timing_stats['file_operations']['metadata']:.2f}s\n  - Node creation: {overall_timing_stats['file_operations']['node_creation']:.2f}s\n  - Linking: {overall_timing_stats['file_operations']['linking']:.2f}s\n  - Avg per file: {overall_timing_stats['file_operations']['avg_per_file']:.3f}s\nNeo4j Operations:\n  - Node creation total: {overall_timing_stats['neo4j_operations']['node_creation']:.2f}s\n  - Relationship creation total: {overall_timing_stats['neo4j_operations']['relationship_creation']:.2f}s\n  - Avg operation time: {overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n"
+        from typing import cast
+        overall_timing_stats_dict = cast(dict[str, Any], overall_timing_stats)
+        detailed_timing = f"Detailed Timing Stats:\nTotal Duration: {duration:.2f}s\nDirectory Operations ({dir_count} dirs):\n  - Total: {overall_timing_stats_dict['directory_operations']['total']:.2f}s\n  - Node creation: {overall_timing_stats_dict['directory_operations']['node_creation']:.2f}s\n  - Linking: {overall_timing_stats_dict['directory_operations']['linking']:.2f}s\n  - Avg per directory: {overall_timing_stats_dict['directory_operations']['avg_per_directory']:.3f}s\nFile Operations ({file_count} files):\n  - Total: {overall_timing_stats_dict['file_operations']['total']:.2f}s\n  - Metadata: {overall_timing_stats_dict['file_operations']['metadata']:.2f}s\n  - Node creation: {overall_timing_stats_dict['file_operations']['node_creation']:.2f}s\n  - Linking: {overall_timing_stats_dict['file_operations']['linking']:.2f}s\n  - Avg per file: {overall_timing_stats_dict['file_operations']['avg_per_file']:.3f}s\nNeo4j Operations:\n  - Node creation total: {overall_timing_stats_dict['neo4j_operations']['node_creation']:.2f}s\n  - Relationship creation total: {overall_timing_stats_dict['neo4j_operations']['relationship_creation']:.2f}s\n  - Avg operation time: {overall_timing_stats_dict['neo4j_operations']['avg_operation_time']:.3f}s\n"
         log_info(f'Performance Analysis:\n{detailed_timing}', job_id)
         try:
             log_info('Creating processing record for completed job', job_id)
             record_query = '\n            MERGE (p:ProcessingRecord {step: $props.step, job_id: $props.job_id})\n            SET p.repository = $props.repository,\n                p.timestamp = $props.timestamp,\n                p.duration = $props.duration,\n                p.file_count = $props.file_count,\n                p.dir_count = $props.dir_count,\n                p.performance = $props.performance\n            RETURN p\n            '
-            record_props = {'step': 'filesystem', 'job_id': job_id, 'repository': repo_name, 'timestamp': time.time(), 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'performance': {'avg_file_time': overall_timing_stats['file_operations']['avg_per_file'], 'avg_dir_time': overall_timing_stats['directory_operations']['avg_per_directory'], 'avg_neo4j_op_time': overall_timing_stats['neo4j_operations']['avg_operation_time']}}
+            # Explicitly cast overall_timing_stats to dict for mypy
+            from typing import cast
+            overall_timing_stats_dict = cast(dict[str, Any], overall_timing_stats)
+            record_props = {'step': 'filesystem', 'job_id': job_id, 'repository': repo_name, 'timestamp': time.time(), 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'performance': {'avg_file_time': overall_timing_stats_dict['file_operations']['avg_per_file'], 'avg_dir_time': overall_timing_stats_dict['directory_operations']['avg_per_directory'], 'avg_neo4j_op_time': overall_timing_stats_dict['neo4j_operations']['avg_operation_time']}}
             neo4j.execute_query(record_query, params={'props': record_props}, write=True)
             log_debug('Successfully created processing record with performance data', job_id)
         except Exception as e:
             log_error('Error creating processing record', error=e, job_id=job_id)
-        completion_msg = f"Completed filesystem processing for {repository_path}:\n- {file_count} files, {dir_count} directories in {duration:.2f} seconds\n- Average Neo4j operation time: {overall_timing_stats['neo4j_operations']['avg_operation_time']:.3f}s\n- Average file processing time: {overall_timing_stats['file_operations']['avg_per_file']:.3f}s\n- Average directory processing time: {overall_timing_stats['directory_operations']['avg_per_directory']:.3f}s"
+        completion_msg = f"Completed filesystem processing for {repository_path}:\n- {file_count} files, {dir_count} directories in {duration:.2f} seconds\n- Average Neo4j operation time: {overall_timing_stats_dict['neo4j_operations']['avg_operation_time']:.3f}s\n- Average file processing time: {overall_timing_stats_dict['file_operations']['avg_per_file']:.3f}s\n- Average directory processing time: {overall_timing_stats_dict['directory_operations']['avg_per_directory']:.3f}s"
         log_info(completion_msg, job_id)
         try:
-            self.update_state(state='SUCCESS', meta={'status': StepStatus.COMPLETED, 'job_id': job_id, 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'message': completion_msg, 'timing_stats': overall_timing_stats})
+            self.update_state(state='SUCCESS', meta={'status': StepStatus.COMPLETED, 'job_id': job_id, 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'message': completion_msg, 'timing_stats': overall_timing_stats_dict})
         except Exception as e:
             log_error('Error updating final task state', error=e, job_id=job_id)
-        return {'status': StepStatus.COMPLETED, 'job_id': job_id, 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'message': completion_msg, 'timing_stats': overall_timing_stats}
+        return {'status': StepStatus.COMPLETED, 'job_id': job_id, 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'message': completion_msg, 'timing_stats': overall_timing_stats_dict}
     except Exception as e:
         error_msg = f'Error processing filesystem for repository {repository_path}'
         log_error(error_msg, error=e, job_id=job_id)

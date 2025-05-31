@@ -121,8 +121,10 @@ def get_schema_initialization_queries() -> list[str]:
     return initialization_queries
 
 
+from typing import Any
+
 def create_custom_vector_index(
-    connector,
+    connector: Any,
     label: str,
     property_name: str,
     dimensions: int = 1536,
@@ -278,7 +280,7 @@ def verify_schema(connector: Any) -> dict[str, dict[str, bool]]:
 
         # Verify each schema element
         schema_elements = get_all_schema_elements()
-        verification_results: Any = {
+        verification_results: dict[str, dict[str, bool]] = {
             "constraints": {},
             "indexes": {},
             "vector_indexes": {},

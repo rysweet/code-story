@@ -7,7 +7,7 @@ import importlib
 import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Type, Dict, List, Tuple, cast, TYPE_CHECKING, Union
 import yaml
 if sys.version_info >= (3, 10):
     from importlib.metadata import entry_points, EntryPoint
@@ -26,16 +26,18 @@ from prometheus_client import Counter, Gauge, Histogram
 from .step import PipelineStep, StepStatus
 logger = logging.getLogger(__name__)
 
-def _get_or_create_counter(name: str, description: str, counter_labels: list[str] | None=None) -> None:
+def _get_or_create_counter(
+    name: str, description: str, counter_labels: Optional[List[str]] = None
+) -> Any:
     try:
         if counter_labels is None:
             counter_labels = []
-        return Counter(name, description, counter_labels)  # type: ignore[return-value]
+        return Counter(name, description, counter_labels)
     except ValueError:
         from prometheus_client import REGISTRY
         for collector in list(REGISTRY._names_to_collectors.values()):
             if hasattr(collector, '_name') and collector._name == name:
-                return collector  # type: ignore[return-value]
+                return collector
 
         class NoOpCounter:
 
@@ -44,20 +46,25 @@ def _get_or_create_counter(name: str, description: str, counter_labels: list[str
 
             def inc(self, amount: int=1) -> None:
                 pass
-        return NoOpCounter()  # type: ignore[return-value]
+        return NoOpCounter()
 
-def _get_or_create_histogram(name: str, description: str, hist_labels: list[str] | None=None, buckets: tuple[float, ...] | None=None) -> None:
+def _get_or_create_histogram(
+    name: str,
+    description: str,
+    hist_labels: Optional[List[str]] = None,
+    buckets: Optional[Tuple[float, ...]] = None,
+) -> Any:
     if buckets is None:
         buckets = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
     try:
         if hist_labels is None:
             hist_labels = []
-        return Histogram(name, description, hist_labels, buckets=buckets)  # type: ignore[return-value]
+        return Histogram(name, description, hist_labels, buckets=buckets)
     except ValueError:
         from prometheus_client import REGISTRY
         for collector in list(REGISTRY._names_to_collectors.values()):
             if hasattr(collector, '_name') and collector._name == name:
-                return collector  # type: ignore[return-value]
+                return collector
 
         class NoOpHistogram:
 
@@ -66,18 +73,20 @@ def _get_or_create_histogram(name: str, description: str, hist_labels: list[str]
 
             def observe(self, amount: float) -> None:
                 pass
-        return NoOpHistogram()  # type: ignore[return-value]
+        return NoOpHistogram()
 
-def _get_or_create_gauge(name: str, description: str, gauge_labels: list[str] | None=None) -> None:
+def _get_or_create_gauge(
+    name: str, description: str, gauge_labels: Optional[List[str]] = None
+) -> Any:
     try:
         if gauge_labels is None:
             gauge_labels = []
-        return Gauge(name, description, gauge_labels)  # type: ignore[return-value]
+        return Gauge(name, description, gauge_labels)
     except ValueError:
         from prometheus_client import REGISTRY
         for collector in list(REGISTRY._names_to_collectors.values()):
             if hasattr(collector, '_name') and collector._name == name:
-                return collector  # type: ignore[return-value]
+                return collector
 
         class NoOpGauge:
 
@@ -92,7 +101,7 @@ def _get_or_create_gauge(name: str, description: str, gauge_labels: list[str] | 
 
             def labels(self, **kwargs: Any) -> 'NoOpGauge':
                 return self
-        return NoOpGauge()  # type: ignore[return-value]
+        return NoOpGauge()
 INGESTION_JOB_COUNT = _get_or_create_counter('codestory_ingestion_jobs_total', 'Total number of ingestion jobs', ['status'])
 INGESTION_STEP_COUNT = _get_or_create_counter('codestory_ingestion_steps_total', 'Total number of ingestion steps executed', ['step_name', 'status'])
 INGESTION_STEP_DURATION = _get_or_create_histogram('codestory_ingestion_step_duration_seconds', 'Duration of ingestion steps in seconds', ['step_name'])
@@ -176,7 +185,7 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
                 logger.info(f'Discovered pipeline step: {step_name}')
         else:
             try:
-                import pkg_resources
+                import pkg_resources  # type: ignore[import-untyped]
                 for entry_point in pkg_resources.iter_entry_points(entry_point_group):
                     step_name = entry_point.name
                     step_class = entry_point.load()

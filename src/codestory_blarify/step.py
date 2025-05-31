@@ -7,11 +7,12 @@ and store AST and symbol bindings in Neo4j.
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, Dict, Optional, List, cast, TYPE_CHECKING
 from uuid import uuid4
 
 import docker
-from celery import current_app, shared_task
+from docker import DockerClient
+from celery import current_app, shared_task, Task
 from celery.app.control import Control
 from celery.result import AsyncResult
 from docker.errors import DockerException
@@ -37,7 +38,7 @@ class BlarifyStep(PipelineStep):
     structure and store the results directly in the Neo4j database.
     """
 
-    def __init__(self, docker_image: str | None = None, timeout: int | None = None) -> None:
+    def __init__(self, docker_image: Optional[str] = None, timeout: Optional[int] = None) -> None:
         """Initialize the Blarify step.
 
         Args:
@@ -47,17 +48,17 @@ class BlarifyStep(PipelineStep):
         self.settings = get_settings()
         self.image = docker_image or DEFAULT_IMAGE
         self.timeout = timeout or DEFAULT_TIMEOUT
-        self.active_jobs: dict[str, dict[str, Any]] = {}
+        self.active_jobs: Dict[str, Dict[str, Any]] = {}
 
         # Try to initialize Docker client
         try:
-            self.docker_client = docker.from_env()
+            self.docker_client: Optional[DockerClient] = docker.from_env()
             # Test Docker connection
             self.docker_client.ping()
             logger.info("Docker client initialized successfully")
         except DockerException as e:
             logger.warning(f"Docker client initialization failed: {e}. Will use Celery task.")
-            self.docker_client = None  # TODO: Fix None assignment
+            self.docker_client = None
 
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the Blarify step.
@@ -132,7 +133,7 @@ class BlarifyStep(PipelineStep):
 
         return job_id
 
-    def status(self, job_id: str) -> dict[str, Any]:
+    def status(self, job_id: str) -> Dict[str, Any]:
         """Check the status of a job.
 
         Args:
@@ -276,7 +277,7 @@ class BlarifyStep(PipelineStep):
         except Exception:
             raise ValueError(f"Invalid job ID: {job_id}") from None
 
-    def stop(self, job_id: str) -> dict[str, Any]:
+    def stop(self, job_id: str) -> Dict[str, Any]:
         """Stop a running job.
 
         Args:
@@ -374,7 +375,7 @@ class BlarifyStep(PipelineStep):
             "job_id": job_id,
         }
 
-    def cancel(self, job_id: str) -> dict[str, Any]:
+    def cancel(self, job_id: str) -> Dict[str, Any]:
         """Cancel a job.
 
         Unlike stop(), cancel attempts to immediately terminate the job
@@ -420,16 +421,16 @@ class BlarifyStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_blarify.step.run_blarify")
+@shared_task(bind=True, name="codestory_blarify.step.run_blarify")  # type: ignore[misc]
 def run_blarify(
-    self,  # Celery task instance
+    self: Task,
     repository_path: str,
     job_id: str,
-    ignore_patterns: list[str] | None = None,
-    docker_image: str | None = None,
-    timeout: int | None = None,
-    config: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    ignore_patterns: Optional[List[str]] = None,
+    docker_image: Optional[str] = None,
+    timeout: Optional[int] = None,
+    config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """Run the Blarify workflow step as a Celery task.
 
     Args:
@@ -492,18 +493,20 @@ def run_blarify(
                 pass
             else:
                 # Try to map host path to container path
-                for host_path, container_path in os.environ.get(
-                    "CODESTORY_MOUNT_MAPPINGS", ""
-                ).split(";"):
-                    if host_path and container_path and repository_path.startswith(host_path):
-                        container_repository_path = repository_path.replace(
-                            host_path, container_path, 1
-                        )
-                        logger.info(
-                            f"Mapped repository path from {repository_path} to "
-                            f"{container_repository_path}"
-                        )
-                        break
+                mount_mappings = os.environ.get("CODESTORY_MOUNT_MAPPINGS", "")
+                for mapping in mount_mappings.split(";"):
+                    parts = mapping.split(",")
+                    if len(parts) == 2:
+                        host_path, container_path = parts
+                        if host_path and container_path and repository_path.startswith(host_path):
+                            container_repository_path = repository_path.replace(
+                                host_path, container_path, 1
+                            )
+                            logger.info(
+                                f"Mapped repository path from {repository_path} to "
+                                f"{container_repository_path}"
+                            )
+                            break
 
         # Container name for easier identification
         container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
@@ -746,14 +749,14 @@ def run_blarify(
 
         logger.info(f"Blarify task completed: {result['message']}")
 
-        return result
+        return cast(Dict[str, Any], result)
     except (docker.errors.DockerException, TimeoutError) as e:
         logger.error(f"Docker error: {e}")
         # Return error result
         end_time = time.time()
         duration = end_time - start_time
 
-        return {
+        return cast(Dict[str, Any], {
             "job_id": job_id,
             "repository_path": repository_path,
             "start_time": start_time,
@@ -762,7 +765,7 @@ def run_blarify(
             "status": StepStatus.FAILED,
             "error": f"Docker error: {e!s}",
             "message": f"Blarify task failed: {e!s}",
-        }
+        })
     except Exception as e:
         logger.exception(f"Error in Blarify task: {e}")
 
@@ -770,7 +773,7 @@ def run_blarify(
         end_time = time.time()
         duration = end_time - start_time
 
-        return {
+        return cast(Dict[str, Any], {
             "job_id": job_id,
             "repository_path": repository_path,
             "start_time": start_time,
@@ -779,4 +782,4 @@ def run_blarify(
             "status": StepStatus.FAILED,
             "error": str(e),
             "message": f"Blarify task failed: {e!s}",
-        }
+        })

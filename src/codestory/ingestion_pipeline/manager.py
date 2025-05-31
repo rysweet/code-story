@@ -8,7 +8,7 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from .step import PipelineStep, StepStatus
 from .tasks import get_job_status, orchestrate_pipeline, stop_job
 from .utils import discover_pipeline_steps, find_step_manually, load_pipeline_config, record_job_metrics
@@ -51,7 +51,7 @@ class PipelineManager:
             Optional[Type[PipelineStep]]: Step class if found, None otherwise
         """
         if step_name in self.steps:
-            return self.steps[step_name]
+            return cast(type[PipelineStep], self.steps[step_name])
         step_class = find_step_manually(step_name)
         if step_class:
             self.steps[step_name] = step_class
@@ -129,12 +129,12 @@ class PipelineManager:
         job_info = self.active_jobs[job_id]
         task_id = job_info['task_id']
         status_task = get_job_status.apply_async(args=[task_id])
-        status_result = status_task.get(timeout=30)
+        status_result = cast(dict[str, Any], status_task.get(timeout=30))
         job_info.update(status_result)
         if status_result['status'] in (StepStatus.COMPLETED, StepStatus.FAILED, StepStatus.STOPPED):
             job_info['end_time'] = time.time()
             job_info['duration'] = job_info['end_time'] - job_info['start_time']
-        return job_info
+        return cast(dict[str, Any], job_info)
 
     def stop(self: Any, job_id: str) -> dict[str, Any]:
         """Stop an ingestion job.
@@ -153,10 +153,10 @@ class PipelineManager:
         job_info = self.active_jobs[job_id]
         task_id = job_info['task_id']
         stop_task = stop_job.apply_async(args=[task_id])
-        stop_result = stop_task.get(timeout=30)
+        stop_result = cast(dict[str, Any], stop_task.get(timeout=30))
         job_info.update(stop_result)
         record_job_metrics(StepStatus.STOPPED)
-        return job_info
+        return cast(dict[str, Any], job_info)
 
     def cancel(self: Any, job_id: str) -> dict[str, Any]:
         """Cancel an ingestion job.
@@ -177,12 +177,12 @@ class PipelineManager:
         job_info = self.active_jobs[job_id]
         task_id = job_info['task_id']
         stop_task = stop_job.apply_async(args=[task_id])
-        stop_result = stop_task.get(timeout=30)
+        stop_result = cast(dict[str, Any], stop_task.get(timeout=30))
         if stop_result['status'] == StepStatus.STOPPED:
             stop_result['status'] = StepStatus.CANCELLED
         job_info.update(stop_result)
         record_job_metrics(StepStatus.CANCELLED)
-        return job_info
+        return cast(dict[str, Any], job_info)
 
     def run_single_step(self: Any, repository_path: str, step_name: str, **step_config: Any) -> str:
         """Run a single workflow step.

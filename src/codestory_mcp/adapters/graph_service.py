@@ -172,7 +172,8 @@ class GraphServiceAdapter:
                 self.metrics.record_service_api_call(endpoint, 'error', time.time() - start_time)
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
             self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
-            return response.json()
+            from typing import cast
+            return cast(dict[str, Any], response.json())
         except httpx.RequestError as e:
             error_message = f'Cypher query failed: {e!s}'
             logger.exception('Cypher query request error', error=str(e))
@@ -218,7 +219,7 @@ class MockNode:
         """
         return list(self.properties.items())
 
-    def __getitem__(self: Any, key: str) -> None:
+    def __getitem__(self: Any, key: str) -> Any:
         """Get a property value.
 
         Args:
@@ -273,7 +274,7 @@ class MockRelationship:
         """
         return list(self.properties.items())
 
-    def __getitem__(self: Any, key: str) -> None:
+    def __getitem__(self: Any, key: str) -> Any:
         """Get a property value.
 
         Args:

@@ -1,4 +1,3 @@
-from typing import Any
 'Utilities for tracking and reporting summarization progress.\n\nThis module provides functionality for tracking the progress of the\nsummarization process and generating progress reports.\n'
 import logging
 import time
@@ -12,7 +11,7 @@ class ProgressTracker:
     summarization process and generating progress reports.
     """
 
-    def __init__(self: Any, graph: DependencyGraph) -> None:
+    def __init__(self, graph: DependencyGraph) -> None:
         """Initialize the progress tracker.
 
         Args:
@@ -25,12 +24,12 @@ class ProgressTracker:
         self.node_type_counts: dict[NodeType, int] = dict.fromkeys(NodeType, 0)
         self._count_node_types()
 
-    def _count_node_types(self: Any) -> None:
+    def _count_node_types(self) -> None:
         """Count the number of nodes of each type in the graph."""
         for node_data in self.graph.nodes.values():
             self.node_type_counts[node_data.type] = self.node_type_counts.get(node_data.type, 0) + 1
 
-    def get_progress_stats(self: Any) -> dict[str, int]:
+    def get_progress_stats(self) -> dict[str, int]:
         """Get progress statistics.
 
         Returns:
@@ -41,7 +40,7 @@ class ProgressTracker:
             stats[f'{node_type.value.lower()}_count'] = self.node_type_counts[node_type]
         return stats
 
-    def get_progress(self: Any) -> float:
+    def get_progress(self) -> float:
         """Get the overall progress as a percentage.
 
         Returns:
@@ -49,7 +48,7 @@ class ProgressTracker:
         """
         return self.graph.get_progress()
 
-    def get_elapsed_time(self: Any) -> float:
+    def get_elapsed_time(self) -> float:
         """Get the elapsed time in seconds.
 
         Returns:
@@ -57,7 +56,7 @@ class ProgressTracker:
         """
         return time.time() - self.start_time
 
-    def get_estimated_remaining_time(self: Any) -> float | None:
+    def get_estimated_remaining_time(self) -> float | None:
         """Get the estimated remaining time in seconds.
 
         Returns:
@@ -71,7 +70,7 @@ class ProgressTracker:
         remaining = total_estimated - elapsed
         return max(0, remaining)
 
-    def should_update(self: Any) -> bool:
+    def should_update(self) -> bool:
         """Check if progress should be updated.
 
         Returns:
@@ -83,7 +82,7 @@ class ProgressTracker:
             return True
         return False
 
-    def update_progress(self: Any) -> str:
+    def update_progress(self) -> str:
         """Update and log progress.
 
         Returns:

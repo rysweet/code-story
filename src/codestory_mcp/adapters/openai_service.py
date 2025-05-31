@@ -4,11 +4,11 @@ This module provides an adapter for interacting with the OpenAI client.
 """
 import time
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 import structlog
 from fastapi import status
 from codestory.llm.client import OpenAIClient
-from codestory.llm.models import ChatCompletionRequest, ChatMessage
+from codestory.llm.models import ChatCompletionRequest, ChatMessage, ChatRole
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.metrics import get_metrics
 logger = structlog.get_logger(__name__)
@@ -41,18 +41,20 @@ class OpenAIServiceAdapter:
         """
         start_time = time.time()
         try:
-            messages = [ChatMessage(role='system', content='You are a helpful assistant that summarizes code. Provide a clear, concise explanation of what the code does, focusing on its purpose, functionality, and key components. Be specific and technical, but avoid unnecessary details.')]  # type: ignore[arg-type,assignment]
+            messages = [ChatMessage(role=ChatRole.SYSTEM, content='You are a helpful assistant that summarizes code. Provide a clear, concise explanation of what the code does, focusing on its purpose, functionality, and key components. Be specific and technical, but avoid unnecessary details.')]
             if context:
-                messages.append(ChatMessage(role='user', content=f'I need to understand this code in the context of: {context}\n\nPlease summarize what it does, its main purpose, and how it works.'))  # type: ignore[arg-type,assignment]
+                messages.append(ChatMessage(role=ChatRole.USER, content=f'I need to understand this code in the context of: {context}\n\nPlease summarize what it does, its main purpose, and how it works.'))
             else:
-                messages.append(ChatMessage(role='user', content='Please summarize what this code does, its main purpose, and how it works.'))  # type: ignore[arg-type,assignment]
-            messages.append(ChatMessage(role='user', content=f'```\n{code}\n```'))  # type: ignore[arg-type,assignment]
+                messages.append(ChatMessage(role=ChatRole.USER, content='Please summarize what this code does, its main purpose, and how it works.'))
+            messages.append(ChatMessage(role=ChatRole.USER, content=f'```\n{code}\n```'))
             request = ChatCompletionRequest(messages=messages, max_tokens=max_tokens, temperature=0.3, model='gpt-4-turbo')
             response = await self.client.create_chat_completion(request)
             summary = response.choices[0].message.content
+            if summary is None:
+                raise ToolError("OpenAI returned no summary.", status_code=status.HTTP_502_BAD_GATEWAY)
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_summary', 'success', duration)
-            return summary
+            return cast(str, summary)
         except Exception as e:
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_summary', 'error', duration)
@@ -82,13 +84,18 @@ class OpenAIServiceAdapter:
                         path_description += f"\nContent: {element['content'][:200]}..."
                 else:
                     path_description += f"\n--[{element.get('type', 'RELATED_TO')}]-->"
-            messages = [ChatMessage(role='system', content='You are a helpful assistant that explains relationships between code elements. Based on the path between code elements, explain how they are related and what this relationship means for the codebase.'), ChatMessage(role='user', content=f'Please explain the following path between code elements in a clear, concise way. Focus on how these elements interact and what this relationship reveals about the code structure and behavior.\n\n{path_description}')]  # type: ignore[arg-type,assignment]
+            messages = [
+                ChatMessage(role=ChatRole.SYSTEM, content='You are a helpful assistant that explains relationships between code elements. Based on the path between code elements, explain how they are related and what this relationship means for the codebase.'),
+                ChatMessage(role=ChatRole.USER, content=f'Please explain the following path between code elements in a clear, concise way. Focus on how these elements interact and what this relationship reveals about the code structure and behavior.\n\n{path_description}')
+            ]
             request = ChatCompletionRequest(messages=messages, max_tokens=max_tokens, temperature=0.3, model='gpt-4-turbo')
             response = await self.client.create_chat_completion(request)
             explanation = response.choices[0].message.content
+            if explanation is None:
+                raise ToolError("OpenAI returned no explanation.", status_code=status.HTTP_502_BAD_GATEWAY)
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_path_explanation', 'success', duration)
-            return explanation
+            return cast(str, explanation)
         except Exception as e:
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_path_explanation', 'error', duration)

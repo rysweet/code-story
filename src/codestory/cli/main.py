@@ -3,7 +3,7 @@ import sys
 from typing import Any, Callable, Dict, List, Optional, Union, IO
 import types
 import click
-from click_didyoumean import DYMGroup
+from click_didyoumean import DYMGroup  # type: ignore[import-untyped]
 from rich.console import Console
 from codestory.config import get_settings
 from .client import ServiceClient, ServiceError
@@ -29,7 +29,7 @@ console: Console = Console()
 class CodeStoryCommandGroup(DYMGroup):
     """Custom command group that shows help when a command fails."""
 
-    def __call__(self: Any, *args: Any, **kwargs: Any) -> None:
+    def __call__(self: Any, *args: Any, **kwargs: Any) -> Any:
         """Override to catch and customize error handling."""
         try:
             return super().__call__(*args, **kwargs)
@@ -111,7 +111,7 @@ def _wrap_click_command(cmd: click.BaseCommand) -> Callable[..., Any]:
     """Create a wrapper around a Click command to intercept UsageError exceptions."""
     original_main: Callable[..., Any] = cmd.main
 
-    def wrapped_main(*args: Any, **kwargs: Any) -> None:
+    def wrapped_main(*args: Any, **kwargs: Any) -> Any:
         try:
             return original_main(*args, **kwargs)
         except click.exceptions.UsageError as e:
@@ -172,7 +172,7 @@ def main() -> None:
             console.print('')
         console.print(help_text)
     try:
-        click.exceptions.UsageError.show = custom_error_callback
+        click.exceptions.UsageError.show = custom_error_callback  # type: ignore[method-assign]
         app()
     except ServiceError as e:
         console.print(f'[bold red]Error:[/] {e!s}')
@@ -182,6 +182,6 @@ def main() -> None:
         console.print_exception(show_locals=False)
         sys.exit(1)
     finally:
-        click.exceptions.UsageError.show = original_error_callback
+        click.exceptions.UsageError.show = original_error_callback  # type: ignore[method-assign]
 if __name__ == '__main__':
     main()

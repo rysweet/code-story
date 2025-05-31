@@ -1,4 +1,3 @@
-from typing import Any
 'Progress tracker for documentation processing.\n\nThis module provides functionality for tracking the progress of\ndocumentation processing during the DocumentationGrapher step.\n'
 import logging
 import time
@@ -12,7 +11,7 @@ class ProgressTracker:
     of documentation processing during the DocumentationGrapher step.
     """
 
-    def __init__(self: Any, graph: DocumentationGraph) -> None:
+    def __init__(self, graph: DocumentationGraph) -> None:
         """Initialize the progress tracker.
 
         Args:
@@ -27,7 +26,7 @@ class ProgressTracker:
         self.total_entities = 0
         self.processed_entities = 0
 
-    def set_total_documents(self: Any, count: int) -> None:
+    def set_total_documents(self, count: int) -> None:
         """Set the total number of documents to process.
 
         Args:
@@ -36,7 +35,7 @@ class ProgressTracker:
         self.total_documents = count
         self.graph.total_files = count
 
-    def document_processed(self: Any) -> None:
+    def document_processed(self) -> None:
         """Mark a document as processed.
 
         This increments the processed document count and updates progress.
@@ -44,14 +43,14 @@ class ProgressTracker:
         self.processed_documents += 1
         self.graph.processed_files += 1
 
-    def entity_processed(self: Any) -> None:
+    def entity_processed(self) -> None:
         """Mark an entity as processed.
 
         This increments the processed entity count.
         """
         self.processed_entities += 1
 
-    def get_progress(self: Any) -> float:
+    def get_progress(self) -> float:
         """Get the overall progress as a percentage.
 
         Returns:
@@ -61,7 +60,7 @@ class ProgressTracker:
             return 0.0
         return min(self.processed_documents / self.total_documents * 100.0, 100.0)
 
-    def get_elapsed_time(self: Any) -> float:
+    def get_elapsed_time(self) -> float:
         """Get the elapsed time in seconds.
 
         Returns:
@@ -69,7 +68,7 @@ class ProgressTracker:
         """
         return time.time() - self.start_time
 
-    def get_estimated_remaining_time(self: Any) -> float | None:
+    def get_estimated_remaining_time(self) -> float | None:
         """Get the estimated remaining time in seconds.
 
         Returns:
@@ -83,7 +82,7 @@ class ProgressTracker:
         remaining = total_estimated - elapsed
         return max(0, remaining)
 
-    def should_update(self: Any) -> bool:
+    def should_update(self) -> bool:
         """Check if progress should be updated.
 
         Returns:
@@ -95,7 +94,7 @@ class ProgressTracker:
             return True
         return False
 
-    def update_progress(self: Any) -> str:
+    def update_progress(self) -> str:
         """Update and log progress.
 
         Returns:
@@ -111,7 +110,7 @@ class ProgressTracker:
         logger.info(message)
         return message
 
-    def _format_time(self: Any, seconds: float) -> str:
+    def _format_time(self, seconds: float) -> str:
         """Format a time duration in a human-readable way.
 
         Args:
@@ -130,7 +129,7 @@ class ProgressTracker:
             minutes = seconds % 3600 / 60
             return f'{hours:.1f}h {minutes:.0f}m'
 
-    def get_status_dict(self: Any) -> dict[str, float | int]:
+    def get_status_dict(self) -> dict[str, float | int]:
         """Get the current status as a dictionary.
 
         Returns:

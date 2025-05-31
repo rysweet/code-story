@@ -56,7 +56,11 @@ class ContentAnalyzer:
         if entity.type == EntityType.HEADING:
             return self._analyze_heading(content)
         elif entity.type == EntityType.CODE_BLOCK:
-            return self._analyze_code_block(content, entity.metadata.get("language", ""))
+            language = entity.metadata.get("language", "")
+            # Ensure language is always a string for type safety
+            if not isinstance(language, str):
+                language = str(language)
+            return self._analyze_code_block(content, language)
         elif entity.type == EntityType.FUNCTION_DESC:
             return self._analyze_function_desc(content)
         elif entity.type == EntityType.CLASS_DESC:
@@ -177,6 +181,8 @@ class ContentAnalyzer:
         # Use LLM to extract function purpose if enabled
         purpose = ""
         if self.use_llm and self.llm_client:
+            # mypy: ensure llm_client is not None
+            llm_client = self.llm_client
             purpose = self._extract_function_purpose(content)
 
         return {
@@ -339,9 +345,10 @@ class ContentAnalyzer:
         ]
 
         try:
+            assert self.llm_client is not None
             response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
-
-            return response.choices[0].message.content.strip()
+            result = response.choices[0].message.content
+            return result.strip() if isinstance(result, str) else ""
         except Exception as e:
             logger.warning(f"Error extracting function purpose: {e}")
             return ""
@@ -358,10 +365,10 @@ class ContentAnalyzer:
         prompt = f"""
         Extract the purpose of this class from its docstring. Return a single sentence
         that describes what the class represents or does.
-        
+
         Docstring:
         {content}
-        
+
         Class purpose:
         """
 
@@ -374,9 +381,10 @@ class ContentAnalyzer:
         ]
 
         try:
+            assert self.llm_client is not None
             response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
-
-            return response.choices[0].message.content.strip()
+            result = response.choices[0].message.content
+            return result.strip() if isinstance(result, str) else ""
         except Exception as e:
             logger.warning(f"Error extracting class purpose: {e}")
             return ""
@@ -393,10 +401,10 @@ class ContentAnalyzer:
         prompt = f"""
         Extract the purpose of this module from its docstring. Return a single sentence
         that describes what the module provides or does.
-        
+
         Docstring:
         {content}
-        
+
         Module purpose:
         """
 
@@ -409,9 +417,10 @@ class ContentAnalyzer:
         ]
 
         try:
+            assert self.llm_client is not None
             response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
-
-            return response.choices[0].message.content.strip()
+            result = response.choices[0].message.content
+            return result.strip() if isinstance(result, str) else ""
         except Exception as e:
             logger.warning(f"Error extracting module purpose: {e}")
             return ""

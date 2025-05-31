@@ -13,7 +13,7 @@ class ContentExtractor:
     relevant context for summarization of different node types.
     """
 
-    def __init__(self: Any, connector: Neo4jConnector, repository_path: str | None=None) -> None:
+    def __init__(self, connector: Neo4jConnector, repository_path: str | None = None) -> None:
         """Initialize the content extractor.
 
         Args:
@@ -24,7 +24,7 @@ class ContentExtractor:
         self.repository_path = repository_path
         self.cache: dict[str, str] = {}
 
-    def extract_content(self: Any, node: NodeData) -> dict[str, str | list[str]]:
+    def extract_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a node based on its type.
 
         Args:
@@ -48,7 +48,7 @@ class ContentExtractor:
             logger.warning(f'Unsupported node type: {node_type}')
             return {'content': '', 'context': []}
 
-    def _extract_repository_content(self: Any, node: NodeData) -> dict[str, str | list[str]]:
+    def _extract_repository_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a repository node.
 
         Args:
@@ -74,7 +74,7 @@ class ContentExtractor:
             context.append(f'README contents:\n{readme_content}')
         return {'content': f'Repository: {repo_name}', 'context': context}
 
-    def _extract_directory_content(self: Any, node: NodeData) -> dict[str, str | list[str]]:
+    def _extract_directory_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a directory node.
 
         Args:
@@ -98,7 +98,7 @@ class ContentExtractor:
             context.append(f"Subdirectories: {', '.join(subdir_list)}")
         return {'content': f'Directory: {dir_path}', 'context': context}
 
-    def _extract_file_content(self: Any, node: NodeData) -> dict[str, str | list[str]]:
+    def _extract_file_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a file node.
 
         Args:
@@ -139,7 +139,7 @@ class ContentExtractor:
                 context.append(f"Imports: {', '.join(import_list)}")
         return {'content': content, 'context': context}
 
-    def _extract_class_content(self: Any, node: NodeData) -> dict[str, str | list[str]]:
+    def _extract_class_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a class node.
 
         Args:
@@ -198,7 +198,7 @@ class ContentExtractor:
             context.append(f"Methods: {', '.join(method_list)}")
         return {'content': class_content if class_content else f'Class: {qualified_name}', 'context': context}
 
-    def _extract_function_content(self: Any, node: NodeData) -> dict[str, str | list[str]]:
+    def _extract_function_content(self, node: NodeData) -> dict[str, str | list[str]]:
         """Extract content for a function or method node.
 
         Args:
@@ -265,7 +265,7 @@ class ContentExtractor:
         context = [f"{('Method' if node_type == NodeType.METHOD else 'Function')}: {qualified_name}", f'Defined in file: {file_path}']
         return {'content': func_content if func_content else f'Function: {qualified_name}', 'context': context}
 
-    def _get_readme_content(self: Any, repo_path: str | None=None) -> str:
+    def _get_readme_content(self, repo_path: str | None = None) -> str:
         """Get README content from the repository.
 
         Args:

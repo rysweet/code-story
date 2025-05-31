@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Protocol, TypeVar, Union, cast
+from typing import Any, Protocol, TypeVar, Union, cast, Iterator
 try:
     from prometheus_client import Counter, Gauge, Histogram
     PROMETHEUS_AVAILABLE = True
@@ -45,7 +45,7 @@ class DummyHistogram:
         """Dummy observe method that does nothing."""
         pass
 
-    def labels(self: Any, *labelvalues: Any, **labelkwargs: Any) -> 'DummyHistogram':
+    def labels(self: "DummyHistogram", *labelvalues: Any, **labelkwargs: Any) -> "DummyHistogram":
         """Return self for method chaining."""
         return self
 
@@ -57,8 +57,8 @@ class DummyHistogram:
         """Dummy set method that does nothing."""
         pass
 
-    @contextmanager  # type: ignore[assignment]
-    def time(self: Any) -> None:
+    @contextmanager
+    def time(self: Any) -> "Iterator[None]":
         """Dummy timer method that returns a dummy timer context."""
         yield
 
@@ -121,7 +121,7 @@ def instrument_query(query_type: QueryType=QueryType.READ) -> Callable[[F], F]:
 
     def decorator(func: F) -> F:
 
-        def wrapper(*args: Any, **kwargs: Any) -> None:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             if not PROMETHEUS_AVAILABLE:
                 return func(*args, **kwargs)
             start_time = time.time()

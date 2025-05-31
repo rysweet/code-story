@@ -6,7 +6,7 @@ for validating JWT tokens and authenticating users against Microsoft Entra ID
 """
 import logging
 import time
-from typing import Any
+from typing import Any, cast
 import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -52,13 +52,13 @@ class MSALValidator:
             if not token:
                 return {'sub': 'anonymous', 'name': 'Anonymous User', 'roles': ['user'], 'exp': int(time.time() + 3600)}
             try:
-                claims = jwt.decode(token, options={'verify_signature': False, 'verify_exp': False})
+                claims = cast(dict[str, Any], jwt.decode(token, options={'verify_signature': False, 'verify_exp': False}))
                 return claims
             except Exception:
                 return {'sub': 'anonymous', 'name': 'Anonymous User', 'roles': ['user'], 'exp': int(time.time() + 3600)}
         if self.dev_mode and self.jwt_secret:
             try:
-                claims = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
+                claims = cast(dict[str, Any], jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm]))
                 return claims
             except jwt.ExpiredSignatureError as err:
                 logger.warning('Token has expired')

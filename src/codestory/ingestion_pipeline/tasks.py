@@ -24,7 +24,7 @@ from .utils import record_job_metrics, record_step_metrics
 logger = logging.getLogger(__name__)
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.run_step", bind=True)
+@app.task(name="codestory.ingestion_pipeline.tasks.run_step", bind=True)  # type: ignore[misc]
 def run_step(
     self: Any,
     repository_path: str,
@@ -385,7 +385,7 @@ def run_step(
     return result
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)
+@app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)  # type: ignore[misc]
 def orchestrate_pipeline(
     self: Any, repository_path: str, step_configs: list[dict[str, Any]], job_id: str
 ) -> dict[str, Any]:
@@ -604,7 +604,7 @@ def orchestrate_pipeline(
     return result
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)
+@app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)  # type: ignore[misc]
 def get_job_status(self: Any, task_id: str) -> dict[str, Any]:
     """Get the status of a running job.
 
@@ -644,7 +644,7 @@ def get_job_status(self: Any, task_id: str) -> dict[str, Any]:
         }
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)
+@app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)  # type: ignore[misc]
 def stop_job(self: Any, task_id: str) -> dict[str, Any]:
     """Stop a running job.
 

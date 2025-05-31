@@ -6,7 +6,7 @@ including reading, writing, and validating configuration settings.
 import json
 import logging
 import time
-from typing import Any
+from typing import Any, Optional, Set
 import redis.asyncio as redis
 from fastapi import HTTPException, status
 from codestory.config.settings import get_settings as get_core_settings
@@ -15,17 +15,23 @@ from codestory.config.writer import update_config, update_env, update_toml
 class ConfigWriter:
     """Wrapper for configuration writing functions."""
 
-    def update_config(self: Any, setting_path: str, value: Any, persist_to: str | None=None) -> None:
+    def update_config(self, setting_path: str, value: object, persist_to: Optional[str] = None) -> None:
         """Update a configuration setting."""
         update_config(setting_path, value, persist_to)
 
-    def update_env(self: Any, key: str, value: str, env_file: str | None=None) -> None:
+    def update_env(self, key: str, value: str, env_file: Optional[str] = None) -> None:
         """Update a value in the .env file."""
         update_env(key, value, env_file)
 
-    def update_toml(self: Any, section: str, key: str, value: Any, toml_file: str | None=None) -> None:
+    def update_toml(self, section: str, key: str, value: object, toml_file: Optional[str] = None) -> None:
         """Update a value in the .codestory.toml file."""
         update_toml(section, key, value, toml_file)
+
+    def update_setting(self, section: str, key: str, value: object, comment: Optional[str] = None) -> None:
+        """Update a setting, dispatching to the appropriate method."""
+        # This is a placeholder; real logic may need to distinguish between config/env/toml
+        # For now, just call update_config for all
+        update_config(f"{section}.{key}", value, None)
 from ..domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPatch, ConfigPermission, ConfigSchema, ConfigSection, ConfigSource, ConfigValidationError, ConfigValidationResult, ConfigValueType
 from ..settings import get_service_settings
 logger = logging.getLogger(__name__)
@@ -37,41 +43,41 @@ class ConfigService:
     settings, as well as validating configuration changes.
     """
 
-    def __init__(self: Any) -> None:
+    def __init__(self) -> None:
         """Initialize the configuration service."""
         self.core_settings = get_core_settings()
         self.service_settings = get_service_settings()
-        self.redis = None
-        self.notification_channel = 'codestory:config:updated'
+        self.redis: Optional[redis.Redis] = None
+        self.notification_channel: str = 'codestory:config:updated'
         self.writer = ConfigWriter()
-        self.hot_reloadable = {'openai.timeout', 'openai.max_retries', 'service.rate_limit_enabled', 'service.rate_limit_requests', 'service.rate_limit_window', 'neo4j.timeout', 'neo4j.max_retries', 'neo4j.connection_pool_size', 'logging.level'}
-        self._init_redis_task = None
+        self.hot_reloadable: Set[str] = {
+            'openai.timeout', 'openai.max_retries', 'service.rate_limit_enabled',
+            'service.rate_limit_requests', 'service.rate_limit_window', 'neo4j.timeout',
+            'neo4j.max_retries', 'neo4j.connection_pool_size', 'logging.level'
+        }
 
-    async def _init_redis(self: Any) -> None:
+    async def _init_redis(self) -> None:
         """Initialize Redis connection asynchronously."""
         try:
             redis_host = 'localhost'
             redis_port = 6379
             redis_db = 0
-            self.redis = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)  # type: ignore[assignment]
-            await self.redis.ping()[attr - defined]  # type: ignore[attr-defined]
+            self.redis = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
+            await self.redis.ping()
             logger.info('Connected to Redis successfully for config notifications')
         except Exception as e:
             logger.error(f'Failed to connect to Redis for config notifications: {e!s}')
             self.redis = None
+        return None
 
-    async def notify_config_updated(self: Any, changes: set[str]) -> None:
+    async def notify_config_updated(self, changes: set[str]) -> None:
         """Notify subscribers that configuration has been updated.
 
         Args:
             changes: Set of configuration keys that were changed
         """
         if not self.redis:
-            if not self._init_redis_task:
-                self._init_redis_task = self._init_redis()
-                await self._init_redis_task
-            else:
-                await self._init_redis_task
+            await self._init_redis()
         if not self.redis:
             logger.warning('Redis not available for config notifications')
             return
@@ -82,7 +88,7 @@ class ConfigService:
         except Exception as e:
             logger.error(f'Failed to publish config update notification: {e!s}')
 
-    def get_config_dump(self: Any, include_sensitive: bool=False) -> ConfigDump:
+    def get_config_dump(self, include_sensitive: bool = False) -> ConfigDump:
         """Get a complete dump of the configuration.
 
         Args:
@@ -136,7 +142,7 @@ class ConfigService:
         config_dump = ConfigDump(groups=groups, version='1.0.0', last_updated=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
         return config_dump
 
-    def get_config_schema(self: Any) -> ConfigSchema:
+    def get_config_schema(self) -> ConfigSchema:
         """Get the JSON Schema for the configuration.
 
         Returns:
@@ -145,7 +151,7 @@ class ConfigService:
         config_dump = self.get_config_dump(include_sensitive=False)
         return ConfigSchema.create_from_config(config_dump)
 
-    async def update_config(self: Any, patch: ConfigPatch) -> ConfigDump:
+    async def update_config(self, patch: ConfigPatch) -> ConfigDump:
         """Update configuration settings.
 
         Args:
@@ -162,7 +168,7 @@ class ConfigService:
             error_details = [f'{err.path}: {err.message}' for err in validation.errors]
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid configuration: {', '.join(error_details)}")
         try:
-            changed_keys: set[Any] = set()
+            changed_keys: set[str] = set()
             for item in patch.items:
                 parts = item.key.split('.', 1)
                 if len(parts) == 1:
@@ -182,7 +188,7 @@ class ConfigService:
             logger.error(f'Failed to update configuration: {e!s}')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to update configuration: {e!s}') from e
 
-    def _validate_config_patch(self: Any, patch: ConfigPatch) -> ConfigValidationResult:
+    def _validate_config_patch(self, patch: ConfigPatch) -> ConfigValidationResult:
         """Validate a configuration patch.
 
         Args:
@@ -191,7 +197,7 @@ class ConfigService:
         Returns:
             ConfigValidationResult with validation results
         """
-        errors: list[Any] = []
+        errors: list[ConfigValidationError] = []
         for item in patch.items:
             parts = item.key.split('.', 1)
             if len(parts) == 1:

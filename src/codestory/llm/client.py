@@ -7,7 +7,7 @@ asynchronous APIs.
 
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 import openai
 from openai import AsyncAzureOpenAI, AzureOpenAI
@@ -352,21 +352,46 @@ class OpenAIClient:
         deployment_id = deployment_id_env or self.chat_model
         logger.info(f"Using deployment ID: {deployment_id}")
 
-        azure_openai_kwargs = {
-            "azure_endpoint": client_params.get("azure_endpoint"),
-            "azure_deployment": deployment_id,  # This is the key fix - use azure_deployment
-            "api_version": client_params.get("api_version"),
-            "api_key": client_params.get("api_key"),
-            "azure_ad_token_provider": client_params.get("azure_ad_token_provider"),
-        }
-        # Remove None values
-        azure_openai_kwargs = {k: v for k, v in azure_openai_kwargs.items() if v is not None}
-        logger.info(f"AzureOpenAI instantiation kwargs: {azure_openai_kwargs}")
+        # Prepare arguments for AzureOpenAI and AsyncAzureOpenAI
+        client_azure_endpoint: str = client_params.get("azure_endpoint")  # type: ignore
+        client_api_version: str | None = cast(str | None, client_params.get("api_version"))
+        client_api_key: str | None = cast(str | None, client_params.get("api_key"))
+        client_azure_ad_token_provider = client_params.get("azure_ad_token_provider")
+
+        # Only include azure_ad_token_provider if present, and use keyword arguments only
         try:
-            self._sync_client = AzureOpenAI(**azure_openai_kwargs)
-            logger.info("Sync client created successfully")
-            self._async_client = AsyncAzureOpenAI(**azure_openai_kwargs)
-            logger.info("Async client created successfully")
+            if client_azure_ad_token_provider is not None:
+                self._sync_client = AzureOpenAI(
+                    azure_endpoint=client_azure_endpoint,
+                    azure_deployment=deployment_id,
+                    api_version=client_api_version,
+                    api_key=client_api_key,
+                    azure_ad_token_provider=client_azure_ad_token_provider,  # type: ignore
+                )
+                logger.info("Sync client created successfully")
+                self._async_client = AsyncAzureOpenAI(
+                    azure_endpoint=client_azure_endpoint,
+                    azure_deployment=deployment_id,
+                    api_version=client_api_version,
+                    api_key=client_api_key,
+                    azure_ad_token_provider=client_azure_ad_token_provider,  # type: ignore
+                )
+                logger.info("Async client created successfully")
+            else:
+                self._sync_client = AzureOpenAI(
+                    azure_endpoint=client_azure_endpoint,
+                    azure_deployment=deployment_id,
+                    api_version=client_api_version,
+                    api_key=client_api_key,
+                )
+                logger.info("Sync client created successfully")
+                self._async_client = AsyncAzureOpenAI(
+                    azure_endpoint=client_azure_endpoint,
+                    azure_deployment=deployment_id,
+                    api_version=client_api_version,
+                    api_key=client_api_key,
+                )
+                logger.info("Async client created successfully")
             logger.info("=== OpenAI Client Initialization Complete ===")
         except Exception as e:
             logger.error(f"Failed to create AzureOpenAI clients: {e}")
@@ -377,7 +402,9 @@ class OpenAIClient:
                 logger.error("Authentication error during client creation - check credentials")
             raise
 
-    def _prepare_request: Any_data(self, request) -> None:
+    def _prepare_request_data(
+        self, request: CompletionRequest | ChatCompletionRequest | EmbeddingRequest
+    ) -> tuple[str, dict[str, Any]]:
         """Extract model name and prepare request data, removing internal parameters.
 
         Args:

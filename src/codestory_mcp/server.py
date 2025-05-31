@@ -45,7 +45,12 @@ async def get_current_user(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Missing or invalid authentication token', headers={'WWW-Authenticate': 'Bearer'})
     token = auth_header.split(' ')[1]
     try:
-        validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)  # type: ignore[arg-type,assignment]
+        if settings.azure_tenant_id is None or settings.api_audience is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Server misconfiguration: missing Azure tenant ID or API audience."
+            )
+        validator = EntraValidator(settings.azure_tenant_id, settings.api_audience)
         claims = await validator.validate_token(token)
         metrics.record_auth_attempt('success')
         return claims
@@ -93,8 +98,10 @@ def tool_executor(func: Callable[..., Any]) -> Callable[..., Any]:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Tool execution error: {e!s}') from e
     return wrapper
 
-@asynccontextmanager  # type: ignore[assignment]
-async def lifespan(app: FastAPI) -> None:
+from typing import AsyncGenerator
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler.
 
     This context manager handles startup and shutdown events.
@@ -131,7 +138,9 @@ def create_app() -> FastAPI:
         Returns:
             Tool execution results
         """
-        pass
+        # This function is wrapped by @tool_executor, which handles execution and returns the result.
+        # The body is never called directly, but mypy requires a return statement.
+        return {}
 
     @router.get('/tools', summary='Get available tools', description='Get a list of available tools and their schemas')
     async def get_tools(user: dict[str, Any]=Depends(get_current_user)) -> dict[str, list[dict[str, Any]]]:

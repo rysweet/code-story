@@ -6,9 +6,9 @@ path finding, as well as visualization generation.
 """
 import json
 import logging
-from typing import Any
+from typing import Any, cast
 from fastapi import Depends, HTTPException, status
-from ..domain.graph import AskAnswer, AskRequest, CypherQuery, DatabaseClearRequest, DatabaseClearResponse, PathRequest, PathResult, QueryResult, VectorQuery, VectorResult, VisualizationRequest
+from ..domain.graph import AskAnswer, AskRequest, CypherQuery, DatabaseClearRequest, DatabaseClearResponse, PathRequest, PathResult, QueryResult, QueryType, VectorQuery, VectorResult, VisualizationRequest
 from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.openai_adapter import OpenAIAdapter, get_openai_adapter
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class GraphService:
             logger.info(f'Executing Cypher query: {query.query[:100]}...')
             result = await self.neo4j.execute_cypher_query(query)
             logger.info(f'Query returned {result.row_count} rows')
-            return result
+            return cast(QueryResult, result)
         except Exception as e:
             logger.error(f'Error executing Cypher query: {e!s}')
             if isinstance(e, HTTPException):
@@ -73,7 +73,7 @@ class GraphService:
             logger.info(f'Executing vector search for entity type: {query.entity_type}')
             result = await self.neo4j.execute_vector_search(query, embeddings[0])
             logger.info(f'Vector search returned {result.total_count} results')
-            return result
+            return cast(VectorResult, result)
         except Exception as e:
             logger.error(f'Error executing vector search: {e!s}')
             if isinstance(e, HTTPException):
@@ -96,7 +96,7 @@ class GraphService:
             logger.info(f'Finding paths from {path_request.start_node_id} to {path_request.end_node_id} using algorithm {path_request.algorithm}')
             result = await self.neo4j.find_path(path_request)
             logger.info(f'Path finding returned {result.total_paths_found} paths')
-            return result
+            return cast(PathResult, result)
         except Exception as e:
             logger.error(f'Error finding paths: {e!s}')
             if isinstance(e, HTTPException):
@@ -125,7 +125,7 @@ class GraphService:
             search_result = await self.neo4j.execute_vector_search(vector_query, embeddings[0])
             context_items: list[Any] = []
             for result in search_result.results:
-                node_query = CypherQuery(query='MATCH (n) WHERE elementId(n) = $id RETURN n', parameters={'id': result.id}, query_type='read')  # type: ignore[arg-type,assignment]
+                node_query = CypherQuery(query='MATCH (n) WHERE elementId(n) = $id RETURN n', parameters={'id': result.id}, query_type=QueryType.READ)
                 node_result = await self.neo4j.execute_cypher_query(node_query)
                 if node_result.rows and len(node_result.rows) > 0 and (len(node_result.rows[0]) > 0):
                     node = node_result.rows[0][0]
@@ -134,7 +134,7 @@ class GraphService:
             logger.info(f'Generating answer using {len(context_items)} context items')
             answer = await self.openai.answer_question(request, context_items)
             logger.info('Answer generated successfully')
-            return answer
+            return cast(AskAnswer, answer)
         except Exception as e:
             logger.error(f'Error answering question: {e!s}')
             if isinstance(e, HTTPException):
@@ -158,7 +158,7 @@ class GraphService:
             graph_data = await self._get_graph_data_for_visualization(request)
             html_content = self._generate_visualization_html(graph_data, request)
             logger.info('Visualization generated successfully')
-            return html_content
+            return cast(str, html_content)
         except Exception as e:
             logger.error(f'Error generating visualization: {e!s}')
             if isinstance(e, HTTPException):
@@ -190,7 +190,7 @@ class GraphService:
             params['search_query'] = search_query  # type: ignore[assignment]
         if request.filter and (not request.filter.include_orphans):
             cypher_query = cypher_query.replace('MATCH (n)', 'MATCH (n) WHERE EXISTS((n)--())')
-        query = CypherQuery(query=cypher_query, parameters=params, query_type='read')  # type: ignore[arg-type,assignment]
+        query = CypherQuery(query=cypher_query, parameters=params, query_type=QueryType.READ)
         result = await self.neo4j.execute_cypher_query(query)
         if not result.rows or len(result.rows) == 0:
             return {'nodes': [], 'links': []}
@@ -267,11 +267,11 @@ class GraphService:
         """
         try:
             logger.warning('Clearing all data from database')
-            delete_query = CypherQuery(query='MATCH (n) DETACH DELETE n', query_type='write')  # type: ignore[arg-type,assignment]
+            delete_query = CypherQuery(query='MATCH (n) DETACH DELETE n', query_type=QueryType.WRITE)
             await self.execute_cypher_query(delete_query)
             if request.preserve_schema:
                 logger.info('Preserving schema - reinitializing')
-                schema_query = CypherQuery(query='CALL apoc.schema.assert({}, {})', query_type='write')  # type: ignore[arg-type,assignment]
+                schema_query = CypherQuery(query='CALL apoc.schema.assert({}, {})', query_type=QueryType.WRITE)
                 await self.execute_cypher_query(schema_query)
             logger.info('Database successfully cleared')
             return DatabaseClearResponse(status='success', message='Database successfully cleared')

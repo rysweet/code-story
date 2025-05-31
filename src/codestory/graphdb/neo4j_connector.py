@@ -26,7 +26,15 @@ try:
     from ..config.settings import get_settings
 except ImportError:
     # For testing environments where settings might not be available
-    get_settings = None  # TODO: Fix None assignment
+    from typing import cast
+    try:
+        from ..config.settings import Settings
+    except ImportError:
+        Settings = Any  # type: ignore
+    def _get_settings_stub() -> None:
+        raise RuntimeError("get_settings is not available in this environment")
+    get_settings = cast(Any, _get_settings_stub)
+    # Only assign the stub if get_settings is not already imported
 
 from .exceptions import (
     ConnectionError,
@@ -85,7 +93,7 @@ def create_connector() -> "Neo4jConnector":
         database=settings.neo4j.database,
         max_connection_pool_size=settings.neo4j.max_connection_pool_size,
         connection_timeout=settings.neo4j.connection_timeout,
-        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time,
+        max_transaction_retry_time=getattr(settings.neo4j, "max_transaction_retry_time", None),
     )
 
     # Auto-initialize schema if configured
@@ -254,6 +262,8 @@ class Neo4jConnector:
                         ) from e
 
             # Initialize driver
+            if self.uri is None or self.username is None or self.password is None:
+                raise ConnectionError("uri, username, and password must not be None")
             self.driver = GraphDatabase.driver(
                 self.uri,
                 auth=(self.username, self.password),
@@ -344,9 +354,9 @@ class Neo4jConnector:
                 # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
-                    return session.execute_write()
+                    return cast(list[dict[str, Any]], session.execute_write())
                 else:
-                    return session.execute_read()
+                    return cast(list[dict[str, Any]], session.execute_read())
 
             # Create a session with the database name
             session = self.driver.session(database=self.database)
@@ -356,7 +366,7 @@ class Neo4jConnector:
                 else:
                     result = session.execute_read(self._transaction_function, query, params or {})
 
-                return result
+                return cast(list[dict[str, Any]], result)
             finally:
                 session.close()
 
@@ -413,9 +423,9 @@ class Neo4jConnector:
                 # Return directly from mock in tests
                 session = self.driver.session.return_value.__enter__.return_value
                 if write:
-                    return session.execute_write()
+                    return cast(list[list[dict[str, Any]]], session.execute_write())
                 else:
-                    return session.execute_read()
+                    return cast(list[list[dict[str, Any]]], session.execute_read())
 
             # Create a session with the database name
             session = self.driver.session(database=self.database)
@@ -430,7 +440,7 @@ class Neo4jConnector:
                     )
 
                 record_transaction(success=True)
-                return results
+                return cast(list[list[dict[str, Any]]], results)
             finally:
                 session.close()
 
@@ -466,7 +476,7 @@ class Neo4jConnector:
         return [dict(record) for record in result]
 
     def _transaction_function_many(
-        self, tx, queries: list[str], params_list: list[dict[str, Any]]
+        self, tx: Any, queries: list[str], params_list: list[dict[str, Any]]
     ) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a transaction.
 
@@ -548,7 +558,7 @@ class Neo4jConnector:
         """
         query = f"CREATE (n:{label} $props) RETURN n"
         result = self.execute_query(query, params={"props": properties}, write=True)
-        return result[0]["n"] if result else None
+        return result[0]["n"] if result else {}
 
     def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
         """Find a node with the given label and properties.
@@ -565,7 +575,7 @@ class Neo4jConnector:
 
         query = f"MATCH (n:{label}) WHERE {match_conditions} RETURN n"
         result = self.execute_query(query, params=properties)
-        return result[0]["n"] if result else None
+        return result[0]["n"] if result else {}
 
     def create_relationship(
         self,
@@ -608,7 +618,7 @@ class Neo4jConnector:
             },
             write=True,
         )
-        return result[0]["r"] if result else None
+        return result[0]["r"] if result else {}
 
     def semantic_search(
         self,
@@ -728,9 +738,9 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return session.execute_write.return_value
+                return cast(list[dict[str, Any]], session.execute_write.return_value)
             else:
-                return session.execute_read.return_value
+                return cast(list[dict[str, Any]], session.execute_read.return_value)
 
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
@@ -758,9 +768,9 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return session.execute_write.return_value
+                return cast(list[list[dict[str, Any]]], session.execute_write.return_value)
             else:
-                return session.execute_read.return_value
+                return cast(list[list[dict[str, Any]]], session.execute_read.return_value)
 
         # Prepare query and params lists
         query_list = [q["query"] for q in queries]

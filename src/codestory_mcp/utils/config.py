@@ -103,8 +103,8 @@ class MCPSettings(BaseSettings):
 
         # Use client ID as audience if not specified
         client_id = info.data.get("azure_client_id")
-        if client_id:
-            return client_id
+        if client_id is not None:
+            return str(client_id)
 
         # Fall back to default audience
         return "api://code-story"
@@ -117,4 +117,4 @@ def get_mcp_settings() -> MCPSettings:
     Returns:
         MCP settings instance
     """
-    return MCPSettings()  # TODO: Pydantic BaseSettings with defaults
+    return MCPSettings()  # type: ignore[call-arg]  # TODO: Pydantic BaseSettings with defaults
