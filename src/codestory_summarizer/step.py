@@ -265,7 +265,7 @@ class SummarizerStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")  # type: ignore[misc]
+@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")
 def run_summarizer(
     self: Any,
     repository_path: str,

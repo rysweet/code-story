@@ -3,7 +3,7 @@
 import subprocess
 
 
-def test_cli_version_command_no_debug_output():
+def test_cli_version_command_no_debug_output() -> None:
     """Test that the CLI version command produces clean output."""
     # Run the CLI in a subprocess to capture actual output
     process = subprocess.run(
@@ -24,7 +24,7 @@ def test_cli_version_command_no_debug_output():
     assert "Initializing with nested settings" not in process.stdout
 
 
-def test_cli_help_command_no_debug_output():
+def test_cli_help_command_no_debug_output() -> None:
     """Test that the CLI help command produces clean output."""
     # Run the CLI in a subprocess to capture actual output
     process = subprocess.run(

@@ -4,7 +4,7 @@ import logging
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -146,13 +146,13 @@ def create_app() -> FastAPI:
         response_class=HTMLResponse,
         include_in_schema=False,  # Hide from API docs
     )
-    async def visualize_legacy(  # type: ignore[no-untyped-def]
+    async def visualize_legacy(
+        request: Request,
         type: str = Query("force"),
         theme: str = Query("auto"),
-        request: Request = None,  # type: ignore[assignment]
         graph_service: GraphService = Depends(get_graph_service),
         user: dict[str, Any] | None = Depends(get_optional_user),
-    ):
+    ) -> HTMLResponse:
         """Legacy endpoint for generating graph visualization."""
         try:
             # Convert string params to enum values

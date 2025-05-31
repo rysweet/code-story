@@ -30,6 +30,15 @@ logger = logging.getLogger(__name__)
 
 
 class CeleryAdapter:
+    @staticmethod
+    def _safe_float(val: Any) -> float | None:
+        try:
+            if val is None or val == "":
+                return None
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+
     """Adapter for Celery operations specific to the service layer.
 
     This class provides methods for submitting tasks to Celery,
@@ -174,11 +183,13 @@ class CeleryAdapter:
                     eta = request.eta
                 else:
                     try:
-                        eta = datetime.fromtimestamp(int(request.eta))
+                        if request.eta is not None:
+                            eta = datetime.fromtimestamp(int(request.eta))
                     except Exception:
                         eta = None
             elif getattr(request, "countdown", None):
-                countdown = int(request.countdown)
+                if request.countdown is not None:
+                    countdown = int(request.countdown)
 
             task = task_func.apply_async(
                 args=[repository_path, step_configs, job_id],
@@ -230,12 +241,20 @@ class CeleryAdapter:
                         name = step.get("step") or step.get("name") or "unknown"
                         steps[name] = StepProgress(
                             name=name,
-                            status=StepStatus(step.get("status", StepStatus.UNKNOWN)),
+                            status=StepStatus(step.get("status", StepStatus.PENDING)),
                             progress=step.get("progress", 0.0),
                             message=step.get("message"),
                             error=step.get("error"),
-                            started_at=datetime.fromtimestamp(step.get("start_time")) if step.get("start_time") else None,
-                            completed_at=datetime.fromtimestamp(step.get("end_time")) if step.get("end_time") else None,
+                            started_at=(
+                                datetime.fromtimestamp(start_time_val)
+                                if (start_time_val := CeleryAdapter._safe_float(step.get("start_time"))) is not None
+                                else None
+                            ),
+                            completed_at=(
+                                datetime.fromtimestamp(end_time_val)
+                                if (end_time_val := CeleryAdapter._safe_float(step.get("end_time"))) is not None
+                                else None
+                            ),
                             duration=step.get("duration"),
                             cpu_percent=step.get("cpu_percent"),
                             memory_mb=step.get("memory_mb"),
@@ -247,12 +266,20 @@ class CeleryAdapter:
                     name = result.get("step") or result.get("name") or "unknown"
                     steps[name] = StepProgress(
                         name=name,
-                        status=StepStatus(result.get("status", StepStatus.UNKNOWN)),
+                        status=StepStatus(result.get("status", StepStatus.PENDING)),
                         progress=result.get("progress", 0.0),
                         message=result.get("message"),
                         error=result.get("error"),
-                        started_at=datetime.fromtimestamp(result.get("start_time")) if result.get("start_time") else None,
-                        completed_at=datetime.fromtimestamp(result.get("end_time")) if result.get("end_time") else None,
+                        started_at=(
+                            datetime.fromtimestamp(start_time_val)
+                            if (start_time_val := CeleryAdapter._safe_float(result.get("start_time"))) is not None
+                            else None
+                        ),
+                        completed_at=(
+                            datetime.fromtimestamp(end_time_val)
+                            if (end_time_val := CeleryAdapter._safe_float(result.get("end_time"))) is not None
+                            else None
+                        ),
                         duration=result.get("duration"),
                         cpu_percent=result.get("cpu_percent"),
                         memory_mb=result.get("memory_mb"),
@@ -291,19 +318,23 @@ class CeleryAdapter:
                 memory_mb = info.get("memory_mb")
                 steps = build_steps_from_result(info)
 
-                return IngestionJob(  # type: ignore[call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.RUNNING,
+                    source=None,
+                    source_type=None,
+                    branch=None,
                     created_at=info.get("created_at", int(time.time())),
                     updated_at=int(time.time()),
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=steps,
                     progress=progress,
                     current_step=current_step,
                     message=message,
                     result=None,
                     error=None,
-                    steps=steps,
-                    cpu_percent=cpu_percent,
-                    memory_mb=memory_mb,
                 )
 
             if task.state == "SUCCESS":
@@ -311,43 +342,60 @@ class CeleryAdapter:
                 cpu_percent = result.get("cpu_percent")
                 memory_mb = result.get("memory_mb")
                 steps = build_steps_from_result(result)
-                return IngestionJob(  # type: ignore[call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.COMPLETED,
+                    source=None,
+                    source_type=None,
+                    branch=None,
                     created_at=result.get("created_at", int(time.time()) - 60),
                     updated_at=int(time.time()),
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=steps,
                     progress=100.0,
                     current_step="Completed",
                     message="Ingestion completed successfully",
                     result=result,
                     error=None,
-                    steps=steps,
-                    cpu_percent=cpu_percent,
-                    memory_mb=memory_mb,
                 )
 
             if task.state == "FAILURE":
                 info = task.info or {}
                 steps = build_steps_from_result(info)
-                return IngestionJob(  # type: ignore[call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.FAILED,
+                    source=None,
+                    source_type=None,
+                    branch=None,
                     created_at=int(time.time()) - 60,  # Estimate
                     updated_at=int(time.time()),
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=steps,
                     progress=0.0,
                     current_step="Failed",
                     message=str(task.result) if task.result else "Task failed",
                     result=None,
                     error=str(task.result) if task.result else "Unknown error",
-                    steps=steps,
                 )
 
             if task.state == "REVOKED":
-                return IngestionJob(  # type: ignore[call-arg]
+                return IngestionJob(
                     job_id=job_id,
                     status=JobStatus.CANCELLED,
+                    source=None,
+                    source_type=None,
+                    branch=None,
                     created_at=int(time.time()) - 60,  # Estimate
                     updated_at=int(time.time()),
+                    started_at=None,
+                    completed_at=None,
+                    duration=None,
+                    steps=None,
                     progress=0.0,
                     current_step="Cancelled",
                     message="Task was cancelled",
@@ -356,11 +404,18 @@ class CeleryAdapter:
                 )
 
             # Default case for unknown state
-            return IngestionJob(  # type: ignore[call-arg]
+            return IngestionJob(
                 job_id=job_id,
                 status=JobStatus.UNKNOWN,
+                source=None,
+                source_type=None,
+                branch=None,
                 created_at=int(time.time()) - 60,  # Estimate
                 updated_at=int(time.time()),
+                started_at=None,
+                completed_at=None,
+                duration=None,
+                steps=None,
                 progress=0.0,
                 current_step=task.state,
                 message=f"Unknown task state: {task.state}",
@@ -422,11 +477,18 @@ class CeleryAdapter:
             self.app.control.revoke(job_id, terminate=True)
 
             # Return updated job status
-            return IngestionJob(  # type: ignore[call-arg]
-job_id=job_id,
+            return IngestionJob(
+                job_id=job_id,
                 status=JobStatus.CANCELLING,
+                source=None,
+                source_type=None,
+                branch=None,
                 created_at=int(time.time()) - 60,  # Estimate
                 updated_at=int(time.time()),
+                started_at=None,
+                completed_at=None,
+                duration=None,
+                steps=None,
                 progress=0.0,
                 current_step="Cancelling",
                 message="Job cancellation requested",
@@ -442,7 +504,7 @@ job_id=job_id,
             ) from e
 
     async def list_jobs(
-        self, status: list[JobStatus] | None = None, limit: int = 10, offset: int = 0
+        self, statuses: list[JobStatus] | None = None, limit: int = 10, offset: int = 0
     ) -> list[IngestionJob]:
         """List ingestion jobs with optional filtering by status.
 
@@ -472,7 +534,7 @@ job_id=job_id,
         except Exception as e:
             logger.error(f"Failed to list jobs: {e!s}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,  # type: ignore[union-attr]
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to list jobs: {e!s}",
             ) from e
 

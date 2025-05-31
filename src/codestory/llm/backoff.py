@@ -42,9 +42,10 @@ def get_retry_after(retry_state: RetryCallState) -> float | None:
     Returns:
         Time to wait before retrying in seconds, or None if no retry_after is specified
     """
-    exception = retry_state.outcome.exception()  # type: ignore[union-attr]
-    if exception is not None and hasattr(exception, "retry_after") and exception.retry_after is not None:
-        return float(min(exception.retry_after, 60))  # Cap at 60 seconds
+    if retry_state.outcome is not None:
+        exception = retry_state.outcome.exception()
+        if exception is not None and hasattr(exception, "retry_after") and exception.retry_after is not None:
+            return float(min(exception.retry_after, 60))  # Cap at 60 seconds
 
     # Return None when no retry_after is specified to allow exponential backoff to handle timing
     return None
@@ -56,18 +57,28 @@ def before_retry_callback(retry_state: RetryCallState) -> None:
     Args:
         retry_state: Current retry state
     """
-    exception = retry_state.outcome.exception()  # type: ignore[union-attr]
+    exception = None
+    if retry_state.outcome is not None:
+        exception = retry_state.outcome.exception()
     attempt = retry_state.attempt_number
 
     operation = getattr(retry_state.kwargs.get("_operation_type", None), "value", "unknown")
     model = retry_state.kwargs.get("model", "unknown")
 
-    wait_time = retry_state.next_action.sleep  # type: ignore[union-attr]
+    wait_time = None
+    if retry_state.next_action is not None:
+        wait_time = retry_state.next_action.sleep
 
-    logger.warning(
-        f"Retrying {operation} request to model {model} after error: {exception!s}. "
-        f"Attempt {attempt}, waiting {wait_time:.2f} seconds..."
-    )
+    if wait_time is not None:
+        logger.warning(
+            f"Retrying {operation} request to model {model} after error: {exception!s}. "
+            f"Attempt {attempt}, waiting {wait_time:.2f} seconds..."
+        )
+    else:
+        logger.warning(
+            f"Retrying {operation} request to model {model} after error: {exception!s}. "
+            f"Attempt {attempt}, waiting unknown seconds (next_action missing)..."
+        )
 
     # Record retry in metrics
     operation_type = retry_state.kwargs.get("_operation_type")

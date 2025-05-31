@@ -39,10 +39,10 @@ def get_test_settings() -> Settings:
     # Determine URI based on environment
     neo4j_uri = "bolt://neo4j:7687" if docker_env else f"bolt://localhost:{neo4j_port}"
 
-    neo4j = Neo4jSettings(
+    neo4j = Neo4jSettings(  # type: ignore[call-arg]
         uri=neo4j_uri,
         username="neo4j",
-        password="password",
+        password="password",  # type: ignore[arg-type]
         database="testdb",  # Match test DB name in docker-compose.test.yml
     )
 
@@ -54,8 +54,8 @@ def get_test_settings() -> Settings:
     )
 
     # Define OpenAI test settings
-    openai = OpenAISettings(
-        api_key="sk-test-key-openai",  # Fake key for testing
+    openai = OpenAISettings(  # type: ignore[call-arg]
+        api_key="sk-test-key-openai",  # Fake key for testing  # type: ignore[arg-type]
         endpoint="https://api.openai.com/v1",
         embedding_model="text-embedding-3-small",
         chat_model="gpt-4o",
@@ -64,7 +64,7 @@ def get_test_settings() -> Settings:
 
     # Define Azure OpenAI test settings
     azure_openai = AzureOpenAISettings(
-        api_key="test-azure-key",  # Fake key for testing
+        api_key="test-azure-key",  # Fake key for testing  # type: ignore[arg-type]
         endpoint="https://test-azure-endpoint.openai.azure.com",
         deployment_id="gpt-4o",
         api_version="2024-05-01",
@@ -74,7 +74,7 @@ def get_test_settings() -> Settings:
     )
 
     # Define service test settings
-    service = ServiceSettings(
+    service = ServiceSettings(  # type: ignore[call-arg]
         host="127.0.0.1",
         port=8001,  # Different port for testing
         workers=1,
@@ -85,7 +85,7 @@ def get_test_settings() -> Settings:
     )
 
     # Define ingestion test settings
-    ingestion = IngestionSettings(
+    ingestion = IngestionSettings(  # type: ignore[call-arg]
         config_path="pipeline_config.yml",
         chunk_size=1024,
         chunk_overlap=200,
@@ -127,7 +127,7 @@ def get_test_settings() -> Settings:
         keyvault_name="test-key-vault",
         tenant_id="test-tenant-id",
         client_id="test-client-id",
-        client_secret="test-client-secret",
+        client_secret="test-client-secret",  # type: ignore[arg-type]
     )
 
     # Create test settings instance

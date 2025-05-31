@@ -1,3 +1,4 @@
+from typing import Any
 """Test the CLI demo functionality."""
 
 import os
@@ -11,7 +12,7 @@ pytestmark = pytest.mark.demo
 
 
 @pytest.fixture
-def setup_test_env():
+def setup_test_env() -> None:
     """Set up test environment for CLI demo."""
     # Create a temporary test directory
     test_dir = Path("./demo_test_cli").absolute()
@@ -43,7 +44,7 @@ def setup_test_env():
 
 
 @pytest.mark.integration
-def test_cli_version(setup_test_env):
+def test_cli_version(setup_test_env: Any) -> None:
     """Test the CLI version command."""
     # Run the CLI command
     result = subprocess.run(
@@ -61,7 +62,7 @@ def test_cli_version(setup_test_env):
 
 
 @pytest.mark.integration
-def test_cli_config_init(setup_test_env):
+def test_cli_config_init(setup_test_env: Any) -> None:
     """Test the CLI config init command."""
     # Run the config init command
     result = subprocess.run(
@@ -86,7 +87,7 @@ def test_cli_config_init(setup_test_env):
 
 
 @pytest.mark.integration
-def test_cli_config_show(setup_test_env):
+def test_cli_config_show(setup_test_env: Any) -> None:
     """Test the CLI config show command."""
     # First initialize the config
     subprocess.run(
@@ -113,7 +114,7 @@ def test_cli_config_show(setup_test_env):
 
 
 @pytest.mark.integration
-def test_cli_query_run(setup_test_env, neo4j_connector):
+def test_cli_query_run(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI query run command."""
     # Create some test data in the database
     neo4j_connector.execute_query(
@@ -140,7 +141,7 @@ def test_cli_query_run(setup_test_env, neo4j_connector):
 
 @pytest.mark.skip(reason="Requires OpenAI API key")
 @pytest.mark.integration
-def test_cli_ask(setup_test_env, neo4j_connector):
+def test_cli_ask(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI ask command."""
     # Create some test data in the database
     neo4j_connector.execute_query(
@@ -169,7 +170,7 @@ def test_cli_ask(setup_test_env, neo4j_connector):
 
 @pytest.mark.skip(reason="Requires full setup")
 @pytest.mark.integration
-def test_cli_visualize(setup_test_env, neo4j_connector):
+def test_cli_visualize(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI visualize command."""
     # Create some test data in the database
     neo4j_connector.execute_query(

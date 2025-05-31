@@ -16,12 +16,15 @@ class Neo4jSettings(BaseModel):
 
     uri: str = Field(..., description="Neo4j connection URI")
     username: str = Field("neo4j", description="Neo4j username")
-    password: SecretStr = Field(..., description="Neo4j password")
+    password: SecretStr | None = Field(None, description="Neo4j password")
     database: str = Field("neo4j", description="Neo4j database name")
     connection_timeout: int = Field(30, description="Connection timeout in seconds")
     max_connection_pool_size: int = Field(50, description="Maximum connection pool size")
     connection_acquisition_timeout: int = Field(
         60, description="Connection acquisition timeout in seconds"
+    )
+    max_transaction_retry_time: int | None = Field(
+        None, description="Maximum transaction retry time in seconds (optional)"
     )
 
 
@@ -492,17 +495,17 @@ class Settings(BaseSettings):
             )
 
             # Load Neo4j password if needed
-            if not self.neo4j.password.get_secret_value():
+            if self.neo4j.password is None or not self.neo4j.password.get_secret_value():
                 try:
                     secret = client.get_secret("neo4j-password")
                     self.neo4j.password = (
-                        SecretStr(secret.value) if secret.value is not None else None  # type: ignore[assignment]
+                        SecretStr(secret.value) if secret.value is not None else None
                     )
                 except Exception:
                     pass
 
             # Load OpenAI API key if needed
-            if not self.openai.api_key.get_secret_value():  # type: ignore[union-attr]
+            if self.openai.api_key is None or not self.openai.api_key.get_secret_value():
                 try:
                     secret = client.get_secret("openai-api-key")
                     self.openai.api_key = (

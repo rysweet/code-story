@@ -18,7 +18,7 @@ from codestory.llm.models import (
 )
 
 
-def test_llm_chat_role_enum():
+def test_llm_chat_role_enum() -> None:
     """Test ChatRole enum values."""
     assert ChatRole.SYSTEM == "system"
     assert ChatRole.USER == "user"
@@ -27,7 +27,7 @@ def test_llm_chat_role_enum():
     assert ChatRole.TOOL == "tool"
 
 
-def test_llm_chat_message():
+def test_llm_chat_message() -> None:
     """Test ChatMessage model."""
     # Basic message
     message = ChatMessage(role=ChatRole.USER, content="Hello")
@@ -48,7 +48,7 @@ def test_llm_chat_message():
     assert message.content == "You are a helpful assistant."
 
 
-def test_llm_chat_function_call():
+def test_llm_chat_function_call() -> None:
     """Test ChatFunctionCall model."""
     func_call = ChatFunctionCall(
         name="get_weather", arguments='{"location": "New York", "unit": "celsius"}'
@@ -57,7 +57,7 @@ def test_llm_chat_function_call():
     assert func_call.arguments == '{"location": "New York", "unit": "celsius"}'
 
 
-def test_llm_chat_response_message():
+def test_llm_chat_response_message() -> None:
     """Test ChatResponseMessage model."""
     # Simple message
     message = ChatResponseMessage(role=ChatRole.ASSISTANT, content="Hello there!")
@@ -73,7 +73,7 @@ def test_llm_chat_response_message():
     assert message.function_call.name == "get_weather"
 
 
-def test_llm_chat_response_choice():
+def test_llm_chat_response_choice() -> None:
     """Test ChatResponseChoice model."""
     message = ChatResponseMessage(role=ChatRole.ASSISTANT, content="Hello there!")
     choice = ChatResponseChoice(index=0, message=message, finish_reason="stop")
@@ -82,7 +82,7 @@ def test_llm_chat_response_choice():
     assert choice.finish_reason == "stop"
 
 
-def test_llm_completion_choice():
+def test_llm_completion_choice() -> None:
     """Test CompletionChoice model."""
     choice = CompletionChoice(text="Paris is the capital of France.", index=0, finish_reason="stop")
     assert choice.text == "Paris is the capital of France."
@@ -91,7 +91,7 @@ def test_llm_completion_choice():
     assert choice.logprobs is None
 
 
-def test_llm_embedding_data():
+def test_llm_embedding_data() -> None:
     """Test EmbeddingData model."""
     data = EmbeddingData(embedding=[0.1, 0.2, 0.3, 0.4], index=0)
     assert data.embedding == [0.1, 0.2, 0.3, 0.4]
@@ -99,7 +99,7 @@ def test_llm_embedding_data():
     assert data.object == "embedding"
 
 
-def test_llm_usage_info():
+def test_llm_usage_info() -> None:
     """Test UsageInfo model."""
     usage = UsageInfo(prompt_tokens=100, completion_tokens=50, total_tokens=150)
     assert usage.prompt_tokens == 100
@@ -107,7 +107,7 @@ def test_llm_usage_info():
     assert usage.total_tokens == 150
 
 
-def test_llm_completion_request():
+def test_llm_completion_request() -> None:
     """Test CompletionRequest model."""
     # Basic request
     request = CompletionRequest(model="text-davinci-003", prompt="Write a poem about AI.")
@@ -133,7 +133,7 @@ def test_llm_completion_request():
     assert request.stop == ["\n\n"]
 
 
-def test_llm_chat_completion_request():
+def test_llm_chat_completion_request() -> None:
     """Test ChatCompletionRequest model."""
     messages = [
         ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
@@ -162,7 +162,7 @@ def test_llm_chat_completion_request():
     assert request.response_format == {"type": "json_object"}
 
 
-def test_llm_embedding_request():
+def test_llm_embedding_request() -> None:
     """Test EmbeddingRequest model."""
     # String input
     request = EmbeddingRequest(model="text-embedding-3-small", input="Hello world")
@@ -182,7 +182,7 @@ def test_llm_embedding_request():
     assert request.dimensions == 256
 
 
-def test_llm_completion_response():
+def test_llm_completion_response() -> None:
     """Test CompletionResponse model."""
     choice = CompletionChoice(text="Paris is the capital of France.", index=0, finish_reason="stop")
     usage = UsageInfo(prompt_tokens=10, completion_tokens=8, total_tokens=18)
@@ -203,7 +203,7 @@ def test_llm_completion_response():
     assert response.usage.total_tokens == 18
 
 
-def test_llm_chat_completion_response():
+def test_llm_chat_completion_response() -> None:
     """Test ChatCompletionResponse model."""
     message = ChatResponseMessage(role=ChatRole.ASSISTANT, content="Hello there!")
     choice = ChatResponseChoice(index=0, message=message, finish_reason="stop")
@@ -225,7 +225,7 @@ def test_llm_chat_completion_response():
     assert response.usage.prompt_tokens == 15
 
 
-def test_llm_embedding_response():
+def test_llm_embedding_response() -> None:
     """Test EmbeddingResponse model."""
     data1 = EmbeddingData(embedding=[0.1, 0.2, 0.3, 0.4], index=0)
     data2 = EmbeddingData(embedding=[0.5, 0.6, 0.7, 0.8], index=1)

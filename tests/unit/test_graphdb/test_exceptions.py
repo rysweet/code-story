@@ -9,7 +9,7 @@ from codestory.graphdb.exceptions import (
 )
 
 
-def test_neo4j_error():
+def test_neo4j_error() -> None:
     """Test Neo4jError base class."""
     # Create with minimal args
     error = Neo4jError("Test error")
@@ -24,7 +24,7 @@ def test_neo4j_error():
     assert error.details == details
 
 
-def test_connection_error():
+def test_connection_error() -> None:
     """Test ConnectionError class."""
     # Create with minimal args
     error = ConnectionError("Connection failed")
@@ -49,7 +49,7 @@ def test_connection_error():
     assert error.cause is cause
 
 
-def test_query_error():
+def test_query_error() -> None:
     """Test QueryError class."""
     # Create with minimal args
     error = QueryError("Query failed")
@@ -85,7 +85,7 @@ def test_query_error():
     assert error.cause is cause
 
 
-def test_schema_error():
+def test_schema_error() -> None:
     """Test SchemaError class."""
     # Create with minimal args
     error = SchemaError("Schema operation failed")
@@ -109,7 +109,7 @@ def test_schema_error():
     assert error.cause is cause
 
 
-def test_transaction_error():
+def test_transaction_error() -> None:
     """Test TransactionError class."""
     # Create with minimal args
     error = TransactionError("Transaction failed")

@@ -34,7 +34,7 @@ async def health_check() -> Any:
 async def root() -> Any:
     """Root endpoint."""
     return {
-        "name": f"{settings.project_name}-mcp",
+        "name": f"{settings.project_name}-mcp",  # type: ignore[attr-defined]
         "version": settings.version,
         "description": "Model Context Protocol API for Code Story",
     }

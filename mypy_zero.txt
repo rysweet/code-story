@@ -1,0 +1,8 @@
+src/codestory/cli/commands/database.py:33: error: invalid syntax  [syntax]
+    def clear_database(ctx: Any, force: bool) -> Any:[no-untyped-def]
+                                                                  ^
+Found 1 error in 1 file (errors prevented further checking)
+src/codestory/cli/commands/ingest.py:29: error: invalid syntax  [syntax]
+    ...apture_output: Any = True, shell: Any = True) -> None:[no-untyped-def]
+                                                                          ^
+Found 1 error in 1 file (errors prevented further checking)

@@ -5,7 +5,7 @@ import os
 import sys
 import time
 import webbrowser
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from pydantic import SecretStr
@@ -127,27 +127,27 @@ class ServiceClient:
 
                 response = client.get("/v1/health", params=params)
                 response.raise_for_status()
-                health_data = response.json()
+                health_data = cast(dict[str, Any], response.json())
                 # Check if components are included
                 if "components" not in health_data:
                     health_data["components"] = {}
 
                 # Check for Azure authentication issues in OpenAI component
                 self._check_for_azure_auth_issues(health_data)
-                return health_data  # type: ignore[no-any-return]
+                return health_data
             except httpx.HTTPError:
                 # Fall back to root health endpoint
                 params = {"auto_fix": "true"} if auto_fix else {}
                 response = self.client.get("/health", params=params)
                 response.raise_for_status()
-                health_data = response.json()
+                health_data = cast(dict[str, Any], response.json())
                 # Check if components are included
                 if "components" not in health_data:
                     health_data["components"] = {}
 
                 # Check for Azure authentication issues in OpenAI component
                 self._check_for_azure_auth_issues(health_data)
-                return health_data  # type: ignore[no-any-return]
+                return health_data
         except httpx.HTTPError as e:
             # Last resort - check if server is responding at all
             try:
@@ -369,7 +369,7 @@ class ServiceClient:
             "priority": priority,
         }
         if dependencies:
-            data["dependencies"] = list(dependencies)
+            data["dependencies"] = list(dependencies)  # type: ignore[assignment]
 
         # Log important information about the repository path
         self.console.print(
@@ -480,10 +480,10 @@ class ServiceClient:
             if isinstance(data, dict):
                 # Standard format with 'items' field
                 if "items" in data:
-                    return data["items"]  # type: ignore[no-any-return]
+                    return cast(list[dict[str, Any]], data["items"])
                 # Legacy format with 'jobs' field
                 elif "jobs" in data:
-                    return data["jobs"]  # type: ignore[no-any-return]
+                    return cast(list[dict[str, Any]], data["jobs"])
                 # Single job format (check if it has job_id)
                 elif "job_id" in data:
                     # Special case for mock service
@@ -529,7 +529,7 @@ class ServiceClient:
         }
 
         if parameters:
-            data["parameters"] = parameters  # type: ignore  # TODO: Fix type compatibility
+            data["parameters"] = parameters  # type: ignore[assignment]
 
         # If query_type is provided, add it to the request data
         if query_type in ["read", "write"]:
@@ -569,7 +569,7 @@ class ServiceClient:
 
             response = self.client.post(endpoint, json=data)
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             raise ServiceError(f"Query execution failed: {e!s}") from e
 
@@ -590,7 +590,7 @@ class ServiceClient:
         try:
             response = self.client.post("/ask", json=data)
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to ask question: {e!s}") from e
 
@@ -611,7 +611,7 @@ class ServiceClient:
         try:
             response = self.client.get("/config", params=params)
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to get configuration: {e!s}") from e
 
@@ -628,7 +628,7 @@ class ServiceClient:
         try:
             response = self.client.patch("/config", json=updates)
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to update configuration: {e!s}") from e
 
@@ -642,7 +642,7 @@ class ServiceClient:
         try:
             response = self.client.post("/service/start")
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to start service: {e!s}") from e
 
@@ -656,7 +656,7 @@ class ServiceClient:
         try:
             response = self.client.post("/service/stop")
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             raise ServiceError(f"Failed to stop service: {e!s}") from e
 
@@ -683,7 +683,7 @@ class ServiceClient:
             health_data = response.json()
             console.log("[debug] Health endpoint response:")
             console.log(health_data)
-            return health_data  # type: ignore[no-any-return]
+            return cast(dict[str, Any], health_data)
         except Exception as e:
             console.log(f"[error] Exception in get_service_status: {e}")
             console.log("[error] Traceback:")
@@ -823,12 +823,12 @@ class ServiceClient:
             try:
                 response = self.client.get("/v1/auth-renew", params=params)
                 response.raise_for_status()
-                return response.json()  # type: ignore[no-any-return]
+                return cast(dict[str, Any], response.json())
             except httpx.HTTPError:
                 # Fall back to root health endpoint
                 response = self.client.get("/auth-renew", params=params)
                 response.raise_for_status()
-                return response.json()  # type: ignore[no-any-return]
+                return cast(dict[str, Any], response.json())
         except httpx.HTTPError as e:
             # Check if the API returned a detailed error message
             error_detail = str(e)

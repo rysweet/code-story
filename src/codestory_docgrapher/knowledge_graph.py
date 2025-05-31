@@ -1,27 +1,11 @@
 from typing import Any
-
-"""Knowledge graph builder for documentation entities and relationships.
-
-This module provides functionality for building a knowledge graph of
-documentation entities and relationships, and storing it in Neo4j.
-"""
-
+'Knowledge graph builder for documentation entities and relationships.\n\nThis module provides functionality for building a knowledge graph of\ndocumentation entities and relationships, and storing it in Neo4j.\n'
 import logging
 import time
-
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-
 from .entity_linker import EntityLinker
-from .models import (
-    DocumentationEntity,
-    DocumentationFile,
-    DocumentationGraph,
-    DocumentationRelationship,
-    RelationType,
-)
-
+from .models import DocumentationEntity, DocumentationFile, DocumentationGraph, DocumentationRelationship, RelationType
 logger = logging.getLogger(__name__)
-
 
 class KnowledgeGraph:
     """Builds a knowledge graph of documentation entities and relationships.
@@ -30,7 +14,7 @@ class KnowledgeGraph:
     knowledge graph, and stores it in Neo4j.
     """
 
-    def __init__(self, connector: Neo4jConnector, repository_path: str):
+    def __init__(self: Any, connector: Neo4jConnector, repository_path: str) -> None:
         """Initialize the knowledge graph.
 
         Args:
@@ -42,7 +26,7 @@ class KnowledgeGraph:
         self.graph = DocumentationGraph()
         self.entity_linker = EntityLinker(connector, repository_path)
 
-    def add_document(self, document: DocumentationFile) -> None:
+    def add_document(self: Any, document: DocumentationFile) -> None:
         """Add a document to the graph.
 
         Args:
@@ -50,7 +34,7 @@ class KnowledgeGraph:
         """
         self.graph.add_document(document)
 
-    def add_entities(self, entities: list[DocumentationEntity]) -> None:
+    def add_entities(self: Any, entities: list[DocumentationEntity]) -> None:
         """Add entities to the graph.
 
         Args:
@@ -59,7 +43,7 @@ class KnowledgeGraph:
         for entity in entities:
             self.graph.add_entity(entity)
 
-    def add_relationships(self, relationships: list[DocumentationRelationship]) -> None:
+    def add_relationships(self: Any, relationships: list[DocumentationRelationship]) -> None:
         """Add relationships to the graph.
 
         Args:
@@ -68,7 +52,7 @@ class KnowledgeGraph:
         for relationship in relationships:
             self.graph.add_relationship(relationship)
 
-    def link_to_code_entities(self) -> None:
+    def link_to_code_entities(self: Any) -> None:
         """Link documentation entities to code entities.
 
         This creates relationships between documentation entities and
@@ -77,206 +61,75 @@ class KnowledgeGraph:
         entities = list(self.graph.entities.values())
         relationships = self.entity_linker.link_entities(entities)
         self.add_relationships(relationships)
+        logger.info(f'Linked {len(relationships)} documentation entities to code entities')
 
-        logger.info(f"Linked {len(relationships)} documentation entities to code entities")
-
-    def store_in_neo4j(self) -> None:
+    def store_in_neo4j(self: Any) -> None:
         """Store the graph in Neo4j.
 
         This creates Neo4j nodes and relationships for all documents,
         entities, and relationships in the graph.
         """
-        # First, create Documentation nodes for documents
         self._create_document_nodes()
-
-        # Then, create nodes for entities
         self._create_entity_nodes()
-
-        # Finally, create relationships
         self._create_relationships()
+        logger.info(f'Stored documentation graph in Neo4j: {len(self.graph.documents)} documents, {len(self.graph.entities)} entities, {len(self.graph.relationships)} relationships')
 
-        logger.info(
-            f"Stored documentation graph in Neo4j: {len(self.graph.documents)} documents, "
-            f"{len(self.graph.entities)} entities, {len(self.graph.relationships)} relationships"
-        )
-
-    def _create_document_nodes(self) -> None:
+    def _create_document_nodes(self: Any) -> None:
         """Create Neo4j nodes for documentation documents."""
         for document in self.graph.documents.values():
-            # Check if the document already exists
-            query = """
-            MATCH (d:Documentation {path: $path})
-            RETURN d
-            """
-
-            existing = self.connector.run_query(
-                query, parameters={"path": document.path}, fetch_one=True
-            )
-
+            query = '\n            MATCH (d:Documentation {path: $path})\n            RETURN d\n            '
+            existing = self.connector.run_query(query, parameters={'path': document.path}, fetch_one=True)
             if existing:
-                logger.info(f"Documentation node already exists for {document.path}")
+                logger.info(f'Documentation node already exists for {document.path}')
                 continue
-
-            # Create a Documentation node
-            query = """
-            CREATE (d:Documentation {
-                path: $path,
-                name: $name,
-                type: $type,
-                timestamp: $timestamp
-            })
-            WITH d
-            MATCH (f:File {path: $path})
-            MERGE (f)-[:HAS_DOCUMENTATION]->(d)
-            RETURN ID(d) as id
-            """
-
-            result = self.connector.run_query(
-                query,
-                parameters={
-                    "path": document.path,
-                    "name": document.name,
-                    "type": document.doc_type.value,
-                    "timestamp": time.time(),
-                },
-                fetch_one=True,
-            )
-
+            query = '\n            CREATE (d:Documentation {\n                path: $path,\n                name: $name,\n                type: $type,\n                timestamp: $timestamp\n            })\n            WITH d\n            MATCH (f:File {path: $path})\n            MERGE (f)-[:HAS_DOCUMENTATION]->(d)\n            RETURN ID(d) as id\n            '
+            result = self.connector.run_query(query, parameters={'path': document.path, 'name': document.name, 'type': document.doc_type.value, 'timestamp': time.time()}, fetch_one=True)
             if result:
-                logger.debug(f"Created Documentation node for {document.path}")
+                logger.debug(f'Created Documentation node for {document.path}')
             else:
-                logger.warning(f"Failed to create Documentation node for {document.path}")
+                logger.warning(f'Failed to create Documentation node for {document.path}')
 
-    def _create_entity_nodes(self) -> None:
+    def _create_entity_nodes(self: Any) -> None:
         """Create Neo4j nodes for documentation entities."""
         for entity in self.graph.entities.values():
-            # Create a DocumentationEntity node
-            query = """
-            CREATE (e:DocumentationEntity {
-                id: $id,
-                type: $type,
-                content: $content,
-                file_path: $file_path,
-                source_text: $source_text,
-                line_number: $line_number,
-                metadata: $metadata
-            })
-            WITH e
-            MATCH (d:Documentation {path: $file_path})
-            MERGE (d)-[:CONTAINS]->(e)
-            RETURN ID(e) as id
-            """
-
-            # Convert metadata to a format compatible with Neo4j
+            query = '\n            CREATE (e:DocumentationEntity {\n                id: $id,\n                type: $type,\n                content: $content,\n                file_path: $file_path,\n                source_text: $source_text,\n                line_number: $line_number,\n                metadata: $metadata\n            })\n            WITH e\n            MATCH (d:Documentation {path: $file_path})\n            MERGE (d)-[:CONTAINS]->(e)\n            RETURN ID(e) as id\n            '
             metadata: dict[Any, Any] = {}
             for key, value in entity.metadata.items():
                 if isinstance(value, str | int | float | bool):
                     metadata[key] = value
-
-            result = self.connector.run_query(
-                query,
-                parameters={
-                    "id": entity.id,
-                    "type": entity.type.value,
-                    "content": entity.content,
-                    "file_path": entity.file_path,
-                    "source_text": entity.source_text[:1000],  # Limit length
-                    "line_number": entity.line_number,
-                    "metadata": metadata,
-                },
-                fetch_one=True,
-            )
-
+            result = self.connector.run_query(query, parameters={'id': entity.id, 'type': entity.type.value, 'content': entity.content, 'file_path': entity.file_path, 'source_text': entity.source_text[:1000], 'line_number': entity.line_number, 'metadata': metadata}, fetch_one=True)
             if result:
-                logger.debug(f"Created DocumentationEntity node for {entity.id}")
+                logger.debug(f'Created DocumentationEntity node for {entity.id}')
             else:
-                logger.warning(f"Failed to create DocumentationEntity node for {entity.id}")
+                logger.warning(f'Failed to create DocumentationEntity node for {entity.id}')
 
-    def _create_relationships(self) -> None:
+    def _create_relationships(self: Any) -> None:
         """Create Neo4j relationships between entities."""
-        # First, create relationships between documentation entities
         for rel in self.graph.relationships.values():
-            if rel.type in [
-                RelationType.CONTAINS,
-                RelationType.PRECEDES,
-                RelationType.FOLLOWS,
-                RelationType.PART_OF,
-            ]:
-                # These relationships are between documentation entities
-                query = f"""
-                MATCH (s:DocumentationEntity {{id: $source_id}})
-                MATCH (t:DocumentationEntity {{id: $target_id}})
-                MERGE (s)-[r:{rel.type.value}]->(t)
-                SET r += $properties
-                RETURN ID(r) as id
-                """
-
-                result = self.connector.run_query(
-                    query,
-                    parameters={
-                        "source_id": rel.source_id,
-                        "target_id": rel.target_id,
-                        "properties": rel.properties,
-                    },
-                    fetch_one=True,
-                )
-
+            if rel.type in [RelationType.CONTAINS, RelationType.PRECEDES, RelationType.FOLLOWS, RelationType.PART_OF]:
+                query = f'\n                MATCH (s:DocumentationEntity {{id: $source_id}})\n                MATCH (t:DocumentationEntity {{id: $target_id}})\n                MERGE (s)-[r:{rel.type.value}]->(t)\n                SET r += $properties\n                RETURN ID(r) as id\n                '
+                result = self.connector.run_query(query, parameters={'source_id': rel.source_id, 'target_id': rel.target_id, 'properties': rel.properties}, fetch_one=True)
                 if result:
-                    logger.debug(
-                        f"Created relationship {rel.type.value} between documentation entities"
-                    )
+                    logger.debug(f'Created relationship {rel.type.value} between documentation entities')
                 else:
-                    logger.warning(
-                        f"Failed to create relationship {rel.type.value} between "
-                        f"documentation entities"
-                    )
-
+                    logger.warning(f'Failed to create relationship {rel.type.value} between documentation entities')
             elif rel.type in [RelationType.DESCRIBES, RelationType.REFERENCES]:
-                # These relationships are between documentation entities and code entities
-                query = f"""
-                MATCH (s:DocumentationEntity {{id: $source_id}})
-                MATCH (c) WHERE ID(c) = $target_id
-                MERGE (s)-[r:{rel.type.value}]->(c)
-                SET r += $properties
-                RETURN ID(r) as id
-                """
-
-                result = self.connector.run_query(
-                    query,
-                    parameters={
-                        "source_id": rel.source_id,
-                        "target_id": int(rel.target_id),
-                        "properties": rel.properties,
-                    },
-                    fetch_one=True,
-                )
-
+                query = f'\n                MATCH (s:DocumentationEntity {{id: $source_id}})\n                MATCH (c) WHERE ID(c) = $target_id\n                MERGE (s)-[r:{rel.type.value}]->(c)\n                SET r += $properties\n                RETURN ID(r) as id\n                '
+                result = self.connector.run_query(query, parameters={'source_id': rel.source_id, 'target_id': int(rel.target_id), 'properties': rel.properties}, fetch_one=True)
                 if result:
-                    logger.debug(
-                        f"Created relationship {rel.type.value} between documentation "
-                        f"and code entities"
-                    )
+                    logger.debug(f'Created relationship {rel.type.value} between documentation and code entities')
                 else:
-                    logger.warning(
-                        f"Failed to create relationship {rel.type.value} between documentation "
-                        f"and code entities"
-                    )
+                    logger.warning(f'Failed to create relationship {rel.type.value} between documentation and code entities')
 
-    def get_graph_stats(self) -> dict[str, Any]:
+    def get_graph_stats(self: Any) -> dict[str, Any]:
         """Get statistics about the graph.
 
         Returns:
             Dict with graph statistics
         """
-        return {
-            "documents": len(self.graph.documents),
-            "entities": len(self.graph.entities),
-            "relationships": len(self.graph.relationships),
-            "entity_types": self._count_entity_types(),
-            "relationship_types": self._count_relationship_types(),
-        }
+        return {'documents': len(self.graph.documents), 'entities': len(self.graph.entities), 'relationships': len(self.graph.relationships), 'entity_types': self._count_entity_types(), 'relationship_types': self._count_relationship_types()}
 
-    def _count_entity_types(self) -> dict[str, int]:
+    def _count_entity_types(self: Any) -> dict[str, int]:
         """Count entities by type.
 
         Returns:
@@ -288,7 +141,7 @@ class KnowledgeGraph:
             counts[type_name] = counts.get(type_name, 0) + 1
         return counts
 
-    def _count_relationship_types(self) -> dict[str, int]:
+    def _count_relationship_types(self: Any) -> dict[str, int]:
         """Count relationships by type.
 
         Returns:

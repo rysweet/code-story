@@ -1,3 +1,4 @@
+from typing import Any
 """Integration tests for the Code Story Service.
 
 These tests verify the service's API endpoints behave correctly
@@ -14,7 +15,7 @@ from codestory_service.main import app
 
 
 @pytest.fixture
-def test_client():
+def test_client() -> None:
     """Create a test client for the application."""
     # Set test environment flag
     os.environ["CODESTORY_TEST_ENV"] = "true"
@@ -31,7 +32,7 @@ def test_client():
 
 
 @pytest.mark.integration
-def test_root_endpoint(test_client):
+def test_root_endpoint(test_client: Any) -> None:
     """Test the root endpoint for application metadata."""
     response = test_client.get("/")
     assert response.status_code == 200
@@ -42,7 +43,7 @@ def test_root_endpoint(test_client):
 
 
 @pytest.mark.integration
-def test_legacy_health_check(test_client):
+def test_legacy_health_check(test_client: Any) -> None:
     """Test the legacy health check endpoint."""
     # Mock needed components to ensure consistent test results
     with mock.patch(
@@ -100,7 +101,7 @@ def test_legacy_health_check(test_client):
 
 
 @pytest.mark.integration
-def test_v1_health_check(test_client):
+def test_v1_health_check(test_client: Any) -> None:
     """Test the v1 health check endpoint with all services mocked.
 
     This test verifies that the health check endpoint successfully checks
@@ -180,7 +181,7 @@ def test_v1_health_check(test_client):
 
 
 @pytest.mark.integration
-def test_health_check_degraded_service(test_client):
+def test_health_check_degraded_service(test_client: Any) -> None:
     """Test health check returns degraded status when some components fail.
 
     This test verifies that:
@@ -263,7 +264,7 @@ def test_health_check_degraded_service(test_client):
 
 
 @pytest.mark.integration
-def test_health_check_all_components_unhealthy(test_client):
+def test_health_check_all_components_unhealthy(test_client: Any) -> None:
     """Test health check behavior when all components are unhealthy.
 
     This test verifies that:
@@ -329,7 +330,7 @@ def test_health_check_all_components_unhealthy(test_client):
 
 
 @pytest.mark.integration
-def test_openapi_docs(test_client):
+def test_openapi_docs(test_client: Any) -> None:
     """Test that OpenAPI docs are available."""
     response = test_client.get("/docs")
     assert response.status_code == 200
@@ -343,7 +344,7 @@ def test_openapi_docs(test_client):
 
 
 @pytest.mark.integration
-def test_query_api(test_client):
+def test_query_api(test_client: Any) -> None:
     """Test query API endpoint."""
     # Mock Neo4j adapter to return test results
     with mock.patch(
@@ -377,7 +378,7 @@ def test_query_api(test_client):
 
 
 @pytest.mark.integration
-def test_config_api_minimal(test_client):
+def test_config_api_minimal(test_client: Any) -> None:
     """Test configuration API with minimal interaction."""
     # Get configuration schema
     response = test_client.get("/v1/config/schema")

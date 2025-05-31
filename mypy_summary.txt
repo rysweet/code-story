@@ -1,0 +1,1106 @@
+ 568     ^
+ 305         ^
+ 177 type annotation  [no-untyped-def]
+  86 missing a type annotation  [no-untyped-def]
+  83 py.typed marker  [import-untyped]
+  83 annotation  [no-untyped-def]
+  80 return type annotation  [no-untyped-def]
+  62 tests/unit/test_codestory_service/test_api.py
+  61 missing a return type annotation  [no-untyped-def]
+  59 tests/unit/test_codestory_mcp/test_tools.py
+  57 library stubs or py.typed marker  [import-untyped]
+  57 Function is missing a type annotation  [no-untyped-def]
+  53 tests/unit/test_codestory_mcp/test_adapters.py
+  52 stubs or py.typed marker  [import-untyped]
+  45                 ^
+  44 tests/unit/test_codestory_service/test_infrastructure.py
+  43             ^
+  37 tests/unit/test_graphdb/test_models.py
+  36 Function is missing a return type annotation  [no-untyped-def]
+  35 tests/integration/test_ingestion_pipeline/test_step_dependencies.py
+  30 tests/unit/test_codestory_service/test_application.py
+  29 tests/unit/test_llm/test_llm_models.py
+  29 tests/unit/test_codestory_service/test_domain_models.py
+  28 tests/unit/test_llm/test_client.py
+  28 tests/unit/test_llm/test_backoff.py
+  28 tests/unit/test_codestory_mcp/test_serializers.py
+  23 tests/unit/test_cli/client/test_service_client.py
+  23     from codestory.graphdb.neo4j_connector import Neo4jConnector
+  22 tests/unit/test_codestory_mcp/test_server.py
+  22 tests/unit/test_codestory_mcp/test_auth.py
+  22 or py.typed marker  [import-untyped]
+  22 missing library stubs or py.typed marker  [import-untyped]
+  22 is missing a type annotation  [no-untyped-def]
+  20 tests/unit/test_graphdb/test_connector.py
+  18 for "future"  [var-annotated]
+  18 a type annotation  [no-untyped-def]
+  16 tests/integration/test_ingestion_pipeline/test_summarizer_integration.py
+  16 tests/integration/test_ingestion_pipeline/test_pipeline_integration.py
+  16 "codestory.config.settings"
+  15 tests/unit/test_llm/test_llm_exceptions.py
+  15 tests/unit/test_graphdb/test_schema.py
+  15 tests/unit/test_config_writer.py
+  15 tests/integration/conftest.py
+  15 marker  [import-untyped]
+  15             future = asyncio.Future()
+  15                      ^~~~~~~~~~~~~~~~
+  14 tests/unit/test_ingestion_pipeline/test_manager.py
+  14 tests/unit/test_cli/test_commands/test_service.py
+  14 tests/integration/test_ingestion_pipeline/test_pipeline_manager.py
+  14 "codestory.graphdb.neo4j_connector"
+  13 tests/integration/test_mcp.py
+  13 tests/integration/test_ingestion_pipeline/test_blarify_integration.py
+  13 but missing library stubs or py.typed marker  [import-untyped]
+  12 tests/unit/test_llm/test_metrics.py
+  12 tests/unit/test_graphdb/test_export.py
+  11 tests/unit/test_graphdb/test_exceptions.py
+  11 tests/unit/test_codestory_service/test_settings.py
+  11 tests/unit/test_codestory_service/test_clear_database.py
+  11 tests/unit/test_cli/client/test_progress_client.py
+  11 tests/integration/test_llm/test_client_integration.py
+  11 tests/integration/test_ingestion_pipeline/test_task_registration.py
+  11 tests/integration/test_ingestion_pipeline/test_filesystem_integration.py
+  11 [no-untyped-def]
+  10 tests/unit/test_cli/test_commands/test_repository_mounting.py
+  10 tests/unit/test_cli/test_commands/backup/test_auto_mount.py
+  10 tests/integration/test_service.py
+  10 tests/integration/test_ingestion_pipeline/test_full_pipeline_integration.py
+  10 tests/integration/test_ingestion_pipeline/test_docgrapher_integration.py
+  10 tests/integration/test_ingestion_pipeline/test_cancellation.py
+  10 tests/integration/test_docker_connectivity.py
+  10 [import-untyped]
+  10 Skipping analyzing "codestory.ingestion_pipeline.step"
+  10 "codestory_mcp.tools.base"
+   9 tests/unit/test_config_export.py
+   9 tests/unit/test_cli/test_commands/test_database.py
+   9 tests/integration/test_ingestion_pipeline/test_retry_and_failure.py
+   9 tests/integration/test_ingestion_pipeline/base_pipeline_test.py
+   9 tests/integration/test_config_api.py
+   9 src/codestory_service/application/ingestion_service.py
+   9 installed, but missing library stubs or py.typed marker  [import-untyped]
+   9     from codestory.ingestion_pipeline.step import StepStatus
+   9     from codestory.config.settings import get_settings
+   9     from codestory.cli.main import app
+   9         req_b = IngestionRequest(
+   9         req_a = IngestionRequest(
+   8 tests/unit/test_config/test_settings_imports.py
+   8 tests/unit/test_codestory_mcp/test_config.py
+   8 tests/unit/conftest.py
+   8 src/codestory_summarizer/step.py
+   8 is missing a return type annotation  [no-untyped-def]
+   8 a return type annotation  [no-untyped-def]
+   7 tests/unit/test_cli/test_main.py
+   7 tests/integration/test_llm/conftest.py
+   7 tests/integration/test_demos/test_mcp_demo.py
+   7 tests/integration/test_demos/test_gui_demo.py
+   7 tests/integration/test_demos/test_cli_demo.py
+   7 tests/integration/test_cli/test_repository_mounting.py
+   7 tests/integration/test_cli/test_command_suggestions.py
+   7 analyzing "codestory.cli.main"
+   7 Skipping analyzing "codestory_filesystem.step"
+   7 Skipping analyzing "codestory.graphdb.neo4j_connector"
+   7 "codestory_mcp.utils.metrics"
+   7 "codestory_mcp.tools"
+   7  [no-untyped-def]
+   7     from codestory_mcp.utils.metrics import get_metrics
+   7     def neo4j_connector()
+   7             def getitem(key)
+   7             def contains(key)
+   6 tests/integration/test_ingestion_pipeline/test_filesystem_direct.py
+   6 src/codestory_service/infrastructure/celery_adapter.py
+   6 src/codestory_mcp/tools/path_to.py
+   6 src/codestory_filesystem/step.py
+   6 src/codestory_docgrapher/step.py
+   6 src/codestory_blarify/step.py
+   6 module is installed, but missing library stubs or py.typed marker 
+   6 "codestory.ingestion_pipeline.step"
+   6 "codestory.config"
+   6     from codestory_mcp.tools.base import BaseTool, ToolError
+   6     from codestory.ingestion_pipeline.manager import PipelineManager
+   6     def sample_repo()
+   6                 async def ping(self)
+   6                 async def info(self, section=None)
+   6                 async def close(self)
+   5 tests/unit/test_settings.py
+   5 tests/integration/test_ingestion_pipeline/test_progress_tracking.py
+   5 tests/conftest.py
+   5 src/codestory_mcp/tools/summarize_node.py
+   5 src/codestory_mcp/tools/search_graph.py
+   5 src/codestory_mcp/server.py
+   5 src/codestory/ingestion_pipeline/tasks.py
+   5 Skipping analyzing "codestory.ingestion_pipeline.manager"
+   5 "codestory_mcp.utils.config"
+   5 "codestory.cli.client"
+   5     from codestory_mcp.tools import register_tool
+   5     from codestory_filesystem.step import FileSystemStep
+   5     from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+   5     def mock_settings()
+   5         future = asyncio.Future()
+   5         def test_init(self)
+   5             async def mock_wait_for(coro, timeout)
+   5                  ^~~~~~~~~~~~~~~~
+   4 tests/unit/test_cli/test_output_formatting.py
+   4 tests/integration/test_ingestion_pipeline/test_resource_throttling.py
+   4 tests/integration/test_ingestion_pipeline/test_filesystem_simple.py
+   4 tests/integration/test_docker_network.py
+   4 src/codestory_mcp/tools/similar_code.py
+   4 src/codestory_mcp/adapters/openai_service.py
+   4 is installed, but missing library stubs or py.typed marker  [import-untyped]
+   4 analyzing "codestory_service.domain.graph"
+   4 analyzing "codestory.llm.models"
+   4 analyzing "codestory.graphdb.neo4j_connector"
+   4 Value of type "Any | None" is not indexable  [index]
+   4 Skipping analyzing "codestory_summarizer.step"
+   4 Skipping analyzing "codestory_blarify.step"
+   4 "codestory_mcp.adapters.openai_service"
+   4 "codestory_mcp.adapters.graph_service"
+   4 "codestory.llm.models"
+   4 "codestory.llm.client"
+   4 "codestory.ingestion_pipeline.celery_app"
+   4 "codestory.graphdb.exceptions"
+   4 "celery.result"
+   4     from codestory_mcp.utils.config import get_mcp_settings
+   4     from codestory_mcp.tools.base import ToolError
+   4     from codestory.llm.models import (
+   4     from codestory.llm.exceptions import (
+   4     from codestory.config import get_settings
+   4     def pytest_configure(config)
+   4         def mock_service(self)
+   4         def mock_run(self, repository_path, **config)
+   4         def mock_client(self)
+   4         def metrics(self)
+   4                 def test_func()
+   3 tests/unit/test_cli/test_progress_client.py
+   3 tests/integration/test_graphdb/test_neo4j_integration.py
+   3 tests/integration/test_graphdb/test_neo4j_connectivity.py
+   3 tests/integration/test_cli/test_service_integration.py
+   3 tests/integration/test_cli/conftest.py
+   3 src/codestory_service/infrastructure/openai_adapter.py
+   3 src/codestory_mcp/adapters/graph_service.py
+   3 src/codestory/cli/client/progress_client.py
+   3 annotation for one or more arguments  [no-untyped-def]
+   3 analyzing "codestory_service.domain.ingestion"
+   3 analyzing "codestory.llm.client"
+   3 analyzing "codestory.ingestion_pipeline.step"
+   3 analyzing "codestory.graphdb.exceptions"
+   3 analyzing "codestory.config.settings"
+   3 analyzing "codestory.cli.commands.ingest"
+   3 [unreachable]
+   3 Statement is unreachable  [unreachable]
+   3 Skipping analyzing "codestory_docgrapher.step"
+   3 "codestory_mcp.utils.serializers"
+   3 "codestory.llm.exceptions"
+   3 "codestory.cli.main"
+   3 "codestory.cli.client.service_client"
+   3 "celery"
+   3     from codestory_summarizer.step import SummarizerStep
+   3     from codestory_service.main import app
+   3     from codestory_service.domain.ingestion import (
+   3     from codestory_service.domain.graph import (
+   3     from codestory_mcp.adapters.openai_service import get_openai_service
+   3     from codestory_mcp.adapters.graph_service import get_graph_service
+   3     from codestory.llm.models import ChatMessage, ChatRole
+   3     from codestory.llm.client import create_client
+   3     from codestory.graphdb.exceptions import (
+   3     from codestory.cli.client.service_client import ServiceClient
+   3     from celery import shared_task
+   3     def mock_client()
+   3     def custom_process_filesystem(
+   3         from codestory.config.settings import get_settings
+   3         def openai_service(self)
+   3         def graph_service(self)
+   3             async def mock_list_error()
+   3             ^~~~~~~~~~~~~~~~~~
+   3                 from celery.result import AsyncResult
+   3                 async def __call__(self, params)
+   2 to "int" has incompatible type "int | None"; expected
+   2 to "fromtimestamp" of "datetime" has incompatible type "Any | None"; expected
+   2 tests/unit/test_cli/test_service_client.py
+   2 tests/unit/test_cli/test_commands/test_visualize.py
+   2 tests/unit/test_cli/test_commands/test_query.py
+   2 tests/unit/test_cli/test_commands/test_ingest.py
+   2 tests/integration/test_cli/test_ingest_integration.py
+   2 tests/integration/test_cli/test_config_integration.py
+   2 src/codestory_service/main.py
+   2 src/codestory_service/infrastructure/neo4j_adapter.py
+   2 src/codestory_service/application/config_service.py
+   2 src/codestory_mcp/main.py
+   2 src/codestory_docgrapher/utils/content_analyzer.py
+   2 src/codestory/ingestion_pipeline/worker.py
+   2 src/codestory/ingestion_pipeline/celery_app.py
+   2 src/codestory/cli/main.py
+   2 src/codestory/cli/commands/ingest.py
+   2 src/codestory/cli/client/service_client.py
+   2 no attribute "get"  [attr-defined]
+   2 expected "IngestionSourceType"  [arg-type]
+   2 analyzing "codestory_service.infrastructure.msal_validator"
+   2 analyzing "codestory_service.domain.config"
+   2 analyzing "codestory_service.domain.auth"
+   2 analyzing "codestory_service.application.graph_service"
+   2 analyzing "codestory.llm.exceptions"
+   2 analyzing "codestory.config"
+   2 [method-assign]
+   2 Skipping analyzing "codestory.llm.models"
+   2 Skipping analyzing "codestory.config.settings"
+   2 Right operand of "and" is never evaluated  [unreachable]
+   2 Missing named argument "tags" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "priority" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "options" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "eta" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "description" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "created_by" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "countdown" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "config" for "IngestionRequest"  [call-arg]
+   2 Missing named argument "branch" for "IngestionRequest"  [call-arg]
+   2 Argument "source_type" to "IngestionRequest" has incompatible type "str";
+   2 "str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc"  [arg-type]
+   2 "future"  [var-annotated]
+   2 "float"  [arg-type]
+   2 "codestory_service.main"
+   2 "codestory_service.domain.graph"
+   2 "codestory_mcp.tools.summarize_node"
+   2 "codestory_mcp.tools.similar_code"
+   2 "codestory_mcp.tools.search_graph"
+   2 "codestory_mcp.tools.path_to"
+   2 "codestory_mcp.server"
+   2 "codestory_mcp.auth.scope_manager"
+   2 "codestory_mcp.auth.entra_validator"
+   2 "codestory.llm.metrics"
+   2 "codestory.graphdb.schema"
+   2 "celery.task.control"
+   2     from codestory_service.infrastructure.celery_adapter import CeleryAdap...
+   2     from codestory_service.application.ingestion_service import IngestionS...
+   2     from codestory_service.application.graph_service import GraphService
+   2     from codestory_mcp.tools.summarize_node import SummarizeNodeTool
+   2     from codestory_mcp.tools.similar_code import SimilarCodeTool
+   2     from codestory_mcp.tools.search_graph import SearchGraphTool
+   2     from codestory_mcp.tools.path_to import PathToTool
+   2     from codestory_mcp.auth.scope_manager import ScopeManager
+   2     from codestory_docgrapher.step import DocumentationGrapherStep
+   2     from codestory_blarify.step import BlarifyStep
+   2     from codestory.llm.metrics import OperationType
+   2     from codestory.llm.client import OpenAIClient, create_client
+   2     from codestory.llm.client import OpenAIClient
+   2     from codestory.ingestion_pipeline.step import StepStatus, generate_job...
+   2     from codestory.ingestion_pipeline.celery_app import app as celery_app
+   2     from codestory.config.settings import (
+   2     from codestory.config import Settings, get_settings
+   2     from codestory.config import (
+   2     from codestory.cli.commands import ingest
+   2     from codestory.cli.client import ServiceError
+   2     from celery.result import AsyncResult
+   2     from celery import Celery
+   2     def pytest_collection_modifyitems(config, items)
+   2     def pytest_addoption(parser)
+   2     def mock_prometheus_metrics()
+   2     def mock_llm_client()
+   2     def load_env_vars()
+   2     def initialized_repo(sample_repo, neo4j_connector)
+   2     def client()
+   2     def cli_runner()
+   2     def cli_context()
+   2         from codestory.ingestion_pipeline.celery_app import app
+   2         from codestory.graphdb.neo4j_connector import Neo4jConnector
+   2         def tool(self, graph_service, openai_service, metrics)
+   2         def test_items(self)
+   2         def test_getitem(self)
+   2         def test_get(self)
+   2         def mock_status(self, job_id)
+   2         def mock_start_job(self, repository_path)
+   2         def mock_node(self)
+   2         def mock_metrics(self)
+   2         async def test_call_with_invalid_limit(self, tool)
+   2         async def test_call_success(self, tool, graph_service, openai_serv...
+   2             source_type="local_path",
+   2             from celery.task.control import revoke
+   2             async def mock_coro(*args, **kwargs)
+   2             ^~~~~~~~~~~~~~~~~
+   2                         ^~~~~~~~~~~~
+   2                            ^~~~~~~~~~~~~~~~
+   1 type "None")  [assignment]
+   1 tests/unit/test_cli/conftest.py
+   1 tests/integration/test_config.py
+   1 tests/integration/test_cli/test_visualize_integration.py
+   1 tests/integration/test_cli/test_query_integration.py
+   1 tests/fixtures/test_config_init.py
+   1 src/codestory_summarizer/utils/content_extractor.py
+   1 src/codestory_summarizer/dependency_analyzer.py
+   1 src/codestory_service/settings.py
+   1 src/codestory_service/domain/ingestion.py
+   1 src/codestory_service/api/health.py
+   1 src/codestory_mcp/auth/scope_manager.py
+   1 src/codestory_mcp/auth/entra_validator.py
+   1 src/codestory_docgrapher/utils/path_matcher.py
+   1 src/codestory_docgrapher/knowledge_graph.py
+   1 src/codestory_docgrapher/entity_linker.py
+   1 src/codestory_docgrapher/document_finder.py
+   1 src/codestory/mcp/main.py
+   1 src/codestory/cli/run.py
+   1 src/codestory/cli/commands/service.py
+   1 no attribute "set"  [attr-defined]
+   1 no attribute "scan_iter"  [attr-defined]
+   1 no attribute "delete"  [attr-defined]
+   1 has no attribute "getvalue"  [attr-defined]
+   1 for "summary_future"  [var-annotated]
+   1 for "paths_future"  [var-annotated]
+   1 for "find_node_future"  [var-annotated]
+   1 for "explanation_future"  [var-annotated]
+   1 for "embed_future"  [var-annotated]
+   1 expected "datetime"  [arg-type]
+   1 expected "CeleryAdapter"  [arg-type]
+   1 attribute "path"  [attr-defined]
+   1 attribute "headers"  [attr-defined]
+   1 assignment (expression has type "list[str]", target has type "str") 
+   1 assignment (expression has type "None", variable has type Module)  [assignment]
+   1 analyzing "codestory_service.main"
+   1 analyzing "codestory_service.infrastructure.openai_adapter"
+   1 analyzing "codestory_service.infrastructure.neo4j_adapter"
+   1 analyzing "codestory_service.infrastructure.celery_adapter"
+   1 analyzing "codestory_service.application.ingestion_service"
+   1 analyzing "codestory_service.application.config_service"
+   1 analyzing "codestory_service.application.auth_service"
+   1 analyzing "codestory.ingestion_pipeline.tasks"
+   1 analyzing "codestory.ingestion_pipeline.resource_manager"
+   1 analyzing "codestory.ingestion_pipeline.manager"
+   1 analyzing "codestory.ingestion_pipeline.celery_app"
+   1 analyzing "codestory.graphdb.models"
+   1 analyzing "codestory.config.writer"
+   1 analyzing "codestory.cli.client.service_client"
+   1 [assignment]
+   1 Skipping analyzing "codestory_service.main"
+   1 Skipping analyzing "codestory_service.infrastructure.celery_adapter"
+   1 Skipping analyzing "codestory_service.domain.ingestion"
+   1 Skipping analyzing "codestory_service.application.ingestion_service"
+   1 Skipping analyzing "codestory.ingestion_pipeline.tasks"
+   1 Skipping analyzing "codestory.ingestion_pipeline.celery_app"
+   1 Skipping analyzing "codestory.cli.commands"
+   1 Skipping analyzing "codestory.cli.client.service_client"
+   1 Returning Any from function declared to return "str"  [no-any-return]
+   1 Need type annotation for "steps_status" (hint
+   1 Need type annotation for "steps_results" (hint
+   1 Need type annotation for "steps_errors" (hint
+   1 Need type annotation for "dependency_graph" (hint
+   1 Need type annotation for "_step_instances" (hint
+   1 Incompatible types in assignment (expression has type "Thread", variable has
+   1 Found 1029 errors in 122 files (checked 222 source files)
+   1 Argument 1 to "IngestionService" has incompatible type "MockCeleryAdapter";
+   1 Argument "started_at" to "IngestionStarted" has incompatible type "None";
+   1 "steps_status
+   1 "steps_results
+   1 "steps_errors
+   1 "params_list"  [var-annotated]
+   1 "kombu"
+   1 "dependency_graph
+   1 "codestory_service.settings"
+   1 "codestory_service.infrastructure.msal_validator"
+   1 "codestory_service.domain.ingestion"
+   1 "codestory_service.domain.config"
+   1 "codestory_service.domain.auth"
+   1 "codestory_service.api"
+   1 "codestory.llm.backoff"
+   1 "codestory.graphdb.models"
+   1 "codestory.graphdb.export"
+   1 "codestory.config.export"
+   1 "codestory.config.exceptions"
+   1 "codestory.cli.commands.service"
+   1 "codestory.cli.commands.database"
+   1 "codestory.cli.commands"
+   1 "codestory.cli.client.progress_client"
+   1 "celery.exceptions"
+   1 "celery.app.control"
+   1 "_step_instances
+   1 "None" has no attribute "start"  [attr-defined]
+   1 "None" has no attribute "daemon"  [attr-defined]
+   1     from codestory_service.settings import ServiceSettings, get_service_se...
+   1     from codestory_service.main import app as global_app
+   1     from codestory_service.infrastructure.openai_adapter import OpenAIAdap...
+   1     from codestory_service.infrastructure.neo4j_adapter import Neo4jAdapte...
+   1     from codestory_service.infrastructure.msal_validator import get_curren...
+   1     from codestory_service.infrastructure.msal_validator import MSALValida...
+   1     from codestory_service.domain.ingestion import JobStatus
+   1     from codestory_service.domain.ingestion import IngestionRequest, Inges...
+   1     from codestory_service.domain.graph import DatabaseClearRequest
+   1     from codestory_service.domain.graph import CypherQuery, QueryType
+   1     from codestory_service.domain.config import ConfigPatch
+   1     from codestory_service.domain.config import (
+   1     from codestory_service.domain.auth import LoginRequest, TokenResponse,...
+   1     from codestory_service.domain.auth import LoginRequest, TokenResponse
+   1     from codestory_service.domain.auth import LoginRequest
+   1     from codestory_service.application.config_service import ConfigService
+   1     from codestory_service.application.auth_service import AuthService
+   1     from codestory_service.api import auth, config, graph, health, ingest
+   1     from codestory_mcp.utils.serializers import RelationshipSerializer
+   1     from codestory_mcp.utils.serializers import NodeSerializer, Relationsh...
+   1     from codestory_mcp.utils.serializers import NodeSerializer
+   1     from codestory_mcp.utils.config import MCPSettings, get_mcp_settings
+   1     from codestory_mcp.tools import get_all_tools, get_tool, register_tool
+   1     from codestory_mcp.tools import get_all_tools, get_tool
+   1     from codestory_mcp.server import run_server
+   1     from codestory_mcp.server import create_app, get_current_user, tool_ex...
+   1     from codestory_mcp.server import create_app
+   1     from codestory_mcp.auth.entra_validator import EntraValidator
+   1     from codestory_mcp.auth.entra_validator import (
+   1     from codestory_mcp.adapters.openai_service import (
+   1     from codestory_mcp.adapters.graph_service import (
+   1     from codestory_blarify.step import DEFAULT_CONTAINER_NAME_PREFIX, Blar...
+   1     from codestory.llm.models import ChatCompletionRequest, ChatMessage
+   1     from codestory.llm.exceptions import AuthenticationError
+   1     from codestory.llm.backoff import (
+   1     from codestory.ingestion_pipeline.tasks import (
+   1     from codestory.ingestion_pipeline.step import PipelineStep, StepStatus...
+   1     from codestory.graphdb.schema import initialize_schema
+   1     from codestory.graphdb.schema import (
+   1     from codestory.graphdb.models import DirectoryNode, FileNode
+   1     from codestory.graphdb.models import (
+   1     from codestory.graphdb.export import (
+   1     from codestory.graphdb.exceptions import SchemaError
+   1     from codestory.graphdb.exceptions import QueryError, TransactionError
+   1     from codestory.graphdb.exceptions import ExportError
+   1     from codestory.graphdb.exceptions import ConnectionError, QueryError
+   1     from codestory.config.writer import (
+   1     from codestory.config.settings import get_settings, refresh_settings
+   1     from codestory.config.settings import get_settings as get_core_setting...
+   1     from codestory.config.settings import Neo4jSettings
+   1     from codestory.config.export import _redact_secrets
+   1     from codestory.config.exceptions import SettingNotFoundError
+   1     from codestory.config import Settings
+   1     from codestory.cli.main import main
+   1     from codestory.cli.main import app, main
+   1     from codestory.cli.commands.service import renew_azure_auth, service
+   1     from codestory.cli.commands.ingest import is_docker_running, is_repo_m...
+   1     from codestory.cli.commands.ingest import ingest, start_ingestion
+   1     from codestory.cli.commands.ingest import ingest
+   1     from codestory.cli.commands.database import clear_database, database
+   1     from codestory.cli.client.service_client import ServiceClient, Service...
+   1     from codestory.cli.client.progress_client import ProgressClient
+   1     from codestory.cli.client import ServiceClient, ServiceError
+   1     from codestory.cli.client import ServiceClient
+   1     from codestory.cli.client import ProgressClient
+   1     from click_didyoumean import DYMGroup
+   1     from celery.app.control import Control
+   1     from celery import current_app, shared_task
+   1     from celery import chain
+   1     def test_verify_schema()
+   1     def test_v1_health_check(test_client)
+   1     def test_update_toml(temp_toml_file)
+   1     def test_update_env(temp_env_file)
+   1     def test_update_config_refresh()
+   1     def test_update_config_persist_toml()
+   1     def test_update_config_persist_env()
+   1     def test_update_config_invalid_path()
+   1     def test_transaction_error()
+   1     def test_summary_node()
+   1     def test_summarizer_step_run(initialized_repo, neo4j_connector, mock_l...
+   1     def test_summarizer_step_ingestion_update(initialized_repo, neo4j_conn...
+   1     def test_summarized_by_relationship()
+   1     def test_step_class_task_delegation()
+   1     def test_settings_to_dict(mock_settings)
+   1     def test_settings_instance()
+   1     def test_settings_import()
+   1     def test_settings_from_env(env_vars, expected)
+   1     def test_settings_creation()
+   1     def test_service_to_redis_connectivity(docker_compose_project)
+   1     def test_service_to_neo4j_connectivity(docker_compose_project)
+   1     def test_service_settings_from_env()
+   1     def test_service_settings_default_values()
+   1     def test_service_settings_cors_origins_validation()
+   1     def test_service_settings_cors_origins_parsing()
+   1     def test_semantic_search(connector, mock_driver)
+   1     def test_schema_error()
+   1     def test_run_step_task_name_mapping()
+   1     def test_root_endpoint(test_client)
+   1     def test_retry_exceeds_max(tmp_path)
+   1     def test_retry_and_failure_reporting(tmp_path)
+   1     def test_resource_throttling_enforced(monkeypatch)
+   1     def test_resource_status_endpoint()
+   1     def test_relationship_type_enum()
+   1     def test_regular_model_vs_reasoning_model_parameters(client)
+   1     def test_redact_secrets()
+   1     def test_reasoning_model_parameter_handling(client)
+   1     def test_query_error()
+   1     def test_query_api(test_client)
+   1     def test_pipeline_manager_stop(sample_repo, neo4j_connector, test_conf...
+   1     def test_pipeline_manager_run_single_step(sample_repo, neo4j_connector...
+   1     def test_pipeline_manager_run(sample_repo, neo4j_connector, test_confi...
+   1     def test_openapi_docs(test_client)
+   1     def test_node_type_enum()
+   1     def test_no_command_shows_help(cli_runner)
+   1     def test_neo4j_error()
+   1     def test_neo4j_connection_works(neo4j_connector)
+   1     def test_neo4j_connection_env_vars(use_env_check, test_databases)
+   1     def test_module_node()
+   1     def test_method_node()
+   1     def test_mcp_tools_list(setup_mcp)
+   1     def test_mcp_summarize_node(setup_mcp, neo4j_connector)
+   1     def test_mcp_settings_defaults()
+   1     def test_mcp_search_graph(setup_mcp, neo4j_connector)
+   1     def test_mcp_ping(setup_mcp)
+   1     def test_mcp_path_to(setup_mcp, neo4j_connector)
+   1     def test_mcp_health(setup_mcp)
+   1     def test_llm_usage_info()
+   1     def test_llm_timeout_error()
+   1     def test_llm_service_unavailable_error()
+   1     def test_llm_rate_limit_error()
+   1     def test_llm_openai_error_base()
+   1     def test_llm_invalid_request_error()
+   1     def test_llm_embedding_response()
+   1     def test_llm_embedding_request()
+   1     def test_llm_embedding_data()
+   1     def test_llm_context_length_error()
+   1     def test_llm_completion_response()
+   1     def test_llm_completion_request()
+   1     def test_llm_completion_choice()
+   1     def test_llm_chat_role_enum()
+   1     def test_llm_chat_response_message()
+   1     def test_llm_chat_response_choice()
+   1     def test_llm_chat_message()
+   1     def test_llm_chat_function_call()
+   1     def test_llm_chat_completion_response()
+   1     def test_llm_chat_completion_request()
+   1     def test_llm_authentication_error()
+   1     def test_legacy_health_check(test_client)
+   1     def test_invalid_command_with_similar_options(cli_runner)
+   1     def test_invalid_command_suggestion(cli_runner)
+   1     def test_initialize_schema()
+   1     def test_init()
+   1     def test_inherits_from_relationship()
+   1     def test_imports_relationship()
+   1     def test_help_flag_shows_help(cli_runner)
+   1     def test_health_endpoint_in_container(docker_compose_project)
+   1     def test_health_check_degraded_service(test_client)
+   1     def test_health_check_all_components_unhealthy(test_client)
+   1     def test_health_check(client)
+   1     def test_gui_mcp(setup_gui)
+   1     def test_gui_ingestion(setup_gui)
+   1     def test_gui_homepage(setup_gui)
+   1     def test_gui_graph(setup_gui)
+   1     def test_gui_configuration(setup_gui)
+   1     def test_gui_ask(setup_gui)
+   1     def test_get_vector_index_query()
+   1     def test_get_tools(client)
+   1     def test_get_settings()
+   1     def test_get_service_settings()
+   1     def test_get_schema_initialization_queries()
+   1     def test_get_mcp_settings_singleton()
+   1     def test_get_all_schema_elements()
+   1     def test_function_node()
+   1     def test_filesystem_update_direct(sample_repo, neo4j_connector)
+   1     def test_filesystem_task_routing()
+   1     def test_filesystem_task_registration()
+   1     def test_filesystem_step_run(sample_repo, neo4j_connector, celery_app)...
+   1     def test_filesystem_step_ingestion_update(sample_repo, neo4j_connector...
+   1     def test_filesystem_direct(sample_repo, neo4j_connector)
+   1     def test_file_node()
+   1     def test_external_health_endpoint(docker_compose_project)
+   1     def test_export_to_toml(mock_settings)
+   1     def test_export_to_json_error(mock_connector)
+   1     def test_export_to_json(mock_settings)
+   1     def test_export_to_json(mock_connector)
+   1     def test_export_to_csv_no_headers(mock_connector)
+   1     def test_export_to_csv(mock_connector)
+   1     def test_export_graph_data(mock_connector)
+   1     def test_export_cypher_script(mock_connector)
+   1     def test_execute_tool_with_invalid_parameters(client)
+   1     def test_execute_summarize_node_tool(client)
+   1     def test_execute_search_graph_tool(client)
+   1     def test_execute_query_with_retry(connector, mock_driver)
+   1     def test_execute_query_max_retries_exceeded(connector, mock_driver)
+   1     def test_execute_query(connector, mock_driver)
+   1     def test_execute_nonexistent_tool(client)
+   1     def test_execute_many_transaction_error(connector, mock_driver)
+   1     def test_execute_many(connector, mock_driver)
+   1     def test_error_handling_in_dependency_chain()
+   1     def test_embedding(client)
+   1     def test_documented_by_relationship()
+   1     def test_documentation_node()
+   1     def test_docgrapher_step_with_no_llm(initialized_repo, neo4j_connector...
+   1     def test_docgrapher_step_run(initialized_repo, neo4j_connector, mock_l...
+   1     def test_directory_node()
+   1     def test_direct_neo4j_filesystem(neo4j_connector)
+   1     def test_database_group()
+   1     def test_create_env_template(mock_settings)
+   1     def test_create_custom_vector_index()
+   1     def test_create_app(mock_settings)
+   1     def test_context_manager()
+   1     def test_contains_relationship()
+   1     def test_connection_error()
+   1     def test_config_api_simple(test_client)
+   1     def test_config_api_minimal(test_client)
+   1     def test_config()
+   1     def test_command_help_shows_command_help(cli_runner)
+   1     def test_close(connector, mock_driver)
+   1     def test_client_creation(openai_credentials)
+   1     def test_client_configuration(client)
+   1     def test_client(neo4j_connector)
+   1     def test_client(mock_graph_service)
+   1     def test_client()
+   1     def test_cli_visualize(setup_test_env, neo4j_connector)
+   1     def test_cli_version_command_no_debug_output()
+   1     def test_cli_version(setup_test_env)
+   1     def test_cli_query_run(setup_test_env, neo4j_connector)
+   1     def test_cli_help_command_no_debug_output()
+   1     def test_cli_config_show(setup_test_env)
+   1     def test_cli_config_init(setup_test_env)
+   1     def test_cli_ask(setup_test_env, neo4j_connector)
+   1     def test_clear_database_without_confirmation(test_client, mock_graph_s...
+   1     def test_clear_database_with_force(cli_context, mock_client, mock_cons...
+   1     def test_clear_database_success(test_client, mock_graph_service)
+   1     def test_clear_database_error(test_client, mock_graph_service)
+   1     def test_clear_database_error(cli_context, mock_client, mock_console)
+   1     def test_class_node()
+   1     def test_chat_completion(client)
+   1     def test_cancel_running_job(ingestion_service)
+   1     def test_cancel_pending_job(ingestion_service)
+   1     def test_cancel_completed_job(ingestion_service)
+   1     def test_calls_relationship()
+   1     def test_blarify_step_stop(sample_repo, neo4j_connector, ensure_blarif...
+   1     def test_blarify_step_run(sample_repo, neo4j_connector, ensure_blarify...
+   1     def test_base_relationship()
+   1     def test_base_node()
+   1     def test_audience_validator()
+   1     def temp_toml_file()
+   1     def temp_repository()
+   1     def temp_env_file()
+   1     def stop_containers()
+   1     def start_test_job()
+   1     def setup_test_settings()
+   1     def setup_test_env()
+   1     def setup_mcp()
+   1     def setup_gui()
+   1     def running_service(request) -> Generator[dict[str, Any], None, None]
+   1     def redis_client(test_databases)
+   1     def redis_client()
+   1     def patch_prometheus_metrics()
+   1     def neo4j_env()
+   1     def neo4j_connector(test_databases)
+   1     def neo4j_connector(neo4j_env)
+   1     def mock_tool()
+   1     def mock_metrics()
+   1     def mock_graph_service()
+   1     def mock_entra_validator()
+   1     def mock_driver()
+   1     def mock_console()
+   1     def mock_connector()
+   1     def mock_async_driver()
+   1     def mock_all_prometheus()
+   1     def mock_all_metrics_objects()
+   1     def ingestion_service(celery_adapter)
+   1     def fix_neo4j_port_config()
+   1     def ensure_blarify_image()
+   1     def custom_process_filesystem(repository_path, job_id, neo4j_connector...
+   1     def custom_error_handler()
+   1     def create_test_settings()
+   1     def create_test_config_file()
+   1     def connector(mock_driver)
+   1     def client(openai_credentials, azure_login) -> OpenAIClient
+   1     def cli_context(mock_client, mock_console)
+   1     def celery_config()
+   1     def celery_app(redis_client)
+   1     def celery_app()
+   1     def celery_adapter()
+   1     def blarify_celery_app(celery_app)
+   1     def azure_login(openai_credentials) -> None
+   1     def async_connector(mock_async_driver)
+   1     async def test_tool_executor_validation_error(mock_metrics, mock_tool)...
+   1     async def test_tool_executor_unexpected_error(mock_metrics, mock_tool)...
+   1     async def test_tool_executor_tool_not_found(mock_metrics, mock_tool)
+   1     async def test_tool_executor_tool_error(mock_metrics, mock_tool)
+   1     async def test_tool_executor_success(mock_metrics, mock_tool)
+   1     async def test_reasoning_model_async_parameter_handling(client)
+   1     async def test_job_dependency_orchestration(sample_repo)
+   1     async def test_get_current_user_without_auth_header(mock_settings, moc...
+   1     async def test_get_current_user_with_valid_token(mock_settings, mock_m...
+   1     async def test_get_current_user_with_invalid_token(
+   1     async def test_get_current_user_with_auth_disabled(mock_settings, mock...
+   1     async def test_execute_query_async(async_connector, mock_async_driver)...
+   1     async def test_execute_many_async(async_connector, mock_async_driver)
+   1     async def test_chat_async(client)
+   1     ...  ], f"Expected status STOPPED or COMPLETED, got {final_status['status...
+   1     ...             completed_at=datetime.fromtimestamp(result.get("end_time"...
+   1     ...               started_at=datetime.fromtimestamp(result.get("start_tim...
+   1         service = IngestionService(MockCeleryAdapter())
+   1         psutil = None
+   1         params_list = [{}, {}]
+   1         from kombu import Queue
+   1         from codestory_service.infrastructure.msal_validator import is_adm...
+   1         from codestory_filesystem.step import FileSystemStep
+   1         from codestory.ingestion_pipeline.tasks import run_step
+   1         from codestory.graphdb.schema import initialize_schema
+   1         from codestory.config.settings import Settings
+   1         from codestory.config import settings as settings_module
+   1         def worker_container(self)
+   1         def wait_for_node_in_db(self, query, params=None, timeout=15)
+   1         def validator(self, mock_jwks_client)
+   1         def validator(self)
+   1         def tool(self, openai_service, metrics)
+   1         def tool(self, graph_service, metrics)
+   1         def test_worker_health_with_docker_fix(self, worker_container)
+   1         def test_verify_scopes_success(self, validator)
+   1         def test_verify_scopes_failure(self, validator)
+   1         def test_vector_query_validation(self)
+   1         def test_validate_steps_missing(self, config_file, mock_step_class...
+   1         def test_validate_steps_all_found(self, config_file, mock_step_cla...
+   1         def test_user_info(self)
+   1         def test_use_explicit_redis_url(self)
+   1         def test_token_response(self)
+   1         def test_to_mcp_result_with_scored_nodes(self, mock_node)
+   1         def test_to_mcp_result_with_nodes(self, mock_node)
+   1         def test_to_mcp_path_result(self, mock_path)
+   1         def test_to_dict_with_score(self, mock_node)
+   1         def test_to_dict_with_include_properties(self, mock_relationship)
+   1         def test_to_dict_with_include_properties(self, mock_node)
+   1         def test_to_dict_with_exclude_properties(self, mock_relationship)
+   1         def test_to_dict_with_exclude_properties(self, mock_node)
+   1         def test_to_dict_basic(self, mock_relationship)
+   1         def test_to_dict_basic(self, mock_node)
+   1         def test_stop(self, config_file, mock_step_class)
+   1         def test_step_progress(self)
+   1         def test_status(self, config_file, mock_step_class)
+   1         def test_start_job(self, config_file, mock_step_class)
+   1         def test_start_ingestion_logging(self)
+   1         def test_setup_repository_mount(self)
+   1         def test_service_start_stop_subprocess(self)
+   1         def test_retry_on_openai_errors_retry_after(self)
+   1         def test_retry_on_openai_errors_async_creation(self)
+   1         def test_retry_on_openai_errors(self)
+   1         def test_register_tool(self)
+   1         def test_redis_connection_success(self)
+   1         def test_record_retry(self, mock_all_metrics_objects)
+   1         def test_record_request_with_tokens(self, mock_all_metrics_objects...
+   1         def test_record_request(self, mock_all_metrics_objects)
+   1         def test_record_error(self, mock_all_metrics_objects)
+   1         def test_prepare_step_configs(self, config_file)
+   1         def test_pipeline_with_empty_repo(self)
+   1         def test_pipeline_error_handling(self)
+   1         def test_path_request_validation(self)
+   1         def test_original_issue_resolved(self)
+   1         def test_non_docker_deployment(self, cli_runner, cli_context)
+   1         def test_no_auto_mount_flag(self, cli_runner, cli_context)
+   1         def test_no_auto_mount(self, cli_runner, cli_context)
+   1         def test_mount_verification(self, temp_repository)
+   1         def test_login_request_validation(self)
+   1         def test_list_ingestion_jobs_with_single_job_format(self)
+   1         def test_list_ingestion_jobs_with_mock_format(self)
+   1         def test_list_ingestion_jobs_with_list_format(self)
+   1         def test_list_ingestion_jobs_with_jobs_field(self)
+   1         def test_list_ingestion_jobs_with_items_field(self)
+   1         def test_list_ingestion_jobs_with_invalid_format(self)
+   1         def test_is_repo_mounted(self)
+   1         def test_is_reasoning_model(self, client)
+   1         def test_instrument_request_success(self, mock_all_metrics_objects...
+   1         def test_instrument_request_error(self, mock_all_metrics_objects)
+   1         def test_init_with_custom_url(self, mock_settings, mock_metrics, m...
+   1         def test_init_with_custom_client(self, mock_metrics)
+   1         def test_init_missing_credentials(self)
+   1         def test_init(self, mock_settings, mock_metrics, mock_client)
+   1         def test_init(self, mock_jwks_client)
+   1         def test_init(self, mock_client, mock_metrics)
+   1         def test_init(self, graph_service, openai_service, metrics)
+   1         def test_init(self, graph_service, metrics)
+   1         def test_init(self, config_file)
+   1         def test_ingestion_started(self)
+   1         def test_ingestion_request_validation(self)
+   1         def test_has_required_scope_with_wildcard(self)
+   1         def test_has_required_scope_with_no_matching_scope(self)
+   1         def test_has_required_scope_with_matching_scope(self)
+   1         def test_has_required_scope_when_no_scopes_required(self)
+   1         def test_get_tool_not_found(self)
+   1         def test_get_step_class_not_found(self, config_file)
+   1         def test_get_step_class_found(self, config_file, mock_step_class)
+   1         def test_get_retry_after(self)
+   1         def test_get_required_scopes(self)
+   1         def test_get_openai_service_singleton(self)
+   1         def test_get_graph_service_singleton(self, mock_settings)
+   1         def test_get_config_sensitive(self, mock_service)
+   1         def test_get_config_schema(self, service)
+   1         def test_get_config_dump(self, service)
+   1         def test_get_config(self, mock_service)
+   1         def test_get_all_tools(self)
+   1         def test_generate_visualization_logging(self)
+   1         def test_full_pipeline_execution(self)
+   1         def test_fallback_to_http_polling(self)
+   1         def test_exception_conversion_timeout(self)
+   1         def test_exception_conversion_rate_limit(self)
+   1         def test_exception_conversion_context_length(self)
+   1         def test_exception_conversion_api_connection(self)
+   1         def test_error_handling_complete(self)
+   1         def test_embed(self, client)
+   1         def test_docker_socket_accessibility(self, worker_container)
+   1         def test_docker_python_module_availability(self, worker_container)...
+   1         def test_docker_port_detection(self)
+   1         def test_docker_group_configuration(self, worker_container)
+   1         def test_docker_daemon_connectivity(self, worker_container)
+   1         def test_docker_cli_installation(self, worker_container)
+   1         def test_cypher_query_validation(self)
+   1         def test_create_override_file(self)
+   1         def test_create_client_override(self)
+   1         def test_create_client(self, mock_settings)
+   1         def test_container_detection(self, cli_runner, cli_context)
+   1         def test_console_methods(self)
+   1         def test_config_patch_validation(self)
+   1         def test_config_item_redact_if_sensitive(self)
+   1         def test_config_item_is_sensitive(self)
+   1         def test_complete(self, client)
+   1         def test_cli_mount_verification_function(self, temp_repository)
+   1         def test_check_service_health_with_error(self)
+   1         def test_chat_with_reasoning_model_parameter_adjustment(self, clie...
+   1         def test_chat(self, client)
+   1         def test_can_execute_tool(self)
+   1         def test_blarify_docker_integration(self, worker_container)
+   1         def test_before_retry_callback(self)
+   1         def test_auto_mount_flag(self, cli_runner, cli_context)
+   1         def test_auto_mount_execution(self, cli_runner, cli_context)
+   1         def test_auth_renew_specific_tenant(
+   1         def test_auth_renew_outside_container(
+   1         def test_auth_renew_no_containers(
+   1         def test_auth_renew_inside_container(
+   1         def test_auth_renew_help(self, cli_runner)
+   1         def test_auth_renew_error_handling(
+   1         def test_auth_renew_command_exists(self)
+   1         def test_auth_renew_check_only(
+   1         def test_adjust_params_for_reasoning_model_regular_model(self, cli...
+   1         def test_adjust_params_for_reasoning_model_o1_preview(self, client...
+   1         def test_adjust_params_for_reasoning_model_o1(self, client)
+   1         def test_adjust_params_for_reasoning_model_none_max_tokens(self, c...
+   1         def test_adjust_params_for_reasoning_model_no_max_tokens(self, cli...
+   1         def setup_test_env(self, neo4j_connector, redis_client, celery_app...
+   1         def setup_pipeline_manager(self)
+   1         def service(self, mock_validator)
+   1         def service(self, mock_neo4j, mock_openai)
+   1         def service(self, mock_celery)
+   1         def service(self)
+   1         def mock_validator(self)
+   1         def mock_update(self, repository_path, **config)
+   1         def mock_stop(self, job_id)
+   1         def mock_step_class(self)
+   1         def mock_start_job()
+   1         def mock_settings(self)
+   1         def mock_run_single_step(self, repository_path, step_name, **confi...
+   1         def mock_request(self)
+   1         def mock_relationship(self)
+   1         def mock_path(self, mock_node, mock_relationship, mock_node2)
+   1         def mock_openai(self)
+   1         def mock_node2(self)
+   1         def mock_neo4j(self)
+   1         def mock_jwt(self)
+   1         def mock_jwks_client(self)
+   1         def mock_ingestion_update(self, repository_path, **config)
+   1         def mock_hasattr(obj, name)
+   1         def mock_graph_service(self)
+   1         def mock_get_graph_service()
+   1         def mock_execute(query, *args, **kwargs)
+   1         def mock_connector(self)
+   1         def mock_celery(self)
+   1         def mock_app(self)
+   1         def mock_adapters(self)
+   1         def getattr_mock(instance, name)
+   1         def flaky_status(self, job_id)
+   1         def flaky_run(self, repository_path, **kwargs)
+   1         def ctx_obj(self, mock_client)
+   1         def create_test_repository(self)
+   1         def create_filesystem_nodes(self)
+   1         def config_file(self)
+   1         def cli_runner(self)
+   1         def check_dependencies(step_name, repo_path)
+   1         def always_fail_status(self, job_id)
+   1         def always_fail_run(self, repository_path, **kwargs)
+   1         def adapter(self, mock_settings, mock_metrics, mock_client)
+   1         def adapter(self, mock_connector)
+   1         def adapter(self, mock_client, mock_metrics)
+   1         def adapter(self, mock_client)
+   1         def adapter(self, mock_app)
+   1         def _create_pipeline_config_file(self)
+   1         async def test_validate_token_success(self, validator, mock_jwt)
+   1         async def test_validate_token_jwt_error(self, validator, mock_jwt)...
+   1         async def test_validate_token_auth_disabled(self, validator)
+   1         async def test_update_config(self, service)
+   1         async def test_update_config(self, mock_service)
+   1         async def test_subscribe_to_progress(self, service)
+   1         async def test_start_ingestion(self, service, mock_celery)
+   1         async def test_start_ingestion(self, mock_service)
+   1         async def test_start_ingestion(self, adapter, mock_app)
+   1         async def test_search_success(self, adapter, mock_client)
+   1         async def test_search_network_error(self, adapter, mock_client, mo...
+   1         async def test_search_error(self, adapter, mock_client, mock_metri...
+   1         async def test_parameter_filtering(self, adapter, mock_app)
+   1         async def test_login_success(self, service, mock_validator)
+   1         async def test_login_prod_mode(self, service, mock_validator)
+   1         async def test_login_invalid_credentials(self, service)
+   1         async def test_login(self, mock_service)
+   1         async def test_lifespan(app)
+   1         async def test_instrument_async_request_success(self, mock_all_met...
+   1         async def test_instrument_async_request_error(self, mock_all_metri...
+   1         async def test_health_check_with_auto_fix_timeout(self, mock_adapt...
+   1         async def test_health_check_with_auto_fix_failure(self, mock_adapt...
+   1         async def test_health_check_with_auto_fix(self, mock_adapters, mon...
+   1         async def test_health_check_unhealthy(self, mock_connector)
+   1         async def test_health_check_unhealthy(self, mock_client)
+   1         async def test_health_check_unhealthy(self, mock_app)
+   1         async def test_health_check_one_unhealthy(self, mock_adapters, mon...
+   1         async def test_health_check_one_degraded(self, mock_adapters, monk...
+   1         async def test_health_check_nginx_404_error(self, mock_client)
+   1         async def test_health_check_healthy(self, adapter, mock_connector)...
+   1         async def test_health_check_healthy(self, adapter, mock_client)
+   1         async def test_health_check_healthy(self, adapter, mock_app)
+   1         async def test_health_check_azure_auth_error_with_tenant(self, moc...
+   1         async def test_health_check_azure_auth_error(self, mock_client)
+   1         async def test_health_check_all_healthy(self, mock_adapters, monke...
+   1         async def test_get_user_info(self, service)
+   1         async def test_get_user_info(self, mock_service)
+   1         async def test_get_job_status(self, service, mock_celery)
+   1         async def test_get_job_status(self, mock_service)
+   1         async def test_get_job_status(self, adapter, mock_app)
+   1         async def test_generate_visualization_with_filters(self, mock_requ...
+   1         async def test_generate_visualization_error(self, mock_request, mo...
+   1         async def test_generate_visualization(self, mock_request, mock_gra...
+   1         async def test_generate_path_explanation_success(self, adapter, mo...
+   1         async def test_generate_code_summary_success(self, adapter, mock_c...
+   1         async def test_generate_code_summary_error(self, adapter, mock_cli...
+   1         async def test_find_similar_code_success(self, adapter, mock_clien...
+   1         async def test_find_paths_success(self, adapter, mock_client)
+   1         async def test_find_node_success(self, adapter, mock_client)
+   1         async def test_find_node_not_found(self, adapter, mock_client, moc...
+   1         async def test_execute_vector_search(self, service, mock_neo4j, mo...
+   1         async def test_execute_vector_search(self, mock_service)
+   1         async def test_execute_cypher_query_write_permission(self, mock_se...
+   1         async def test_execute_cypher_query_success(self, adapter, mock_co...
+   1         async def test_execute_cypher_query_error(self, adapter, mock_conn...
+   1         async def test_execute_cypher_query(self, service, mock_neo4j)
+   1         async def test_execute_cypher_query(self, mock_service)
+   1         async def test_create_embeddings_success(self, adapter, mock_clien...
+   1         async def test_create_embeddings_error(self, adapter, mock_client)...
+   1         async def test_create_dev_token(self, validator)
+   1         async def test_complete_async(self, client)
+   1         async def test_chat_async_with_reasoning_model_parameter_adjustmen...
+   1         async def test_cancel_job(self, mock_service)
+   1         async def test_call_with_search_error(self, tool, graph_service)
+   1         async def test_call_with_node_without_content(self, tool, graph_se...
+   1         async def test_call_with_invalid_max_paths(self, tool)
+   1         async def test_call_with_empty_to_id(self, tool)
+   1         async def test_call_with_empty_query(self, tool)
+   1         async def test_call_with_empty_node_id(self, tool)
+   1         async def test_call_with_empty_from_id(self, tool)
+   1         async def test_call_with_empty_code(self, tool)
+   1         async def test_call_success(self, tool, openai_service)
+   1         async def test_call_success(self, tool, graph_service)
+   1         async def test_answer_question(self, service, mock_neo4j, mock_ope...
+   1         async def mock_is_admin()
+   1         async def get_test_user()
+   1             waiting_key = f"codestory
+   1             summary_future = asyncio.Future()
+   1             self.steps_status = {}
+   1             self.steps_results = {}
+   1             self.steps_errors = {}
+   1             self.dependency_graph = {}
+   1             self._step_instances = {}
+   1             route_paths = [route.path for route in app.routes]
+   1             return step.__class__.__name__
+   1             return
+   1             paths_future = asyncio.Future()
+   1             if self._thread and self._thread.is_alive()
+   1             if final_status["status"] == StepStatus.COMPLETED
+   1             from codestory_service.domain.config import (
+   1             from codestory.llm.models import EmbeddingData, EmbeddingRespo...
+   1             from codestory.ingestion_pipeline.resource_manager import Reso...
+   1             from codestory.ingestion_pipeline.celery_app import settings
+   1             from codestory.config.settings import get_settings
+   1             from codestory.config.settings import get_project_root
+   1             from codestory.cli.client.service_client import ServiceClient,...
+   1             find_node_future = asyncio.Future()
+   1             explanation_future = asyncio.Future()
+   1             embed_future = asyncio.Future()
+   1             def summary_stats(values)
+   1             def side_effect(*args, **kwargs)
+   1             def rel_getitem(key)
+   1             def rel_contains(key)
+   1             def node2_getitem(key)
+   1             def node2_contains(key)
+   1             def node1_getitem(key)
+   1             def node1_contains(key)
+   1             def mock_execute_query(query, params=None)
+   1             def mock_execute(*args, **kwargs)
+   1             def mock_chat(messages, **kwargs)
+   1             click.Context.fail = original_error_callback
+   1             click.Context.fail = MagicMock()
+   1             class_id = class_result["id"]
+   1             async for key in self.redis.scan_iter(match=pattern)
+   1             async def test_subscribe(websocket, job_id)
+   1             async def start_ingestion(self, request)
+   1             async def mock_wait_for_with_timeout(coro, timeout)
+   1             async def mock_list()
+   1             async def mock_create(**kwargs)
+   1             async def mock_chat_create(**kwargs)
+   1             async def list_jobs(self, *args, **kwargs)
+   1             async def get_job_status(self, job_id)
+   1             assert final_status["status"] in [
+   1             assert click.Context.fail == original_fail
+   1             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   1             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   1             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   1             ^~~~~~~~~~~~~~~~~~~~~
+   1             ^~~~~~~~~~~~~~~~~~~~
+   1             ^~~~~~
+   1                ^~~~~~~~~~~~~~~~~~~~~~
+   1                 self._thread.start()
+   1                 self._thread.join(timeout=5.0)
+   1                 self._thread.daemon = True
+   1                 self._thread = threading.Thread(target=self._run_pipeline)
+   1                 output = console.file.getvalue()
+   1                 if self._thread and self._thread.is_alive()
+   1                 from codestory_summarizer.step import run_summarizer
+   1                 from codestory_service.domain.graph import (
+   1                 from codestory_filesystem.step import process_filesystem
+   1                 from codestory_docgrapher.step import run_docgrapher
+   1                 from codestory_blarify.step import run_blarify
+   1                 from codestory.llm.models import ChatMessage
+   1                 from codestory.ingestion_pipeline.step import StepStatus
+   1                 from codestory.ingestion_pipeline.celery_app import app as...
+   1                 from celery.exceptions import CeleryError
+   1                 def test_retry_after()
+   1                 def stop_after_messages()
+   1                 data["dependencies"] = list(dependencies)
+   1                 data = await self.redis.get(key)
+   1                 click.Context.fail.assert_called_once_with(mock_ctx, "Some...
+   1                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+   1                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   1                 ^~~~~~~~~~~~~~~~~~~
+   1                 ^~~~~~~~~~~~~~~~~~
+   1                  ^~~~
+   1                    ^~~~~~~~~~~~~~~~~~~~~~
+   1                     started_at=None,
+   1                     from codestory.ingestion_pipeline.step import StepStat...
+   1                     e.headers = {"retry-after"
+   1                     def __init__(self)
+   1                     countdown = int(request.countdown)
+   1                     console.print(f"[yellow]Warning
+   1                     await self.redis.set(
+   1                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+   1                     ^~~~~~~~~
+   1                     ^
+   1                       ^~~~~~~~
+   1                        ^~~~~~~~~~~~~~~~~~
+   1                          ^~~~~~~~~~~~~~~~~~~~~
+   1                           ^~~~~~~~~~~~~~
+   1                            ^~~~~~~~~~
+   1                             from codestory.config.settings import get_sett...
+   1                             eta = datetime.fromtimestamp(int(request.eta))
+   1                             dep_event = await self.redis.get(status_key)
+   1                             await self.redis.delete(key)
+   1                              ^~~~~~~~~~~~~~~~~~~~
+   1                              ^~~~~~~~~~~~~~~~
+   1                              ^~~~~~~~~~~~~~
+   1                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   1                                ^~~~~~~~~~~~~~~~
+   1                                ^~~~
+   1                                 ^~~~~~~~~~~~~~~~~~~~~~~
+   1                                  ^~~~~~~~~~~~~~~~
+   1                                   ^~~~~~~~~~~~~~~~~
+   1                                    ^~~~~~~~~~~~~~~~~~~
+   1                                     ^~~~~~~~~~~~~~~~~~~~~~~
+   1                                     ^~~~~~~~~~~~~~~~~
+   1                                        ^~~~~~~~~~~~~~~~~~
+   1                                               ^~~~~~~~~~~~~~
+   1                                                         ^~~~~~~~~~~~~~~~~~~~~~~~
+   1                                                         ^~~~~~~~~~~~~~~~~~~~~~~
+   1                                                         ^~~~~~~~~~~~~~~~~~~~~~
+   1                                                              ^~~~~~~~~~~

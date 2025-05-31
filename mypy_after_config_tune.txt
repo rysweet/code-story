@@ -1,0 +1,2378 @@
+src/codestory/ingestion_pipeline/celery_app.py:34: error: Skipping analyzing
+"kombu": module is installed, but missing library stubs or py.typed marker 
+[import-untyped]
+        from kombu import Queue
+    ^
+src/codestory/mcp/main.py:37: error: "Settings" has no attribute "project_name"
+ [attr-defined]
+            "name": f"{settings.project_name}-mcp",
+                      ^~~~~~~~~~~~~~~~~~~~~~
+src/codestory/ingestion_pipeline/tasks.py:14: error: Incompatible types in
+assignment (expression has type "None", variable has type Module)  [assignment]
+        psutil = None
+                 ^~~~
+src/codestory/cli/client/service_client.py:372: error: Incompatible types in
+assignment (expression has type "list[str]", target has type "str") 
+[assignment]
+                data["dependencies"] = list(dependencies)
+                                       ^~~~~~~~~~~~~~~~~~
+src/codestory/cli/commands/ingest.py:717: error: Statement is unreachable 
+[unreachable]
+                    console.print(f"[yellow]Warning: --eta value '{eta}' i...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory/cli/main.py:8: error: Skipping analyzing "click_didyoumean":
+module is installed, but missing library stubs or py.typed marker 
+[import-untyped]
+    from click_didyoumean import DYMGroup
+    ^
+src/codestory/cli/main.py:8: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+Found 6 errors in 6 files (checked 47 source files)
+src/codestory_service/infrastructure/celery_adapter.py:177: error: Argument 1
+to "int" has incompatible type "int | None"; expected
+"str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc"  [arg-type]
+                            eta = datetime.fromtimestamp(int(request.eta))
+                                                             ^~~~~~~~~~~
+src/codestory_service/infrastructure/celery_adapter.py:181: error: Argument 1
+to "int" has incompatible type "int | None"; expected
+"str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc"  [arg-type]
+                    countdown = int(request.countdown)
+                                    ^~~~~~~~~~~~~~~~~
+src/codestory_service/infrastructure/celery_adapter.py:233: error:
+"type[StepStatus]" has no attribute "UNKNOWN"  [attr-defined]
+    ...            status=StepStatus(step.get("status", StepStatus.UNKNOWN)),
+                                                        ^~~~~~~~~~~~~~~~~~
+src/codestory_service/infrastructure/celery_adapter.py:250: error:
+"type[StepStatus]" has no attribute "UNKNOWN"  [attr-defined]
+    ...          status=StepStatus(result.get("status", StepStatus.UNKNOWN)),
+                                                        ^~~~~~~~~~~~~~~~~~
+src/codestory_service/infrastructure/celery_adapter.py:254: error: Argument 1
+to "fromtimestamp" of "datetime" has incompatible type "Any | None"; expected
+"float"  [arg-type]
+    ...               started_at=datetime.fromtimestamp(result.get("start_tim...
+                                                        ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_service/infrastructure/celery_adapter.py:255: error: Argument 1
+to "fromtimestamp" of "datetime" has incompatible type "Any | None"; expected
+"float"  [arg-type]
+    ...             completed_at=datetime.fromtimestamp(result.get("end_time"...
+                                                        ^~~~~~~~~~~~~~~~~~~~~~
+src/codestory_service/infrastructure/openai_adapter.py:262: error: Argument
+"role" to "ChatMessage" has incompatible type "str"; expected "ChatRole" 
+[arg-type]
+                    ChatMessage(role="system", content="You are a helpful ...
+                                     ^~~~~~~~
+src/codestory_service/infrastructure/openai_adapter.py:263: error: Argument
+"role" to "ChatMessage" has incompatible type "str"; expected "ChatRole" 
+[arg-type]
+                    ChatMessage(role="user", content=test_message),
+                                     ^~~~~~
+src/codestory_service/infrastructure/openai_adapter.py:274: error: Incompatible
+types in assignment (expression has type "int", target has type
+"Sequence[object]")  [assignment]
+    ...          chat_params["max_completion_tokens"] = 10  # Use a higher va...
+                                                        ^~
+src/codestory_service/infrastructure/openai_adapter.py:278: error: Incompatible
+types in assignment (expression has type "int", target has type
+"Sequence[object]")  [assignment]
+                    chat_params["max_tokens"] = 10
+                                                ^~
+src/codestory_service/infrastructure/openai_adapter.py:279: error: Incompatible
+types in assignment (expression has type "float", target has type
+"Sequence[object]")  [assignment]
+                    chat_params["temperature"] = 0.1  # Low temperature fo...
+                                                 ^~~
+src/codestory_service/infrastructure/openai_adapter.py:285: error: Argument 1
+to "chat_async" of "OpenAIClient" has incompatible type
+"**dict[str, Sequence[object]]"; expected "list[ChatMessage]"  [arg-type]
+                response = await self.client.chat_async(**chat_params)
+                                                          ^~~~~~~~~~~
+src/codestory_service/infrastructure/openai_adapter.py:285: error: Argument 1
+to "chat_async" of "OpenAIClient" has incompatible type
+"**dict[str, Sequence[object]]"; expected "str | None"  [arg-type]
+                response = await self.client.chat_async(**chat_params)
+                                                          ^~~~~~~~~~~
+src/codestory_service/infrastructure/openai_adapter.py:285: error: Argument 1
+to "chat_async" of "OpenAIClient" has incompatible type
+"**dict[str, Sequence[object]]"; expected "int | None"  [arg-type]
+                response = await self.client.chat_async(**chat_params)
+                                                          ^~~~~~~~~~~
+src/codestory_service/infrastructure/openai_adapter.py:285: error: Argument 1
+to "chat_async" of "OpenAIClient" has incompatible type
+"**dict[str, Sequence[object]]"; expected "float | None"  [arg-type]
+                response = await self.client.chat_async(**chat_params)
+                                                          ^~~~~~~~~~~
+src/codestory_service/infrastructure/neo4j_adapter.py:471: error: Incompatible
+types in assignment (expression has type "DummyNeo4jConnector", variable has
+type "Neo4jConnector")  [assignment]
+            self.connector = DummyNeo4jConnector()
+                             ^~~~~~~~~~~~~~~~~~~~~
+src/codestory_service/application/ingestion_service.py:194: error: "None" has
+no attribute "set"  [attr-defined]
+                    await self.redis.set(
+                          ^~~~~~~~~~~~~~
+src/codestory_service/application/ingestion_service.py:433: error: Function is
+missing a type annotation  [no-untyped-def]
+            def summary_stats(values):
+            ^
+src/codestory_service/application/ingestion_service.py:461: error: "None" has
+no attribute "scan_iter"  [attr-defined]
+            async for key in self.redis.scan_iter(match=pattern):
+                             ^~~~~~~~~~~~~~~~~~~~
+src/codestory_service/application/ingestion_service.py:462: error: "None" has
+no attribute "get"  [attr-defined]
+                data = await self.redis.get(key)
+                             ^~~~~~~~~~~~~~
+src/codestory_service/application/ingestion_service.py:473: error: "None" has
+no attribute "get"  [attr-defined]
+                            dep_event = await self.redis.get(status_key)
+                                              ^~~~~~~~~~~~~~
+src/codestory_service/application/ingestion_service.py:486: error: "None" has
+no attribute "delete"  [attr-defined]
+                            await self.redis.delete(key)
+                                  ^~~~~~~~~~~~~~~~~
+Found 22 errors in 4 files (checked 28 source files)
+src/codestory_docgrapher/utils/path_matcher.py:46: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+            files = self.connector.run_query(query, fetch_all=True)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:55: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+            dirs = self.connector.run_query(query, fetch_all=True)
+                   ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:64: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+            classes = self.connector.run_query(query, fetch_all=True)
+                      ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:76: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+            funcs = self.connector.run_query(query, fetch_all=True)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:176: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+                result = self.connector.run_query(
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:191: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+                result = self.connector.run_query(
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:205: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+            result = self.connector.run_query(
+                     ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:238: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+                result = self.connector.run_query(
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:257: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+                result = self.connector.run_query(
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/path_matcher.py:275: error: "Neo4jConnector" has
+no attribute "run_query"  [attr-defined]
+            result = self.connector.run_query(
+                     ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/content_analyzer.py:344: error: Unused
+"type: ignore" comment  [unused-ignore]
+                return response.choices[0].message.content.strip()  # type...
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory_docgrapher/utils/content_analyzer.py:344: error: Item "None" of
+"str | Any | None" has no attribute "strip"  [union-attr]
+                return response.choices[0].message.content.strip()  # type...
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/content_analyzer.py:344: note: Error code "union-attr" not covered by "type: ignore" comment
+src/codestory_docgrapher/utils/content_analyzer.py:379: error: Unused
+"type: ignore" comment  [unused-ignore]
+                return response.choices[0].message.content.strip()  # type...
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory_docgrapher/utils/content_analyzer.py:379: error: Item "None" of
+"str | Any | None" has no attribute "strip"  [union-attr]
+                return response.choices[0].message.content.strip()  # type...
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/content_analyzer.py:379: note: Error code "union-attr" not covered by "type: ignore" comment
+src/codestory_docgrapher/utils/content_analyzer.py:414: error: Unused
+"type: ignore" comment  [unused-ignore]
+                return response.choices[0].message.content.strip()  # type...
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory_docgrapher/utils/content_analyzer.py:414: error: Item "None" of
+"str | Any | None" has no attribute "strip"  [union-attr]
+                return response.choices[0].message.content.strip()  # type...
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/utils/content_analyzer.py:414: note: Error code "union-attr" not covered by "type: ignore" comment
+src/codestory_docgrapher/document_finder.py:133: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+            files = self.connector.run_query(query, fetch_all=True)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/document_finder.py:208: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+            files = self.connector.run_query(query, fetch_all=True)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:207: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:220: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:237: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:251: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:292: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:307: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:322: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/entity_linker.py:337: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                records = self.connector.run_query(
+                          ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/knowledge_graph.py:112: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                existing = self.connector.run_query(
+                           ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/knowledge_graph.py:134: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                result = self.connector.run_query(
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/knowledge_graph.py:176: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                result = self.connector.run_query(
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/knowledge_graph.py:214: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                    result = self.connector.run_query(
+                             ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_docgrapher/knowledge_graph.py:244: error: "Neo4jConnector" has no
+attribute "run_query"  [attr-defined]
+                    result = self.connector.run_query(
+                             ^~~~~~~~~~~~~~~~~~~~~~~~
+Found 31 errors in 5 files (checked 15 source files)
+src/codestory_filesystem/step.py:198: error: Unused "type: ignore" comment 
+[unused-ignore]
+                return job_id  # type: ignore[no-any-return]
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_filesystem/step.py:272: error: Dict entry 1 has incompatible type
+"str": "str"; expected "str": "StepStatus | None"  [dict-item]
+                                    "message": status_msg,
+                                    ^~~~~~~~~~~~~~~~~~~~~
+src/codestory_filesystem/step.py:273: error: Dict entry 2 has incompatible type
+"str": "float"; expected "str": "StepStatus | None"  [dict-item]
+                                    "progress": 100.0,
+                                    ^~~~~~~~~~~~~~~~~
+src/codestory_filesystem/step.py:283: error: Dict entry 1 has incompatible type
+"str": "str"; expected "str": "StepStatus | None"  [dict-item]
+                                    "error": f"Error retrieving result: {e...
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory_filesystem/step.py:293: error: Dict entry 1 has incompatible type
+"str": "str"; expected "str": "StepStatus | None"  [dict-item]
+                                "error": str(result.result),
+                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_filesystem/step.py:599: error: Argument 1 to "Neo4jConnector" has
+incompatible type "**dict[str, str]"; expected "bool"  [arg-type]
+                neo4j = Neo4jConnector(**params)
+                                         ^~~~~~
+Found 6 errors in 1 file (checked 2 source files)
+src/codestory_mcp/auth/scope_manager.py:26: error: Unused "type: ignore"
+comment  [unused-ignore]
+            return self.settings.required_scopes  # type: ignore[no-any-re...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory_mcp/server.py:66: error: Argument 1 to "EntraValidator" has
+incompatible type "str | None"; expected "str"  [arg-type]
+            validator = EntraValidator(settings.azure_tenant_id, settings....
+                                       ^~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/server.py:66: error: Argument 2 to "EntraValidator" has
+incompatible type "str | None"; expected "str"  [arg-type]
+    ...dator = EntraValidator(settings.azure_tenant_id, settings.api_audience...
+                                                        ^~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/server.py:69: error: Unused "type: ignore" comment 
+[unused-ignore]
+            return claims  # type: ignore[no-any-return]
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/server.py:117: error: Unused "type: ignore" comment 
+[unused-ignore]
+                return result  # type: ignore[no-any-return]
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/adapters/openai_service.py:55: error: Argument "role" to
+"ChatMessage" has incompatible type "str"; expected "ChatRole"  [arg-type]
+                        role="system",
+                             ^~~~~~~~
+src/codestory_mcp/adapters/openai_service.py:69: error: Argument "role" to
+"ChatMessage" has incompatible type "str"; expected "ChatRole"  [arg-type]
+                            role="user",
+                                 ^~~~~~
+src/codestory_mcp/adapters/openai_service.py:79: error: Argument "role" to
+"ChatMessage" has incompatible type "str"; expected "ChatRole"  [arg-type]
+                            role="user",
+                                 ^~~~~~
+src/codestory_mcp/adapters/openai_service.py:88: error: Argument "role" to
+"ChatMessage" has incompatible type "str"; expected "ChatRole"  [arg-type]
+                messages.append(ChatMessage(role="user", content=f"```\n{c...
+                                                 ^~~~~~
+src/codestory_mcp/adapters/openai_service.py:99: error: "OpenAIClient" has no
+attribute "create_chat_completion"  [attr-defined]
+                response = await self.client.create_chat_completion(reques...
+                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/adapters/openai_service.py:162: error: Argument "role" to
+"ChatMessage" has incompatible type "str"; expected "ChatRole"  [arg-type]
+                        role="system",
+                             ^~~~~~~~
+src/codestory_mcp/adapters/openai_service.py:171: error: Argument "role" to
+"ChatMessage" has incompatible type "str"; expected "ChatRole"  [arg-type]
+                        role="user",
+                             ^~~~~~
+src/codestory_mcp/adapters/openai_service.py:190: error: "OpenAIClient" has no
+attribute "create_chat_completion"  [attr-defined]
+                response = await self.client.create_chat_completion(reques...
+                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/adapters/openai_service.py:235: error: "OpenAIClient" has no
+attribute "create_embedding"  [attr-defined]
+                await self.client.create_embedding(code)
+                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/tools/summarize_node.py:83: error: Value of type
+"frozenset[str]" is not indexable  [index]
+                    node_type = node.labels[0] if node.labels else "Unknow...
+                                ^~~~~~~~~~~~~~
+src/codestory_mcp/tools/summarize_node.py:103: error: Value of type
+"frozenset[str]" is not indexable  [index]
+                        "type": node.labels[0] if node.labels else "Unknow...
+                                ^~~~~~~~~~~~~~
+src/codestory_mcp/tools/similar_code.py:80: error: Incompatible types in
+assignment (expression has type "dict[str, Any]", target has type
+"list[dict[str, Any]]")  [assignment]
+                response["metadata"] = {
+                                       ^
+src/codestory_mcp/tools/search_graph.py:89: error: Argument 1 to
+"to_mcp_result" of "NodeSerializer" has incompatible type
+"list[tuple[Node, float]]"; expected "list[Node | tuple[Node, float]]" 
+[arg-type]
+                    results,
+                    ^~~~~~~
+src/codestory_mcp/tools/search_graph.py:89: note: "List" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+src/codestory_mcp/tools/search_graph.py:89: note: Consider using "Sequence" instead, which is covariant
+src/codestory_mcp/tools/search_graph.py:95: error: Incompatible types in
+assignment (expression has type "dict[str, Any]", target has type
+"list[dict[str, Any]]")  [assignment]
+                response["metadata"] = {
+                                       ^
+src/codestory_mcp/tools/search_graph.py:105: error: Unused "type: ignore"
+comment  [unused-ignore]
+                return response  # type: ignore[no-any-return]
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory_mcp/tools/path_to.py:119: error: Item "Relationship" of
+"Node | Relationship" has no attribute "labels"  [union-attr]
+                                    "type": element.labels[0] if element.l...
+                                            ^~~~~~~~~~~~~~
+src/codestory_mcp/tools/path_to.py:119: error: Value of type
+"frozenset[str] | Any" is not indexable  [index]
+                                    "type": element.labels[0] if element.l...
+                                            ^~~~~~~~~~~~~~~~~
+src/codestory_mcp/tools/path_to.py:129: error: Item "Node" of
+"Node | Relationship" has no attribute "type"  [union-attr]
+                                    "type": element.type,
+                                            ^~~~~~~~~~~~
+src/codestory_mcp/tools/path_to.py:139: error: Incompatible types in assignment
+(expression has type "str", target has type "list[dict[str, Any]]") 
+[assignment]
+                    response["explanation"] = explanation
+                                              ^~~~~~~~~~~
+src/codestory_mcp/tools/path_to.py:142: error: Incompatible types in assignment
+(expression has type "dict[str, Any]", target has type "list[dict[str, Any]]") 
+[assignment]
+                response["metadata"] = {
+                                       ^
+src/codestory_mcp/tools/path_to.py:157: error: Unused "type: ignore" comment 
+[unused-ignore]
+                return response  # type: ignore[no-any-return]
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Found 26 errors in 7 files (checked 19 source files)
+Success: no issues found in 14 source files
+Success: no issues found in 2 source files
+tests/unit/test_llm/test_llm_models.py:24: error: Statement is unreachable 
+[unreachable]
+        assert ChatRole.USER == "user"
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_llm_models.py:46: error: Argument 1 to "ChatMessage"
+has incompatible type "**dict[str, str]"; expected "ChatRole"  [arg-type]
+        message = ChatMessage(**message_dict)
+                                ^~~~~~~~~~~~
+tests/unit/test_llm/test_llm_models.py:73: error: Item "None" of
+"ChatFunctionCall | None" has no attribute "name"  [union-attr]
+        assert message.function_call.name == "get_weather"
+               ^~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_llm_models.py:203: error: Item "None" of
+"UsageInfo | None" has no attribute "total_tokens"  [union-attr]
+        assert response.usage.total_tokens == 18
+               ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_llm_models.py:225: error: Item "None" of
+"UsageInfo | None" has no attribute "prompt_tokens"  [union-attr]
+        assert response.usage.prompt_tokens == 15
+               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_graphdb/test_models.py:30: error: Statement is unreachable 
+[unreachable]
+        assert NodeType.DIRECTORY == "Directory"
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_graphdb/test_models.py:42: error: Statement is unreachable 
+[unreachable]
+        assert RelationshipType.IMPORTS == "IMPORTS"
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_backoff.py:236: error: "RateLimitError" has no
+attribute "headers"  [attr-defined]
+                    e.headers = {"retry-after": "30"}
+                    ^~~~~~~~~
+tests/unit/test_settings.py:30: error: Missing named argument
+"connection_timeout" for "Neo4jSettings"  [call-arg]
+        neo4j = Neo4jSettings(
+                ^
+tests/unit/test_settings.py:30: error: Missing named argument
+"max_connection_pool_size" for "Neo4jSettings"  [call-arg]
+        neo4j = Neo4jSettings(
+                ^
+tests/unit/test_settings.py:30: error: Missing named argument
+"connection_acquisition_timeout" for "Neo4jSettings"  [call-arg]
+        neo4j = Neo4jSettings(
+                ^
+tests/unit/test_settings.py:33: error: Argument "password" to "Neo4jSettings"
+has incompatible type "str"; expected "SecretStr"  [arg-type]
+            password="password",
+                     ^~~~~~~~~~
+tests/unit/test_settings.py:43: error: Missing named argument "tenant_id" for
+"OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument "subscription_id"
+for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument "api_version" for
+"OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument "max_retries" for
+"OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument
+"retry_backoff_factor" for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument "temperature" for
+"OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument "max_tokens" for
+"OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:43: error: Missing named argument "timeout" for
+"OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/unit/test_settings.py:73: error: Missing named argument
+"resource_max_tokens" for "IngestionSettings"  [call-arg]
+        ingestion = IngestionSettings(
+                    ^
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"port" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"host" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"workers" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"azure_tenant_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"azure_client_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"auth_enabled" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"code_story_service_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"api_token_issuer" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"api_audience" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"required_scopes" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"cors_origins" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"enable_grpc" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"prometheus_metrics_path" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"enable_opentelemetry" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"openapi_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"docs_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"redoc_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:13: error: Missing named argument
+"debug" for "MCPSettings"  [call-arg]
+        settings = MCPSettings()
+                   ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"port" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"host" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"workers" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"azure_tenant_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"azure_client_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"auth_enabled" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"api_token_issuer" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"required_scopes" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"cors_origins" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"enable_grpc" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"prometheus_metrics_path" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"enable_opentelemetry" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"openapi_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"docs_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"redoc_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:35: error: Missing named argument
+"debug" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"port" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"host" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"workers" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"azure_tenant_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"auth_enabled" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"api_token_issuer" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"api_audience" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"required_scopes" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"cors_origins" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"enable_grpc" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"prometheus_metrics_path" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"enable_opentelemetry" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"openapi_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"docs_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"redoc_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:41: error: Missing named argument
+"debug" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(
+                   ^
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"port" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"host" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"workers" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"azure_tenant_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"azure_client_id" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"auth_enabled" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"api_token_issuer" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"api_audience" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"required_scopes" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"cors_origins" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"enable_grpc" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"prometheus_metrics_path" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"enable_opentelemetry" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"openapi_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"docs_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"redoc_url" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:47: error: Missing named argument
+"debug" for "MCPSettings"  [call-arg]
+        settings = MCPSettings(code_story_service_url="http://localhost:80...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"port" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"host" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"workers" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"azure_tenant_id" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"azure_client_id" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"auth_enabled" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"code_story_service_url" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"api_token_issuer" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"api_audience" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"required_scopes" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"cors_origins" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"enable_grpc" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"prometheus_metrics_path" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"enable_opentelemetry" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"openapi_url" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"docs_url" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"redoc_url" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_config.py:85: error: Missing named argument
+"debug" for "MCPSettings"  [call-arg]
+            settings = MCPSettings()
+                       ^~~~~~~~~~~~~
+tests/integration/test_config.py:42: error: Missing named argument
+"connection_timeout" for "Neo4jSettings"  [call-arg]
+        neo4j = Neo4jSettings(
+                ^
+tests/integration/test_config.py:42: error: Missing named argument
+"max_connection_pool_size" for "Neo4jSettings"  [call-arg]
+        neo4j = Neo4jSettings(
+                ^
+tests/integration/test_config.py:42: error: Missing named argument
+"connection_acquisition_timeout" for "Neo4jSettings"  [call-arg]
+        neo4j = Neo4jSettings(
+                ^
+tests/integration/test_config.py:45: error: Argument "password" to
+"Neo4jSettings" has incompatible type "str"; expected "SecretStr"  [arg-type]
+            password="password",
+                     ^~~~~~~~~~
+tests/integration/test_config.py:57: error: Missing named argument "tenant_id"
+for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument
+"subscription_id" for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument
+"api_version" for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument
+"max_retries" for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument
+"retry_backoff_factor" for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument
+"temperature" for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument "max_tokens"
+for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:57: error: Missing named argument "timeout"
+for "OpenAISettings"  [call-arg]
+        openai = OpenAISettings(
+                 ^
+tests/integration/test_config.py:58: error: Argument "api_key" to
+"OpenAISettings" has incompatible type "str"; expected "SecretStr | None" 
+[arg-type]
+            api_key="sk-test-key-openai",  # Fake key for testing
+                    ^~~~~~~~~~~~~~~~~~~~
+tests/integration/test_config.py:67: error: Argument "api_key" to
+"AzureOpenAISettings" has incompatible type "str"; expected "SecretStr | None" 
+[arg-type]
+            api_key="test-azure-key",  # Fake key for testing
+                    ^~~~~~~~~~~~~~~~
+tests/integration/test_config.py:77: error: Unexpected keyword argument
+"environment" for "ServiceSettings"  [call-arg]
+        service = ServiceSettings(
+                  ^
+tests/integration/test_config.py:88: error: Missing named argument
+"resource_max_tokens" for "IngestionSettings"  [call-arg]
+        ingestion = IngestionSettings(
+                    ^
+tests/integration/test_config.py:130: error: Argument "client_secret" to
+"AzureSettings" has incompatible type "str"; expected "SecretStr | None" 
+[arg-type]
+            client_secret="test-client-secret",
+                          ^~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_filesystem_direct.py:33: error:
+Missing named argument "connection_timeout" for "Neo4jSettings"  [call-arg]
+    TEST_NEO4J_SETTINGS = Neo4jSettings(
+                          ^
+tests/integration/test_ingestion_pipeline/test_filesystem_direct.py:33: error:
+Missing named argument "max_connection_pool_size" for "Neo4jSettings" 
+[call-arg]
+    TEST_NEO4J_SETTINGS = Neo4jSettings(
+                          ^
+tests/integration/test_ingestion_pipeline/test_filesystem_direct.py:33: error:
+Missing named argument "connection_acquisition_timeout" for "Neo4jSettings" 
+[call-arg]
+    TEST_NEO4J_SETTINGS = Neo4jSettings(
+                          ^
+tests/integration/test_ingestion_pipeline/test_filesystem_direct.py:36: error:
+Argument "password" to "Neo4jSettings" has incompatible type "str"; expected
+"SecretStr"  [arg-type]
+        password=TEST_PASSWORD,
+                 ^~~~~~~~~~~~~
+tests/unit/test_config/test_settings_imports.py:61: error: Item "None" of
+"SecretStr | None" has no attribute "get_secret_value"  [union-attr]
+        assert settings.openai.api_key.get_secret_value() == "sk-test-key-...
+               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:279: error: Need type annotation for
+"future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:395: error: Item "None" of
+"UsageInfo | None" has no attribute "prompt_tokens"  [union-attr]
+                assert result.usage.prompt_tokens == 5
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:396: error: Item "None" of
+"UsageInfo | None" has no attribute "completion_tokens"  [union-attr]
+                assert result.usage.completion_tokens == 7
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:397: error: Item "None" of
+"UsageInfo | None" has no attribute "total_tokens"  [union-attr]
+                assert result.usage.total_tokens == 12
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:448: error: Item "None" of
+"UsageInfo | None" has no attribute "prompt_tokens"  [union-attr]
+                assert result.usage.prompt_tokens == 15
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:449: error: Item "None" of
+"UsageInfo | None" has no attribute "completion_tokens"  [union-attr]
+                assert result.usage.completion_tokens == 12
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:450: error: Item "None" of
+"UsageInfo | None" has no attribute "total_tokens"  [union-attr]
+                assert result.usage.total_tokens == 27
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:542: error: Need type annotation for
+"future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:555: error: Item "None" of
+"UsageInfo | None" has no attribute "prompt_tokens"  [union-attr]
+                assert result.usage.prompt_tokens == 5
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:556: error: Item "None" of
+"UsageInfo | None" has no attribute "completion_tokens"  [union-attr]
+                assert result.usage.completion_tokens == 7
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_llm/test_client.py:557: error: Item "None" of
+"UsageInfo | None" has no attribute "total_tokens"  [union-attr]
+                assert result.usage.total_tokens == 12
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_ingestion_pipeline/test_manager.py:104: error: Cannot assign to
+a method  [method-assign]
+                manager._get_step_class = lambda name: mock_step_class if ...
+                ^~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_ingestion_pipeline/test_manager.py:104: error: Incompatible
+types in assignment (expression has type "Callable[[str], Any | None]", variable
+has type "Callable[[str], type[PipelineStep] | None]")  [assignment]
+                manager._get_step_class = lambda name: mock_step_class if ...
+                                          ^
+tests/unit/test_ingestion_pipeline/test_manager.py:110: error: Cannot assign to
+a method  [method-assign]
+                    manager._get_step_class = original_method
+                    ^~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_graphdb/test_connector.py:170: error: Need type annotation for
+"params_list"  [var-annotated]
+        params_list = [{}, {}]
+                      ^~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "title" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "summary" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "version" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "api_prefix" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "docs_url" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "openapi_url" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "redoc_url" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "cors_origins" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "cors_allow_credentials" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "cors_allow_methods" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "cors_allow_headers" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "auth_enabled" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "jwt_secret" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "jwt_algorithm" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "jwt_expiration" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "websocket_heartbeat" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "rate_limit_enabled" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "rate_limit_requests" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "rate_limit_window" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "metrics_enabled" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "metrics_route" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "dev_mode" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "max_request_size" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:14: error: Missing named
+argument "response_timeout" for "ServiceSettings"  [call-arg]
+        settings = ServiceSettings()
+                   ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "title" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "summary" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "version" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "api_prefix" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "docs_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "openapi_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "redoc_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "cors_origins" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "cors_allow_credentials" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "cors_allow_methods" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "cors_allow_headers" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "auth_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "jwt_secret" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "jwt_algorithm" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "jwt_expiration" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "websocket_heartbeat" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "rate_limit_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "rate_limit_requests" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "rate_limit_window" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "metrics_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "metrics_route" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "dev_mode" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "max_request_size" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:38: error: Missing named
+argument "response_timeout" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "title" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "summary" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "version" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "api_prefix" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "docs_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "openapi_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "redoc_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "cors_origins" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "cors_allow_credentials" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "cors_allow_methods" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "cors_allow_headers" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "auth_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "jwt_secret" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "jwt_algorithm" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "jwt_expiration" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "websocket_heartbeat" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "rate_limit_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "rate_limit_requests" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "rate_limit_window" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "metrics_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "metrics_route" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "dev_mode" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "max_request_size" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:56: error: Missing named
+argument "response_timeout" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "title" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "summary" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "version" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "api_prefix" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "docs_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "openapi_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "redoc_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "cors_origins" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "cors_allow_credentials" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "cors_allow_methods" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "cors_allow_headers" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "auth_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "jwt_secret" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "jwt_algorithm" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "jwt_expiration" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "websocket_heartbeat" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "rate_limit_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "rate_limit_requests" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "rate_limit_window" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "metrics_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "metrics_route" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "dev_mode" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "max_request_size" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:68: error: Missing named
+argument "response_timeout" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "title" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "summary" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "version" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "api_prefix" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "docs_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "openapi_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "redoc_url" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "cors_origins" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "cors_allow_credentials" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "cors_allow_methods" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "cors_allow_headers" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "auth_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "jwt_secret" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "jwt_algorithm" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "jwt_expiration" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "websocket_heartbeat" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "rate_limit_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "rate_limit_requests" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "rate_limit_window" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "metrics_enabled" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "metrics_route" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "dev_mode" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "max_request_size" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:76: error: Missing named
+argument "response_timeout" for "ServiceSettings"  [call-arg]
+            settings = ServiceSettings()
+                       ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "title" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "summary" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "version" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "api_prefix" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "docs_url" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "openapi_url" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "redoc_url" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "cors_origins" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "cors_allow_credentials" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "cors_allow_methods" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "cors_allow_headers" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "auth_enabled" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "jwt_secret" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "jwt_algorithm" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "jwt_expiration" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "websocket_heartbeat" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "rate_limit_enabled" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "rate_limit_requests" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "rate_limit_window" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "metrics_enabled" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "metrics_route" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "dev_mode" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "max_request_size" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_settings.py:95: error: Missing named
+argument "response_timeout" for "ServiceSettings"  [call-arg]
+                    ServiceSettings()
+                    ^~~~~~~~~~~~~~~~~
+tests/integration/test_llm/conftest.py:84: error: Incompatible types in
+assignment (expression has type "str | None", variable has type "str") 
+[assignment]
+        endpoint = os.environ.get("OPENAI__ENDPOINT") or os.environ.get("A...
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:16: error:
+Need type annotation for "steps_status" (hint:
+"steps_status: dict[<type>, <type>] = ...")  [var-annotated]
+            self.steps_status = {}
+            ^~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:17: error:
+Need type annotation for "steps_results" (hint:
+"steps_results: dict[<type>, <type>] = ...")  [var-annotated]
+            self.steps_results = {}
+            ^~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:18: error:
+Need type annotation for "steps_errors" (hint:
+"steps_errors: dict[<type>, <type>] = ...")  [var-annotated]
+            self.steps_errors = {}
+            ^~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:19: error:
+Need type annotation for "dependency_graph" (hint:
+"dependency_graph: dict[<type>, <type>] = ...")  [var-annotated]
+            self.dependency_graph = {}
+            ^~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:20: error:
+Need type annotation for "_step_instances" (hint:
+"_step_instances: dict[<type>, <type>] = ...")  [var-annotated]
+            self._step_instances = {}
+            ^~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:53: error:
+Right operand of "and" is never evaluated  [unreachable]
+                if self._thread and self._thread.is_alive():
+                                    ^~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:63: error:
+Incompatible types in assignment (expression has type "Thread", variable has
+type "None")  [assignment]
+                self._thread = threading.Thread(target=self._run_pipeline)
+                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:64: error:
+"None" has no attribute "daemon"  [attr-defined]
+                self._thread.daemon = True
+                ^~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:65: error:
+"None" has no attribute "start"  [attr-defined]
+                self._thread.start()
+                ^~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:258: error:
+Right operand of "and" is never evaluated  [unreachable]
+            if self._thread and self._thread.is_alive():
+                                ^~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_pipeline_manager.py:259: error:
+Statement is unreachable  [unreachable]
+                self._thread.join(timeout=5.0)
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_graphdb/test_neo4j_integration.py:164: error: Value of
+type "Any | None" is not indexable  [index]
+                assert constraint.get("labelsOrTypes")[0] == "File"
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_graphdb/test_neo4j_integration.py:165: error: Value of
+type "Any | None" is not indexable  [index]
+                assert constraint.get("properties")[0] == "path"
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_graphdb/test_neo4j_integration.py:167: error: Value of
+type "Any | None" is not indexable  [index]
+                assert constraint.get("labelsOrTypes")[0] == "Directory"
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_graphdb/test_neo4j_integration.py:168: error: Value of
+type "Any | None" is not indexable  [index]
+                assert constraint.get("properties")[0] == "path"
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_graphdb/test_neo4j_integration.py:174: error: Value of
+type "Any | None" is not indexable  [index]
+                assert index.get("labelsOrTypes")[0] == "File"
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_graphdb/test_neo4j_integration.py:175: error: Value of
+type "Any | None" is not indexable  [index]
+                assert index.get("properties")[0] == "extension"
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_server.py:109: error: Need type annotation
+for "future"  [var-annotated]
+        future = asyncio.Future()
+                 ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_server.py:136: error: Need type annotation
+for "future"  [var-annotated]
+        future = asyncio.Future()
+                 ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_server.py:157: error: Need type annotation
+for "future"  [var-annotated]
+        future = asyncio.Future()
+                 ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_server.py:204: error: Need type annotation
+for "future"  [var-annotated]
+        future = asyncio.Future()
+                 ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_server.py:256: error: Need type annotation
+for "future"  [var-annotated]
+        future = asyncio.Future()
+                 ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_server.py:292: error: "BaseRoute" has no
+attribute "path"  [attr-defined]
+            route_paths = [route.path for route in app.routes]
+                           ^~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:185: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:221: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:242: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:279: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:306: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:359: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:448: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:484: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:511: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_adapters.py:565: error: Need type annotation
+for "embed_future"  [var-annotated]
+            embed_future = asyncio.Future()
+                           ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:94: error: Argument
+"source" to "ConfigMetadata" has incompatible type "str"; expected
+"ConfigSource"  [arg-type]
+                source="env",
+                       ^~~~~
+tests/unit/test_codestory_service/test_domain_models.py:106: error: Argument
+"source" to "ConfigMetadata" has incompatible type "str"; expected
+"ConfigSource"  [arg-type]
+                source="config_file",
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:120: error: Argument
+"source" to "ConfigMetadata" has incompatible type "str"; expected
+"ConfigSource"  [arg-type]
+                source="env",
+                       ^~~~~
+tests/unit/test_codestory_service/test_domain_models.py:136: error: Argument
+"source" to "ConfigMetadata" has incompatible type "str"; expected
+"ConfigSource"  [arg-type]
+                source="config_file",
+                       ^~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:148: error: List item 0
+has incompatible type "dict[str, object]"; expected "ConfigPatchItem" 
+[list-item]
+                    {"key": "general.debug", "value": True},
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:149: error: List item 1
+has incompatible type "dict[str, str]"; expected "ConfigPatchItem"  [list-item]
+                    {"key": "service.title", "value": "New Title"},
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "branch" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "dependencies" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "config" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "created_by" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "description" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "tags" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "priority" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "eta" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:214: error: Missing
+named argument "countdown" for "IngestionRequest"  [call-arg]
+                valid_request = IngestionRequest(
+                                ^
+tests/unit/test_codestory_service/test_domain_models.py:222: error: Unsupported
+right operand type for in ("dict[str, Any] | None")  [operator]
+                assert "ignore_patterns" in valid_request.options
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:223: error: Unsupported
+right operand type for in ("list[str] | None")  [operator]
+                assert "filesystem" in valid_request.steps
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "branch" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "steps" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "dependencies" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "config" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "options" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "created_by" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "description" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "tags" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "priority" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "eta" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:227: error: Missing
+named argument "countdown" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(source_type=IngestionSourceType.LOCAL...
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "branch" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "steps" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "dependencies" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "config" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "options" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "created_by" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "description" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "tags" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "priority" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "eta" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:231: error: Missing
+named argument "countdown" for "IngestionRequest"  [call-arg]
+                    IngestionRequest(
+                    ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "error" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "completed_at" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "duration" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "cpu_percent" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "memory_mb" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "retry_count" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_service/test_domain_models.py:252: error: Missing
+named argument "last_error" for "StepProgress"  [call-arg]
+            progress = StepProgress(
+                       ^
+tests/unit/test_codestory_mcp/test_tools.py:33: error: Only concrete class can
+be given where "type[BaseTool]" is expected  [type-abstract]
+            registered = register_tool(MockTool)
+                                       ^~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:65: error: Only concrete class can
+be given where "type[BaseTool]" is expected  [type-abstract]
+            register_tool(MockTool1)
+                          ^~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:66: error: Only concrete class can
+be given where "type[BaseTool]" is expected  [type-abstract]
+            register_tool(MockTool2)
+                          ^~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:146: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:174: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:248: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:276: error: Need type annotation
+for "find_node_future"  [var-annotated]
+            find_node_future = asyncio.Future()
+                               ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:280: error: Need type annotation
+for "summary_future"  [var-annotated]
+            summary_future = asyncio.Future()
+                             ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:415: error: Need type annotation
+for "paths_future"  [var-annotated]
+            paths_future = asyncio.Future()
+                           ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:419: error: Need type annotation
+for "explanation_future"  [var-annotated]
+            explanation_future = asyncio.Future()
+                                 ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_mcp/test_tools.py:517: error: Need type annotation
+for "future"  [var-annotated]
+            future = asyncio.Future()
+                     ^~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_service_client.py:278: error: Cannot assign to a
+method  [method-assign]
+            client.execute_query = MagicMock()
+            ^~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_service_client.py:303: error: Cannot assign to a
+method  [method-assign]
+            client.execute_query = MagicMock()
+            ^~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_service_client.py:316: error: Cannot assign to a
+method  [method-assign]
+            client.execute_query = MagicMock()
+            ^~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_service_client.py:328: error: Cannot assign to a
+method  [method-assign]
+            client.execute_query = MagicMock()
+            ^~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_blarify_integration.py:593: error:
+Statement is unreachable  [unreachable]
+            return
+            ^~~~~~
+tests/integration/test_ingestion_pipeline/test_blarify_integration.py:697: error:
+Value of type "dict[str, Any] | None" is not indexable  [index]
+            assert final_status["status"] in [
+                   ^~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_blarify_integration.py:700: error:
+Value of type "dict[str, Any] | None" is not indexable  [index]
+    ...  ], f"Expected status STOPPED or COMPLETED, got {final_status['status...
+                                                        ^~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_blarify_integration.py:703: error:
+Value of type "dict[str, Any] | None" is not indexable  [index]
+            if final_status["status"] == StepStatus.COMPLETED:
+               ^~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_infrastructure.py:112: error: Argument
+"usage" to "EmbeddingResponse" has incompatible type "dict[str, int]"; expected
+"UsageInfo"  [arg-type]
+                usage={"prompt_tokens": 8, "total_tokens": 8},
+                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_infrastructure.py:386: error:
+"CeleryAdapter" has no attribute "_run_ingestion_pipeline"  [attr-defined]
+            adapter._run_ingestion_pipeline = mock_app.tasks["run_ingestio...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "branch" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "steps" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "dependencies" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "config" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "options" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "created_by" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "description" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "tags" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "priority" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "eta" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:421: error: Missing
+named argument "countdown" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "branch" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "dependencies" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "config" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "created_by" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "description" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "tags" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "priority" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "eta" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_infrastructure.py:434: error: Missing
+named argument "countdown" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_cli/test_main.py:21: error: Cannot assign to a method 
+[method-assign]
+            click.Context.fail = MagicMock()
+            ^~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_main.py:26: error: Cannot assign to a method 
+[method-assign]
+            click.Context.fail = original_error_callback
+            ^~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_main.py:181: error: Statement is unreachable 
+[unreachable]
+                click.Context.fail.assert_called_once_with(mock_ctx, "Some...
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_cli/test_main.py:184: error: Statement is unreachable 
+[unreachable]
+            assert click.Context.fail == original_fail
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_application.py:114: error: Incompatible
+types in assignment (expression has type "AsyncMock", variable has type "None") 
+[assignment]
+            service.redis = mock.AsyncMock()
+                            ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_application.py:236: error: List item 0
+has incompatible type "dict[str, object]"; expected "ConfigPatchItem" 
+[list-item]
+                items=[{"key": "general.debug", "value": False}],
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_application.py:367: error: Incompatible
+types in assignment (expression has type "AsyncMock", variable has type "None") 
+[assignment]
+            service.redis = mock.AsyncMock()
+                            ^~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "branch" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "steps" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "dependencies" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "config" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "options" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "created_by" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "description" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "tags" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "priority" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "eta" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_application.py:378: error: Missing named
+argument "countdown" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_cli/test_commands/test_repository_mounting.py:53: error:
+"is_repo_mounted" does not return a value (it only ever returns None) 
+[func-returns-value]
+                result = ingest.is_repo_mounted("/test/repo", console=None...
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_commands/test_repository_mounting.py:73: error:
+"is_repo_mounted" does not return a value (it only ever returns None) 
+[func-returns-value]
+                    result = ingest.is_repo_mounted("/test/repo", console=...
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_cli/test_commands/test_repository_mounting.py:102: error:
+"setup_repository_mount" does not return a value (it only ever returns None) 
+[func-returns-value]
+                                        result = ingest.setup_repository_m...
+                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_cli/test_commands/test_repository_mounting.py:133: error:
+"setup_repository_mount" does not return a value (it only ever returns None) 
+[func-returns-value]
+                                        result = ingest.setup_repository_m...
+                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_cli/test_commands/test_repository_mounting.py:155: error:
+"create_override_file" does not return a value (it only ever returns None) 
+[func-returns-value]
+                    result = ingest.create_override_file(temp_dir, console...
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_commands/test_ingest.py:258: error: "is_repo_mounted"
+does not return a value (it only ever returns None)  [func-returns-value]
+                result = ingest.is_repo_mounted("/fake/repo", mock_console...
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_commands/test_ingest.py:278: error: "is_repo_mounted"
+does not return a value (it only ever returns None)  [func-returns-value]
+                result = ingest.is_repo_mounted("/fake/repo", mock_console...
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_cli/test_commands/test_ingest.py:310: error:
+"setup_repository_mount" does not return a value (it only ever returns None) 
+[func-returns-value]
+                                        result = ingest.setup_repository_m...
+                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/unit/test_cli/test_commands/test_ingest.py:333: error:
+"setup_repository_mount" does not return a value (it only ever returns None) 
+[func-returns-value]
+                                        result = ingest.setup_repository_m...
+                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/integration/test_cli/test_repository_mounting.py:329: error: "IO[str]"
+has no attribute "getvalue"  [attr-defined]
+                output = console.file.getvalue()
+                         ^~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_cli/test_ingest_integration.py:210: error:
+"is_repo_mounted" does not return a value (it only ever returns None) 
+[func-returns-value]
+                assert is_repo_mounted(temp_dir)
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_cli/test_ingest_integration.py:243: error:
+"is_repo_mounted" does not return a value (it only ever returns None) 
+[func-returns-value]
+                assert is_repo_mounted(temp_dir)
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"branch" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"steps" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"dependencies" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"config" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"options" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"created_by" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"description" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"tags" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"priority" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"eta" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:48: error: Missing named argument
+"countdown" for "IngestionRequest"  [call-arg]
+            request = IngestionRequest(
+                      ^
+tests/unit/test_codestory_service/test_api.py:266: error: List item 0 has
+incompatible type "dict[str, object]"; expected "ConfigPatchItem"  [list-item]
+                items=[{"key": "general.debug", "value": False}],
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/unit/test_codestory_service/test_api.py:326: error: Missing named
+argument "email" for "UserInfo"  [call-arg]
+            mock_service.get_user_info.return_value = UserInfo(
+                                                      ^
+tests/integration/test_ingestion_pipeline/test_summarizer_integration.py:250: error:
+Argument "message" to "ChatResponseChoice" has incompatible type "ChatMessage";
+expected "ChatResponseMessage"  [arg-type]
+                            message=ChatMessage(role=ChatRole.ASSISTANT, c...
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+tests/integration/test_ingestion_pipeline/test_summarizer_integration.py:417: error:
+Value of type "Any | None" is not indexable  [index]
+            class_id = class_result["id"]
+                       ^~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:505: error:
+Argument "started_at" to "IngestionStarted" has incompatible type "None";
+expected "datetime"  [arg-type]
+                    started_at=None,
+                               ^~~~
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:533: error:
+Argument 1 to "IngestionService" has incompatible type "MockCeleryAdapter";
+expected "CeleryAdapter"  [arg-type]
+        service = IngestionService(MockCeleryAdapter())
+                                   ^~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "branch" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "config" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "options" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "created_by" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "description" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "tags" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "priority" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "eta" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:536: error:
+Missing named argument "countdown" for "IngestionRequest"  [call-arg]
+        req_a = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:537: error:
+Argument "source_type" to "IngestionRequest" has incompatible type "str";
+expected "IngestionSourceType"  [arg-type]
+            source_type="local_path",
+                        ^~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "branch" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "config" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "options" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "created_by" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "description" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "tags" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "priority" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "eta" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:546: error:
+Missing named argument "countdown" for "IngestionRequest"  [call-arg]
+        req_b = IngestionRequest(
+                ^
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:547: error:
+Argument "source_type" to "IngestionRequest" has incompatible type "str";
+expected "IngestionSourceType"  [arg-type]
+            source_type="local_path",
+                        ^~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_step_dependencies.py:570: error:
+Statement is unreachable  [unreachable]
+            waiting_key = f"codestory:ingestion:waiting:{job_b_id}"
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:186: error:
+Cannot assign to a method  [method-assign]
+            manager.status = mock_status
+            ^~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:309: error:
+Unsupported operand types for * ("object" and "float")  [operator]
+                    active_progress += fs_status["progress"] * fs_weight
+                                       ^
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:313: error:
+Unsupported operand types for * ("object" and "float")  [operator]
+                    active_progress += blarify_status["progress"] * blarif...
+                                       ^
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:317: error:
+Unsupported operand types for * ("object" and "float")  [operator]
+                    active_progress += summarizer_status["progress"] * sum...
+                                       ^
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:356: error:
+Cannot assign to a method  [method-assign]
+        pipeline_manager.status = calculate_pipeline_progress
+        ^~~~~~~~~~~~~~~~~~~~~~~
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:520: error:
+Unsupported operand types for * ("object" and "float")  [operator]
+                    active_progress += fs_status["progress"] * fs_weight
+                                       ^
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:524: error:
+Unsupported operand types for * ("object" and "float")  [operator]
+                    active_progress += blarify_status["progress"] * blarif...
+                                       ^
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:528: error:
+Unsupported operand types for * ("object" and "float")  [operator]
+                    active_progress += summarizer_status["progress"] * sum...
+                                       ^
+tests/integration/test_ingestion_pipeline/test_progress_tracking.py:567: error:
+Cannot assign to a method  [method-assign]
+        pipeline_manager.status = calculate_pipeline_progress
+        ^~~~~~~~~~~~~~~~~~~~~~~
+Found 485 errors in 32 files (checked 95 source files)

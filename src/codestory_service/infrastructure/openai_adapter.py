@@ -11,6 +11,7 @@ import re
 from typing import Any
 
 from fastapi import HTTPException, status
+from codestory_service.domain.graph import AskRequest, AskAnswer
 
 from codestory.llm.client import OpenAIClient
 from codestory.llm.exceptions import (
@@ -206,6 +207,25 @@ class OpenAIAdapter:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize OpenAI client: {e!s}",
             ) from e
+    async def answer_question(
+        self,
+        request: AskRequest,
+        context_items: list[dict[str, Any]]
+    ) -> AskAnswer:
+        """
+        Generate a natural language answer to a codebase question.
+
+        Args:
+            request: The AskRequest containing the question and parameters.
+            context_items: List of context items (nodes) relevant to the question.
+
+        Returns:
+            AskAnswer: The generated answer.
+
+        Note:
+            This is a stub for type correctness. Implement actual logic as needed.
+        """
+        raise NotImplementedError("answer_question must be implemented.")
 
     async def create_embeddings(self, texts: list[str]) -> list[list[float]]:
         """Create embeddings for a list of texts.
@@ -257,32 +277,31 @@ class OpenAIAdapter:
             logger.info(f"Is reasoning model: {is_reasoning_model}")
             
             # Use the client's chat_async method which handles reasoning models properly
-            from codestory.llm.models import ChatMessage
+            from codestory.llm.models import ChatMessage, ChatRole
             messages = [
-                ChatMessage(role="system", content="You are a helpful assistant."),
-                ChatMessage(role="user", content=test_message),
+                ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
+                ChatMessage(role=ChatRole.USER, content=test_message),
             ]
 
-            # Prepare parameters based on model type
-            chat_params = {
-                "messages": messages,
-                "model": test_model,
-            }
-            
+            logger.info("Sending health check request via OpenAI client...")
+
             if is_reasoning_model:
                 # For reasoning models, use max_completion_tokens and no temperature
-                chat_params["max_completion_tokens"] = 10  # Use a higher value for better chance of completion
                 logger.info("Using max_completion_tokens=10 for reasoning model (no temperature)")
+                response = await self.client.chat_async(
+                    messages,
+                    model=test_model,
+                    max_completion_tokens=10
+                )
             else:
-                # For regular models, use max_tokens
-                chat_params["max_tokens"] = 10
-                chat_params["temperature"] = 0.1  # Low temperature for consistent health check
+                # For regular models, use max_tokens and temperature
                 logger.info("Using max_tokens=10 and temperature=0.1 for regular model")
-
-            logger.info("Sending health check request via OpenAI client...")
-            logger.info(f"Request parameters: {list(chat_params.keys())}")
-            
-            response = await self.client.chat_async(**chat_params)
+                response = await self.client.chat_async(
+                    messages,
+                    model=test_model,
+                    max_tokens=10,
+                    temperature=0.1
+                )
 
             logger.info("Health check request completed successfully")
             logger.info(f"Response ID: {getattr(response, 'id', 'N/A')}")
