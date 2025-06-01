@@ -80,7 +80,7 @@ def start_service(
         console.print("[yellow]Found Code Story service running, restarting it now[/]")
         ctx.invoke(stop_service)
     except ServiceError:
-        console.print("[yellow]Checking if service is currently running... No[/]")
+        console.print("[yellow]codestory services not yet running, starting...[/]")
 
     # Start the service with Docker Compose
     try:
@@ -434,7 +434,44 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                 "[green]Azure authentication renewed. Service health after renewal:[/green]"
             )
         else:
-            raise
+            # Check if this is a connection refused error (errno 111)
+            error_str = str(e).lower()
+            if "connection refused" in error_str or "errno 111" in error_str:
+                console.print("[bold red]❌ Code Story services are not running[/]")
+                console.print("\nThe Code Story backend services appear to be stopped or not yet started.")
+            else:
+                # Gracefully handle other connection errors
+                console.print(f"[red]Service is not responding to health check: {e}[/]")
+                console.print("The backend services may not be running or may be experiencing issues.")
+            
+            # Show Docker container status for user guidance
+            console.print("\n[bold]Docker Container Status:[/]")
+            try:
+                process = subprocess.run(
+                    ["docker", "ps", "--format", "{{.Names}}: {{.Status}}"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if process.returncode == 0 and process.stdout.strip():
+                    for line in process.stdout.strip().split("\n"):
+                        console.print(f"  {line}")
+                else:
+                    console.print("[yellow]No running containers found or Docker is not available.[/]")
+            except Exception as ex:
+                console.print(f"[yellow]Could not check Docker status: {ex}[/]")
+            
+            # Provide actionable guidance based on the type of error
+            if "connection refused" in error_str or "errno 111" in error_str:
+                console.print("\n[bold cyan]💡 Next Steps:[/]")
+                console.print("  • Run [bold green]'codestory service start'[/] to launch the backend services")
+                console.print("  • Or run [bold green]'codestory service start --wait'[/] to start and wait for full initialization")
+            else:
+                console.print("\n[bold cyan]💡 Troubleshooting:[/]")
+                console.print("  • Run [bold green]'codestory service start'[/] to launch the backend services if they are not running")
+                console.print("  • Run [bold green]'codestory service restart'[/] if the services are running but not responding")
+                console.print("  • Check container logs with [bold green]'docker logs codestory-service'[/] for more details")
+            return
 
     if auto_renew:
         console.print(
