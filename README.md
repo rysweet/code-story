@@ -73,16 +73,35 @@ Code Story ingests codebases, analyzes their structure, and produces a knowledge
 
 ### Quick Demo
 
-Try the CLI to ingest a small codebase:
+### CLI Demo Summary
 
-```bash
-# Activate the virtual environment
-source .venv/bin/activate  # Linux/macOS
-# or .venv\Scripts\activate.bat  # Windows
+The CLI enables you to ingest a codebase, query the knowledge graph, and generate summaries directly from your terminal. A typical workflow includes:
 
-# Run CLI demo
-python -m src.codestory_cli ingest ./src --output-format json
-```
+- **Starting the services:**  
+   ```bash
+   codestory start
+   ```
+   This launches the required backend services (Neo4j, Redis, API, etc.).
+
+- **Ingesting a codebase:**  
+   ```bash
+   codestory ingest --path ./my_project
+   ```
+   Parses the specified project, builds the graph, and stores it in Neo4j.
+
+- **Querying the graph:**  
+   ```bash
+   codestory query --cypher "MATCH (n) RETURN n LIMIT 5"
+   ```
+   Runs a Cypher query against the graph database.
+
+- **Generating summaries:**  
+   ```bash
+   codestory summarize --entity Class:MyClass
+   ```
+   Produces an AI-generated summary for a specific code entity.
+
+See [docs/demos/cli_demo.md](docs/demos/cli_demo.md) for a full step-by-step walkthrough, including more example commands and expected output.
 
 ## Architecture
 
