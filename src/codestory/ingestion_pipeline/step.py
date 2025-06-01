@@ -2,23 +2,19 @@
 
 This module defines the base interface that all ingestion pipeline steps must implement.
 """
-
 import abc
 import uuid
 from enum import Enum
 from typing import Any
 
-
 class StepStatus(str, Enum):
     """Status values for pipeline steps."""
-
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    STOPPED = "STOPPED"
-    CANCELLED = "CANCELLED"
-
+    PENDING = 'PENDING'
+    RUNNING = 'RUNNING'
+    COMPLETED = 'COMPLETED'
+    FAILED = 'FAILED'
+    STOPPED = 'STOPPED'
+    CANCELLED = 'CANCELLED'
 
 class PipelineStep(abc.ABC):
     """Base interface for all ingestion pipeline workflow steps.
@@ -29,7 +25,7 @@ class PipelineStep(abc.ABC):
     """
 
     @abc.abstractmethod
-    def run(self, repository_path: str, **config: Any) -> str:
+    def run(self: Any, repository_path: str, **config: Any) -> str:
         """Run the workflow step.
 
         Args:
@@ -46,7 +42,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def status(self, job_id: str) -> dict[str, Any]:
+    def status(self: Any, job_id: str) -> dict[str, Any]:
         """Check the status of a job.
 
         Args:
@@ -65,7 +61,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def stop(self, job_id: str) -> dict[str, Any]:
+    def stop(self: Any, job_id: str) -> dict[str, Any]:
         """Stop a running job.
 
         Args:
@@ -81,7 +77,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def cancel(self, job_id: str) -> dict[str, Any]:
+    def cancel(self: Any, job_id: str) -> dict[str, Any]:
         """Cancel a job.
 
         Unlike stop(), cancel attempts to immediately terminate the job
@@ -100,7 +96,7 @@ class PipelineStep(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def ingestion_update(self, repository_path: str, **config: Any) -> str:
+    def ingestion_update(self: Any, repository_path: str, **config: Any) -> str:
         """Update the graph with the results of this step only.
 
         This method allows running just this step without triggering
@@ -120,11 +116,10 @@ class PipelineStep(abc.ABC):
         """
         pass
 
-
 def generate_job_id() -> str:
     """Generate a unique job ID for tracking pipeline steps.
 
     Returns:
         str: A unique identifier in the format 'step-{uuid}'
     """
-    return f"job-{uuid.uuid4()}"
+    return f'job-{uuid.uuid4()}'

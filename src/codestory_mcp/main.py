@@ -23,9 +23,13 @@ def setup_logging() -> None:
 
     # Configure structlog
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
-    pre_chain = [
-        # Add the log level and a timestamp to the event_dict if the log entry
-        # is not from structlog.
+    from typing import Callable, Any, MutableMapping, Mapping, Sequence
+    pre_chain: Sequence[
+        Callable[
+            [Any, str, MutableMapping[str, Any]],
+            Mapping[str, Any] | str | bytes | bytearray | tuple[Any, ...]
+        ]
+    ] = [
         structlog.stdlib.add_log_level,
         timestamper,
     ]
@@ -50,7 +54,7 @@ def setup_logging() -> None:
         processor=structlog.dev.ConsoleRenderer()
         if settings.debug
         else structlog.processors.JSONRenderer(),
-        foreign_pre_chain=pre_chain,  # type: ignore[arg-type]
+        foreign_pre_chain=pre_chain,
     )
 
     handler = logging.StreamHandler()

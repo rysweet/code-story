@@ -3,7 +3,7 @@
 import pytest
 
 
-def test_settings_import():
+def test_settings_import() -> None:
     """Test importing settings at the module level."""
     try:
         # This is the problematic import - ensure it works in test environment
@@ -15,7 +15,7 @@ def test_settings_import():
         pytest.fail(f"Failed to import settings: {e}")
 
 
-def test_settings_instance():
+def test_settings_instance() -> None:
     """Test creating a settings instance directly."""
     from codestory.config.settings import Settings
 
@@ -37,7 +37,7 @@ def test_settings_instance():
     assert hasattr(settings, "azure")
 
 
-def test_get_settings():
+def test_get_settings() -> None:
     """Test getting a settings instance via get_settings()."""
     from codestory.config.settings import get_settings
 

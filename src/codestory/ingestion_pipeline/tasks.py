@@ -11,7 +11,7 @@ from typing import Any
 try:
     import psutil
 except ImportError:
-    psutil = None
+    psutil = None  # type: ignore[assignment]
 
 from celery import chain
 from celery.result import AsyncResult

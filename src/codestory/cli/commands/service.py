@@ -10,10 +10,7 @@ import time
 from pathlib import Path
 
 # Import rich_click if available, otherwise create a stub
-try:
-    import rich_click as click
-except ImportError:
-    import click  # type: ignore[no-redef]
+import click
 from rich.console import Console
 from rich.table import Table
 
@@ -532,12 +529,13 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
 
     # Check if Docker is available
     try:
-        process = subprocess.run(
+        docker_ps_proc = subprocess.run(
             ["docker", "ps"],
             check=False,
             capture_output=True,
+            text=True,
         )
-        docker_available = process.returncode == 0
+        docker_available = docker_ps_proc.returncode == 0
     except Exception:
         docker_available = False
 
@@ -622,9 +620,9 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             console.print(container_table)
 
             # Check if any containers are unhealthy
-            unhealthy_containers: list[Any] = []
+            unhealthy_containers: list[str] = []
             try:
-                process = subprocess.run(  # type: ignore  # TODO: Fix type compatibility
+                unhealthy_proc = subprocess.run(
                     [
                         "docker",
                         "ps",
@@ -637,9 +635,9 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
                     capture_output=True,
                     text=True,
                 )
-                if process.returncode == 0:
+                if unhealthy_proc.returncode == 0:
                     unhealthy_containers = [
-                        c for c in process.stdout.strip().split("\n") if c and c in containers  # type: ignore[arg-type]
+                        c for c in unhealthy_proc.stdout.strip().split("\n") if c and c in containers
                     ]
             except Exception:
                 pass
@@ -832,13 +830,13 @@ def renew_azure_auth(
                 success = process.returncode == 0
             else:
                 # Capture output
-                process = subprocess.run(  # type: ignore  # TODO: Fix type compatibility
+                inject_proc = subprocess.run(
                     cmd,
                     check=False,
                     capture_output=True,
                     text=True,
                 )
-                success = process.returncode == 0
+                success = inject_proc.returncode == 0
 
                 # Show the output if successful
                 if success and process.stdout:
@@ -850,10 +848,10 @@ def renew_azure_auth(
                     console.print("Run with --verbose for full output.")
                     # Show the last few lines of the error
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:]  # type: ignore[arg-type]
+                        error_lines = inject_proc.stderr.strip().split("\n")[-5:]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
-                            console.print(f"  {line}")  # type: ignore[str-bytes-safe]
+                            console.print(f"  {line}")
 
             if success:
                 console.print("[green]Azure authentication tokens updated successfully.[/]")
@@ -990,13 +988,13 @@ def renew_azure_auth(
                 process = subprocess.run(cmd, check=False)
                 success = process.returncode == 0
             else:
-                process = subprocess.run(  # type: ignore  # TODO: Fix type compatibility
+                renew_proc = subprocess.run(
                     cmd,
                     check=False,
                     capture_output=True,
                     text=True,
                 )
-                success = process.returncode == 0
+                success = renew_proc.returncode == 0
 
                 # Show the output if successful
                 if success and process.stdout:
@@ -1007,10 +1005,10 @@ def renew_azure_auth(
                     console.print("[red]Token injection failed.[/]")
                     console.print("Run with --verbose for full output.")
                     if process.stderr:
-                        error_lines = process.stderr.strip().split("\n")[-5:]  # type: ignore[arg-type]
+                        error_lines = renew_proc.stderr.strip().split("\n")[-5:]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
-                            console.print(f"  {line}")  # type: ignore[str-bytes-safe]
+                            console.print(f"  {line}")
                     sys.exit(1)
 
             if success:

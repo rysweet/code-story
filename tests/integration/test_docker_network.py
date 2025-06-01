@@ -102,7 +102,7 @@ def exec_in_container(container_name: str, command: list[str]) -> dict[str, Any]
 
 @pytest.mark.integration
 @pytest.mark.docker
-def test_service_to_neo4j_connectivity(docker_compose_project):
+def test_service_to_neo4j_connectivity(docker_compose_project: Any) -> None:
     """Test that the service container can connect to Neo4j using the container name.
 
     This test executes commands inside the service container to attempt
@@ -131,7 +131,7 @@ def test_service_to_neo4j_connectivity(docker_compose_project):
 
 @pytest.mark.integration
 @pytest.mark.docker
-def test_service_to_redis_connectivity(docker_compose_project):
+def test_service_to_redis_connectivity(docker_compose_project: Any) -> None:
     """Test that the service container can connect to Redis using the container name.
 
     This test executes commands inside the service container to attempt
@@ -150,7 +150,7 @@ def test_service_to_redis_connectivity(docker_compose_project):
 
 @pytest.mark.integration
 @pytest.mark.docker
-def test_health_endpoint_in_container(docker_compose_project):
+def test_health_endpoint_in_container(docker_compose_project: Any) -> None:
     """Test that the health endpoint works inside the container.
 
     This test executes a curl command inside the service container to check
@@ -172,7 +172,7 @@ def test_health_endpoint_in_container(docker_compose_project):
 
 @pytest.mark.integration
 @pytest.mark.docker
-def test_external_health_endpoint(docker_compose_project):
+def test_external_health_endpoint(docker_compose_project: Any) -> None:
     """Test that the health endpoint is accessible from outside the container.
 
     This test uses the host system to send a request to the exposed service port,

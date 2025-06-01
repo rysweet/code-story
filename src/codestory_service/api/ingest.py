@@ -6,7 +6,7 @@ ingestion pipeline jobs.
 
 import contextlib
 import logging
-from typing import Any
+from typing import Any, Dict, List, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 
@@ -43,7 +43,7 @@ router = APIRouter(prefix="/v1/ingest", tags=["ingestion"])
 async def start_ingestion(
     request: IngestionRequest,
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: Dict[str, Any] = Depends(get_current_user),
 ) -> IngestionStarted:
     """Start an ingestion pipeline job.
 
@@ -81,18 +81,18 @@ async def start_ingestion(
     description="Get a paginated list of ingestion jobs with optional filtering by status.",
 )
 async def list_jobs(
-    status: list[JobStatus] | None = Query(None, description="Filter by job status"),
+    job_status: Union[List[JobStatus], None] = Query(None, description="Filter by job status"),
     limit: int = Query(10, description="Maximum number of jobs to return"),
     offset: int = Query(0, description="Number of jobs to skip"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_order: str = Query("desc", description="Sort direction (asc or desc)"),
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: Dict[str, Any] = Depends(get_current_user),
 ) -> PaginatedIngestionJobs:
     """List ingestion jobs with optional filtering.
 
     Args:
-        status: List of job statuses to filter by
+        job_status: List of job statuses to filter by
         limit: Maximum number of jobs to return
         offset: Number of jobs to skip
         sort_by: Field to sort by
@@ -107,9 +107,9 @@ async def list_jobs(
         HTTPException: If listing jobs fails
     """
     try:
-        logger.info(f"Listing jobs with status filter: {status}")
+        logger.info(f"Listing jobs with status filter: {job_status}")
         return await ingestion_service.list_jobs(
-            status=status,
+            status=job_status,
             limit=limit,
             offset=offset,
             sort_by=sort_by,
@@ -120,7 +120,7 @@ async def list_jobs(
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,  # type: ignore[union-attr]
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list jobs: {e!s}",
         ) from e
 
@@ -134,7 +134,7 @@ async def list_jobs(
 async def get_job_status(
     job_id: str,
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: Dict[str, Any] = Depends(get_current_user),
 ) -> IngestionJob:
     """Get the status of an ingestion job.
 
@@ -171,7 +171,7 @@ async def get_job_status(
 async def cancel_job(
     job_id: str,
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict[str, Any] = Depends(get_current_user),
+    user: Dict[str, Any] = Depends(get_current_user),
 ) -> IngestionJob:
     """Cancel an ingestion job.
 
@@ -206,10 +206,16 @@ async def cancel_job(
 )
 async def get_resource_status(
     ingestion_service: IngestionService = Depends(get_ingestion_service),
-    user: dict[str, Any] = Depends(get_current_user),
-) -> dict:
-    """
-    Get the current resource token usage, limits, and recent job metrics for ingestion.
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Get the current resource token usage, limits, and recent job metrics for ingestion.
+    
+    Args:
+        ingestion_service: Ingestion service instance
+        user: Current authenticated user
+        
+    Returns:
+        Dictionary containing resource status information
     """
     return await ingestion_service.get_resource_status()
 

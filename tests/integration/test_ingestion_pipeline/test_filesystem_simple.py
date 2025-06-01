@@ -1,3 +1,4 @@
+from typing import Any
 """Simple integration test for the filesystem step.
 
 This test directly interacts with the Neo4j database to create a filesystem structure.
@@ -14,7 +15,7 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
 @pytest.fixture
-def neo4j_connector(neo4j_env):
+def neo4j_connector(neo4j_env: Any) -> None:
     """Return a Neo4j connector for tests.
 
     This uses the neo4j_env fixture defined in conftest.py to ensure
@@ -38,7 +39,7 @@ def neo4j_connector(neo4j_env):
 
 
 @pytest.mark.timeout(60)
-def test_direct_neo4j_filesystem(neo4j_connector):
+def test_direct_neo4j_filesystem(neo4j_connector: Any) -> None:
     """Test direct interaction with Neo4j for filesystem structure."""
     # Create a simple test repository
     repo_dir = tempfile.mkdtemp()

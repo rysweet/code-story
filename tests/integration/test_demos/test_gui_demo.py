@@ -1,3 +1,4 @@
+from typing import Any
 """Test the GUI demo functionality."""
 
 import os
@@ -13,7 +14,7 @@ pytestmark = pytest.mark.demo
 
 
 @pytest.fixture(scope="module")
-def setup_gui():
+def setup_gui() -> None:
     """Start the GUI development server for testing."""
     # Store original directory to return to after test
     original_dir = os.getcwd()
@@ -71,7 +72,7 @@ def setup_gui():
 
 @pytest.mark.skip(reason="Requires full GUI setup")
 @pytest.mark.gui
-def test_gui_homepage(setup_gui):
+def test_gui_homepage(setup_gui: Any) -> None:
     """Test the GUI homepage loads correctly."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -95,7 +96,7 @@ def test_gui_homepage(setup_gui):
 
 @pytest.mark.skip(reason="Requires full GUI setup")
 @pytest.mark.gui
-def test_gui_configuration(setup_gui):
+def test_gui_configuration(setup_gui: Any) -> None:
     """Test the GUI configuration page loads correctly."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -122,7 +123,7 @@ def test_gui_configuration(setup_gui):
 
 @pytest.mark.skip(reason="Requires full GUI setup")
 @pytest.mark.gui
-def test_gui_ingestion(setup_gui):
+def test_gui_ingestion(setup_gui: Any) -> None:
     """Test the GUI ingestion page loads correctly."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -143,7 +144,7 @@ def test_gui_ingestion(setup_gui):
 
 @pytest.mark.skip(reason="Requires graph data")
 @pytest.mark.gui
-def test_gui_graph(setup_gui):
+def test_gui_graph(setup_gui: Any) -> None:
     """Test the GUI graph page loads correctly."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -163,7 +164,7 @@ def test_gui_graph(setup_gui):
 
 @pytest.mark.skip(reason="Requires full setup")
 @pytest.mark.gui
-def test_gui_ask(setup_gui):
+def test_gui_ask(setup_gui: Any) -> None:
     """Test the GUI ask page loads correctly."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -184,7 +185,7 @@ def test_gui_ask(setup_gui):
 
 @pytest.mark.skip(reason="Requires full setup")
 @pytest.mark.gui
-def test_gui_mcp(setup_gui):
+def test_gui_mcp(setup_gui: Any) -> None:
     """Test the GUI MCP page loads correctly."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)

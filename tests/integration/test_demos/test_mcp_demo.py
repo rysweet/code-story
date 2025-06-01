@@ -1,3 +1,4 @@
+from typing import Any
 """Test the MCP demo functionality."""
 
 import os
@@ -13,7 +14,7 @@ pytestmark = pytest.mark.demo
 
 
 @pytest.fixture(scope="module")
-def setup_mcp():
+def setup_mcp() -> None:
     """Start the MCP service for testing."""
     # Store original directory to return to after test
     original_dir = os.getcwd()
@@ -76,7 +77,7 @@ def setup_mcp():
 
 @pytest.mark.skip(reason="Requires MCP service setup")
 @pytest.mark.mcp
-def test_mcp_ping(setup_mcp):
+def test_mcp_ping(setup_mcp: Any) -> None:
     """Test the MCP ping endpoint."""
     response = requests.get("http://localhost:8080/ping")
     assert response.status_code == 200
@@ -85,7 +86,7 @@ def test_mcp_ping(setup_mcp):
 
 @pytest.mark.skip(reason="Requires MCP service setup")
 @pytest.mark.mcp
-def test_mcp_health(setup_mcp):
+def test_mcp_health(setup_mcp: Any) -> None:
     """Test the MCP health endpoint."""
     response = requests.get("http://localhost:8080/health")
     assert response.status_code == 200
@@ -94,7 +95,7 @@ def test_mcp_health(setup_mcp):
 
 @pytest.mark.skip(reason="Requires MCP service setup")
 @pytest.mark.mcp
-def test_mcp_tools_list(setup_mcp):
+def test_mcp_tools_list(setup_mcp: Any) -> None:
     """Test the MCP tools list endpoint."""
     response = requests.get("http://localhost:8080/tools")
     assert response.status_code == 200
@@ -111,7 +112,7 @@ def test_mcp_tools_list(setup_mcp):
 
 @pytest.mark.skip(reason="Requires graph data and MCP service")
 @pytest.mark.mcp
-def test_mcp_search_graph(setup_mcp, neo4j_connector):
+def test_mcp_search_graph(setup_mcp: Any, neo4j_connector: Any) -> None:
     """Test the MCP search_graph tool."""
     # Create some test data in the database
     neo4j_connector.execute_query(
@@ -135,7 +136,7 @@ def test_mcp_search_graph(setup_mcp, neo4j_connector):
 
 @pytest.mark.skip(reason="Requires graph data and MCP service")
 @pytest.mark.mcp
-def test_mcp_path_to(setup_mcp, neo4j_connector):
+def test_mcp_path_to(setup_mcp: Any, neo4j_connector: Any) -> None:
     """Test the MCP path_to tool."""
     # Create some test data in the database
     neo4j_connector.execute_query(
@@ -165,7 +166,7 @@ def test_mcp_path_to(setup_mcp, neo4j_connector):
 
 @pytest.mark.skip(reason="Requires OpenAI API key and MCP service")
 @pytest.mark.mcp
-def test_mcp_summarize_node(setup_mcp, neo4j_connector):
+def test_mcp_summarize_node(setup_mcp: Any, neo4j_connector: Any) -> None:
     """Test the MCP summarize_node tool."""
     # Create some test data in the database
     neo4j_connector.execute_query(

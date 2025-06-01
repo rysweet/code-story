@@ -24,7 +24,7 @@ from codestory.graphdb.models import (
 )
 
 
-def test_node_type_enum():
+def test_node_type_enum() -> None:
     """Test NodeType enumeration."""
     assert NodeType.FILE == "File"
     assert NodeType.DIRECTORY == "Directory"
@@ -36,7 +36,7 @@ def test_node_type_enum():
     assert NodeType.DOCUMENTATION == "Documentation"
 
 
-def test_relationship_type_enum():
+def test_relationship_type_enum() -> None:
     """Test RelationshipType enumeration."""
     assert RelationshipType.CONTAINS == "CONTAINS"
     assert RelationshipType.IMPORTS == "IMPORTS"
@@ -46,7 +46,7 @@ def test_relationship_type_enum():
     assert RelationshipType.SUMMARIZED_BY == "SUMMARIZED_BY"
 
 
-def test_base_node():
+def test_base_node() -> None:
     """Test BaseNode model."""
     # Create with minimal args
     node = BaseNode()
@@ -79,7 +79,7 @@ def test_base_node():
     assert node_dict["test"] == "value"  # Properties should be expanded
 
 
-def test_base_relationship():
+def test_base_relationship() -> None:
     """Test BaseRelationship model."""
     # Create with required args
     rel = BaseRelationship(
@@ -118,7 +118,7 @@ def test_base_relationship():
     assert rel_dict["test"] == "value"  # Properties should be expanded
 
 
-def test_file_node():
+def test_file_node() -> None:
     """Test FileNode model."""
     # Create with required args
     file_node = FileNode(
@@ -151,7 +151,7 @@ def test_file_node():
     assert file_dict["content"] == "print('Hello world')"
 
 
-def test_directory_node():
+def test_directory_node() -> None:
     """Test DirectoryNode model."""
     # Create with required args
     dir_node = DirectoryNode(
@@ -163,7 +163,7 @@ def test_directory_node():
     assert NodeType.DIRECTORY.value in dir_node.labels
 
 
-def test_class_node():
+def test_class_node() -> None:
     """Test ClassNode model."""
     # Create with required args
     class_node = ClassNode(
@@ -194,7 +194,7 @@ def test_class_node():
     assert class_node.base_classes == ["BaseClass"]
 
 
-def test_function_node():
+def test_function_node() -> None:
     """Test FunctionNode model."""
     # Create with required args
     func_node = FunctionNode(
@@ -222,7 +222,7 @@ def test_function_node():
     assert func_node.return_type == "None"
 
 
-def test_method_node():
+def test_method_node() -> None:
     """Test MethodNode model."""
     # Create with required args
     method_node = MethodNode(
@@ -235,7 +235,7 @@ def test_method_node():
     assert NodeType.FUNCTION.value in method_node.labels
 
 
-def test_module_node():
+def test_module_node() -> None:
     """Test ModuleNode model."""
     # Create with required args
     module_node = ModuleNode(
@@ -253,7 +253,7 @@ def test_module_node():
     assert module_node.imports == ["os", "sys"]
 
 
-def test_summary_node():
+def test_summary_node() -> None:
     """Test SummaryNode model."""
     # Create with required args
     summary_node = SummaryNode(
@@ -274,7 +274,7 @@ def test_summary_node():
     assert summary_node.summary_type == "class"
 
 
-def test_documentation_node():
+def test_documentation_node() -> None:
     """Test DocumentationNode model."""
     # Create with required args
     doc_node = DocumentationNode(
@@ -295,7 +295,7 @@ def test_documentation_node():
     assert doc_node.embedding == [0.1, 0.2, 0.3]
 
 
-def test_contains_relationship():
+def test_contains_relationship() -> None:
     """Test ContainsRelationship model."""
     # Create with required args
     rel = ContainsRelationship(
@@ -307,7 +307,7 @@ def test_contains_relationship():
     assert rel.end_node_id == "file1"
 
 
-def test_imports_relationship():
+def test_imports_relationship() -> None:
     """Test ImportsRelationship model."""
     # Create with required args
     rel = ImportsRelationship(
@@ -317,7 +317,7 @@ def test_imports_relationship():
     assert rel.type == RelationshipType.IMPORTS.value
 
 
-def test_calls_relationship():
+def test_calls_relationship() -> None:
     """Test CallsRelationship model."""
     # Create with required args
     rel = CallsRelationship(
@@ -336,7 +336,7 @@ def test_calls_relationship():
     assert rel.call_line == 42
 
 
-def test_inherits_from_relationship():
+def test_inherits_from_relationship() -> None:
     """Test InheritsFromRelationship model."""
     # Create with required args
     rel = InheritsFromRelationship(
@@ -346,7 +346,7 @@ def test_inherits_from_relationship():
     assert rel.type == RelationshipType.INHERITS_FROM.value
 
 
-def test_documented_by_relationship():
+def test_documented_by_relationship() -> None:
     """Test DocumentedByRelationship model."""
     # Create with required args
     rel = DocumentedByRelationship(
@@ -356,7 +356,7 @@ def test_documented_by_relationship():
     assert rel.type == RelationshipType.DOCUMENTED_BY.value
 
 
-def test_summarized_by_relationship():
+def test_summarized_by_relationship() -> None:
     """Test SummarizedByRelationship model."""
     # Create with required args
     rel = SummarizedByRelationship(

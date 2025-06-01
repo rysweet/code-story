@@ -1,3 +1,4 @@
+from typing import Any
 """Integration test for Neo4j connectivity.
 
 This module contains tests to verify that:
@@ -13,7 +14,7 @@ from codestory.config import get_settings
 
 
 @pytest.mark.parametrize("use_env_check", [True])
-def test_neo4j_connection_env_vars(use_env_check, test_databases):
+def test_neo4j_connection_env_vars(use_env_check: Any, test_databases: Any) -> None:
     """Test that Neo4j connection environment variables are correctly set.
 
     This test focuses on verifying the environment configuration and
@@ -42,7 +43,7 @@ def test_neo4j_connection_env_vars(use_env_check, test_databases):
     assert db_info["neo4j_database"] == "testdb"
 
 
-def test_neo4j_connection_works(neo4j_connector):
+def test_neo4j_connection_works(neo4j_connector: Any) -> None:
     """Test that Neo4j connection actually works using the test fixture."""
     # Simple query to verify connection works
     result = neo4j_connector.execute_query("RETURN 1 as test")

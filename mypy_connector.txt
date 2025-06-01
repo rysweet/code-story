@@ -1,0 +1,76 @@
+src/codestory/graphdb/neo4j_connector.py:29: error: Incompatible types in
+assignment (expression has type "None", variable has type
+"_lru_cache_wrapper[Settings]")  [assignment]
+        get_settings = None  # TODO: Fix None assignment
+                       ^~~~
+src/codestory/graphdb/neo4j_connector.py:88: error: "Neo4jSettings" has no
+attribute "max_transaction_retry_time"  [attr-defined]
+            max_transaction_retry_time=settings.neo4j.max_transaction_retr...
+                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/codestory/graphdb/neo4j_connector.py:270: error: Argument 1 to "driver" of
+"GraphDatabase" has incompatible type "str | None"; expected "str"  [arg-type]
+                    self.uri,
+                    ^~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:271: error: Argument "auth" to
+"driver" of "GraphDatabase" has incompatible type
+"tuple[str | None, str | None]"; expected
+"tuple[str, str] | Auth | None | AuthManager"  [arg-type]
+                    auth=(self.username, self.password),
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:355: error: Returning Any from
+function declared to return "list[dict[str, Any]]"  [no-any-return]
+                        return session.execute_write()
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:357: error: Returning Any from
+function declared to return "list[dict[str, Any]]"  [no-any-return]
+                        return session.execute_read()
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:367: error: Returning Any from
+function declared to return "list[dict[str, Any]]"  [no-any-return]
+                    return result
+                    ^~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:424: error: Returning Any from
+function declared to return "list[list[dict[str, Any]]]"  [no-any-return]
+                        return session.execute_write()
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:426: error: Returning Any from
+function declared to return "list[list[dict[str, Any]]]"  [no-any-return]
+                        return session.execute_read()
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:441: error: Returning Any from
+function declared to return "list[list[dict[str, Any]]]"  [no-any-return]
+                    return results
+                    ^~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:476: error: Function is missing a type
+annotation for one or more arguments  [no-untyped-def]
+        def _transaction_function_many(
+        ^
+src/codestory/graphdb/neo4j_connector.py:559: error: Incompatible return value
+type (got "Any | None", expected "dict[str, Any]")  [return-value]
+            return result[0]["n"] if result else None
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:576: error: Incompatible return value
+type (got "Any | None", expected "dict[str, Any]")  [return-value]
+            return result[0]["n"] if result else None
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:619: error: Incompatible return value
+type (got "Any | None", expected "dict[str, Any]")  [return-value]
+            return result[0]["r"] if result else None
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:739: error: Returning Any from
+function declared to return "list[dict[str, Any]]"  [no-any-return]
+                    return session.execute_write.return_value
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:741: error: Returning Any from
+function declared to return "list[dict[str, Any]]"  [no-any-return]
+                    return session.execute_read.return_value
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:769: error: Returning Any from
+function declared to return "list[list[dict[str, Any]]]"  [no-any-return]
+                    return session.execute_write.return_value
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/codestory/graphdb/neo4j_connector.py:771: error: Returning Any from
+function declared to return "list[list[dict[str, Any]]]"  [no-any-return]
+                    return session.execute_read.return_value
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Found 18 errors in 1 file (checked 1 source file)
