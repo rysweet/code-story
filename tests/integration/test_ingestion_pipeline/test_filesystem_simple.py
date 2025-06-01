@@ -1,4 +1,5 @@
 from typing import Any
+
 """Simple integration test for the filesystem step.
 
 This test directly interacts with the Neo4j database to create a filesystem structure.

@@ -8,7 +8,9 @@ import logging
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+
 from .models import DependencyGraph, NodeData, ProcessingStatus
+
 logger = logging.getLogger(__name__)
 
 class ParallelExecutor:

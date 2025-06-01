@@ -121,7 +121,6 @@ def get_schema_initialization_queries() -> list[str]:
     return initialization_queries
 
 
-from typing import Any
 
 def create_custom_vector_index(
     connector: Any,

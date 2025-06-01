@@ -1,4 +1,5 @@
 from typing import Any
+
 """Test the MCP demo functionality."""
 
 import os

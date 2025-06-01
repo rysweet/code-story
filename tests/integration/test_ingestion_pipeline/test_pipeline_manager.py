@@ -2,8 +2,10 @@ import threading
 import time
 import uuid
 from typing import Any
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+
 
 class TestPipelineManager:
     """A test implementation of PipelineManager that runs steps directly without Celery."""
@@ -147,8 +149,8 @@ class TestPipelineManager:
         if job_id != self.job_id:
             return {'status': 'not_found'}
         with self._lock:
-            all_completed = all((status == 'completed' for status in self.steps_status.values()))
-            any_failed = any((status == 'failed' for status in self.steps_status.values()))
+            all_completed = all(status == 'completed' for status in self.steps_status.values())
+            any_failed = any(status == 'failed' for status in self.steps_status.values())
             if any_failed:
                 job_status = 'failed'
             elif all_completed:

@@ -3,10 +3,13 @@ import os
 import tempfile
 import time
 from typing import Any
+
 import pytest
 from click.testing import CliRunner
+
 from codestory.cli.commands.ingest import is_docker_running, is_repo_mounted
 from codestory.cli.main import app
+
 
 class TestIngestCommands:
     """Integration tests for ingestion-related CLI commands."""
@@ -18,7 +21,7 @@ class TestIngestCommands:
         result = cli_runner.invoke(app, ['ingest', 'start', test_repository, '--no-progress'])
         assert result.exit_code == 0
         assert 'Starting ingestion' in result.output
-        job_id_line = next((line for line in result.output.splitlines() if 'Job ID:' in line))
+        job_id_line = next(line for line in result.output.splitlines() if 'Job ID:' in line)
         job_id = job_id_line.split('Job ID:')[1].strip()
         assert job_id
         time.sleep(1)
@@ -34,7 +37,7 @@ class TestIngestCommands:
         result = cli_runner.invoke(app, ['ingest', 'start', test_repository, '--no-progress', '--countdown', '5'])
         assert result.exit_code == 0
         assert 'Starting ingestion' in result.output
-        job_id_line = next((line for line in result.output.splitlines() if 'Job ID:' in line))
+        job_id_line = next(line for line in result.output.splitlines() if 'Job ID:' in line)
         job_id = job_id_line.split('Job ID:')[1].strip()
         assert job_id
         status_result = cli_runner.invoke(app, ['ingest', 'status', job_id])
@@ -53,7 +56,7 @@ class TestIngestCommands:
         result = cli_runner.invoke(app, ['ingest', 'start', test_repository, '--no-progress', '--eta', eta_iso])
         assert result.exit_code == 0
         assert 'Starting ingestion' in result.output
-        job_id_line = next((line for line in result.output.splitlines() if 'Job ID:' in line))
+        job_id_line = next(line for line in result.output.splitlines() if 'Job ID:' in line)
         job_id = job_id_line.split('Job ID:')[1].strip()
         assert job_id
         status_result = cli_runner.invoke(app, ['ingest', 'status', job_id])

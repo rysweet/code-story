@@ -1,12 +1,22 @@
 from typing import Any
+
 'Tests for OpenAI client implementation.'
 import asyncio
 from unittest.mock import MagicMock, patch
+
 import openai
 import pytest
+
 from codestory.llm.client import OpenAIClient, create_client
 from codestory.llm.exceptions import AuthenticationError, InvalidRequestError
-from codestory.llm.models import ChatCompletionResponse, ChatMessage, ChatRole, CompletionResponse, EmbeddingResponse
+from codestory.llm.models import (
+    ChatCompletionResponse,
+    ChatMessage,
+    ChatRole,
+    CompletionResponse,
+    EmbeddingResponse,
+)
+
 
 @pytest.fixture(autouse=True)
 def patch_prometheus_metrics() -> None:

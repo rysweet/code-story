@@ -1,12 +1,16 @@
 from typing import Any
+
 'Tests for the service command group in the CLI.'
 import sys
 from unittest import mock
+
 import pytest
 from click.testing import CliRunner
 from rich.console import Console
+
 from codestory.cli.client.service_client import ServiceClient
 from codestory.cli.commands.service import renew_azure_auth, service
+
 
 class TestServiceCommand:
     """Tests for the service command group."""

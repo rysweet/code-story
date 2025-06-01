@@ -1,14 +1,18 @@
 from typing import Any
+
 'Pytest configuration for unit tests.'
 import os
 import sys
+
 import pytest
 from dotenv import load_dotenv
+
 
 @pytest.fixture(scope='session', autouse=True)
 def mock_settings() -> None:
     """Mock the settings module to use test settings for all unit tests."""
     from unittest.mock import MagicMock
+
     from tests.unit.test_settings import setup_test_settings, test_settings
 
     def getattr_mock(instance: Any, name: Any):
@@ -18,6 +22,7 @@ def mock_settings() -> None:
     test_settings.__getattr__ = lambda name: getattr_mock(test_settings, name)
     patches = setup_test_settings()
     import importlib
+
     from codestory.config import settings as settings_module
     importlib.reload(settings_module)
     try:

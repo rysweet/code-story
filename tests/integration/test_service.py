@@ -1,4 +1,5 @@
 from typing import Any
+
 """Integration tests for the Code Story Service.
 
 These tests verify the service's API endpoints behave correctly

@@ -1,11 +1,14 @@
 import time
+from typing import Any
+
 import pytest
 from fastapi.testclient import TestClient
+
 from codestory_service.application.ingestion_service import IngestionService
 from codestory_service.domain.ingestion import JobStatus
 from codestory_service.infrastructure.celery_adapter import CeleryAdapter
 from codestory_service.main import app
-from typing import Any
+
 client = TestClient(app)
 
 @pytest.fixture

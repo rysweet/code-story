@@ -1,14 +1,18 @@
 from typing import Any
+
 'Tests for the ingestion pipeline manager.'
 import os
 import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 import pytest
 import yaml
+
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import PipelineStep, StepStatus
+
 mock_celery = MagicMock()
 mock_app = MagicMock()
 mock_celery.Celery.return_value = mock_app

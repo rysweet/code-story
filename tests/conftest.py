@@ -4,9 +4,11 @@ import subprocess
 import time
 from collections.abc import Generator
 from typing import Any
+
 import pytest
 import redis
 from neo4j import GraphDatabase
+
 os.environ['CODESTORY_TEST_ENV'] = 'true'
 os.environ['NEO4J_DATABASE'] = 'testdb'
 

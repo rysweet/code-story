@@ -354,8 +354,8 @@ class OpenAIClient:
 
         # Prepare arguments for AzureOpenAI and AsyncAzureOpenAI
         client_azure_endpoint: str = client_params.get("azure_endpoint")  # type: ignore
-        client_api_version: str | None = cast(str | None, client_params.get("api_version"))
-        client_api_key: str | None = cast(str | None, client_params.get("api_key"))
+        client_api_version: str | None = cast("str | None", client_params.get("api_version"))
+        client_api_key: str | None = cast("str | None", client_params.get("api_key"))
         client_azure_ad_token_provider = client_params.get("azure_ad_token_provider")
 
         # Only include azure_ad_token_provider if present, and use keyword arguments only

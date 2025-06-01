@@ -1,10 +1,14 @@
 from typing import Any
+
 'Integration tests for CLI visualization commands.'
 import os
 import tempfile
 from unittest.mock import patch
+
 from click.testing import CliRunner
+
 from codestory.cli.main import app
+
 
 class TestVisualizeCommands:
     """Integration tests for visualization-related CLI commands."""

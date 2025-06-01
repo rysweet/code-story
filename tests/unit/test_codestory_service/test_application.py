@@ -1,9 +1,12 @@
 from typing import Any
+
 'Tests for the Code Story Service application services.\n\nThis module contains tests for the application services used in the service.\n'
 import contextlib
 from unittest import mock
+
 import pytest
 from fastapi import HTTPException, WebSocket
+
 from codestory_service.application.auth_service import AuthService
 from codestory_service.application.config_service import ConfigService
 from codestory_service.application.graph_service import GraphService
@@ -12,6 +15,7 @@ from codestory_service.domain.auth import LoginRequest, TokenResponse
 from codestory_service.domain.config import ConfigPatch
 from codestory_service.domain.graph import AskRequest, CypherQuery, QueryType, VectorQuery
 from codestory_service.domain.ingestion import IngestionRequest, IngestionSourceType, JobStatus
+
 
 class TestAuthService:
     """Tests for Auth service."""
@@ -98,7 +102,16 @@ class TestConfigService:
 
     def test_get_config_schema(self: Any, service: Any) -> None:
         """Test getting configuration schema."""
-        from codestory_service.domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPermission, ConfigSection, ConfigSource, ConfigValueType
+        from codestory_service.domain.config import (
+            ConfigDump,
+            ConfigGroup,
+            ConfigItem,
+            ConfigMetadata,
+            ConfigPermission,
+            ConfigSection,
+            ConfigSource,
+            ConfigValueType,
+        )
         groups = {ConfigSection.GENERAL: ConfigGroup(section=ConfigSection.GENERAL, items={'debug': ConfigItem(value=True, metadata=ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source=ConfigSource.CONFIG_FILE, permission=ConfigPermission.READ_WRITE, required=False))})}
         config_dump = ConfigDump(groups=groups, version='1.0.0', last_updated='2025-05-09T10:00:00Z')
         service.get_config_dump = mock.MagicMock(return_value=config_dump)
@@ -110,7 +123,17 @@ class TestConfigService:
     @pytest.mark.asyncio
     async def test_update_config(self: Any, service: Any) -> None:
         """Test updating configuration."""
-        from codestory_service.domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPermission, ConfigSection, ConfigSource, ConfigValidationResult, ConfigValueType
+        from codestory_service.domain.config import (
+            ConfigDump,
+            ConfigGroup,
+            ConfigItem,
+            ConfigMetadata,
+            ConfigPermission,
+            ConfigSection,
+            ConfigSource,
+            ConfigValidationResult,
+            ConfigValueType,
+        )
         service._validate_config_patch = mock.MagicMock(return_value=ConfigValidationResult(valid=True, errors=[]))
         groups = {ConfigSection.GENERAL: ConfigGroup(section=ConfigSection.GENERAL, items={'debug': ConfigItem(value=True, metadata=ConfigMetadata(section=ConfigSection.GENERAL, key='debug', type=ConfigValueType.BOOLEAN, description='Debug mode', source=ConfigSource.CONFIG_FILE, permission=ConfigPermission.READ_WRITE))})}
         config_dump = ConfigDump(groups=groups, version='1.0.0', last_updated='2025-05-09T10:00:00Z')

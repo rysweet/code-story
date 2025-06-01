@@ -12,13 +12,16 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Any
+from typing import Any, Dict, List, Optional, Set
 from unittest.mock import patch
+
 import pytest
 from neo4j import GraphDatabase
+
 from codestory.cli.main import main as cli_main
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -284,9 +287,9 @@ class TestFilesystemIngestionE2E:
             for line in output.splitlines():
                 for svc, patterns in required_services.items():
                     if svc == 'service':
-                        if any((pat in line for pat in patterns)) and ('Up' in line and ('(healthy)' in line or '(health: starting)' in line) or 'Started' in line):
+                        if any(pat in line for pat in patterns) and (('Up' in line and ('(healthy)' in line or '(health: starting)' in line)) or 'Started' in line):
                             found.add(svc)
-                    elif any((pat in line for pat in patterns)) and 'Up' in line and ('(healthy)' in line):
+                    elif any(pat in line for pat in patterns) and 'Up' in line and ('(healthy)' in line):
                         found.add(svc)
             return found
         try:
@@ -337,9 +340,9 @@ class TestFilesystemIngestionE2E:
             for line in output.splitlines():
                 for svc, patterns in required_services.items():
                     if svc == 'service':
-                        if any((pat in line for pat in patterns)) and ('Up' in line and ('(healthy)' in line or '(health: starting)' in line) or 'Started' in line):
+                        if any(pat in line for pat in patterns) and (('Up' in line and ('(healthy)' in line or '(health: starting)' in line)) or 'Started' in line):
                             found.add(svc)
-                    elif any((pat in line for pat in patterns)) and 'Up' in line and ('(healthy)' in line):
+                    elif any(pat in line for pat in patterns) and 'Up' in line and ('(healthy)' in line):
                         found.add(svc)
             return found
         start_time = time.time()

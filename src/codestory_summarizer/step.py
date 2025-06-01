@@ -265,7 +265,7 @@ class SummarizerStep(PipelineStep):
         return self.run(repository_path, **config)
 
 
-@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")
+@shared_task(bind=True, name="codestory_summarizer.step.run_summarizer")  # type: ignore[misc]
 def run_summarizer(
     self: Any,
     repository_path: str,
@@ -294,6 +294,9 @@ def run_summarizer(
 
     # Create Neo4j connector
     settings = get_settings()
+    # Ensure password is not None before calling get_secret_value
+    if settings.neo4j.password is None:
+        raise ValueError("Neo4j password is not set in settings.")
     connector = Neo4jConnector(
         uri=settings.neo4j.uri,
         username=settings.neo4j.username,

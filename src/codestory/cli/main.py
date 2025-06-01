@@ -1,29 +1,53 @@
 """Main CLI application for Code Story."""
 import sys
-from typing import Any, Callable, Dict, List, Optional, Union, IO
 import types
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Union,
+    cast,
+)
+
 import click
 from click_didyoumean import DYMGroup  # type: ignore[import-untyped]
 from rich.console import Console
+
 from codestory.config import get_settings
+
 from .client import ServiceClient, ServiceError
+
+
+class _RichClickAttrs(Protocol):
+    USE_RICH_MARKUP: bool
+    SHOW_ARGUMENTS: bool
+    GROUP_ARGUMENTS_OPTIONS: bool
+    STYLE_ERRORS_SUGGESTION: str
+    ERRORS_SUGGESTION: str
+
 rich_click_module: Optional[types.ModuleType] = None
 try:
     import rich_click as rich_click_module
 except ImportError:
     import click as _click_for_rich
-    setattr(_click_for_rich, 'USE_RICH_MARKUP', False)
-    setattr(_click_for_rich, 'SHOW_ARGUMENTS', False)
-    setattr(_click_for_rich, 'GROUP_ARGUMENTS_OPTIONS', False)
-    setattr(_click_for_rich, 'STYLE_ERRORS_SUGGESTION', '')
-    setattr(_click_for_rich, 'ERRORS_SUGGESTION', '')
+    _click_for_rich_typed = cast("_RichClickAttrs", _click_for_rich)
+    _click_for_rich_typed.USE_RICH_MARKUP = False
+    _click_for_rich_typed.SHOW_ARGUMENTS = False
+    _click_for_rich_typed.GROUP_ARGUMENTS_OPTIONS = False
+    _click_for_rich_typed.STYLE_ERRORS_SUGGESTION = ''
+    _click_for_rich_typed.ERRORS_SUGGESTION = ''
     rich_click_module = _click_for_rich
 if rich_click_module is not None:
-    setattr(rich_click_module, 'USE_RICH_MARKUP', True)
-    setattr(rich_click_module, 'SHOW_ARGUMENTS', True)
-    setattr(rich_click_module, 'GROUP_ARGUMENTS_OPTIONS', True)
-    setattr(rich_click_module, 'STYLE_ERRORS_SUGGESTION', 'yellow italic')
-    setattr(rich_click_module, 'ERRORS_SUGGESTION', 'Try running the command with --help to see available options.')
+    rich_click_typed = cast("_RichClickAttrs", rich_click_module)
+    rich_click_typed.USE_RICH_MARKUP = True
+    rich_click_typed.SHOW_ARGUMENTS = True
+    rich_click_typed.GROUP_ARGUMENTS_OPTIONS = True
+    rich_click_typed.STYLE_ERRORS_SUGGESTION = 'yellow italic'
+    rich_click_typed.ERRORS_SUGGESTION = 'Try running the command with --help to see available options.'
 console: Console = Console()
 
 class CodeStoryCommandGroup(DYMGroup):
@@ -127,7 +151,7 @@ def _wrap_click_command(cmd: click.BaseCommand) -> Callable[..., Any]:
                 cmd_name: str = error_msg.split("'")[1] if "'" in error_msg else ''
                 if cmd_name:
                     commands: List[str] = list(app.commands.keys())
-                    similar: List[str] = [cmd for cmd in commands if cmd.startswith(cmd_name[:1]) or any((cmd_name == alias for alias in ['status', 'start', 'stop', 'config'])) or cmd_name.lower() in cmd.lower()]
+                    similar: List[str] = [cmd for cmd in commands if cmd.startswith(cmd_name[:1]) or any(cmd_name == alias for alias in ['status', 'start', 'stop', 'config']) or cmd_name.lower() in cmd.lower()]
                     if similar and 'Did you mean' not in error_msg:
                         error_msg += f"\n\nDid you mean one of these?\n    {', '.join(similar)}"
             elif 'no such option' in error_msg.lower() or 'invalid value' in error_msg.lower():
@@ -163,7 +187,7 @@ def main() -> None:
                     commands = list(ctx.command.commands.keys())
                 else:
                     commands = list(app.commands.keys())
-                similar: List[str] = [cmd for cmd in commands if cmd.startswith(cmd_name[:1]) or cmd_name.lower() in cmd.lower() or any((cmd_name == alias for alias in ['status', 'start', 'stop', 'config']))]
+                similar: List[str] = [cmd for cmd in commands if cmd.startswith(cmd_name[:1]) or cmd_name.lower() in cmd.lower() or any(cmd_name == alias for alias in ['status', 'start', 'stop', 'config'])]
                 if similar and 'Did you mean' not in error_msg:
                     suggestions = f"\nDid you mean one of these?\n    {', '.join(similar)}"
         console.print(f'[bold red]Error:[/] {error_msg}')

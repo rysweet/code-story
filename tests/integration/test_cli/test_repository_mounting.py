@@ -1,13 +1,17 @@
 from typing import Any
+
 '\nIntegration tests for repository mounting functionality.\n\nThese tests verify that the repository mounting works correctly\nwith real Docker containers and filesystem access.\n\nNote: These tests require Docker to be running and will interact\nwith real containers. They may modify your Docker environment.\n'
 import os
 import subprocess
 import tempfile
 import time
+
 import pytest
 from click.testing import CliRunner
 from rich.console import Console
+
 from codestory.cli.commands.ingest import ingest, start_ingestion
+
 pytestmark = [pytest.mark.skipif(subprocess.run(['docker', 'ps'], capture_output=True).returncode != 0, reason='Docker is not running'), pytest.mark.integration, pytest.mark.docker]
 
 @pytest.fixture

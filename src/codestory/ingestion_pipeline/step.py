@@ -7,6 +7,7 @@ import uuid
 from enum import Enum
 from typing import Any
 
+
 class StepStatus(str, Enum):
     """Status values for pipeline steps."""
     PENDING = 'PENDING'

@@ -1,11 +1,15 @@
 from typing import Any
+
 '\nUnit tests for repository mounting functionality in the ingest command.\n'
 import tempfile
 from unittest.mock import MagicMock, patch
+
 import pytest
 from rich.console import Console
+
 from codestory.cli.client.service_client import ServiceClient
 from codestory.cli.commands import ingest
+
 
 @pytest.fixture
 def mock_client() -> Any:

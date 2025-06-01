@@ -7,10 +7,26 @@ by the service layer.
 import logging
 import time
 from typing import Any
+
 from fastapi import HTTPException, status
+
 from codestory.graphdb.exceptions import QueryError, TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
-from ..domain.graph import CypherQuery, Path, PathNode, PathRelationship, PathRequest, PathResult, QueryResult, QueryResultFormat, SearchResult, VectorQuery, VectorResult
+
+from ..domain.graph import (
+    CypherQuery,
+    Path,
+    PathNode,
+    PathRelationship,
+    PathRequest,
+    PathResult,
+    QueryResult,
+    QueryResultFormat,
+    SearchResult,
+    VectorQuery,
+    VectorResult,
+)
+
 logger = logging.getLogger(__name__)
 
 class Neo4jAdapter:

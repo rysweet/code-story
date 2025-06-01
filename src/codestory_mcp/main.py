@@ -23,7 +23,7 @@ def setup_logging() -> None:
 
     # Configure structlog
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
-    from typing import Callable, Any, MutableMapping, Mapping, Sequence
+    from typing import Any, Callable, Mapping, MutableMapping, Sequence
     pre_chain: Sequence[
         Callable[
             [Any, str, MutableMapping[str, Any]],

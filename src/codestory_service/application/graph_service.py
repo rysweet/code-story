@@ -7,10 +7,26 @@ path finding, as well as visualization generation.
 import json
 import logging
 from typing import Any, cast
+
 from fastapi import Depends, HTTPException, status
-from ..domain.graph import AskAnswer, AskRequest, CypherQuery, DatabaseClearRequest, DatabaseClearResponse, PathRequest, PathResult, QueryResult, QueryType, VectorQuery, VectorResult, VisualizationRequest
+
+from ..domain.graph import (
+    AskAnswer,
+    AskRequest,
+    CypherQuery,
+    DatabaseClearRequest,
+    DatabaseClearResponse,
+    PathRequest,
+    PathResult,
+    QueryResult,
+    QueryType,
+    VectorQuery,
+    VectorResult,
+    VisualizationRequest,
+)
 from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.openai_adapter import OpenAIAdapter, get_openai_adapter
+
 logger = logging.getLogger(__name__)
 
 class GraphService:
@@ -46,7 +62,7 @@ class GraphService:
             logger.info(f'Executing Cypher query: {query.query[:100]}...')
             result = await self.neo4j.execute_cypher_query(query)
             logger.info(f'Query returned {result.row_count} rows')
-            return cast(QueryResult, result)
+            return cast('QueryResult', result)
         except Exception as e:
             logger.error(f'Error executing Cypher query: {e!s}')
             if isinstance(e, HTTPException):
@@ -73,7 +89,7 @@ class GraphService:
             logger.info(f'Executing vector search for entity type: {query.entity_type}')
             result = await self.neo4j.execute_vector_search(query, embeddings[0])
             logger.info(f'Vector search returned {result.total_count} results')
-            return cast(VectorResult, result)
+            return cast('VectorResult', result)
         except Exception as e:
             logger.error(f'Error executing vector search: {e!s}')
             if isinstance(e, HTTPException):
@@ -96,7 +112,7 @@ class GraphService:
             logger.info(f'Finding paths from {path_request.start_node_id} to {path_request.end_node_id} using algorithm {path_request.algorithm}')
             result = await self.neo4j.find_path(path_request)
             logger.info(f'Path finding returned {result.total_paths_found} paths')
-            return cast(PathResult, result)
+            return cast('PathResult', result)
         except Exception as e:
             logger.error(f'Error finding paths: {e!s}')
             if isinstance(e, HTTPException):
@@ -134,7 +150,7 @@ class GraphService:
             logger.info(f'Generating answer using {len(context_items)} context items')
             answer = await self.openai.answer_question(request, context_items)
             logger.info('Answer generated successfully')
-            return cast(AskAnswer, answer)
+            return cast('AskAnswer', answer)
         except Exception as e:
             logger.error(f'Error answering question: {e!s}')
             if isinstance(e, HTTPException):
@@ -158,7 +174,7 @@ class GraphService:
             graph_data = await self._get_graph_data_for_visualization(request)
             html_content = self._generate_visualization_html(graph_data, request)
             logger.info('Visualization generated successfully')
-            return cast(str, html_content)
+            return cast('str', html_content)
         except Exception as e:
             logger.error(f'Error generating visualization: {e!s}')
             if isinstance(e, HTTPException):

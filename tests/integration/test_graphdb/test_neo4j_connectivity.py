@@ -1,4 +1,5 @@
 from typing import Any
+
 """Integration test for Neo4j connectivity.
 
 This module contains tests to verify that:

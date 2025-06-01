@@ -1,8 +1,11 @@
 from typing import Any
+
 '\nIntegration tests for CLI command suggestions and help behavior.\n'
 import pytest
 from click.testing import CliRunner
+
 from codestory.cli.main import app
+
 
 @pytest.fixture
 def cli_runner() -> Any:

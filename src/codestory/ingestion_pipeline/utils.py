@@ -6,24 +6,17 @@ and other shared functionalities for the ingestion pipeline.
 import importlib
 import logging
 import sys
+from importlib.metadata import EntryPoint, entry_points
 from pathlib import Path
-from typing import Any, Optional, Type, Dict, List, Tuple, cast, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, cast
+
 import yaml
-if sys.version_info >= (3, 10):
-    from importlib.metadata import entry_points, EntryPoint
-    USE_IMPORTLIB = True
-elif sys.version_info >= (3, 8):
-    from importlib.metadata import entry_points, EntryPoint
-    USE_IMPORTLIB = True
-else:
-    try:
-        import pkg_resources
-        USE_IMPORTLIB = False
-    except ImportError:
-        USE_IMPORTLIB = True
-        from importlib.metadata import entry_points, EntryPoint
+
+USE_IMPORTLIB = True
 from prometheus_client import Counter, Gauge, Histogram
+
 from .step import PipelineStep, StepStatus
+
 logger = logging.getLogger(__name__)
 
 def _get_or_create_counter(
@@ -164,38 +157,16 @@ def discover_pipeline_steps() -> dict[str, type[PipelineStep]]:
     steps: dict[str, type[PipelineStep]] = {}
     entry_point_group = 'codestory.pipeline.steps'
     try:
-        if USE_IMPORTLIB:
-            if sys.version_info >= (3, 10):
-                eps = entry_points(group=entry_point_group)
-                entry_points_list = list(eps)
-            else:
-                all_eps = entry_points()
-                entry_points_list = []
-                if hasattr(all_eps, 'select'):
-                    entry_points_list = list(all_eps.select(group=entry_point_group))
-                else:
-                    entry_points_list = all_eps.get(entry_point_group, [])
-            for entry_point in entry_points_list:
-                step_name = entry_point.name
-                step_class = entry_point.load()
-                if not issubclass(step_class, PipelineStep):
-                    logger.warning(f'Entry point {step_name} does not provide a PipelineStep subclass, skipping')
-                    continue
-                steps[step_name] = step_class
-                logger.info(f'Discovered pipeline step: {step_name}')
-        else:
-            try:
-                import pkg_resources  # type: ignore[import-untyped]
-                for entry_point in pkg_resources.iter_entry_points(entry_point_group):
-                    step_name = entry_point.name
-                    step_class = entry_point.load()
-                    if not issubclass(step_class, PipelineStep):
-                        logger.warning(f'Entry point {step_name} does not provide a PipelineStep subclass, skipping')
-                        continue
-                    steps[step_name] = step_class
-                    logger.info(f'Discovered pipeline step: {step_name}')
-            except ImportError:
-                logger.warning('pkg_resources not available and importlib.metadata failed')
+        eps = entry_points(group=entry_point_group)
+        entry_points_list = list(eps)
+        for entry_point in entry_points_list:
+            step_name = entry_point.name
+            step_class = entry_point.load()
+            if not issubclass(step_class, PipelineStep):
+                logger.warning(f'Entry point {step_name} does not provide a PipelineStep subclass, skipping')
+                continue
+            steps[step_name] = step_class
+            logger.info(f'Discovered pipeline step: {step_name}')
     except Exception as e:
         logger.error(f'Error discovering pipeline steps: {e}')
     return steps

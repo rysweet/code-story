@@ -1,13 +1,22 @@
 from typing import Any
+
 'Unit tests for the MCP Adapter service adapters.'
 import asyncio
 from unittest import mock
+
 import httpx
 import pytest
 from fastapi import status
-from codestory_mcp.adapters.graph_service import GraphServiceAdapter, MockNode, MockRelationship, get_graph_service
+
+from codestory_mcp.adapters.graph_service import (
+    GraphServiceAdapter,
+    MockNode,
+    MockRelationship,
+    get_graph_service,
+)
 from codestory_mcp.adapters.openai_service import OpenAIServiceAdapter, get_openai_service
 from codestory_mcp.tools.base import ToolError
+
 
 class TestMockNode:
     """Tests for the MockNode class."""

@@ -1,7 +1,10 @@
 from typing import Any
+
 'Prometheus metrics collection for the MCP Adapter.\n\nThis module provides metrics collection for the MCP Adapter using Prometheus.\n'
 from functools import lru_cache
+
 from prometheus_client import Counter, Gauge, Histogram
+
 
 class MCPMetrics:
     """Metrics collection for the MCP Adapter.

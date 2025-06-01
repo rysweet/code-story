@@ -2,14 +2,17 @@
 import json
 import sys
 from typing import Any
+
 import typer
 from rich.console import Console
 from rich.syntax import Syntax
 from rich.table import Table
+
 from .exceptions import ConfigurationError, SettingNotFoundError
 from .export import create_env_template, export_to_json, export_to_toml, settings_to_dict
 from .settings import get_settings, refresh_settings
 from .writer import get_config_value, update_config
+
 app = typer.Typer(name='config', help='Configuration management commands', no_args_is_help=True)
 console = Console()
 

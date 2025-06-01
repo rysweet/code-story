@@ -1,11 +1,15 @@
 from typing import Any
+
 'Unit tests for the MCP Adapter server.'
 import asyncio
 from unittest import mock
+
 import pytest
 from fastapi import FastAPI, HTTPException, status
+
 from codestory_mcp.server import create_app, get_current_user, tool_executor
 from codestory_mcp.tools.base import BaseTool, ToolError
+
 
 @pytest.fixture
 def mock_settings() -> None:

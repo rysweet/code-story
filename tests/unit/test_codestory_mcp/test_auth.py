@@ -1,9 +1,17 @@
 from typing import Any
+
 'Unit tests for the MCP Adapter authentication.'
 from unittest import mock
+
 import pytest
-from codestory_mcp.auth.entra_validator import AuthenticationError, AuthorizationError, EntraValidator
+
+from codestory_mcp.auth.entra_validator import (
+    AuthenticationError,
+    AuthorizationError,
+    EntraValidator,
+)
 from codestory_mcp.auth.scope_manager import ScopeManager
+
 
 class TestScopeManager:
     """Tests for the ScopeManager class."""

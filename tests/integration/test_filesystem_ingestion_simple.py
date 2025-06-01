@@ -3,9 +3,12 @@ import logging
 import tempfile
 from pathlib import Path
 from typing import Any, Dict
+
 import pytest
+
 from codestory.config.settings import get_settings
 from codestory_filesystem.step import FileSystemStep
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -65,10 +68,10 @@ class TestFilesystemIngestionSimple:
             files = result['files']
             assert len(files) > 0, 'Should process some files'
             processed_paths = [f.get('path', '') for f in files]
-            assert not any(('__pycache__' in path for path in processed_paths)), 'Should not process __pycache__ files'
-            assert not any(('build/' in path for path in processed_paths)), 'Should not process build/ files'
-            assert any(('README.md' in path for path in processed_paths)), 'Should process README.md'
-            assert any(('app.py' in path for path in processed_paths)), 'Should process app.py'
+            assert not any('__pycache__' in path for path in processed_paths), 'Should not process __pycache__ files'
+            assert not any('build/' in path for path in processed_paths), 'Should not process build/ files'
+            assert any('README.md' in path for path in processed_paths), 'Should process README.md'
+            assert any('app.py' in path for path in processed_paths), 'Should process app.py'
         logger.info('Direct filesystem step test completed successfully')
 
     def test_filesystem_step_with_various_file_types(self: Any) -> None:

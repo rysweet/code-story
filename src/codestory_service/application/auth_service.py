@@ -5,10 +5,13 @@ including token validation, user management, and role-based access control.
 """
 import logging
 from typing import Any
+
 from fastapi import Depends, HTTPException, status
+
 from ..domain.auth import LoginRequest, TokenResponse, UserInfo
 from ..infrastructure.msal_validator import MSALValidator, get_msal_validator
 from ..settings import get_service_settings
+
 logger = logging.getLogger(__name__)
 
 class AuthService:
@@ -82,7 +85,7 @@ class AuthService:
             True if the user has permission, False otherwise
         """
         user_roles = claims.get('roles', [])
-        return any((role in user_roles for role in required_roles))
+        return any(role in user_roles for role in required_roles)
 
 async def get_auth_service(msal_validator: MSALValidator=Depends(get_msal_validator)) -> AuthService:
     """Factory function to create an authentication service.

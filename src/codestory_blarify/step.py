@@ -7,14 +7,14 @@ and store AST and symbol bindings in Neo4j.
 import logging
 import os
 import time
-from typing import Any, Dict, Optional, List, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import uuid4
 
 import docker
-from docker import DockerClient
-from celery import current_app, shared_task, Task
+from celery import Task, current_app, shared_task
 from celery.app.control import Control
 from celery.result import AsyncResult
+from docker import DockerClient
 from docker.errors import DockerException
 
 from codestory.config.settings import get_settings
@@ -458,6 +458,8 @@ def run_blarify(
     settings = get_settings()
     neo4j_uri = settings.neo4j.uri
     neo4j_username = settings.neo4j.username
+    if settings.neo4j.password is None:
+        raise ValueError("Neo4j password is not set in settings")
     neo4j_password = settings.neo4j.password.get_secret_value()
     neo4j_database = settings.neo4j.database
 
@@ -692,7 +694,7 @@ def run_blarify(
                     connector = Neo4jConnector(
                         uri=localhost_uri,
                         username=settings.neo4j.username,
-                        password=settings.neo4j.password.get_secret_value(),
+                        password=(settings.neo4j.password.get_secret_value() if settings.neo4j.password is not None else (_ for _ in ()).throw(ValueError("Neo4j password is not set in settings"))),
                         database=settings.neo4j.database,
                     )
                     logger.info(
@@ -706,7 +708,7 @@ def run_blarify(
                     connector = Neo4jConnector(
                         uri=settings.neo4j.uri,
                         username=settings.neo4j.username,
-                        password=settings.neo4j.password.get_secret_value(),
+                        password=(settings.neo4j.password.get_secret_value() if settings.neo4j.password is not None else (_ for _ in ()).throw(ValueError("Neo4j password is not set in settings"))),
                         database=settings.neo4j.database,
                     )
             else:
@@ -714,7 +716,7 @@ def run_blarify(
                 connector = Neo4jConnector(
                     uri=settings.neo4j.uri,
                     username=settings.neo4j.username,
-                    password=settings.neo4j.password.get_secret_value(),
+                    password=(settings.neo4j.password.get_secret_value() if settings.neo4j.password is not None else (_ for _ in ()).throw(ValueError("Neo4j password is not set in settings"))),
                     database=settings.neo4j.database,
                 )
 
@@ -749,14 +751,14 @@ def run_blarify(
 
         logger.info(f"Blarify task completed: {result['message']}")
 
-        return cast(Dict[str, Any], result)
+        return cast("Dict[str, Any]", result)
     except (docker.errors.DockerException, TimeoutError) as e:
         logger.error(f"Docker error: {e}")
         # Return error result
         end_time = time.time()
         duration = end_time - start_time
 
-        return cast(Dict[str, Any], {
+        return cast("Dict[str, Any]", {
             "job_id": job_id,
             "repository_path": repository_path,
             "start_time": start_time,
@@ -773,7 +775,7 @@ def run_blarify(
         end_time = time.time()
         duration = end_time - start_time
 
-        return cast(Dict[str, Any], {
+        return cast("Dict[str, Any]", {
             "job_id": job_id,
             "repository_path": repository_path,
             "start_time": start_time,

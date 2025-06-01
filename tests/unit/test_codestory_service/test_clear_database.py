@@ -1,12 +1,16 @@
 from typing import Any
+
 'Unit tests for database clear functionality.'
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+
 from codestory_service.application.graph_service import GraphService
 from codestory_service.domain.graph import DatabaseClearRequest
 from codestory_service.main import app
+
 
 @pytest.fixture
 def mock_graph_service() -> Any:

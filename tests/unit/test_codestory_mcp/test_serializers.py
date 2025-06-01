@@ -1,8 +1,12 @@
 from typing import Any
+
 'Unit tests for the MCP Adapter serializers.'
 from unittest import mock
+
 import pytest
+
 from codestory_mcp.utils.serializers import NodeSerializer, RelationshipSerializer
+
 
 class TestNodeSerializer:
     """Tests for the NodeSerializer class."""

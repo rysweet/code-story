@@ -8,9 +8,11 @@ import time
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Protocol, TypeVar, Union, cast, ParamSpec, Awaitable
+from typing import Any, Awaitable, ParamSpec, Protocol, TypeVar, Union, cast
+
 from prometheus_client import Counter, Gauge, Histogram
 from prometheus_client.registry import REGISTRY, CollectorRegistry
+
 P = ParamSpec("P")
 R = TypeVar("R")
 
@@ -171,7 +173,7 @@ def instrument_request(operation: OperationType) -> Callable[[Callable[P, R]], C
                 raise
             finally:
                 CURRENT_REQUESTS.labels(operation=operation.value, model=model).dec()
-        return cast(Callable[P, R], wrapper)
+        return cast("Callable[P, R]", wrapper)
     return decorator
 
 R_async = TypeVar("R_async")
@@ -211,5 +213,5 @@ def instrument_async_request(operation: OperationType) -> Callable[[Callable[P, 
                 raise
             finally:
                 CURRENT_REQUESTS.labels(operation=operation.value, model=model).dec()
-        return cast(Callable[P, Awaitable[R_async]], wrapper)
+        return cast("Callable[P, Awaitable[R_async]]", wrapper)
     return decorator

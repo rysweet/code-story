@@ -1,4 +1,5 @@
 from typing import Any
+
 """Test the GUI demo functionality."""
 
 import os

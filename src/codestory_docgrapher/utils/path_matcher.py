@@ -1,8 +1,9 @@
-from typing import Any, Dict, Set, Optional
+from typing import Any, Dict, Optional, Set
 
 'Path matcher for resolving references to filesystem paths.\n\nThis module provides functionality for matching references in documentation\nto actual filesystem paths in the repository.\n'
 import logging
 import os
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 logger = logging.getLogger(__name__)

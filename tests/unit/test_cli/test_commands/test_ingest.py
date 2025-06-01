@@ -1,11 +1,15 @@
 from typing import Any
+
 'Unit tests for the ingest CLI commands.'
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
+
 from codestory.cli.commands import ingest
 from codestory.cli.main import app
+
 
 class TestIngestCommands:
     """Tests for the ingest CLI commands."""

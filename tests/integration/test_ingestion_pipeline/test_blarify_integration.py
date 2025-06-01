@@ -1,11 +1,14 @@
 from typing import Any
+
 'Integration tests for the Blarify workflow step.\n\nThese tests verify that the BlarifyStep can correctly process a repository\nand store AST and symbol bindings in the Neo4j database.\n'
 import os
 import tempfile
 import time
 from pathlib import Path
+
 import docker
 import pytest
+
 ci_env = os.environ.get('CI') == 'true'
 docker_env = os.environ.get('CODESTORY_IN_CONTAINER') == 'true'
 neo4j_port = '7687' if ci_env else '7689' if docker_env else '7688'
@@ -17,9 +20,11 @@ os.environ['NEO4J__USERNAME'] = 'neo4j'
 os.environ['NEO4J__PASSWORD'] = 'password'
 os.environ['NEO4J__DATABASE'] = 'testdb'
 import contextlib
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_blarify.step import DEFAULT_CONTAINER_NAME_PREFIX, BlarifyStep
+
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
 
 @pytest.fixture

@@ -1,20 +1,26 @@
 from typing import Any
+
 'Visualization commands for the Code Story CLI.'
 import contextlib
 import os
 import webbrowser
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
 import click
+
 with contextlib.suppress(ImportError):
     pass
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
 from ..require_service_available import require_service_available
+
 if TYPE_CHECKING:
     from rich.console import Console
+
     from ..client import ServiceClient
 
 @click.group(help='Generate and manage visualizations of the Code Story graph.')

@@ -1,9 +1,25 @@
 from typing import Any
+
 'Tests for settings module and a direct settings provider.\n\nThis module contains tests for the settings module and also provides\na direct settings provider for use in tests.\n'
 import os
 from unittest.mock import patch
+
 from pydantic import SecretStr
-from codestory.config.settings import AzureOpenAISettings, AzureSettings, IngestionSettings, InterfaceSettings, Neo4jSettings, OpenAISettings, PluginSettings, RedisSettings, ServiceSettings, Settings, TelemetrySettings
+
+from codestory.config.settings import (
+    AzureOpenAISettings,
+    AzureSettings,
+    IngestionSettings,
+    InterfaceSettings,
+    Neo4jSettings,
+    OpenAISettings,
+    PluginSettings,
+    RedisSettings,
+    ServiceSettings,
+    Settings,
+    TelemetrySettings,
+)
+
 
 def create_test_settings() -> Any:
     """Create a fully-initialized settings object for tests."""

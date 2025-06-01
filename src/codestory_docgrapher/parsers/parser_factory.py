@@ -1,8 +1,11 @@
 from collections.abc import Callable
-from typing import Callable, Type, Dict, Optional
+from typing import Dict, Optional, Type
+
 'Parser factory for creating appropriate parsers for different document types.\n\nThis module provides a factory for creating the appropriate parser based on\nthe type of documentation file.\n'
 import logging
+
 from ..models import DocumentationFile, DocumentType
+
 logger = logging.getLogger(__name__)
 
 class Parser:

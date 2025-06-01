@@ -1,7 +1,10 @@
 from typing import Any
+
 'Data models for summaries and intermediate representations.\n\nThis module defines the data models used by the Summarizer workflow step\nfor representing summaries and tracking processing state.\n'
 from enum import Enum
+
 from pydantic import BaseModel, Field
+
 
 class NodeType(str, Enum):
     """Types of nodes that can be summarized."""
@@ -57,7 +60,7 @@ class DependencyGraph(BaseModel):
     skipped_count: int = 0
     total_count: int = 0
 
-    def add_node(self: Any, node: NodeData) -> None:
+    def add_node(self, node: NodeData) -> None:
         """Add a node to the graph.
 
         Args:
@@ -71,7 +74,7 @@ class DependencyGraph(BaseModel):
         if not node.dependents:
             self.root_nodes.add(node.id)
 
-    def update_node_status(self: Any, node_id: str, status: ProcessingStatus) -> None:
+    def update_node_status(self, node_id: str, status: ProcessingStatus) -> None:
         """Update the status of a node.
 
         Args:
@@ -103,7 +106,7 @@ class DependencyGraph(BaseModel):
         elif status == ProcessingStatus.SKIPPED:
             self.skipped_count += 1
 
-    def get_ready_nodes(self: Any) -> list[str]:
+    def get_ready_nodes(self) -> list[str]:
         """Get nodes that are ready to be processed.
 
         A node is ready when all its dependencies have been processed.
@@ -128,7 +131,7 @@ class DependencyGraph(BaseModel):
                 self.update_node_status(node_id, ProcessingStatus.READY)
         return ready_nodes
 
-    def get_progress(self: Any) -> float:
+    def get_progress(self) -> float:
         """Get the overall progress as a percentage.
 
         Returns:

@@ -1,9 +1,12 @@
 """Integration tests for CLI configuration commands."""
 from typing import Any
+
 import pytest
 from click.testing import CliRunner
+
 from codestory.cli.main import app
 from codestory.config import get_settings
+
 
 class TestConfigCommands:
     """Integration tests for configuration-related CLI commands."""

@@ -3,7 +3,9 @@ import time
 from enum import Enum
 from typing import Any
 from uuid import uuid4
+
 from pydantic import BaseModel, Field, field_validator
+
 
 class QueryType(str, Enum):
     """Type of Cypher query."""

@@ -4,15 +4,19 @@ import os
 import subprocess
 import time
 from typing import Any, Optional, Union
+
 import click
+
 with contextlib.suppress(ImportError):
     pass
 from rich.console import Console
 from rich.live import Live
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
 from rich.table import Table
+
 from ..client import ProgressClient, ServiceClient
 from ..require_service_available import require_service_available
+
 
 @click.group(help='Ingest a repository into Code Story.')
 def ingest() -> None:

@@ -1,7 +1,13 @@
-'Utilities for tracking and reporting summarization progress.\n\nThis module provides functionality for tracking the progress of the\nsummarization process and generating progress reports.\n'
+r"""Utilities for tracking and reporting summarization progress.
+
+This module provides functionality for tracking the progress of the
+summarization process and generating progress reports.
+"""
 import logging
 import time
+
 from ..models import DependencyGraph, NodeType
+
 logger = logging.getLogger(__name__)
 
 class ProgressTracker:

@@ -1,8 +1,12 @@
 from typing import Any
+
 'Unit tests for the ProgressClient class.'
 from unittest.mock import MagicMock, patch
+
 import redis
+
 from codestory.cli.client.progress_client import ProgressClient
+
 
 class TestProgressClient:
     """Tests for the ProgressClient class."""

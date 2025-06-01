@@ -1,8 +1,11 @@
 from typing import Any
+
 'Tests for the Code Story Service infrastructure adapters.\n\nThis module contains tests for the infrastructure adapters used in the service.\n'
 from unittest import mock
+
 import pytest
 from fastapi import HTTPException
+
 from codestory.graphdb.exceptions import ConnectionError, QueryError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.llm.exceptions import AuthenticationError
@@ -12,6 +15,7 @@ from codestory_service.infrastructure.celery_adapter import CeleryAdapter
 from codestory_service.infrastructure.msal_validator import MSALValidator
 from codestory_service.infrastructure.neo4j_adapter import Neo4jAdapter
 from codestory_service.infrastructure.openai_adapter import OpenAIAdapter
+
 
 class TestNeo4jAdapter:
     """Tests for Neo4j adapter."""
@@ -290,19 +294,19 @@ class TestCeleryAdapter:
         args, kwargs = mock_apply_async.call_args
         step_configs = kwargs.get('args', [None, None, None])[1]
         assert len(step_configs) == 4, 'Should have 4 step configs'
-        filesystem_config = next((cfg for cfg in step_configs if cfg['name'] == 'filesystem'))
+        filesystem_config = next(cfg for cfg in step_configs if cfg['name'] == 'filesystem')
         assert 'concurrency' in filesystem_config, 'Filesystem should keep concurrency parameter'
         assert 'custom_option' in filesystem_config, 'Filesystem should keep custom_option parameter'
-        blarify_config = next((cfg for cfg in step_configs if cfg['name'] == 'blarify'))
+        blarify_config = next(cfg for cfg in step_configs if cfg['name'] == 'blarify')
         assert 'concurrency' not in blarify_config, 'Blarify should not have concurrency parameter'
         assert 'custom_option' in blarify_config, 'Blarify should keep custom_option parameter'
-        summarizer_config = next((cfg for cfg in step_configs if cfg['name'] == 'summarizer'))
+        summarizer_config = next(cfg for cfg in step_configs if cfg['name'] == 'summarizer')
         assert 'job_id' in summarizer_config, 'Summarizer should keep job_id parameter'
         assert 'ignore_patterns' in summarizer_config, 'Summarizer should keep ignore_patterns parameter'
         assert 'timeout' in summarizer_config, 'Summarizer should keep timeout parameter'
         assert 'incremental' in summarizer_config, 'Summarizer should keep incremental parameter'
         assert 'custom_option' not in summarizer_config, 'Summarizer should not have custom_option parameter'
-        docgrapher_config = next((cfg for cfg in step_configs if cfg['name'] == 'docgrapher'))
+        docgrapher_config = next(cfg for cfg in step_configs if cfg['name'] == 'docgrapher')
         assert 'job_id' in docgrapher_config, 'Docgrapher should keep job_id parameter'
         assert 'ignore_patterns' in docgrapher_config, 'Docgrapher should keep ignore_patterns parameter'
         assert 'timeout' in docgrapher_config, 'Docgrapher should keep timeout parameter'

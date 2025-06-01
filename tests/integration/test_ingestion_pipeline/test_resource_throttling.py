@@ -1,8 +1,10 @@
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
 import pytest
 import requests
-from typing import Any
+
 API_BASE = 'http://localhost:8000/v1/ingest'
 
 @pytest.mark.integration
@@ -46,7 +48,7 @@ def test_resource_throttling_enforced(monkeypatch: Any) -> None:
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(mock_start_job) for _ in range(max_tokens + 2)]
         results = [f.result() for f in futures]
-    throttled = any((r.status_code == 202 or (r.status_code == 500 and 'throttle' in r.text.lower()) for r in results))
+    throttled = any(r.status_code == 202 or (r.status_code == 500 and 'throttle' in r.text.lower()) for r in results)
     assert throttled, 'At least one job should be throttled or accepted'
     resp = requests.get(f'{API_BASE}/resource_status', headers={'Authorization': 'Bearer test'})
     assert resp.status_code == 200

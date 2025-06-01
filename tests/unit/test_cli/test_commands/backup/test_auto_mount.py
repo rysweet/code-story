@@ -1,12 +1,16 @@
 from typing import Any
+
 '\nUnit tests for auto-mount functionality in the ingest command.\n'
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
+
 import pytest
 from rich.console import Console
+
 from codestory.cli.client.service_client import ServiceClient
 from codestory.cli.commands.ingest import ingest
+
 
 @pytest.fixture
 def mock_client() -> Any:

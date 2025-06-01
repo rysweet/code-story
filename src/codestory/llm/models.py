@@ -5,8 +5,10 @@ requests and responses for the Azure OpenAI API.
 """
 import os
 from enum import Enum
-from typing import Any
+from typing import Any, Self
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class ChatRole(str, Enum):
     """Roles for chat messages."""
@@ -163,7 +165,7 @@ class LLMConfiguration(BaseModel):
     fallback_api_key: str | None = Field(default=None, description='Fallback API key to use when Azure auth fails')
 
     @classmethod
-    def from_environment(cls: Any) -> 'LLMConfiguration':
+    def from_environment(cls: type[Self]) -> Self:
         """Create an LLMConfiguration instance from environment variables."""
         mode_str = os.environ.get('CODESTORY_LLM_MODE', 'normal').lower()
         provider_str = os.environ.get('CODESTORY_LLM_PROVIDER', 'openai').lower()

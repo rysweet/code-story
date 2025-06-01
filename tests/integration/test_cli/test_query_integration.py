@@ -1,9 +1,12 @@
 """Integration tests for CLI query commands."""
 import os
 from typing import Any
+
 import pytest
 from click.testing import CliRunner
+
 from codestory.cli.main import app
+
 
 @pytest.mark.require_service
 class TestQueryCommands:

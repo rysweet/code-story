@@ -5,10 +5,13 @@ import tempfile
 import time
 from collections.abc import Generator
 from typing import Any
+
 import httpx
 import pytest
 from click.testing import CliRunner
+
 from codestory.config import get_settings
+
 
 @pytest.fixture
 def cli_runner() -> CliRunner:

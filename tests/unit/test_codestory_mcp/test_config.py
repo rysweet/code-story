@@ -1,4 +1,5 @@
 from typing import Any
+
 """Unit tests for the MCP Adapter configuration."""
 
 import os

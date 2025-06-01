@@ -1,13 +1,18 @@
 from typing import Any
+
 'Integration tests for the filesystem workflow step using direct execution.\n\nThese tests verify that the FileSystemStep can correctly process a repository\nand store its structure in the Neo4j database by directly executing the task.\n'
 import os
+
 ci_env = os.environ.get('CI') == 'true'
 neo4j_port = '7687' if ci_env else '7688'
 import tempfile
 from pathlib import Path
+
 import pytest
+
 from codestory.config.settings import Neo4jSettings
 from codestory.ingestion_pipeline.step import StepStatus, generate_job_id
+
 os.environ['NEO4J__URI'] = f'bolt://localhost:{neo4j_port}'
 os.environ['NEO4J__USERNAME'] = 'neo4j'
 os.environ['NEO4J__PASSWORD'] = 'password'
@@ -67,7 +72,7 @@ def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector
                     continue
             dirs_to_remove = []
             for d in dirs:
-                if any((d.startswith(pat.rstrip('/')) or d == pat.rstrip('/') for pat in ignore_patterns if pat.endswith('/'))):
+                if any(d.startswith(pat.rstrip('/')) or d == pat.rstrip('/') for pat in ignore_patterns if pat.endswith('/')):
                     dirs_to_remove.append(d)
             for d in dirs_to_remove:
                 dirs.remove(d)

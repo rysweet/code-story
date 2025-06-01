@@ -7,10 +7,13 @@ for validating JWT tokens and authenticating users against Microsoft Entra ID
 import logging
 import time
 from typing import Any, cast
+
 import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from ..settings import get_service_settings
+
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
 
@@ -52,13 +55,13 @@ class MSALValidator:
             if not token:
                 return {'sub': 'anonymous', 'name': 'Anonymous User', 'roles': ['user'], 'exp': int(time.time() + 3600)}
             try:
-                claims = cast(dict[str, Any], jwt.decode(token, options={'verify_signature': False, 'verify_exp': False}))
+                claims = cast('dict[str, Any]', jwt.decode(token, options={'verify_signature': False, 'verify_exp': False}))
                 return claims
             except Exception:
                 return {'sub': 'anonymous', 'name': 'Anonymous User', 'roles': ['user'], 'exp': int(time.time() + 3600)}
         if self.dev_mode and self.jwt_secret:
             try:
-                claims = cast(dict[str, Any], jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm]))
+                claims = cast('dict[str, Any]', jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm]))
                 return claims
             except jwt.ExpiredSignatureError as err:
                 logger.warning('Token has expired')
@@ -187,7 +190,7 @@ def require_role(required_roles: list[str]) -> Any:
 
     async def role_checker(user: dict[str, Any]=Depends(get_current_user)) -> dict[str, Any]:
         user_roles = user.get('roles', [])
-        if any((role in user_roles for role in required_roles)):
+        if any(role in user_roles for role in required_roles):
             return user
         logger.warning(f"Access denied: User {user.get('name')} with roles {user_roles} does not have any of the required roles {required_roles}")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Insufficient permissions')

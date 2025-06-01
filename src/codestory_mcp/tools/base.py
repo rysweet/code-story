@@ -4,8 +4,10 @@ This module defines the base class for all MCP tools.
 """
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar
+
 from fastapi import HTTPException, status
 from pydantic import BaseModel, ConfigDict
+
 
 class ToolParameters(BaseModel):
     """Base model for tool parameters."""

@@ -1,7 +1,13 @@
-'Progress tracker for documentation processing.\n\nThis module provides functionality for tracking the progress of\ndocumentation processing during the DocumentationGrapher step.\n'
+r"""Progress tracker for documentation processing.
+
+This module provides functionality for tracking the progress of
+documentation processing during the DocumentationGrapher step.
+"""
 import logging
 import time
+
 from ..models import DocumentationGraph
+
 logger = logging.getLogger(__name__)
 
 class ProgressTracker:

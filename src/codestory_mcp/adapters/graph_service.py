@@ -5,13 +5,16 @@ This module provides an adapter for interacting with the Code Story Graph Servic
 import time
 from functools import lru_cache
 from typing import Any
+
 import httpx
 import structlog
 from fastapi import status
 from neo4j.graph import Node, Relationship
+
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.config import get_mcp_settings
 from codestory_mcp.utils.metrics import get_metrics
+
 logger = structlog.get_logger(__name__)
 
 class GraphServiceAdapter:
@@ -173,7 +176,7 @@ class GraphServiceAdapter:
                 raise ToolError(error_message, status_code=status.HTTP_502_BAD_GATEWAY)
             self.metrics.record_service_api_call(endpoint, 'success', time.time() - start_time)
             from typing import cast
-            return cast(dict[str, Any], response.json())
+            return cast('dict[str, Any]', response.json())
         except httpx.RequestError as e:
             error_message = f'Cypher query failed: {e!s}'
             logger.exception('Cypher query request error', error=str(e))

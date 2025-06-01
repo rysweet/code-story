@@ -5,12 +5,15 @@ This module provides an adapter for interacting with the OpenAI client.
 import time
 from functools import lru_cache
 from typing import Any, cast
+
 import structlog
 from fastapi import status
+
 from codestory.llm.client import OpenAIClient
 from codestory.llm.models import ChatCompletionRequest, ChatMessage, ChatRole
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.metrics import get_metrics
+
 logger = structlog.get_logger(__name__)
 
 class OpenAIServiceAdapter:
@@ -54,7 +57,7 @@ class OpenAIServiceAdapter:
                 raise ToolError("OpenAI returned no summary.", status_code=status.HTTP_502_BAD_GATEWAY)
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_summary', 'success', duration)
-            return cast(str, summary)
+            return cast('str', summary)
         except Exception as e:
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_summary', 'error', duration)
@@ -95,7 +98,7 @@ class OpenAIServiceAdapter:
                 raise ToolError("OpenAI returned no explanation.", status_code=status.HTTP_502_BAD_GATEWAY)
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_path_explanation', 'success', duration)
-            return cast(str, explanation)
+            return cast('str', explanation)
         except Exception as e:
             duration = time.time() - start_time
             self.metrics.record_service_api_call('openai_path_explanation', 'error', duration)

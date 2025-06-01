@@ -1,11 +1,15 @@
 from typing import Any
+
 'Unit tests for the main CLI application.'
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
+
 import click
 from click.testing import CliRunner
+
 from codestory.cli.client import ServiceError
 from codestory.cli.main import app, main
+
 
 @contextmanager
 def custom_error_handler() -> None:

@@ -2,11 +2,14 @@
 
 This module provides functions for validating JWT tokens issued by Microsoft Entra ID.
 """
-from typing import Any, Optional, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
+
 import jwt
 import structlog
 from jwt.jwks_client import PyJWKClient
+
 from codestory_mcp.auth.scope_manager import ScopeManager
+
 logger = structlog.get_logger(__name__)
 
 class AuthenticationError(Exception):
@@ -80,7 +83,7 @@ class EntraValidator:
             )
             logger.info('Token validated successfully', sub=claims.get('sub', 'unknown'), client_id=claims.get('azp', 'unknown'))
             self._verify_scopes(claims)
-            return cast(Dict[str, Any], claims)
+            return cast('Dict[str, Any]', claims)
         except jwt.PyJWTError as e:
             logger.warning('Token validation failed', error=str(e))
             raise AuthenticationError(f'Token validation failed: {e!s}') from e

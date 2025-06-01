@@ -1,11 +1,15 @@
-from typing import Any
-'Unit tests for the query CLI commands.'
+"""Unit tests for the query CLI commands."""
+
 import json
 import os
 import tempfile
+from typing import Any
 from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
+
 from codestory.cli.main import app
+
 
 class TestQueryCommands:
     """Tests for the query CLI commands."""
@@ -130,7 +134,7 @@ class TestQueryCommands:
         module_nodes = {'records': [{'n': {'name': 'test_module', 'path': '/path/to/module'}}]}
         rel_types = {'records': [{'type': 'IMPORTS', 'count': 15}, {'type': 'DEFINES', 'count': 25}]}
 
-        def mock_execute_query: Any(query, params: Any=None):
+        def mock_execute_query(query: Any, params: Any = None) -> Any:
             if 'labels(n) as type' in query:
                 return node_counts
             elif 'MATCH (n:Class)' in query:

@@ -1,8 +1,12 @@
 from typing import Any
+
 'Tests for OpenAI client metrics collection.'
 from unittest.mock import MagicMock, call, patch
+
 import pytest
+
 from codestory.llm.metrics import OperationType
+
 
 @pytest.fixture(autouse=True)
 def mock_all_metrics_objects() -> None:
@@ -12,7 +16,19 @@ def mock_all_metrics_objects() -> None:
         mock_counter.return_value.labels = mock_labels
         mock_gauge.return_value.labels = mock_labels
         mock_histogram.return_value.labels = mock_labels
-        from codestory.llm.metrics import CURRENT_REQUESTS, ERROR_COUNT, REQUEST_COUNT, REQUEST_DURATION, RETRY_COUNT, TOKEN_USAGE, instrument_async_request, instrument_request, record_error, record_request, record_retry
+        from codestory.llm.metrics import (
+            CURRENT_REQUESTS,
+            ERROR_COUNT,
+            REQUEST_COUNT,
+            REQUEST_DURATION,
+            RETRY_COUNT,
+            TOKEN_USAGE,
+            instrument_async_request,
+            instrument_request,
+            record_error,
+            record_request,
+            record_retry,
+        )
         metrics_objects = {'ERROR_COUNT': ERROR_COUNT, 'REQUEST_COUNT': REQUEST_COUNT, 'REQUEST_DURATION': REQUEST_DURATION, 'RETRY_COUNT': RETRY_COUNT, 'TOKEN_USAGE': TOKEN_USAGE, 'CURRENT_REQUESTS': CURRENT_REQUESTS, 'instrument_async_request': instrument_async_request, 'instrument_request': instrument_request, 'record_error': record_error, 'record_request': record_request, 'record_retry': record_retry}
         yield metrics_objects
 

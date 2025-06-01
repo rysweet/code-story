@@ -1,12 +1,16 @@
 from typing import Any
+
 'Unit tests for the ProgressClient class.'
 import json
 import threading
 import time
 from unittest.mock import MagicMock, patch
+
 import redis
 from rich.console import Console
+
 from codestory.cli.client import ProgressClient
+
 
 class TestProgressClient:
     """Tests for the ProgressClient class."""

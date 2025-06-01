@@ -4,9 +4,12 @@ import threading
 import time
 from collections.abc import Callable
 from typing import Any
+
 import redis
 from rich.console import Console
+
 from codestory.config import Settings, get_settings
+
 
 class ProgressClient:
     """Client for tracking ingestion job progress."""

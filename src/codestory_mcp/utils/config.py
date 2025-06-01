@@ -1,4 +1,5 @@
 from typing import Any
+
 """Configuration for the MCP Adapter.
 
 This module provides configuration management for the MCP Adapter.

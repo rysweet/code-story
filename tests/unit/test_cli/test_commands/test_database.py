@@ -1,10 +1,14 @@
 from typing import Any
+
 'Unit tests for the database CLI commands.'
 from unittest.mock import MagicMock
+
 import pytest
 from click.testing import CliRunner
+
 from codestory.cli.client import ServiceError
 from codestory.cli.commands.database import clear_database, database
+
 
 @pytest.fixture
 def mock_client() -> Any:

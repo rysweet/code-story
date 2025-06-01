@@ -1,11 +1,25 @@
 from typing import Any
+
 'Tests for OpenAI client retry and backoff logic.'
 from unittest.mock import MagicMock, patch
+
 import openai
 import pytest
-from codestory.llm.backoff import before_retry_callback, get_retry_after, retry_on_openai_errors, retry_on_openai_errors_async
-from codestory.llm.exceptions import ContextLengthError, RateLimitError, ServiceUnavailableError, TimeoutError
+
+from codestory.llm.backoff import (
+    before_retry_callback,
+    get_retry_after,
+    retry_on_openai_errors,
+    retry_on_openai_errors_async,
+)
+from codestory.llm.exceptions import (
+    ContextLengthError,
+    RateLimitError,
+    ServiceUnavailableError,
+    TimeoutError,
+)
 from codestory.llm.metrics import OperationType
+
 
 @pytest.fixture(autouse=True)
 def mock_all_prometheus() -> None:

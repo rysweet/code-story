@@ -1,13 +1,17 @@
 from typing import Any
+
 'Pytest configuration for integration tests.'
 import glob
 import os
 import re
 import sys
 from unittest.mock import patch
+
 import pytest
 from dotenv import load_dotenv
+
 from .test_config import get_test_settings
+
 
 def fix_neo4j_port_config() -> None:
     """Fix Neo4j URI syntax in test files."""
@@ -212,6 +216,7 @@ def celery_app(redis_client: Any) -> None:
     and cleaned up for tests.
     """
     import importlib
+
     from codestory.ingestion_pipeline.celery_app import app
     redis_uri = os.environ.get('REDIS__URI') or os.environ.get('REDIS_URI') or 'redis://localhost:6380/0'
     app.conf.update(broker_url=redis_uri, result_backend=redis_uri, task_always_eager=True, task_eager_propagates=True, task_ignore_result=False, worker_send_task_events=False, broker_connection_retry=True, broker_connection_max_retries=3)

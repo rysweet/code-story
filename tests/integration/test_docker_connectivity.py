@@ -1,10 +1,13 @@
 from typing import Any
+
 "\nTest Docker connectivity fix for the blarify step.\n\nThis test validates that our Docker connectivity fix resolves the original issue where\nthe blarify step couldn't access Docker daemon due to missing Docker client or\npermission issues.\n"
 import subprocess
 import sys
 import time
 from pathlib import Path
+
 import pytest
+
 
 class TestDockerConnectivityFix:
     """Test suite for Docker connectivity fix validation"""

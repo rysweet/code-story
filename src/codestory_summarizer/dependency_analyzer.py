@@ -1,8 +1,12 @@
 from typing import Any
+
 'Dependency analyzer for building and analyzing code dependency graphs.\n\nThis module provides functionality for building a directed acyclic graph (DAG)\nof code dependencies by querying the Neo4j database for AST and filesystem nodes.\n'
 import logging
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 from .models import DependencyGraph, NodeData, NodeType
+
 logger = logging.getLogger(__name__)
 
 class DependencyAnalyzer:

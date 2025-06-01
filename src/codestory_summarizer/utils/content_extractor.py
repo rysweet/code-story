@@ -1,9 +1,13 @@
 from typing import Any
+
 'Utilities for extracting code content to summarize.\n\nThis module provides functionality for extracting code content and context\nfor summarization from the Neo4j database.\n'
 import logging
 import os
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 from ..models import NodeData, NodeType
+
 logger = logging.getLogger(__name__)
 
 class ContentExtractor:

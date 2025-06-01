@@ -1,10 +1,14 @@
 from typing import Any
+
 'Unit tests for the Neo4jConnector class.'
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from neo4j.exceptions import ServiceUnavailable
+
 from codestory.graphdb.exceptions import QueryError, TransactionError
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 
 @pytest.fixture
 def mock_driver() -> Any:

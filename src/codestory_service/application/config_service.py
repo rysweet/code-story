@@ -7,10 +7,13 @@ import json
 import logging
 import time
 from typing import Any, Optional, Set
+
 import redis.asyncio as redis
 from fastapi import HTTPException, status
+
 from codestory.config.settings import get_settings as get_core_settings
 from codestory.config.writer import update_config, update_env, update_toml
+
 
 class ConfigWriter:
     """Wrapper for configuration writing functions."""
@@ -32,8 +35,22 @@ class ConfigWriter:
         # This is a placeholder; real logic may need to distinguish between config/env/toml
         # For now, just call update_config for all
         update_config(f"{section}.{key}", value, None)
-from ..domain.config import ConfigDump, ConfigGroup, ConfigItem, ConfigMetadata, ConfigPatch, ConfigPermission, ConfigSchema, ConfigSection, ConfigSource, ConfigValidationError, ConfigValidationResult, ConfigValueType
+from ..domain.config import (
+    ConfigDump,
+    ConfigGroup,
+    ConfigItem,
+    ConfigMetadata,
+    ConfigPatch,
+    ConfigPermission,
+    ConfigSchema,
+    ConfigSection,
+    ConfigSource,
+    ConfigValidationError,
+    ConfigValidationResult,
+    ConfigValueType,
+)
 from ..settings import get_service_settings
+
 logger = logging.getLogger(__name__)
 
 class ConfigService:
@@ -82,7 +99,7 @@ class ConfigService:
             logger.warning('Redis not available for config notifications')
             return
         try:
-            notification = {'timestamp': int(time.time()), 'changes': list(changes), 'requires_restart': any((key not in self.hot_reloadable for key in changes))}
+            notification = {'timestamp': int(time.time()), 'changes': list(changes), 'requires_restart': any(key not in self.hot_reloadable for key in changes)}
             await self.redis.publish(self.notification_channel, json.dumps(notification))
             logger.info(f'Published config update notification for {len(changes)} changes')
         except Exception as e:

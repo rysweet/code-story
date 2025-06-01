@@ -7,15 +7,18 @@ import contextlib
 import logging
 import os
 import time
-from typing import Any, Literal, cast, Callable
+from typing import Any, Callable, Literal, cast
+
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
+
 from ..infrastructure.celery_adapter import CeleryAdapter, get_celery_adapter
 from ..infrastructure.error_log import get_and_clear_errors
 from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.openai_adapter import OpenAIAdapter, get_openai_adapter
 from ..settings import get_service_settings
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=['health'])
 
@@ -307,11 +310,9 @@ async def _health_check_impl(neo4j: Neo4jAdapter, celery: CeleryAdapter, openai:
         'openai': ComponentHealth(**openai_health),
         'redis': ComponentHealth(**redis_health)
     }
-    unhealthy_count = sum((1 for c in components.values() if c.status == 'unhealthy'))
-    degraded_count = sum((1 for c in components.values() if c.status == 'degraded'))
-    if components['celery'].status == 'unhealthy':
-        overall_status = 'unhealthy'
-    elif unhealthy_count > 2:
+    unhealthy_count = sum(1 for c in components.values() if c.status == 'unhealthy')
+    degraded_count = sum(1 for c in components.values() if c.status == 'degraded')
+    if components['celery'].status == 'unhealthy' or unhealthy_count > 2:
         overall_status = 'unhealthy'
     elif unhealthy_count > 0 or degraded_count > 0:
         overall_status = 'degraded'

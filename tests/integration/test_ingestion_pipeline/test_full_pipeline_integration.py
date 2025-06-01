@@ -1,14 +1,19 @@
 from typing import Any
+
 'Integration tests for the full ingestion pipeline.\n\nThese tests verify that the complete ingestion pipeline can process a\nrepository through all workflow steps correctly using real services.\n'
 import logging
 import os
 import shutil
 import tempfile
 import time
+
 import pytest
+
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
+
 from .base_pipeline_test import BasePipelineTest
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

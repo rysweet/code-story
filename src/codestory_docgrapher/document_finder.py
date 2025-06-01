@@ -1,10 +1,14 @@
 from typing import Any
+
 'Document finder for locating documentation files in repositories.\n\nThis module provides functionality for locating documentation files\nwithin a repository, including Markdown files, README files, and\ndocumentation within code files.\n'
 import logging
 import os
 import re
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 from .models import DocumentationFile, DocumentType
+
 logger = logging.getLogger(__name__)
 
 class DocumentFinder:
@@ -73,7 +77,7 @@ class DocumentFinder:
         Returns:
             True if the path should be ignored, False otherwise
         """
-        return any((pattern.search(path) for pattern in ignore_patterns))
+        return any(pattern.search(path) for pattern in ignore_patterns)
 
     def _find_standalone_docs(self: Any, ignore_patterns: list[re.Pattern[str]]) -> list[DocumentationFile]:
         """Find standalone documentation files (Markdown, RST, etc.).

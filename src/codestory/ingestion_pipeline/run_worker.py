@@ -3,8 +3,10 @@ import logging
 import os
 import sys
 from typing import Any
+
 from ..config.settings import get_settings
 from .celery_app import app
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 settings = get_settings()

@@ -182,7 +182,6 @@ class ContentAnalyzer:
         purpose = ""
         if self.use_llm and self.llm_client:
             # mypy: ensure llm_client is not None
-            llm_client = self.llm_client
             purpose = self._extract_function_purpose(content)
 
         return {

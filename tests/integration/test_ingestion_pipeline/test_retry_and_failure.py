@@ -1,10 +1,14 @@
 from typing import Any
+
 'Integration test for retry and failure recovery in the ingestion pipeline.\n\nThis test simulates a transient failure in a pipeline step, verifies that the step is retried\naccording to the configured max_retries and back_off_seconds, and checks that the job status\nAPI reports the correct retry_count and last_error.\n'
 import time
 from unittest.mock import patch
+
 import pytest
+
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
+
 pytestmark = [pytest.mark.integration]
 
 def test_retry_and_failure_reporting(tmp_path: Any) -> None:

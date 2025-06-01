@@ -1,9 +1,19 @@
 from typing import Any
+
 'Parser for Markdown documentation files.\n\nThis module provides a parser for extracting entities and relationships\nfrom Markdown documentation files.\n'
 import logging
 import re
-from ..models import DocumentationEntity, DocumentationFile, DocumentationRelationship, DocumentType, EntityType, RelationType
+
+from ..models import (
+    DocumentationEntity,
+    DocumentationFile,
+    DocumentationRelationship,
+    DocumentType,
+    EntityType,
+    RelationType,
+)
 from .parser_factory import Parser, ParserFactory
+
 logger = logging.getLogger(__name__)
 
 @ParserFactory.register(DocumentType.MARKDOWN)

@@ -9,17 +9,20 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from functools import wraps
 from typing import Any
+
 import structlog
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from prometheus_client import make_asgi_app
+
 from codestory_mcp.auth.entra_validator import EntraValidator
 from codestory_mcp.tools import get_all_tools, get_tool
 from codestory_mcp.tools.base import ToolError
 from codestory_mcp.utils.config import get_mcp_settings
 from codestory_mcp.utils.metrics import get_metrics
+
 logger = structlog.get_logger(__name__)
 
 async def get_current_user(request: Request) -> dict[str, Any]:
@@ -99,6 +102,7 @@ def tool_executor(func: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 from typing import AsyncGenerator
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:

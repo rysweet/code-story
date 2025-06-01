@@ -1,14 +1,31 @@
 from typing import Any
+
 'Tests for the Code Story Service domain models.\n\nThis module contains tests for the domain models used in the service.\n'
 from datetime import datetime
 from unittest import mock
+
 import pytest
 from pydantic import ValidationError
+
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_service.domain.auth import LoginRequest, TokenResponse, UserInfo
-from codestory_service.domain.config import ConfigItem, ConfigMetadata, ConfigPatch, ConfigPermission, ConfigSection, ConfigValueType
+from codestory_service.domain.config import (
+    ConfigItem,
+    ConfigMetadata,
+    ConfigPatch,
+    ConfigPermission,
+    ConfigSection,
+    ConfigValueType,
+)
 from codestory_service.domain.graph import CypherQuery, PathRequest, VectorQuery
-from codestory_service.domain.ingestion import IngestionRequest, IngestionSourceType, IngestionStarted, JobStatus, StepProgress
+from codestory_service.domain.ingestion import (
+    IngestionRequest,
+    IngestionSourceType,
+    IngestionStarted,
+    JobStatus,
+    StepProgress,
+)
+
 
 class TestAuthModels:
     """Tests for authentication domain models."""

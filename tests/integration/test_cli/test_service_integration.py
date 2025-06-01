@@ -3,9 +3,12 @@ import os
 import subprocess
 import time
 from typing import Any
+
 import pytest
 from click.testing import CliRunner
+
 from codestory.cli.main import app
+
 CLI_CMD = ['python', '-m', 'codestory.cli.main']
 
 class TestServiceCommands:

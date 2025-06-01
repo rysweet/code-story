@@ -2,9 +2,12 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-import pytest
-from codestory_filesystem.step import get_combined_ignore_spec
 from typing import Any
+
+import pytest
+
+from codestory_filesystem.step import get_combined_ignore_spec
+
 
 def create_test_tree(root: Any) -> None:
     (Path(root) / 'main.py').write_text('# main')

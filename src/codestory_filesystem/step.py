@@ -9,11 +9,14 @@ import pathlib
 import time
 import traceback
 from typing import Any
+
 import pathspec  # type: ignore[import-not-found]
 from celery import shared_task
+
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import PipelineStep, StepStatus, generate_job_id
+
 logger = logging.getLogger(__name__)
 DEBUG_ENABLED = True
 BUILTIN_IGNORE_PATTERNS = ['.git/', '__pycache__/', '*.pyc', '*.pyo', '*.log', '*.tmp', 'node_modules/', 'build/', 'dist/', '.venv/', '.idea/', '.vscode/']
@@ -186,6 +189,7 @@ class FileSystemStep(PipelineStep):
         log_debug(f'Found job info with task_id={task_id}', job_id)
         try:
             from celery.result import AsyncResult
+
             from codestory.ingestion_pipeline.celery_app import app
             result = AsyncResult(task_id, app=app)
             log_debug(f'Celery AsyncResult status: {result.status}, ready: {result.ready()}', job_id)
@@ -369,7 +373,7 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
     log_info('Attempting to connect to Neo4j database', job_id)
     log_debug(f'Neo4j settings from config: uri={settings.neo4j.uri}, database={settings.neo4j.database}', job_id)
     connection_params: list[dict[str, str]] = [
-        {'uri': settings.neo4j.uri, 'username': settings.neo4j.username, 'password': settings.neo4j.password.get_secret_value(), 'database': settings.neo4j.database},
+        {'uri': settings.neo4j.uri, 'username': settings.neo4j.username, 'password': settings.neo4j.password.get_secret_value() if settings.neo4j.password is not None else "", 'database': settings.neo4j.database},
         {'uri': 'bolt://neo4j:7687', 'username': 'neo4j', 'password': 'password', 'database': 'neo4j'},
         {'uri': 'bolt://localhost:7689', 'username': 'neo4j', 'password': 'password', 'database': 'neo4j'},
         {'uri': 'bolt://localhost:7688', 'username': 'neo4j', 'password': 'password', 'database': 'testdb'}
@@ -524,7 +528,7 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
                 if spec.match_file(file_rel):
                     files_skipped += 1
                     continue
-                if include_extensions and (not any((file.endswith(ext) for ext in include_extensions))):
+                if include_extensions and (not any(file.endswith(ext) for ext in include_extensions)):
                     files_skipped += 1
                     continue
                 file_path = os.path.join(rel_dir_path, file)
@@ -597,7 +601,7 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
         duration = end_time - start_time
         overall_timing_stats = {'total_duration': duration, 'directory_operations': {'total': dir_timing_stats.get('dir_total', 0), 'node_creation': dir_timing_stats.get('dir_node_creation', 0), 'linking': dir_timing_stats.get('dir_linking', 0), 'avg_per_directory': dir_timing_stats.get('dir_total', 0) / max(1, dir_count) if dir_count else 0}, 'file_operations': {'total': file_timing_stats.get('total', 0) if 'file_timing_stats' in locals() else 0, 'metadata': file_timing_stats.get('file_metadata', 0) if 'file_timing_stats' in locals() else 0, 'node_creation': file_timing_stats.get('file_node_creation', 0) if 'file_timing_stats' in locals() else 0, 'linking': file_timing_stats.get('linking', 0) if 'file_timing_stats' in locals() else 0, 'avg_per_file': file_timing_stats.get('total', 0) / max(1, file_count) if 'file_timing_stats' in locals() and file_count else 0}, 'neo4j_operations': {'node_creation': dir_timing_stats.get('dir_node_creation', 0) + (file_timing_stats.get('file_node_creation', 0) if 'file_timing_stats' in locals() else 0), 'relationship_creation': dir_timing_stats.get('dir_linking', 0) + (file_timing_stats.get('linking', 0) if 'file_timing_stats' in locals() else 0), 'avg_operation_time': (dir_timing_stats.get('dir_node_creation', 0) + dir_timing_stats.get('dir_linking', 0) + (file_timing_stats.get('file_node_creation', 0) if 'file_timing_stats' in locals() else 0) + (file_timing_stats.get('linking', 0) if 'file_timing_stats' in locals() else 0)) / max(1, dir_count * 2 + file_count * 2)}}
         from typing import cast
-        overall_timing_stats_dict = cast(dict[str, Any], overall_timing_stats)
+        overall_timing_stats_dict = cast('dict[str, Any]', overall_timing_stats)
         detailed_timing = f"Detailed Timing Stats:\nTotal Duration: {duration:.2f}s\nDirectory Operations ({dir_count} dirs):\n  - Total: {overall_timing_stats_dict['directory_operations']['total']:.2f}s\n  - Node creation: {overall_timing_stats_dict['directory_operations']['node_creation']:.2f}s\n  - Linking: {overall_timing_stats_dict['directory_operations']['linking']:.2f}s\n  - Avg per directory: {overall_timing_stats_dict['directory_operations']['avg_per_directory']:.3f}s\nFile Operations ({file_count} files):\n  - Total: {overall_timing_stats_dict['file_operations']['total']:.2f}s\n  - Metadata: {overall_timing_stats_dict['file_operations']['metadata']:.2f}s\n  - Node creation: {overall_timing_stats_dict['file_operations']['node_creation']:.2f}s\n  - Linking: {overall_timing_stats_dict['file_operations']['linking']:.2f}s\n  - Avg per file: {overall_timing_stats_dict['file_operations']['avg_per_file']:.3f}s\nNeo4j Operations:\n  - Node creation total: {overall_timing_stats_dict['neo4j_operations']['node_creation']:.2f}s\n  - Relationship creation total: {overall_timing_stats_dict['neo4j_operations']['relationship_creation']:.2f}s\n  - Avg operation time: {overall_timing_stats_dict['neo4j_operations']['avg_operation_time']:.3f}s\n"
         log_info(f'Performance Analysis:\n{detailed_timing}', job_id)
         try:
@@ -605,7 +609,7 @@ def process_filesystem(self: Any, repository_path: str, ignore_patterns: list[st
             record_query = '\n            MERGE (p:ProcessingRecord {step: $props.step, job_id: $props.job_id})\n            SET p.repository = $props.repository,\n                p.timestamp = $props.timestamp,\n                p.duration = $props.duration,\n                p.file_count = $props.file_count,\n                p.dir_count = $props.dir_count,\n                p.performance = $props.performance\n            RETURN p\n            '
             # Explicitly cast overall_timing_stats to dict for mypy
             from typing import cast
-            overall_timing_stats_dict = cast(dict[str, Any], overall_timing_stats)
+            overall_timing_stats_dict = cast('dict[str, Any]', overall_timing_stats)
             record_props = {'step': 'filesystem', 'job_id': job_id, 'repository': repo_name, 'timestamp': time.time(), 'duration': duration, 'file_count': file_count, 'dir_count': dir_count, 'performance': {'avg_file_time': overall_timing_stats_dict['file_operations']['avg_per_file'], 'avg_dir_time': overall_timing_stats_dict['directory_operations']['avg_per_directory'], 'avg_neo4j_op_time': overall_timing_stats_dict['neo4j_operations']['avg_operation_time']}}
             neo4j.execute_query(record_query, params={'props': record_props}, write=True)
             log_debug('Successfully created processing record with performance data', job_id)

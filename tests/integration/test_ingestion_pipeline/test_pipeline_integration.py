@@ -1,6 +1,8 @@
 from typing import Any
+
 'Integration tests for the ingestion pipeline.\n\nThese tests verify that the PipelineManager can orchestrate workflow steps\nto process a repository and store the results in the Neo4j database.\n'
 import os
+
 ci_env = os.environ.get('CI') == 'true'
 neo4j_port = '7687' if ci_env else '7688'
 import tempfile
@@ -8,10 +10,13 @@ import time
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 import pytest
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
+
 
 def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector: Any, ignore_patterns: Any=None, **config: Any) -> None:
     """Custom implementation of process_filesystem for testing.
@@ -42,7 +47,7 @@ def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector
                     continue
             dirs_to_remove = []
             for d in dirs:
-                if any((d.startswith(pat.rstrip('/')) or d == pat.rstrip('/') for pat in ignore_patterns if pat.endswith('/'))):
+                if any(d.startswith(pat.rstrip('/')) or d == pat.rstrip('/') for pat in ignore_patterns if pat.endswith('/')):
                     dirs_to_remove.append(d)
             for d in dirs_to_remove:
                 dirs.remove(d)

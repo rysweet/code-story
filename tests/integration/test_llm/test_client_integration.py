@@ -1,9 +1,12 @@
 from typing import Any
+
 'Integration tests for OpenAI client.\n\nThese tests use real OpenAI API access and require valid credentials to be successful.\nThey are skipped by default unless the --run-openai option is provided to pytest.\n'
 import pytest
+
 from codestory.config.settings import get_settings
 from codestory.llm.client import create_client
 from codestory.llm.models import ChatMessage, ChatRole
+
 pytestmark = [pytest.mark.integration, pytest.mark.openai]
 
 @pytest.mark.integration
@@ -57,7 +60,7 @@ def test_reasoning_model_parameter_handling(client: Any) -> None:
     """
     settings = get_settings()
     reasoning_model = settings.openai.reasoning_model
-    if not reasoning_model or not any((rm in reasoning_model.lower() for rm in ['o1', 'o1-preview', 'o1-mini'])):
+    if not reasoning_model or not any(rm in reasoning_model.lower() for rm in ['o1', 'o1-preview', 'o1-mini']):
         pytest.skip(f"No reasoning model configured or '{reasoning_model}' is not a reasoning model")
     messages = [ChatMessage(role=ChatRole.SYSTEM, content='You are a helpful assistant.'), ChatMessage(role=ChatRole.USER, content='What is 2+2? Answer briefly.')]
     result = client.chat(messages=messages, model=reasoning_model, max_tokens=10)
@@ -79,7 +82,7 @@ async def test_reasoning_model_async_parameter_handling(client: Any) -> None:
     """
     settings = get_settings()
     reasoning_model = settings.openai.reasoning_model
-    if not reasoning_model or not any((rm in reasoning_model.lower() for rm in ['o1', 'o1-preview', 'o1-mini'])):
+    if not reasoning_model or not any(rm in reasoning_model.lower() for rm in ['o1', 'o1-preview', 'o1-mini']):
         pytest.skip(f"No reasoning model configured or '{reasoning_model}' is not a reasoning model")
     messages = [ChatMessage(role=ChatRole.SYSTEM, content='You are a helpful assistant.'), ChatMessage(role=ChatRole.USER, content='What is the capital of France? Answer with just the city name.')]
     result = await client.chat_async(messages=messages, model=reasoning_model, max_tokens=10)
@@ -101,7 +104,7 @@ def test_regular_model_vs_reasoning_model_parameters(client: Any) -> None:
     settings = get_settings()
     chat_model = settings.openai.chat_model
     reasoning_model = settings.openai.reasoning_model
-    if not reasoning_model or not any((rm in reasoning_model.lower() for rm in ['o1', 'o1-preview', 'o1-mini'])):
+    if not reasoning_model or not any(rm in reasoning_model.lower() for rm in ['o1', 'o1-preview', 'o1-mini']):
         pytest.skip(f"No reasoning model configured or '{reasoning_model}' is not a reasoning model")
     messages = [ChatMessage(role=ChatRole.SYSTEM, content='You are a helpful assistant.'), ChatMessage(role=ChatRole.USER, content="Say 'hello' in response.")]
     regular_result = client.chat(messages=messages, model=chat_model, max_tokens=5, temperature=0.1)

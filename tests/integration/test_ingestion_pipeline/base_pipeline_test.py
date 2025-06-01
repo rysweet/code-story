@@ -1,11 +1,14 @@
 from typing import Any
+
 'Base test class for pipeline integration tests.\n\nThis module provides a base test class with common functionality for\nintegration tests related to the ingestion pipeline.\n'
 import os
 import shutil
 import tempfile
 import time
 from pathlib import Path
+
 import pytest
+
 
 class BasePipelineTest:
     """Base class for pipeline integration tests.

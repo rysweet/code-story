@@ -1,11 +1,15 @@
 from typing import Any
+
 'Unit tests for the ServiceClient class.'
 from unittest.mock import MagicMock, patch
+
 import httpx
 import pytest
 from pydantic import SecretStr
+
 from codestory.cli.client import ServiceClient, ServiceError
 from codestory.config import Settings
+
 
 class TestServiceClient:
     """Tests for the ServiceClient class."""

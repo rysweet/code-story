@@ -314,8 +314,6 @@ class CeleryAdapter:
                 progress = info.get("progress", 0.0)
                 current_step = info.get("step", "Processing")
                 message = info.get("message", "Task is in progress")
-                cpu_percent = info.get("cpu_percent")
-                memory_mb = info.get("memory_mb")
                 steps = build_steps_from_result(info)
 
                 return IngestionJob(
@@ -339,8 +337,6 @@ class CeleryAdapter:
 
             if task.state == "SUCCESS":
                 result = task.result or {}
-                cpu_percent = result.get("cpu_percent")
-                memory_mb = result.get("memory_mb")
                 steps = build_steps_from_result(result)
                 return IngestionJob(
                     job_id=job_id,
@@ -509,7 +505,7 @@ class CeleryAdapter:
         """List ingestion jobs with optional filtering by status.
 
         Args:
-            status: List of job statuses to filter by
+            statuses: List of job statuses to filter by
             limit: Maximum number of jobs to return
             offset: Number of jobs to skip
 

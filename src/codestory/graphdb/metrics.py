@@ -12,7 +12,8 @@ import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Protocol, TypeVar, Union, cast, Iterator
+from typing import Any, Iterator, Protocol, TypeVar, Union, cast
+
 try:
     from prometheus_client import Counter, Gauge, Histogram
     PROMETHEUS_AVAILABLE = True
@@ -98,8 +99,8 @@ if PROMETHEUS_AVAILABLE:
     VECTOR_SEARCH_DURATION = Histogram(name=f'{METRIC_PREFIX}_vector_search_duration_seconds', documentation='Duration of Neo4j vector similarity search in seconds', labelnames=['node_label'], buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0))
 else:
     _dummy_histogram = DummyHistogram()
-    _dummy_counter = cast(CounterLike, _dummy_histogram)
-    _dummy_gauge = cast(GaugeLike, _dummy_histogram)
+    _dummy_counter = cast('CounterLike', _dummy_histogram)
+    _dummy_gauge = cast('GaugeLike', _dummy_histogram)
     QUERY_DURATION = _dummy_histogram
     QUERY_COUNT = _dummy_counter
     POOL_SIZE = _dummy_gauge
@@ -135,7 +136,7 @@ def instrument_query(query_type: QueryType=QueryType.READ) -> Callable[[F], F]:
                 QUERY_DURATION.labels(query_type=query_type.value).observe(duration)
                 status = 'success' if success else 'error'
                 QUERY_COUNT.labels(query_type=query_type.value, status=status).inc()
-        return cast(F, wrapper)
+        return cast('F', wrapper)
     return decorator
 
 def record_retry(query_type: QueryType) -> None:

@@ -10,13 +10,16 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
+
 import pytest
+
 from codestory.ingestion_pipeline.manager import PipelineManager
 from codestory.ingestion_pipeline.step import StepStatus
 from codestory_blarify.step import BlarifyStep
 from codestory_docgrapher.step import DocumentationGrapherStep
 from codestory_filesystem.step import FileSystemStep
 from codestory_summarizer.step import SummarizerStep
+
 pytestmark = [pytest.mark.integration, pytest.mark.timeout(30)]
 
 @pytest.fixture

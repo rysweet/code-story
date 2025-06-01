@@ -1,9 +1,12 @@
 """Database commands for the Code Story CLI."""
 from typing import Any
+
 import click
 from rich.panel import Panel
 from rich.prompt import Confirm
+
 from ..client import ServiceError
+
 
 @click.group(name='database', help='Manage the graph database.', short_help='Manage the graph database')
 def database() -> None:

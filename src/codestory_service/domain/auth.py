@@ -1,6 +1,8 @@
 from typing import Any
+
 'Domain models for authentication and authorization.\n\nThis module defines the domain models for authentication-related entities,\nincluding login requests, token responses, and user information.\n'
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
 
 class LoginRequest(BaseModel):
     """Model for user login request."""

@@ -1,10 +1,20 @@
 from typing import Any
+
 'Knowledge graph builder for documentation entities and relationships.\n\nThis module provides functionality for building a knowledge graph of\ndocumentation entities and relationships, and storing it in Neo4j.\n'
 import logging
 import time
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
+
 from .entity_linker import EntityLinker
-from .models import DocumentationEntity, DocumentationFile, DocumentationGraph, DocumentationRelationship, RelationType
+from .models import (
+    DocumentationEntity,
+    DocumentationFile,
+    DocumentationGraph,
+    DocumentationRelationship,
+    RelationType,
+)
+
 logger = logging.getLogger(__name__)
 
 class KnowledgeGraph:

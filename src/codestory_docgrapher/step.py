@@ -7,7 +7,7 @@ a knowledge graph of documentation and links it to code entities.
 import logging
 import os
 import time
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import uuid4
 
 from celery import shared_task
@@ -20,7 +20,9 @@ from .document_finder import DocumentFinder
 from .knowledge_graph import KnowledgeGraph
 from .parsers import get_parser_for_file
 from .utils.progress_tracker import ProgressTracker
-from .models import DocumentationEntity, DocumentationRelationship
+
+if TYPE_CHECKING:
+    from .models import DocumentationEntity, DocumentationRelationship
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -338,8 +340,8 @@ def run_docgrapher(
                 parsed_data = parser.parse(doc_file)
 
                 # Add entities and relationships to graph
-                entities = cast(list[DocumentationEntity], parsed_data.get("entities", []))
-                relationships = cast(list[DocumentationRelationship], parsed_data.get("relationships", []))
+                entities = cast("list[DocumentationEntity]", parsed_data.get("entities", []))
+                relationships = cast("list[DocumentationRelationship]", parsed_data.get("relationships", []))
                 knowledge_graph.add_entities(entities)
                 knowledge_graph.add_relationships(relationships)
 

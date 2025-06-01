@@ -5,6 +5,7 @@ MYPY_INI = ".mypy.ini"
 KOMBU_SECTION = "[mypy-kombu.*]\nignore_missing_imports = True\n"
 
 def remove_unused_ignores_from_file(filepath):
+    """Remove unused '# type: ignore' comments from a Python file."""
     with open(filepath, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
@@ -22,6 +23,7 @@ def remove_unused_ignores_from_file(filepath):
             f.writelines(new_lines)
 
 def clean_all_py_files():
+    """Clean all Python files in 'src' and 'tests' by removing unused ignore comments."""
     for root, dirs, files in os.walk("src"):
         for file in files:
             if file.endswith(".py"):
@@ -32,6 +34,7 @@ def clean_all_py_files():
                 remove_unused_ignores_from_file(os.path.join(root, file))
 
 def ensure_kombu_ignore():
+    """Ensure the kombu ignore section exists in the .mypy.ini file."""
     if not os.path.exists(MYPY_INI):
         return
     with open(MYPY_INI, "r", encoding="utf-8") as f:

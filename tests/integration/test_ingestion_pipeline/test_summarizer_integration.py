@@ -1,18 +1,29 @@
 from typing import Any
+
 'Integration tests for the summarizer workflow step.\n\nThese tests verify that the SummarizerStep can correctly process a repository\nand generate summaries for code elements in the Neo4j database.\n'
 import os
 import tempfile
 import time
+
 ci_env = os.environ.get('CI') == 'true'
 neo4j_port = '7687' if ci_env else '7688'
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 import pytest
+
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.ingestion_pipeline.step import StepStatus
-from codestory.llm.models import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage, ChatRole, Usage
+from codestory.llm.models import (
+    ChatCompletionResponse,
+    ChatCompletionResponseChoice,
+    ChatMessage,
+    ChatRole,
+    Usage,
+)
 from codestory_summarizer.step import SummarizerStep
+
 
 def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector: Any, ignore_patterns: Any=None) -> None:
     """Custom implementation of process_filesystem for testing."""
@@ -34,7 +45,7 @@ def custom_process_filesystem(repository_path: Any, job_id: Any, neo4j_connector
             os.path.relpath(current_dir, repository_path)
             dirs_to_remove = []
             for d in dirs:
-                if any((d.startswith(pat.rstrip('/')) or d == pat.rstrip('/') for pat in ignore_patterns if pat.endswith('/'))):
+                if any(d.startswith(pat.rstrip('/')) or d == pat.rstrip('/') for pat in ignore_patterns if pat.endswith('/')):
                     dirs_to_remove.append(d)
             for d in dirs_to_remove:
                 dirs.remove(d)
@@ -161,6 +172,7 @@ def test_summarizer_step_run(initialized_repo: Any, neo4j_connector: Any, mock_l
     import time
     import uuid
     from unittest.mock import patch
+
     from codestory.ingestion_pipeline.step import StepStatus
 
     def mock_run(self, repository_path: Any, **config):
@@ -231,6 +243,7 @@ def test_summarizer_step_ingestion_update(initialized_repo: Any, neo4j_connector
     """Test that the summarizer step can update summaries for a modified repository."""
     import uuid
     from unittest.mock import patch
+
     from codestory.ingestion_pipeline.step import StepStatus
 
     def mock_run(self, repository_path: Any, **config):

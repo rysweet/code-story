@@ -11,12 +11,12 @@ import re
 from typing import Any
 
 from fastapi import HTTPException, status
-from codestory_service.domain.graph import AskRequest, AskAnswer
 
 from codestory.llm.client import OpenAIClient
 from codestory.llm.exceptions import (
     AuthenticationError,
 )
+from codestory_service.domain.graph import AskAnswer, AskRequest
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -441,9 +441,14 @@ class OpenAIAdapter:
                 }
 
 
-def get_openai_adapter() -> "OpenAIAdapter":
-    """Factory function to get a singleton OpenAIAdapter instance."""
+import asyncio
+
+
+async def get_openai_adapter() -> "OpenAIAdapter":
+    """Factory function to get a singleton OpenAIAdapter instance, with health check."""
     global _openai_adapter_instance
     if _openai_adapter_instance is None:
-        _openai_adapter_instance = OpenAIAdapter()
+        adapter = OpenAIAdapter()
+        await adapter.check_health()  # Will raise if not healthy
+        _openai_adapter_instance = adapter
     return _openai_adapter_instance

@@ -1,13 +1,17 @@
 from typing import Any
+
 'Tests for the configuration writer module.'
 import os
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 import pytest
 import tomli
+
 from codestory.config import update_config, update_env, update_toml
 from codestory.config.exceptions import SettingNotFoundError
+
 
 @pytest.fixture
 def temp_env_file() -> None:

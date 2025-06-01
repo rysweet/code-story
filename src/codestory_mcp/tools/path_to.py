@@ -3,14 +3,17 @@
 This module implements the pathTo tool for the MCP Adapter.
 """
 from typing import Any
+
 import structlog
 from fastapi import status
+
 from codestory_mcp.adapters.graph_service import get_graph_service
 from codestory_mcp.adapters.openai_service import get_openai_service
 from codestory_mcp.tools import register_tool
 from codestory_mcp.tools.base import BaseTool, ToolError
 from codestory_mcp.utils.metrics import get_metrics
 from codestory_mcp.utils.serializers import RelationshipSerializer
+
 logger = structlog.get_logger(__name__)
 
 @register_tool
