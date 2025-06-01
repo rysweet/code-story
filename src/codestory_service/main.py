@@ -27,7 +27,9 @@ try:
 except Exception as e:
     # In normal mode, we fail if any required adapter is not available
     logging.error(f"Failed to apply real adapter overrides: {e!s}")
-    logging.error("Service requires all components to be available for proper operation")
+    logging.error(
+        "Service requires all components to be available for proper operation"
+    )
     raise RuntimeError(f"Failed to initialize required adapters: {e!s}") from e
 
 # Set up logging
@@ -55,8 +57,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
 
     # Log dev mode and auth status
-    logger.info(f"Service running in {'development' if settings.dev_mode else 'production'} mode")
-    logger.info(f"Authentication {'disabled' if not settings.auth_enabled else 'enabled'}")
+    logger.info(
+        f"Service running in {'development' if settings.dev_mode else 'production'} mode"
+    )
+    logger.info(
+        f"Authentication {'disabled' if not settings.auth_enabled else 'enabled'}"
+    )
 
     # Initialize resources
     logger.info("Initializing application resources")
@@ -166,13 +172,17 @@ def create_app() -> FastAPI:
             try:
                 viz_type = VisualizationType(type)
             except ValueError:
-                logger.warning(f"Invalid visualization type: {type}, using default: force")
+                logger.warning(
+                    f"Invalid visualization type: {type}, using default: force"
+                )
 
             viz_theme = VisualizationTheme.AUTO
             try:
                 viz_theme = VisualizationTheme(theme)
             except ValueError:
-                logger.warning(f"Invalid visualization theme: {theme}, using default: auto")
+                logger.warning(
+                    f"Invalid visualization theme: {theme}, using default: auto"
+                )
 
             # Create visualization request with limited parameters for backward compatibility
             viz_request = VisualizationRequest(

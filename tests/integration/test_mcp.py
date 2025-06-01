@@ -84,8 +84,12 @@ def test_execute_search_graph_tool(client: Any) -> None:
     """Test executing the searchGraph tool."""
     # Mock the GraphServiceAdapter search method and serializer
     with (
-        mock.patch("codestory_mcp.tools.search_graph.get_graph_service") as mock_get_service,
-        mock.patch("codestory_mcp.tools.search_graph.NodeSerializer") as mock_serializer,
+        mock.patch(
+            "codestory_mcp.tools.search_graph.get_graph_service"
+        ) as mock_get_service,
+        mock.patch(
+            "codestory_mcp.tools.search_graph.NodeSerializer"
+        ) as mock_serializer,
     ):
         service = mock.AsyncMock()
         mock_get_service.return_value = service
@@ -95,7 +99,9 @@ def test_execute_search_graph_tool(client: Any) -> None:
         mock_node.id = "node-123"
         mock_node.labels = ["Class"]
         mock_node.properties = {"name": "TestClass", "path": "/path/to/test.py"}
-        mock_node.get = mock.Mock(side_effect=lambda k, d=None: mock_node.properties.get(k, d))
+        mock_node.get = mock.Mock(
+            side_effect=lambda k, d=None: mock_node.properties.get(k, d)
+        )
         mock_node.items = mock.Mock(return_value=mock_node.properties.items())
 
         # Set up async mock correctly
@@ -133,7 +139,9 @@ def test_execute_search_graph_tool(client: Any) -> None:
         assert data["matches"][0]["score"] == 0.95
 
         # Verify service call
-        service.search.assert_called_once_with(query="test query", node_types=["Class"], limit=5)
+        service.search.assert_called_once_with(
+            query="test query", node_types=["Class"], limit=5
+        )
 
 
 def test_execute_summarize_node_tool(client: Any) -> None:
@@ -161,7 +169,9 @@ def test_execute_summarize_node_tool(client: Any) -> None:
             "path": "/path/to/test.py",
             "content": "class TestClass:\n    pass",
         }
-        mock_node.get = mock.Mock(side_effect=lambda k, d=None: mock_node.properties.get(k, d))
+        mock_node.get = mock.Mock(
+            side_effect=lambda k, d=None: mock_node.properties.get(k, d)
+        )
 
         graph_service.find_node.return_value = mock_node
 

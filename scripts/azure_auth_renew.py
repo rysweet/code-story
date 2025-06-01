@@ -299,7 +299,9 @@ def inject_azure_tokens_into_container(container_name: str) -> bool:
                 check=True,
             )
 
-            logger.info(f"Successfully injected Azure tokens into container {container_name}")
+            logger.info(
+                f"Successfully injected Azure tokens into container {container_name}"
+            )
             return True
 
     except Exception as e:
@@ -327,7 +329,9 @@ def detect_auth_issues() -> tuple[bool, str | None]:
     return False, None
 
 
-def renew_authentication(tenant_id: str | None = None, container_filter: str | None = None) -> bool:
+def renew_authentication(
+    tenant_id: str | None = None, container_filter: str | None = None
+) -> bool:
     """
     Renew Azure authentication tokens and inject into containers.
 
@@ -377,11 +381,17 @@ def renew_authentication(tenant_id: str | None = None, container_filter: str | N
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Azure Authentication Renewal Tool")
-    parser.add_argument("--check", action="store_true", help="Check for auth issues without fixing")
-    parser.add_argument("--renew", action="store_true", help="Force renewal of auth tokens")
+    parser.add_argument(
+        "--check", action="store_true", help="Check for auth issues without fixing"
+    )
+    parser.add_argument(
+        "--renew", action="store_true", help="Force renewal of auth tokens"
+    )
     parser.add_argument("--tenant", help="Specify Azure tenant ID for login")
     parser.add_argument("--container", help="Inject tokens into specific container")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose logging"
+    )
     return parser.parse_args()
 
 

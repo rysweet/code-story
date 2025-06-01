@@ -42,7 +42,9 @@ def mock_service_client() -> Generator[MagicMock, None, None]:
     Yields:
         Mock service client.
     """
-    with patch("codestory.cli.client.service_client.ServiceClient") as mock_client_class:
+    with patch(
+        "codestory.cli.client.service_client.ServiceClient"
+    ) as mock_client_class:
         mock_client = MagicMock(spec=ServiceClient)
         mock_client_class.return_value = mock_client
         yield mock_client

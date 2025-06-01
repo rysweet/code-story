@@ -10,6 +10,7 @@ from ..models import DependencyGraph, NodeType
 
 logger = logging.getLogger(__name__)
 
+
 class ProgressTracker:
     """Tracks and reports summarization progress.
 
@@ -33,7 +34,9 @@ class ProgressTracker:
     def _count_node_types(self) -> None:
         """Count the number of nodes of each type in the graph."""
         for node_data in self.graph.nodes.values():
-            self.node_type_counts[node_data.type] = self.node_type_counts.get(node_data.type, 0) + 1
+            self.node_type_counts[node_data.type] = (
+                self.node_type_counts.get(node_data.type, 0) + 1
+            )
 
     def get_progress_stats(self) -> dict[str, int]:
         """Get progress statistics.
@@ -41,9 +44,16 @@ class ProgressTracker:
         Returns:
             Dict with progress statistics
         """
-        stats = {'total': self.graph.total_count, 'completed': self.graph.completed_count, 'processing': self.graph.processing_count, 'pending': self.graph.pending_count, 'failed': self.graph.failed_count, 'skipped': self.graph.skipped_count}
+        stats = {
+            "total": self.graph.total_count,
+            "completed": self.graph.completed_count,
+            "processing": self.graph.processing_count,
+            "pending": self.graph.pending_count,
+            "failed": self.graph.failed_count,
+            "skipped": self.graph.skipped_count,
+        }
         for node_type in NodeType:
-            stats[f'{node_type.value.lower()}_count'] = self.node_type_counts[node_type]
+            stats[f"{node_type.value.lower()}_count"] = self.node_type_counts[node_type]
         return stats
 
     def get_progress(self) -> float:
@@ -97,12 +107,13 @@ class ProgressTracker:
         progress = self.get_progress()
         elapsed = self.get_elapsed_time()
         remaining = self.get_estimated_remaining_time()
-        message = f'Progress: {progress:.1f}% ({self.graph.completed_count}/{self.graph.total_count} nodes) | Elapsed: {_format_time(elapsed)}'
+        message = f"Progress: {progress:.1f}% ({self.graph.completed_count}/{self.graph.total_count} nodes) | Elapsed: {_format_time(elapsed)}"
         if remaining is not None:
-            message += f' | Remaining: {_format_time(remaining)}'
-        message += f' | Completed: {self.graph.completed_count}, Processing: {self.graph.processing_count}, Pending: {self.graph.pending_count}, Failed: {self.graph.failed_count}, Skipped: {self.graph.skipped_count}'
+            message += f" | Remaining: {_format_time(remaining)}"
+        message += f" | Completed: {self.graph.completed_count}, Processing: {self.graph.processing_count}, Pending: {self.graph.pending_count}, Failed: {self.graph.failed_count}, Skipped: {self.graph.skipped_count}"
         logger.info(message)
         return message
+
 
 def _format_time(seconds: float) -> str:
     """Format a time duration in a human-readable way.
@@ -114,14 +125,15 @@ def _format_time(seconds: float) -> str:
         Formatted time string
     """
     if seconds < 60:
-        return f'{seconds:.1f}s'
+        return f"{seconds:.1f}s"
     elif seconds < 3600:
         minutes = seconds / 60
-        return f'{minutes:.1f}m'
+        return f"{minutes:.1f}m"
     else:
         hours = seconds / 3600
         minutes = seconds % 3600 / 60
-        return f'{hours:.1f}h {minutes:.0f}m'
+        return f"{hours:.1f}h {minutes:.0f}m"
+
 
 def get_progress_message(graph: DependencyGraph) -> str:
     """Generate a progress message for a dependency graph.
@@ -133,5 +145,5 @@ def get_progress_message(graph: DependencyGraph) -> str:
         Progress message
     """
     progress = graph.get_progress()
-    message = f'Progress: {progress:.1f}% ({graph.completed_count}/{graph.total_count} nodes) | Completed: {graph.completed_count}, Processing: {graph.processing_count}, Pending: {graph.pending_count}, Failed: {graph.failed_count}, Skipped: {graph.skipped_count}'
+    message = f"Progress: {progress:.1f}% ({graph.completed_count}/{graph.total_count} nodes) | Completed: {graph.completed_count}, Processing: {graph.processing_count}, Pending: {graph.pending_count}, Failed: {graph.failed_count}, Skipped: {graph.skipped_count}"
     return message

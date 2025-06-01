@@ -80,7 +80,9 @@ def test_service_settings_cors_origins_parsing() -> None:
 def test_service_settings_cors_origins_validation() -> None:
     """Test that CORS origins validator works correctly."""
     # Mock the core settings environment to be "production"
-    with mock.patch("codestory_service.settings.get_core_settings") as mock_get_settings:
+    with mock.patch(
+        "codestory_service.settings.get_core_settings"
+    ) as mock_get_settings:
         mock_settings = mock.MagicMock()
         mock_settings.environment = "production"
         mock_get_settings.return_value = mock_settings

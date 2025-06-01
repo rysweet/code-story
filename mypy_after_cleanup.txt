@@ -1,9 +1,0 @@
-src/codestory/cli/client/progress_client.py:172: error: unexpected indent 
-[syntax]
-                return[unreachable]
-                ^
-Found 1 error in 1 file (errors prevented further checking)
-tests/conftest.py:171: error: expected '('  [syntax]
-    def pytest_config: Anyure(config) -> None:
-                      ^
-Found 1 error in 1 file (errors prevented further checking)

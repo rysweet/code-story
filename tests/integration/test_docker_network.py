@@ -31,7 +31,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
             capture_output=True,
             text=True,
             check=True,
-            timeout=300  # 5 minutes timeout
+            timeout=300,  # 5 minutes timeout
         )
         print(f"Docker Compose started: {result.stdout}")
 
@@ -40,16 +40,23 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         health_check_result = subprocess.run(
             ["docker-compose", "-f", "docker-compose.test.yml", "ps"],
             capture_output=True,
-            text=True
+            text=True,
         )
         print(f"Service status: {health_check_result.stdout}")
-        
+
         # Give additional time for services to fully initialize
         time.sleep(30)
 
         # Get container info
         result = subprocess.run(
-            ["docker-compose", "-f", "docker-compose.test.yml", "ps", "--format", "json"],
+            [
+                "docker-compose",
+                "-f",
+                "docker-compose.test.yml",
+                "ps",
+                "--format",
+                "json",
+            ],
             capture_output=True,
             text=True,
             check=True,
@@ -70,12 +77,14 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         # Tear down containers but keep logs
         subprocess.run(
             ["docker-compose", "-f", "docker-compose.test.yml", "logs", "--no-color"],
-            capture_output=True, text=True
+            capture_output=True,
+            text=True,
         )
 
         subprocess.run(
             ["docker-compose", "-f", "docker-compose.test.yml", "down"],
-            capture_output=True, text=True
+            capture_output=True,
+            text=True,
         )
 
 
@@ -126,7 +135,9 @@ def test_service_to_neo4j_connectivity(docker_compose_project: Any) -> None:
     result = exec_in_container(service_container, ["nc", "-z", "-v", "neo4j", "7687"])
 
     # Expected exit code for successful connection
-    assert result["exit_code"] == 0, f"Failed to connect to Neo4j bolt port: {result['stderr']}"
+    assert (
+        result["exit_code"] == 0
+    ), f"Failed to connect to Neo4j bolt port: {result['stderr']}"
 
 
 @pytest.mark.integration
@@ -145,7 +156,9 @@ def test_service_to_redis_connectivity(docker_compose_project: Any) -> None:
     )
 
     assert result["exit_code"] == 0, f"Failed to connect to Redis: {result['stderr']}"
-    assert "PONG" in result["stdout"], f"Redis did not respond with PONG: {result['stdout']}"
+    assert (
+        "PONG" in result["stdout"]
+    ), f"Redis did not respond with PONG: {result['stdout']}"
 
 
 @pytest.mark.integration
@@ -159,9 +172,13 @@ def test_health_endpoint_in_container(docker_compose_project: Any) -> None:
     service_container = "codestory-service"
 
     # Test internal health endpoint
-    result = exec_in_container(service_container, ["curl", "-s", "localhost:8000/health"])
+    result = exec_in_container(
+        service_container, ["curl", "-s", "localhost:8000/health"]
+    )
 
-    assert result["exit_code"] == 0, f"Failed to connect to health endpoint: {result['stderr']}"
+    assert (
+        result["exit_code"] == 0
+    ), f"Failed to connect to health endpoint: {result['stderr']}"
 
     try:
         health_data = json.loads(result["stdout"])
@@ -199,4 +216,6 @@ def test_external_health_endpoint(docker_compose_project: Any) -> None:
                 "status" in health_data
             ), f"Health response missing status field in endpoint {endpoint}"
         except json.JSONDecodeError:
-            pytest.fail(f"Health endpoint {endpoint} did not return valid JSON: {result.stdout}")
+            pytest.fail(
+                f"Health endpoint {endpoint} did not return valid JSON: {result.stdout}"
+            )

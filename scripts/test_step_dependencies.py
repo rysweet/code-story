@@ -103,7 +103,9 @@ def setup_mocks():
 
     # Create patches for all step classes
     # We need to patch the entire class, not just the run method
-    mock_fs = patch("codestory.ingestion_pipeline.utils.find_step_manually", autospec=True).start()
+    mock_fs = patch(
+        "codestory.ingestion_pipeline.utils.find_step_manually", autospec=True
+    ).start()
 
     # Create mock step classes
     mock_fs_step = MagicMock(spec=FileSystemStep)
@@ -186,7 +188,9 @@ def setup_mocks():
     patch.object(FileSystemStep, "__new__", return_value=mock_fs_step).start()
     patch.object(BlarifyStep, "__new__", return_value=mock_blarify_step).start()
     patch.object(SummarizerStep, "__new__", return_value=mock_summarizer_step).start()
-    patch.object(DocumentationGrapherStep, "__new__", return_value=mock_docgrapher_step).start()
+    patch.object(
+        DocumentationGrapherStep, "__new__", return_value=mock_docgrapher_step
+    ).start()
 
     mocks = {
         "execution_order": execution_order,
@@ -233,8 +237,12 @@ def test_filesystem_only():
 
         # Verify execution order
         print(f"Execution order: {mocks['execution_order']}")
-        assert "filesystem" in mocks["execution_order"], "FileSystemStep should be executed"
-        assert len(mocks["execution_order"]) == 1, "Only FileSystemStep should be executed"
+        assert (
+            "filesystem" in mocks["execution_order"]
+        ), "FileSystemStep should be executed"
+        assert (
+            len(mocks["execution_order"]) == 1
+        ), "Only FileSystemStep should be executed"
 
         print("✅ Test passed: filesystem step only")
 
@@ -282,17 +290,21 @@ def test_summarizer_dependencies():
 
         # Verify execution order
         print(f"Execution order: {mocks['execution_order']}")
-        assert "filesystem" in mocks["execution_order"], "FileSystemStep should be executed"
+        assert (
+            "filesystem" in mocks["execution_order"]
+        ), "FileSystemStep should be executed"
         assert "blarify" in mocks["execution_order"], "BlarifyStep should be executed"
-        assert "summarizer" in mocks["execution_order"], "SummarizerStep should be executed"
+        assert (
+            "summarizer" in mocks["execution_order"]
+        ), "SummarizerStep should be executed"
 
         # Check order
-        assert mocks["execution_order"].index("filesystem") < mocks["execution_order"].index(
-            "blarify"
-        ), "FileSystemStep should execute before BlarifyStep"
-        assert mocks["execution_order"].index("blarify") < mocks["execution_order"].index(
-            "summarizer"
-        ), "BlarifyStep should execute before SummarizerStep"
+        assert mocks["execution_order"].index("filesystem") < mocks[
+            "execution_order"
+        ].index("blarify"), "FileSystemStep should execute before BlarifyStep"
+        assert mocks["execution_order"].index("blarify") < mocks[
+            "execution_order"
+        ].index("summarizer"), "BlarifyStep should execute before SummarizerStep"
 
         print("✅ Test passed: summarizer dependencies resolved correctly")
 
@@ -340,14 +352,20 @@ def test_documentation_grapher_dependencies():
 
         # Verify execution order
         print(f"Execution order: {mocks['execution_order']}")
-        assert "filesystem" in mocks["execution_order"], "FileSystemStep should be executed"
+        assert (
+            "filesystem" in mocks["execution_order"]
+        ), "FileSystemStep should be executed"
         assert (
             "documentation_grapher" in mocks["execution_order"]
         ), "DocumentationGrapherStep should be executed"
-        assert "blarify" not in mocks["execution_order"], "BlarifyStep should not be executed"
+        assert (
+            "blarify" not in mocks["execution_order"]
+        ), "BlarifyStep should not be executed"
 
         # Check order
-        assert mocks["execution_order"].index("filesystem") < mocks["execution_order"].index(
+        assert mocks["execution_order"].index("filesystem") < mocks[
+            "execution_order"
+        ].index(
             "documentation_grapher"
         ), "FileSystemStep should execute before DocumentationGrapherStep"
 
@@ -393,17 +411,19 @@ def test_full_pipeline_order():
             assert step in mocks["execution_order"], f"{step} should be executed"
 
         # Check order follows dependencies
-        assert mocks["execution_order"].index("filesystem") < mocks["execution_order"].index(
-            "blarify"
-        ), "FileSystemStep should execute before BlarifyStep"
+        assert mocks["execution_order"].index("filesystem") < mocks[
+            "execution_order"
+        ].index("blarify"), "FileSystemStep should execute before BlarifyStep"
 
-        assert mocks["execution_order"].index("blarify") < mocks["execution_order"].index(
-            "summarizer"
-        ), "BlarifyStep should execute before SummarizerStep"
+        assert mocks["execution_order"].index("blarify") < mocks[
+            "execution_order"
+        ].index("summarizer"), "BlarifyStep should execute before SummarizerStep"
 
         # Documentation grapher should come after filesystem but order relative to
         # other steps depends on config
-        assert mocks["execution_order"].index("filesystem") < mocks["execution_order"].index(
+        assert mocks["execution_order"].index("filesystem") < mocks[
+            "execution_order"
+        ].index(
             "documentation_grapher"
         ), "FileSystemStep should execute before DocumentationGrapherStep"
 
@@ -454,7 +474,9 @@ def test_error_handling_in_dependency_chain():
         print(f"Final status: {status['status']}")
 
         # Check that the job failed
-        assert status["status"] == StepStatus.FAILED, "Job should fail when a dependency fails"
+        assert (
+            status["status"] == StepStatus.FAILED
+        ), "Job should fail when a dependency fails"
 
         # Check that blarify wasn't called since filesystem failed
         assert (

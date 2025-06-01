@@ -18,7 +18,9 @@ from codestory.config.writer import update_config, update_env, update_toml
 class ConfigWriter:
     """Wrapper for configuration writing functions."""
 
-    def update_config(self, setting_path: str, value: object, persist_to: Optional[str] = None) -> None:
+    def update_config(
+        self, setting_path: str, value: object, persist_to: Optional[str] = None
+    ) -> None:
         """Update a configuration setting."""
         update_config(setting_path, value, persist_to)
 
@@ -26,15 +28,21 @@ class ConfigWriter:
         """Update a value in the .env file."""
         update_env(key, value, env_file)
 
-    def update_toml(self, section: str, key: str, value: object, toml_file: Optional[str] = None) -> None:
+    def update_toml(
+        self, section: str, key: str, value: object, toml_file: Optional[str] = None
+    ) -> None:
         """Update a value in the .codestory.toml file."""
         update_toml(section, key, value, toml_file)
 
-    def update_setting(self, section: str, key: str, value: object, comment: Optional[str] = None) -> None:
+    def update_setting(
+        self, section: str, key: str, value: object, comment: Optional[str] = None
+    ) -> None:
         """Update a setting, dispatching to the appropriate method."""
         # This is a placeholder; real logic may need to distinguish between config/env/toml
         # For now, just call update_config for all
         update_config(f"{section}.{key}", value, None)
+
+
 from ..domain.config import (
     ConfigDump,
     ConfigGroup,
@@ -53,6 +61,7 @@ from ..settings import get_service_settings
 
 logger = logging.getLogger(__name__)
 
+
 class ConfigService:
     """Application service for configuration management.
 
@@ -65,25 +74,33 @@ class ConfigService:
         self.core_settings = get_core_settings()
         self.service_settings = get_service_settings()
         self.redis: Optional[redis.Redis] = None
-        self.notification_channel: str = 'codestory:config:updated'
+        self.notification_channel: str = "codestory:config:updated"
         self.writer = ConfigWriter()
         self.hot_reloadable: Set[str] = {
-            'openai.timeout', 'openai.max_retries', 'service.rate_limit_enabled',
-            'service.rate_limit_requests', 'service.rate_limit_window', 'neo4j.timeout',
-            'neo4j.max_retries', 'neo4j.connection_pool_size', 'logging.level'
+            "openai.timeout",
+            "openai.max_retries",
+            "service.rate_limit_enabled",
+            "service.rate_limit_requests",
+            "service.rate_limit_window",
+            "neo4j.timeout",
+            "neo4j.max_retries",
+            "neo4j.connection_pool_size",
+            "logging.level",
         }
 
     async def _init_redis(self) -> None:
         """Initialize Redis connection asynchronously."""
         try:
-            redis_host = 'localhost'
+            redis_host = "localhost"
             redis_port = 6379
             redis_db = 0
-            self.redis = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
+            self.redis = redis.Redis(
+                host=redis_host, port=redis_port, db=redis_db, decode_responses=True
+            )
             await self.redis.ping()
-            logger.info('Connected to Redis successfully for config notifications')
+            logger.info("Connected to Redis successfully for config notifications")
         except Exception as e:
-            logger.error(f'Failed to connect to Redis for config notifications: {e!s}')
+            logger.error(f"Failed to connect to Redis for config notifications: {e!s}")
             self.redis = None
         return None
 
@@ -96,14 +113,24 @@ class ConfigService:
         if not self.redis:
             await self._init_redis()
         if not self.redis:
-            logger.warning('Redis not available for config notifications')
+            logger.warning("Redis not available for config notifications")
             return
         try:
-            notification = {'timestamp': int(time.time()), 'changes': list(changes), 'requires_restart': any(key not in self.hot_reloadable for key in changes)}
-            await self.redis.publish(self.notification_channel, json.dumps(notification))
-            logger.info(f'Published config update notification for {len(changes)} changes')
+            notification = {
+                "timestamp": int(time.time()),
+                "changes": list(changes),
+                "requires_restart": any(
+                    key not in self.hot_reloadable for key in changes
+                ),
+            }
+            await self.redis.publish(
+                self.notification_channel, json.dumps(notification)
+            )
+            logger.info(
+                f"Published config update notification for {len(changes)} changes"
+            )
         except Exception as e:
-            logger.error(f'Failed to publish config update notification: {e!s}')
+            logger.error(f"Failed to publish config update notification: {e!s}")
 
     def get_config_dump(self, include_sensitive: bool = False) -> ConfigDump:
         """Get a complete dump of the configuration.
@@ -114,14 +141,18 @@ class ConfigService:
         Returns:
             ConfigDump with all configuration values and metadata
         """
-        settings_export = self.core_settings.model_dump(by_alias=False, exclude_none=True)
-        service_export = self.service_settings.model_dump(by_alias=False, exclude_none=True)
+        settings_export = self.core_settings.model_dump(
+            by_alias=False, exclude_none=True
+        )
+        service_export = self.service_settings.model_dump(
+            by_alias=False, exclude_none=True
+        )
         settings_export.update(service_export)
         groups: dict[ConfigSection, ConfigGroup] = {}
         for full_key, value in settings_export.items():
-            if full_key.startswith('_'):
+            if full_key.startswith("_"):
                 continue
-            parts = full_key.split('.', 1)
+            parts = full_key.split(".", 1)
             if len(parts) == 1:
                 section_name = ConfigSection.GENERAL
                 key_name = parts[0]
@@ -148,15 +179,34 @@ class ConfigService:
                 value_type = ConfigValueType.DICT
             else:
                 value_type = ConfigValueType.STRING
-            is_sensitive = 'password' in key_name.lower() or 'secret' in key_name.lower() or 'key' in key_name.lower() or ('token' in key_name.lower())
-            metadata = ConfigMetadata(section=section_name, key=key_name, type=value_type, description=f'Configuration value for {full_key}', source=ConfigSource.CONFIG_FILE, permission=ConfigPermission.SENSITIVE if is_sensitive else ConfigPermission.READ_WRITE, required=False)
+            is_sensitive = (
+                "password" in key_name.lower()
+                or "secret" in key_name.lower()
+                or "key" in key_name.lower()
+                or ("token" in key_name.lower())
+            )
+            metadata = ConfigMetadata(
+                section=section_name,
+                key=key_name,
+                type=value_type,
+                description=f"Configuration value for {full_key}",
+                source=ConfigSource.CONFIG_FILE,
+                permission=ConfigPermission.SENSITIVE
+                if is_sensitive
+                else ConfigPermission.READ_WRITE,
+                required=False,
+            )
             config_item = ConfigItem(value=value, metadata=metadata)
             if not include_sensitive and config_item.is_sensitive:
                 config_item = config_item.redact_if_sensitive()
             if section_name not in groups:
                 groups[section_name] = ConfigGroup(section=section_name, items={})
             groups[section_name].items[key_name] = config_item
-        config_dump = ConfigDump(groups=groups, version='1.0.0', last_updated=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
+        config_dump = ConfigDump(
+            groups=groups,
+            version="1.0.0",
+            last_updated=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        )
         return config_dump
 
     def get_config_schema(self) -> ConfigSchema:
@@ -182,28 +232,38 @@ class ConfigService:
         """
         validation = self._validate_config_patch(patch)
         if not validation.valid:
-            error_details = [f'{err.path}: {err.message}' for err in validation.errors]
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid configuration: {', '.join(error_details)}")
+            error_details = [f"{err.path}: {err.message}" for err in validation.errors]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid configuration: {', '.join(error_details)}",
+            )
         try:
             changed_keys: set[str] = set()
             for item in patch.items:
-                parts = item.key.split('.', 1)
+                parts = item.key.split(".", 1)
                 if len(parts) == 1:
-                    section = 'general'
+                    section = "general"
                     key = parts[0]
                 else:
                     section = parts[0]
                     key = parts[1]
-                if section != 'service':
-                    self.writer.update_setting(section, key, item.value, comment=patch.comment)
+                if section != "service":
+                    self.writer.update_setting(
+                        section, key, item.value, comment=patch.comment
+                    )
                 else:
-                    self.writer.update_setting('service', key, item.value, comment=patch.comment)
+                    self.writer.update_setting(
+                        "service", key, item.value, comment=patch.comment
+                    )
                 changed_keys.add(item.key)
             await self.notify_config_updated(changed_keys)
             return self.get_config_dump()
         except Exception as e:
-            logger.error(f'Failed to update configuration: {e!s}')
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to update configuration: {e!s}') from e
+            logger.error(f"Failed to update configuration: {e!s}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update configuration: {e!s}",
+            ) from e
 
     def _validate_config_patch(self, patch: ConfigPatch) -> ConfigValidationResult:
         """Validate a configuration patch.
@@ -216,9 +276,9 @@ class ConfigService:
         """
         errors: list[ConfigValidationError] = []
         for item in patch.items:
-            parts = item.key.split('.', 1)
+            parts = item.key.split(".", 1)
             if len(parts) == 1:
-                section = 'general'
+                section = "general"
                 key = parts[0]
             else:
                 section = parts[0]
@@ -229,34 +289,89 @@ class ConfigService:
                     section_obj = getattr(self.core_settings, section)
                     if hasattr(section_obj, key):
                         found = True
-                if not found and section == 'service':
+                if not found and section == "service":
                     setting_key = key
                     if hasattr(self.service_settings, setting_key):
                         found = True
             except Exception:
                 pass
             if not found:
-                errors.append(ConfigValidationError(path=item.key, message=f'Setting {item.key} does not exist', value=item.value))
+                errors.append(
+                    ConfigValidationError(
+                        path=item.key,
+                        message=f"Setting {item.key} does not exist",
+                        value=item.value,
+                    )
+                )
                 continue
-            if section != 'service':
+            if section != "service":
                 try:
                     section_obj = getattr(self.core_settings, section)
                     current_value = getattr(section_obj, key)
-                    if isinstance(current_value, str) and (not isinstance(item.value, str)):
-                        errors.append(ConfigValidationError(path=item.key, message=f'Expected string for {item.key}', value=item.value))
-                    elif isinstance(current_value, int) and (not isinstance(item.value, int)):
-                        errors.append(ConfigValidationError(path=item.key, message=f'Expected integer for {item.key}', value=item.value))
-                    elif isinstance(current_value, float) and (not isinstance(item.value, float | int)):
-                        errors.append(ConfigValidationError(path=item.key, message=f'Expected number for {item.key}', value=item.value))
-                    elif isinstance(current_value, bool) and (not isinstance(item.value, bool)):
-                        errors.append(ConfigValidationError(path=item.key, message=f'Expected boolean for {item.key}', value=item.value))
-                    elif isinstance(current_value, list) and (not isinstance(item.value, list)):
-                        errors.append(ConfigValidationError(path=item.key, message=f'Expected list for {item.key}', value=item.value))
-                    elif isinstance(current_value, dict) and (not isinstance(item.value, dict)):
-                        errors.append(ConfigValidationError(path=item.key, message=f'Expected dictionary for {item.key}', value=item.value))
+                    if isinstance(current_value, str) and (
+                        not isinstance(item.value, str)
+                    ):
+                        errors.append(
+                            ConfigValidationError(
+                                path=item.key,
+                                message=f"Expected string for {item.key}",
+                                value=item.value,
+                            )
+                        )
+                    elif isinstance(current_value, int) and (
+                        not isinstance(item.value, int)
+                    ):
+                        errors.append(
+                            ConfigValidationError(
+                                path=item.key,
+                                message=f"Expected integer for {item.key}",
+                                value=item.value,
+                            )
+                        )
+                    elif isinstance(current_value, float) and (
+                        not isinstance(item.value, float | int)
+                    ):
+                        errors.append(
+                            ConfigValidationError(
+                                path=item.key,
+                                message=f"Expected number for {item.key}",
+                                value=item.value,
+                            )
+                        )
+                    elif isinstance(current_value, bool) and (
+                        not isinstance(item.value, bool)
+                    ):
+                        errors.append(
+                            ConfigValidationError(
+                                path=item.key,
+                                message=f"Expected boolean for {item.key}",
+                                value=item.value,
+                            )
+                        )
+                    elif isinstance(current_value, list) and (
+                        not isinstance(item.value, list)
+                    ):
+                        errors.append(
+                            ConfigValidationError(
+                                path=item.key,
+                                message=f"Expected list for {item.key}",
+                                value=item.value,
+                            )
+                        )
+                    elif isinstance(current_value, dict) and (
+                        not isinstance(item.value, dict)
+                    ):
+                        errors.append(
+                            ConfigValidationError(
+                                path=item.key,
+                                message=f"Expected dictionary for {item.key}",
+                                value=item.value,
+                            )
+                        )
                 except Exception as e:
-                    logger.warning(f'Error validating {item.key}: {e!s}')
+                    logger.warning(f"Error validating {item.key}: {e!s}")
         return ConfigValidationResult(valid=len(errors) == 0, errors=errors)
+
 
 def get_config_service() -> ConfigService:
     """Factory function to create a configuration service.

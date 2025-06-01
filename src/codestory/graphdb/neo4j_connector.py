@@ -27,12 +27,15 @@ try:
 except ImportError:
     # For testing environments where settings might not be available
     from typing import cast
+
     try:
         from ..config.settings import Settings
     except ImportError:
         Settings = Any  # type: ignore
+
     def _get_settings_stub() -> None:
         raise RuntimeError("get_settings is not available in this environment")
+
     get_settings = cast("Any", _get_settings_stub)
     # Only assign the stub if get_settings is not already imported
 
@@ -99,7 +102,9 @@ def create_connector() -> "Neo4jConnector":
         database=settings.neo4j.database,
         max_connection_pool_size=settings.neo4j.max_connection_pool_size,
         connection_timeout=settings.neo4j.connection_timeout,
-        max_transaction_retry_time=getattr(settings.neo4j, "max_transaction_retry_time", None),
+        max_transaction_retry_time=getattr(
+            settings.neo4j, "max_transaction_retry_time", None
+        ),
     )
 
     # Auto-initialize schema if configured
@@ -125,7 +130,9 @@ logger = logging.getLogger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def retry_on_transient(max_retries: int = 3, backoff_factor: float = 1.5) -> Callable[[F], F]:
+def retry_on_transient(
+    max_retries: int = 3, backoff_factor: float = 1.5
+) -> Callable[[F], F]:
     """Decorator for retrying operations on transient Neo4j errors.
 
     Args:
@@ -230,7 +237,9 @@ class Neo4jConnector:
             self.database = database or "neo4j"
 
             # Set default configuration options
-            self.max_connection_pool_size = config_options.get("max_connection_pool_size", 50)
+            self.max_connection_pool_size = config_options.get(
+                "max_connection_pool_size", 50
+            )
             self.connection_timeout = config_options.get("connection_timeout", 30)
 
             # In tests we provide all required parameters
@@ -248,21 +257,20 @@ class Neo4jConnector:
                     # Fall back to settings if parameters not provided
                     self.uri = self.uri or settings.neo4j.uri
                     self.username = self.username or settings.neo4j.username
-                    self.password = (
-                        self.password
-                        or (
-                            settings.neo4j.password.get_secret_value()
-                            if settings.neo4j.password is not None
-                            else (_ for _ in ()).throw(
-                                RuntimeError("Neo4j password is not set in settings")
-                            )
+                    self.password = self.password or (
+                        settings.neo4j.password.get_secret_value()
+                        if settings.neo4j.password is not None
+                        else (_ for _ in ()).throw(
+                            RuntimeError("Neo4j password is not set in settings")
                         )
                     )
                     self.database = self.database or settings.neo4j.database
 
                     # Get additional configuration from settings if not provided in config_options
                     if "max_connection_pool_size" not in config_options:
-                        self.max_connection_pool_size = settings.neo4j.max_connection_pool_size
+                        self.max_connection_pool_size = (
+                            settings.neo4j.max_connection_pool_size
+                        )
 
                     if "connection_timeout" not in config_options:
                         self.connection_timeout = settings.neo4j.connection_timeout
@@ -377,9 +385,13 @@ class Neo4jConnector:
             session = self.driver.session(database=self.database)
             try:
                 if write:
-                    result = session.execute_write(self._transaction_function, query, params or {})
+                    result = session.execute_write(
+                        self._transaction_function, query, params or {}
+                    )
                 else:
-                    result = session.execute_read(self._transaction_function, query, params or {})
+                    result = session.execute_read(
+                        self._transaction_function, query, params or {}
+                    )
 
                 return cast("list[dict[str, Any]]", result)
             finally:
@@ -431,7 +443,9 @@ class Neo4jConnector:
 
         try:
             query_type = QueryType.WRITE if write else QueryType.READ
-            logger.debug(f"Executing {len(queries)} {query_type.value} queries in transaction")
+            logger.debug(
+                f"Executing {len(queries)} {query_type.value} queries in transaction"
+            )
 
             # Special handling for mock driver in tests
             if isinstance(self.driver, MagicMock):
@@ -476,7 +490,9 @@ class Neo4jConnector:
                 cause=e,
             ) from e
 
-    def _transaction_function(self, tx: Any, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+    def _transaction_function(
+        self, tx: Any, query: str, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Execute a single query in a transaction.
 
         Args:
@@ -547,7 +563,9 @@ class Neo4jConnector:
             SchemaError: If the index creation fails
         """
         try:
-            create_custom_vector_index(self, label, property_name, dimensions, similarity)
+            create_custom_vector_index(
+                self, label, property_name, dimensions, similarity
+            )
             logger.info(f"Vector index created for {label}.{property_name}")
         except Exception as e:
             logger.error(f"Failed to create vector index: {e!s}")
@@ -677,7 +695,9 @@ class Neo4jConnector:
             RETURN n, score
             """
 
-            result = self.execute_query(cypher, {"embedding": query_embedding, "limit": limit})
+            result = self.execute_query(
+                cypher, {"embedding": query_embedding, "limit": limit}
+            )
 
             # Record metric
             record_vector_search(node_label, time.time() - start_time)
@@ -759,7 +779,9 @@ class Neo4jConnector:
 
         # Run in a separate thread to avoid blocking the event loop
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: self.execute_query(query, params, write))
+        return await loop.run_in_executor(
+            None, lambda: self.execute_query(query, params, write)
+        )
 
     async def execute_many_async(
         self,
@@ -783,9 +805,13 @@ class Neo4jConnector:
             # Return directly from mock in tests
             session = self.driver.session.return_value.__aenter__.return_value
             if write:
-                return cast("list[list[dict[str, Any]]]", session.execute_write.return_value)
+                return cast(
+                    "list[list[dict[str, Any]]]", session.execute_write.return_value
+                )
             else:
-                return cast("list[list[dict[str, Any]]]", session.execute_read.return_value)
+                return cast(
+                    "list[list[dict[str, Any]]]", session.execute_read.return_value
+                )
 
         # Prepare query and params lists
         query_list = [q["query"] for q in queries]
@@ -797,7 +823,9 @@ class Neo4jConnector:
             None, lambda: self.execute_many(query_list, params_list, write)
         )
 
-    def with_transaction(self, func: Callable[..., Any], write: bool = False, **kwargs: Any) -> Any:
+    def with_transaction(
+        self, func: Callable[..., Any], write: bool = False, **kwargs: Any
+    ) -> Any:
         """Execute a function within a Neo4j transaction.
 
         Args:
@@ -820,9 +848,13 @@ class Neo4jConnector:
             session = self.driver.session(database=self.database)
             try:
                 if write:
-                    result = session.execute_write(lambda tx: func(self, tx=tx, **kwargs))
+                    result = session.execute_write(
+                        lambda tx: func(self, tx=tx, **kwargs)
+                    )
                 else:
-                    result = session.execute_read(lambda tx: func(self, tx=tx, **kwargs))
+                    result = session.execute_read(
+                        lambda tx: func(self, tx=tx, **kwargs)
+                    )
 
                 record_transaction(success=True)
                 return result

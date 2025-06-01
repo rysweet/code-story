@@ -1,8 +1,12 @@
 # Test configuration file for CI environments
 
+app_name = "code-story"
+version = "0.1.0"
+environment = "development"
+
 [neo4j]
 # Use Docker service name and default port when running in Docker Compose
-uri = "bolt://neo4j:7687"  # Use this for Docker Compose; fallback to localhost:7688 for local
+uri = "bolt://localhost:7687"
 username = "neo4j"
 password = "password"
 database = "testdb"
@@ -28,7 +32,7 @@ reasoning_model = "gpt-4o"
 
 [service]
 host = "0.0.0.0"
-port = 8000
+port = 9000
 workers = 4
 log_level = "INFO"
 enable_telemetry = true
@@ -52,7 +56,7 @@ plugin_directory = "plugins"
 metrics_port = 9090
 metrics_endpoint = "/metrics"
 trace_sample_rate = 1.0
-log_format = "json"
+log_format = "text"
 
 [interface]
 theme = "dark"

@@ -79,7 +79,9 @@ def test_completion(client: OpenAIClient) -> None:
         f"Tokens: {result.usage.prompt_tokens} prompt, {result.usage.completion_tokens} completion"
     )
 
-    assert "paris" in result.choices[0].text.strip().lower(), "Expected Paris to be in the answer"
+    assert (
+        "paris" in result.choices[0].text.strip().lower()
+    ), "Expected Paris to be in the answer"
 
     print("✅ Text completion test passed!")
 
@@ -100,7 +102,9 @@ def test_embedding(client: OpenAIClient) -> None:
     print(f"Response from {result.model}:")
     print(f"Embedding dimensions: {len(result.data[0].embedding)}")
     print(f"First 5 values: {result.data[0].embedding[:5]}")
-    print(f"Tokens: {result.usage.prompt_tokens} prompt, {result.usage.total_tokens} total")
+    print(
+        f"Tokens: {result.usage.prompt_tokens} prompt, {result.usage.total_tokens} total"
+    )
 
     assert len(result.data) == 1, "Expected 1 embedding"
     assert len(result.data[0].embedding) > 0, "Expected non-empty embedding"
@@ -156,7 +160,9 @@ async def test_async_embedding(client: OpenAIClient) -> None:
     print(f"Response from {result.model}:")
     print(f"Embedding dimensions: {len(result.data[0].embedding)}")
     print(f"First 5 values: {result.data[0].embedding[:5]}")
-    print(f"Tokens: {result.usage.prompt_tokens} prompt, {result.usage.total_tokens} total")
+    print(
+        f"Tokens: {result.usage.prompt_tokens} prompt, {result.usage.total_tokens} total"
+    )
 
     assert len(result.data) == 1, "Expected 1 embedding"
     assert len(result.data[0].embedding) > 0, "Expected non-empty embedding"
@@ -206,7 +212,9 @@ def main() -> None:
 
     # Print configuration info - mask tenant and subscription IDs
     if tenant_id:
-        tenant_id_masked = tenant_id[:4] + "..." + tenant_id[-4:] if len(tenant_id) > 8 else "..."
+        tenant_id_masked = (
+            tenant_id[:4] + "..." + tenant_id[-4:] if len(tenant_id) > 8 else "..."
+        )
     else:
         tenant_id_masked = "[Not set]"
 
@@ -219,12 +227,14 @@ def main() -> None:
     else:
         subscription_id_masked = "[Not set]"
 
-    print("Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script")
+    print(
+        "Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script"
+    )
     print(f"Endpoint: {os.environ.get('OPENAI__ENDPOINT')}")
     print(f"Tenant ID: {tenant_id_masked}")
     print(f"Subscription ID: {subscription_id_masked}")
-    chat_model = os.environ.get('OPENAI__CHAT_MODEL')
-    reasoning_model = os.environ.get('OPENAI__REASONING_MODEL')
+    chat_model = os.environ.get("OPENAI__CHAT_MODEL")
+    reasoning_model = os.environ.get("OPENAI__REASONING_MODEL")
     print(f"Models: {chat_model} (chat), {reasoning_model} (reasoning)")
 
     try:

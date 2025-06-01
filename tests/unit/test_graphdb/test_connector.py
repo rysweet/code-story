@@ -1,6 +1,6 @@
 from typing import Any
 
-'Unit tests for the Neo4jConnector class.'
+"Unit tests for the Neo4jConnector class."
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,8 +20,9 @@ def mock_driver() -> Any:
     driver.session.return_value.__enter__.return_value = session
     session.begin_transaction.return_value.__enter__.return_value = transaction
     transaction.run.return_value = result
-    result.data.return_value = [{'name': 'test'}]
+    result.data.return_value = [{"name": "test"}]
     return driver
+
 
 @pytest.fixture
 def mock_async_driver() -> Any:
@@ -33,116 +34,171 @@ def mock_async_driver() -> Any:
     driver.session.return_value.__aenter__.return_value = session
     session.begin_transaction.return_value.__aenter__.return_value = transaction
     transaction.run.return_value = result
-    result.data.return_value = [{'name': 'test'}]
+    result.data.return_value = [{"name": "test"}]
     return driver
+
 
 @pytest.fixture
 def connector(mock_driver: Any) -> None:
     """Create a Neo4jConnector with a mock driver."""
-    with patch('neo4j.GraphDatabase.driver', return_value=mock_driver):
-        connector = Neo4jConnector(uri='bolt://localhost:7687', username='neo4j', password='password', database='neo4j', skip_connection_check=True)
+    with patch("neo4j.GraphDatabase.driver", return_value=mock_driver):
+        connector = Neo4jConnector(
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="password",
+            database="neo4j",
+            skip_connection_check=True,
+        )
         yield connector
         connector.close()
+
 
 @pytest.fixture
 def async_connector(mock_async_driver: Any) -> None:
     """Create a Neo4jConnector with a mock async driver."""
-    with patch('neo4j.GraphDatabase.driver', return_value=mock_async_driver):
-        connector = Neo4jConnector(uri='bolt://localhost:7687', username='neo4j', password='password', database='neo4j', async_mode=True, skip_connection_check=True)
+    with patch("neo4j.GraphDatabase.driver", return_value=mock_async_driver):
+        connector = Neo4jConnector(
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="password",
+            database="neo4j",
+            async_mode=True,
+            skip_connection_check=True,
+        )
         yield connector
+
 
 def test_init() -> None:
     """Test connector initialization."""
-    with patch('neo4j.GraphDatabase.driver') as mock_driver_func:
-        connector = Neo4jConnector(uri='bolt://test:7687', username='user', password='pass', database='testdb', max_connection_lifetime=300, max_connection_pool_size=50, skip_connection_check=True)
+    with patch("neo4j.GraphDatabase.driver") as mock_driver_func:
+        connector = Neo4jConnector(
+            uri="bolt://test:7687",
+            username="user",
+            password="pass",
+            database="testdb",
+            max_connection_lifetime=300,
+            max_connection_pool_size=50,
+            skip_connection_check=True,
+        )
         mock_driver_func.assert_called_once()
-        assert connector.uri == 'bolt://test:7687'
-        assert connector.username == 'user'
-        assert connector.password == 'pass'
-        assert connector.database == 'testdb'
+        assert connector.uri == "bolt://test:7687"
+        assert connector.username == "user"
+        assert connector.password == "pass"
+        assert connector.database == "testdb"
         assert connector.max_connection_pool_size == 50
+
 
 def test_execute_query(connector: Any, mock_driver: Any) -> None:
     """Test execute_query method."""
     session = mock_driver.session.return_value.__enter__.return_value
-    session.execute_read.return_value = [{'name': 'test'}]
-    session.execute_write.return_value = [{'name': 'test_write'}]
-    result = connector.execute_query('MATCH (n) RETURN n LIMIT 1')
-    assert result == [{'name': 'test'}]
-    result = connector.execute_query('CREATE (n:Test) RETURN n', write=True)
-    assert result == [{'name': 'test_write'}]
+    session.execute_read.return_value = [{"name": "test"}]
+    session.execute_write.return_value = [{"name": "test_write"}]
+    result = connector.execute_query("MATCH (n) RETURN n LIMIT 1")
+    assert result == [{"name": "test"}]
+    result = connector.execute_query("CREATE (n:Test) RETURN n", write=True)
+    assert result == [{"name": "test_write"}]
+
 
 def test_execute_query_with_retry(connector: Any, mock_driver: Any) -> None:
     """Test execute_query with retry on transient error."""
-    assert hasattr(connector, 'execute_query')
+    assert hasattr(connector, "execute_query")
     assert callable(connector.execute_query)
+
 
 def test_execute_query_max_retries_exceeded(connector: Any, mock_driver: Any) -> None:
     """Test execute_query when max retries is exceeded."""
     session = mock_driver.session.return_value.__enter__.return_value
-    session.execute_read.side_effect = ServiceUnavailable('Database unavailable')
-    with patch('time.sleep'), pytest.raises(QueryError):
-        connector.execute_query('MATCH (n) RETURN n', retry_count=2)
+    session.execute_read.side_effect = ServiceUnavailable("Database unavailable")
+    with patch("time.sleep"), pytest.raises(QueryError):
+        connector.execute_query("MATCH (n) RETURN n", retry_count=2)
+
 
 def test_execute_many(connector: Any, mock_driver: Any) -> None:
     """Test execute_many method."""
     session = mock_driver.session.return_value.__enter__.return_value
-    session.execute_read.return_value = [[{'query': 'first'}], [{'query': 'second'}]]
-    queries = ['MATCH (n) RETURN n', 'MATCH (m) RETURN m']
-    params_list = [{'id': 1}, {'id': 2}]
+    session.execute_read.return_value = [[{"query": "first"}], [{"query": "second"}]]
+    queries = ["MATCH (n) RETURN n", "MATCH (m) RETURN m"]
+    params_list = [{"id": 1}, {"id": 2}]
     results = connector.execute_many(queries, params_list)
     assert len(results) == 2
-    assert results[0] == [{'query': 'first'}]
-    assert results[1] == [{'query': 'second'}]
+    assert results[0] == [{"query": "first"}]
+    assert results[1] == [{"query": "second"}]
+
 
 def test_execute_many_transaction_error(connector: Any, mock_driver: Any) -> None:
     """Test execute_many with transaction error."""
     session = mock_driver.session.return_value.__enter__.return_value
-    session.execute_read.side_effect = Exception('Transaction failed')
-    queries = ['MATCH (n) RETURN n', 'MATCH (m) RETURN m']
+    session.execute_read.side_effect = Exception("Transaction failed")
+    queries = ["MATCH (n) RETURN n", "MATCH (m) RETURN m"]
     params_list = [{}, {}]
     with pytest.raises(TransactionError):
         connector.execute_many(queries, params_list)
 
+
 def test_semantic_search(connector: Any, mock_driver: Any) -> None:
     """Test semantic_search method."""
     session = mock_driver.session.return_value.__enter__.return_value
-    session.execute_read.return_value = [{'node': {'name': 'Result1'}, 'score': 0.95}, {'node': {'name': 'Result2'}, 'score': 0.85}]
+    session.execute_read.return_value = [
+        {"node": {"name": "Result1"}, "score": 0.95},
+        {"node": {"name": "Result2"}, "score": 0.85},
+    ]
     query_embedding = [0.1, 0.2, 0.3]
-    results = connector.semantic_search(query_embedding=query_embedding, node_label='Document', property_name='embedding', limit=5, similarity_cutoff=0.7)
+    results = connector.semantic_search(
+        query_embedding=query_embedding,
+        node_label="Document",
+        property_name="embedding",
+        limit=5,
+        similarity_cutoff=0.7,
+    )
     assert len(results) == 2
-    assert results[0]['node']['name'] == 'Result1'
-    assert results[0]['score'] == 0.95
+    assert results[0]["node"]["name"] == "Result1"
+    assert results[0]["score"] == 0.95
+
 
 @pytest.mark.asyncio
-async def test_execute_query_async(async_connector: Any, mock_async_driver: Any) -> None:
+async def test_execute_query_async(
+    async_connector: Any, mock_async_driver: Any
+) -> None:
     """Test async query execution."""
     session = mock_async_driver.session.return_value.__aenter__.return_value
-    session.execute_read.return_value = [{'async': 'result'}]
-    result = await async_connector.execute_query_async('MATCH (n) RETURN n')
-    assert result == [{'async': 'result'}]
+    session.execute_read.return_value = [{"async": "result"}]
+    result = await async_connector.execute_query_async("MATCH (n) RETURN n")
+    assert result == [{"async": "result"}]
+
 
 @pytest.mark.asyncio
 async def test_execute_many_async(async_connector: Any, mock_async_driver: Any) -> None:
     """Test async batch query execution."""
     session = mock_async_driver.session.return_value.__aenter__.return_value
-    session.execute_read.return_value = [[{'async': 'result1'}], [{'async': 'result2'}]]
-    queries = [{'query': 'MATCH (n) RETURN n', 'params': {'id': 1}}, {'query': 'MATCH (m) RETURN m', 'params': {'id': 2}}]
+    session.execute_read.return_value = [[{"async": "result1"}], [{"async": "result2"}]]
+    queries = [
+        {"query": "MATCH (n) RETURN n", "params": {"id": 1}},
+        {"query": "MATCH (m) RETURN m", "params": {"id": 2}},
+    ]
     results = await async_connector.execute_many_async(queries)
     assert len(results) == 2
-    assert results[0] == [{'async': 'result1'}]
-    assert results[1] == [{'async': 'result2'}]
+    assert results[0] == [{"async": "result1"}]
+    assert results[1] == [{"async": "result2"}]
+
 
 def test_close(connector: Any, mock_driver: Any) -> None:
     """Test driver close method."""
     connector.close()
     mock_driver.close.assert_called_once()
 
+
 def test_context_manager() -> None:
     """Test using connector as a context manager."""
-    with patch('neo4j.GraphDatabase.driver') as mock_driver_func:
+    with patch("neo4j.GraphDatabase.driver") as mock_driver_func:
         mock_driver = MagicMock()
         mock_driver_func.return_value = mock_driver
-        with Neo4jConnector(uri='bolt://localhost:7687', username='neo4j', password='password', database='neo4j', skip_connection_check=True, skip_settings=True) as connector:
+        with Neo4jConnector(
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="password",
+            database="neo4j",
+            skip_connection_check=True,
+            skip_settings=True,
+        ) as connector:
             assert isinstance(connector, Neo4jConnector)
         mock_driver.close.assert_called_once()

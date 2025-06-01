@@ -35,7 +35,9 @@ def config() -> Any:
     help="Output format.",
 )
 @click.pass_context
-def show_config(ctx: click.Context, sensitive: bool = False, format: str = "table") -> None:
+def show_config(
+    ctx: click.Context, sensitive: bool = False, format: str = "table"
+) -> None:
     """Show current configuration."""
     client: ServiceClient = ctx.obj["client"]
     console: Console = ctx.obj["console"]
@@ -66,7 +68,9 @@ def show_config(ctx: click.Context, sensitive: bool = False, format: str = "tabl
 @click.argument("key_value_pairs", nargs=-1)
 @click.option("--no-confirm", is_flag=True, help="Don't ask for confirmation.")
 @click.pass_context
-def set_config(ctx: click.Context, key_value_pairs: list[str], no_confirm: bool = False) -> None:
+def set_config(
+    ctx: click.Context, key_value_pairs: list[str], no_confirm: bool = False
+) -> None:
     """
     Update configuration values.
 
@@ -134,7 +138,9 @@ def edit_config(ctx: click.Context) -> None:
         sys.exit(1)
 
     # Create temporary file with configuration
-    with tempfile.NamedTemporaryFile(suffix=".json", mode="w+", delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(
+        suffix=".json", mode="w+", delete=False
+    ) as temp_file:
         json.dump(config_data, temp_file, indent=2)
         temp_file_path = temp_file.name
 
@@ -193,7 +199,9 @@ def _display_config_table(
 
     for key, value in sorted(flat_config.items()):
         # Check if sensitive
-        is_sensitive = "password" in key.lower() or "secret" in key.lower() or "key" in key.lower()
+        is_sensitive = (
+            "password" in key.lower() or "secret" in key.lower() or "key" in key.lower()
+        )
 
         if is_sensitive and not sensitive:
             # Mask sensitive values
@@ -210,7 +218,9 @@ def _display_config_table(
     console.print(table)
 
 
-def _flatten_dict(d: dict[str, Any], parent_key: str = "", sep: str = ".") -> dict[str, Any]:
+def _flatten_dict(
+    d: dict[str, Any], parent_key: str = "", sep: str = "."
+) -> dict[str, Any]:
     """
     Flatten a nested dictionary.
 
@@ -234,7 +244,9 @@ def _flatten_dict(d: dict[str, Any], parent_key: str = "", sep: str = ".") -> di
     return dict(items)
 
 
-def _build_config_tree(tree: Tree, config_data: dict[str, Any], sensitive: bool = False) -> None:
+def _build_config_tree(
+    tree: Tree, config_data: dict[str, Any], sensitive: bool = False
+) -> None:
     """
     Build a tree representation of configuration data.
 
@@ -251,7 +263,9 @@ def _build_config_tree(tree: Tree, config_data: dict[str, Any], sensitive: bool 
         else:
             # Check if sensitive
             is_sensitive = (
-                "password" in key.lower() or "secret" in key.lower() or "key" in key.lower()
+                "password" in key.lower()
+                or "secret" in key.lower()
+                or "key" in key.lower()
             )
 
             if is_sensitive and not sensitive:

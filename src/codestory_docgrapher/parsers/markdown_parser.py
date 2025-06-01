@@ -1,6 +1,6 @@
 from typing import Any
 
-'Parser for Markdown documentation files.\n\nThis module provides a parser for extracting entities and relationships\nfrom Markdown documentation files.\n'
+"Parser for Markdown documentation files.\n\nThis module provides a parser for extracting entities and relationships\nfrom Markdown documentation files.\n"
 import logging
 import re
 
@@ -16,6 +16,7 @@ from .parser_factory import Parser, ParserFactory
 
 logger = logging.getLogger(__name__)
 
+
 @ParserFactory.register(DocumentType.MARKDOWN)
 @ParserFactory.register(DocumentType.README)
 class MarkdownParser(Parser):
@@ -26,12 +27,17 @@ class MarkdownParser(Parser):
 
     def __init__(self: Any) -> None:
         """Initialize the Markdown parser."""
-        self.heading_pattern = re.compile('^(#+)\\s+(.+)$', re.MULTILINE)
-        self.code_block_pattern = re.compile('```(\\w*)\\n(.*?)\\n```', re.DOTALL)
-        self.link_pattern = re.compile('\\[([^\\]]+)\\]\\(([^)]+)\\)')
-        self.image_pattern = re.compile('!\\[([^\\]]*)\\]\\(([^)]+)\\)')
-        self.list_pattern = re.compile('((?:^\\s*[-*+]\\s+.*$\\n?)+)', re.MULTILINE)
-        self.code_ref_patterns = [re.compile('`([a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)?\\(\\))`'), re.compile('`([A-Z][a-zA-Z0-9_]*)`'), re.compile('`([a-zA-Z0-9_]+\\.(?:py|js|ts|java|cpp|h|md))`'), re.compile('`((?:[a-zA-Z0-9_]+/)+[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9]+)?)`')]
+        self.heading_pattern = re.compile("^(#+)\\s+(.+)$", re.MULTILINE)
+        self.code_block_pattern = re.compile("```(\\w*)\\n(.*?)\\n```", re.DOTALL)
+        self.link_pattern = re.compile("\\[([^\\]]+)\\]\\(([^)]+)\\)")
+        self.image_pattern = re.compile("!\\[([^\\]]*)\\]\\(([^)]+)\\)")
+        self.list_pattern = re.compile("((?:^\\s*[-*+]\\s+.*$\\n?)+)", re.MULTILINE)
+        self.code_ref_patterns = [
+            re.compile("`([a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)?\\(\\))`"),
+            re.compile("`([A-Z][a-zA-Z0-9_]*)`"),
+            re.compile("`([a-zA-Z0-9_]+\\.(?:py|js|ts|java|cpp|h|md))`"),
+            re.compile("`((?:[a-zA-Z0-9_]+/)+[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9]+)?)`"),
+        ]
 
     def parse(self: Any, document: DocumentationFile) -> dict[str, Any]:
         """Parse a Markdown documentation file.
@@ -70,9 +76,11 @@ class MarkdownParser(Parser):
         relationships.extend(rel_heading_lists)
         rel_heading_refs = self._create_entity_relationships(headings, code_refs)
         relationships.extend(rel_heading_refs)
-        return {'entities': entities, 'relationships': relationships}
+        return {"entities": entities, "relationships": relationships}
 
-    def _extract_headings(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_headings(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract headings from Markdown content.
 
         Args:
@@ -88,12 +96,23 @@ class MarkdownParser(Parser):
             heading_text = match.group(2).strip()
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.HEADING, content=heading_text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'level': level})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.HEADING,
+                content=heading_text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"level": level},
+            )
             entities.append(entity)
         return entities
 
-    def _create_heading_hierarchy(self: Any, headings: list[DocumentationEntity]) -> list[DocumentationRelationship]:
+    def _create_heading_hierarchy(
+        self: Any, headings: list[DocumentationEntity]
+    ) -> list[DocumentationRelationship]:
         """Create hierarchy relationships between headings.
 
         Args:
@@ -106,19 +125,25 @@ class MarkdownParser(Parser):
         sorted_headings = sorted(headings, key=lambda h: h.start_pos or 0)
         stack: list[Any] = []
         for heading in sorted_headings:
-            level = heading.metadata.get('level', 1)
-            while stack and stack[-1].metadata.get('level', 1) >= level:
+            level = heading.metadata.get("level", 1)
+            while stack and stack[-1].metadata.get("level", 1) >= level:
                 stack.pop()
             if stack:
                 parent = stack[-1]
                 heading.parent_id = parent.id
                 parent.children.append(heading.id)
-                relationship = DocumentationRelationship(type=RelationType.CONTAINS, source_id=parent.id, target_id=heading.id)
+                relationship = DocumentationRelationship(
+                    type=RelationType.CONTAINS,
+                    source_id=parent.id,
+                    target_id=heading.id,
+                )
                 relationships.append(relationship)
             stack.append(heading)
         return relationships
 
-    def _extract_code_blocks(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_code_blocks(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract code blocks from Markdown content.
 
         Args:
@@ -134,12 +159,23 @@ class MarkdownParser(Parser):
             code = match.group(2)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.CODE_BLOCK, content=code, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'language': language})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.CODE_BLOCK,
+                content=code,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"language": language},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_links(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_links(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract links from Markdown content.
 
         Args:
@@ -155,12 +191,23 @@ class MarkdownParser(Parser):
             url = match.group(2)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.LINK, content=text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'url': url})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.LINK,
+                content=text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"url": url},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_images(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_images(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract images from Markdown content.
 
         Args:
@@ -176,12 +223,23 @@ class MarkdownParser(Parser):
             url = match.group(2)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.IMAGE, content=alt_text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'url': url})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.IMAGE,
+                content=alt_text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"url": url},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_lists(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_lists(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract lists from Markdown content.
 
         Args:
@@ -196,12 +254,23 @@ class MarkdownParser(Parser):
             list_text = match.group(1)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.LIST, content=list_text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'items': list_text.count('\n') + 1})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.LIST,
+                content=list_text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"items": list_text.count("\n") + 1},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_code_references(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_code_references(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract code references from Markdown content.
 
         Args:
@@ -217,12 +286,25 @@ class MarkdownParser(Parser):
                 reference = match.group(1)
                 start_pos = match.start()
                 end_pos = match.end()
-                line_number = content[:start_pos].count('\n') + 1
-                entity = DocumentationEntity(type=EntityType.REFERENCE, content=reference, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={})
+                line_number = content[:start_pos].count("\n") + 1
+                entity = DocumentationEntity(
+                    type=EntityType.REFERENCE,
+                    content=reference,
+                    file_path=file_path,
+                    source_text=match.group(0),
+                    start_pos=start_pos,
+                    end_pos=end_pos,
+                    line_number=line_number,
+                    metadata={},
+                )
                 entities.append(entity)
         return entities
 
-    def _create_entity_relationships(self: Any, containers: list[DocumentationEntity], contained: list[DocumentationEntity]) -> list[DocumentationRelationship]:
+    def _create_entity_relationships(
+        self: Any,
+        containers: list[DocumentationEntity],
+        contained: list[DocumentationEntity],
+    ) -> list[DocumentationRelationship]:
         """Create relationships between container entities and contained entities.
 
         Args:
@@ -246,7 +328,11 @@ class MarkdownParser(Parser):
                 else:
                     break
             if container:
-                relationship = DocumentationRelationship(type=RelationType.CONTAINS, source_id=container.id, target_id=entity.id)
+                relationship = DocumentationRelationship(
+                    type=RelationType.CONTAINS,
+                    source_id=container.id,
+                    target_id=entity.id,
+                )
                 relationships.append(relationship)
                 entity.parent_id = container.id
                 container.children.append(entity.id)

@@ -1,4 +1,0 @@
-src/codestory/cli/commands/ingest.py:29: error: expected '('  [syntax]
-    def run_command: Any(command, capture_output: Any=True, shell: Any=Tru...
-                    ^
-Found 1 error in 1 file (errors prevented further checking)

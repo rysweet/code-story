@@ -11,13 +11,16 @@ from pydantic import BaseModel, ConfigDict
 
 class ToolParameters(BaseModel):
     """Base model for tool parameters."""
-    model_config = ConfigDict(extra='forbid')
+
+    model_config = ConfigDict(extra="forbid")
+
 
 class BaseTool(ABC):
     """Base class for all MCP tools.
 
     All tools must inherit from this class and implement the __call__ method.
     """
+
     name: ClassVar[str]
     description: ClassVar[str]
     parameters: ClassVar[dict[str, Any]]
@@ -52,16 +55,25 @@ class BaseTool(ABC):
             HTTPException: If parameters are invalid
         """
         required_params = []
-        if 'properties' in self.parameters and 'required' in self.parameters:
-            required_params = self.parameters['required']
+        if "properties" in self.parameters and "required" in self.parameters:
+            required_params = self.parameters["required"]
         for param_name in required_params:
             if param_name not in params:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Missing required parameter: {param_name}')
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Missing required parameter: {param_name}",
+                )
+
 
 class ToolError(Exception):
     """Error during tool execution."""
 
-    def __init__(self: Any, message: str, status_code: int=status.HTTP_500_INTERNAL_SERVER_ERROR, error_code: str | None=None) -> None:
+    def __init__(
+        self: Any,
+        message: str,
+        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+        error_code: str | None = None,
+    ) -> None:
         """Initialize the error.
 
         Args:

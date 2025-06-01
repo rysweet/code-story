@@ -1,6 +1,6 @@
 from typing import Any
 
-'Document finder for locating documentation files in repositories.\n\nThis module provides functionality for locating documentation files\nwithin a repository, including Markdown files, README files, and\ndocumentation within code files.\n'
+"Document finder for locating documentation files in repositories.\n\nThis module provides functionality for locating documentation files\nwithin a repository, including Markdown files, README files, and\ndocumentation within code files.\n"
 import logging
 import os
 import re
@@ -10,6 +10,7 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 from .models import DocumentationFile, DocumentType
 
 logger = logging.getLogger(__name__)
+
 
 class DocumentFinder:
     """Locates documentation files in a repository.
@@ -28,11 +29,35 @@ class DocumentFinder:
         """
         self.connector = connector
         self.repository_path = repository_path
-        self.doc_extensions = {'.md': DocumentType.MARKDOWN, '.markdown': DocumentType.MARKDOWN, '.rst': DocumentType.RESTRUCTURED_TEXT, '.txt': DocumentType.OTHER}
-        self.doc_filenames = {'readme': DocumentType.README, 'contributing': DocumentType.DEVELOPER_GUIDE, 'changelog': DocumentType.DEVELOPER_GUIDE, 'license': DocumentType.OTHER, 'authors': DocumentType.OTHER, 'api': DocumentType.API_DOC, 'tutorial': DocumentType.TUTORIAL, 'guide': DocumentType.USER_GUIDE, 'docs': DocumentType.OTHER}
-        self.doc_directories = {'docs', 'doc', 'documentation', 'wiki', 'guides', 'tutorials'}
+        self.doc_extensions = {
+            ".md": DocumentType.MARKDOWN,
+            ".markdown": DocumentType.MARKDOWN,
+            ".rst": DocumentType.RESTRUCTURED_TEXT,
+            ".txt": DocumentType.OTHER,
+        }
+        self.doc_filenames = {
+            "readme": DocumentType.README,
+            "contributing": DocumentType.DEVELOPER_GUIDE,
+            "changelog": DocumentType.DEVELOPER_GUIDE,
+            "license": DocumentType.OTHER,
+            "authors": DocumentType.OTHER,
+            "api": DocumentType.API_DOC,
+            "tutorial": DocumentType.TUTORIAL,
+            "guide": DocumentType.USER_GUIDE,
+            "docs": DocumentType.OTHER,
+        }
+        self.doc_directories = {
+            "docs",
+            "doc",
+            "documentation",
+            "wiki",
+            "guides",
+            "tutorials",
+        }
 
-    def find_documentation_files(self: Any, ignore_patterns: list[str] | None=None) -> list[DocumentationFile]:
+    def find_documentation_files(
+        self: Any, ignore_patterns: list[str] | None = None
+    ) -> list[DocumentationFile]:
         """Find documentation files in the repository.
 
         Args:
@@ -46,10 +71,12 @@ class DocumentFinder:
         doc_files: list[Any] = []
         doc_files.extend(self._find_standalone_docs(ignore_regex))
         doc_files.extend(self._find_code_docstrings(ignore_regex))
-        logger.info(f'Found {len(doc_files)} documentation files in repository')
+        logger.info(f"Found {len(doc_files)} documentation files in repository")
         return doc_files
 
-    def _compile_ignore_patterns(self: Any, patterns: list[str]) -> list[re.Pattern[str]]:
+    def _compile_ignore_patterns(
+        self: Any, patterns: list[str]
+    ) -> list[re.Pattern[str]]:
         """Compile ignore patterns into regular expressions.
 
         Args:
@@ -60,14 +87,16 @@ class DocumentFinder:
         """
         result: list[Any] = []
         for pattern in patterns:
-            regex = pattern.replace('.', '\\.').replace('*', '.*').replace('?', '.')
+            regex = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".")
             try:
                 result.append(re.compile(regex))
             except re.error:
-                logger.warning(f'Invalid ignore pattern: {pattern}')
+                logger.warning(f"Invalid ignore pattern: {pattern}")
         return result
 
-    def _should_ignore(self: Any, path: str, ignore_patterns: list[re.Pattern[str]]) -> bool:
+    def _should_ignore(
+        self: Any, path: str, ignore_patterns: list[re.Pattern[str]]
+    ) -> bool:
         """Check if a path should be ignored.
 
         Args:
@@ -79,7 +108,9 @@ class DocumentFinder:
         """
         return any(pattern.search(path) for pattern in ignore_patterns)
 
-    def _find_standalone_docs(self: Any, ignore_patterns: list[re.Pattern[str]]) -> list[DocumentationFile]:
+    def _find_standalone_docs(
+        self: Any, ignore_patterns: list[re.Pattern[str]]
+    ) -> list[DocumentationFile]:
         """Find standalone documentation files (Markdown, RST, etc.).
 
         Args:
@@ -89,43 +120,52 @@ class DocumentFinder:
             List of DocumentationFile objects
         """
         result: list[Any] = []
-        query = '\n        MATCH (f:File)\n        RETURN ID(f) as id, f.path as path, f.name as name, f.extension as extension\n        '
+        query = "\n        MATCH (f:File)\n        RETURN ID(f) as id, f.path as path, f.name as name, f.extension as extension\n        "
         files = self.connector.run_query(query, fetch_all=True)
         for file_data in files:
-            file_path = file_data['path']
-            file_name = file_data['name'].lower()
-            file_extension = file_data.get('extension', '').lower()
-            file_id = str(file_data['id'])
+            file_path = file_data["path"]
+            file_name = file_data["name"].lower()
+            file_extension = file_data.get("extension", "").lower()
+            file_id = str(file_data["id"])
             if self._should_ignore(file_path, ignore_patterns):
                 continue
             doc_type = None
-            if f'.{file_extension}' in self.doc_extensions:
-                doc_type = self.doc_extensions[f'.{file_extension}']
+            if f".{file_extension}" in self.doc_extensions:
+                doc_type = self.doc_extensions[f".{file_extension}"]
             for doc_name, doc_name_type in self.doc_filenames.items():
                 if doc_name in file_name:
                     doc_type = doc_name_type
                     break
             if not doc_type:
                 for doc_dir in self.doc_directories:
-                    if f'/{doc_dir}/' in file_path.lower():
-                        if f'.{file_extension}' in self.doc_extensions:
-                            doc_type = self.doc_extensions[f'.{file_extension}']
+                    if f"/{doc_dir}/" in file_path.lower():
+                        if f".{file_extension}" in self.doc_extensions:
+                            doc_type = self.doc_extensions[f".{file_extension}"]
                         else:
                             doc_type = DocumentType.OTHER
                         break
             if doc_type:
                 absolute_path = os.path.join(self.repository_path, file_path)
                 try:
-                    with open(absolute_path, encoding='utf-8') as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
                 except Exception as e:
-                    logger.warning(f'Error reading file {absolute_path}: {e}')
-                    content = ''
-                doc_file = DocumentationFile(path=file_path, name=file_data['name'], doc_type=doc_type, content=content, file_id=file_id, metadata={'extension': file_extension})
+                    logger.warning(f"Error reading file {absolute_path}: {e}")
+                    content = ""
+                doc_file = DocumentationFile(
+                    path=file_path,
+                    name=file_data["name"],
+                    doc_type=doc_type,
+                    content=content,
+                    file_id=file_id,
+                    metadata={"extension": file_extension},
+                )
                 result.append(doc_file)
         return result
 
-    def _find_code_docstrings(self: Any, ignore_patterns: list[re.Pattern[str]]) -> list[DocumentationFile]:
+    def _find_code_docstrings(
+        self: Any, ignore_patterns: list[re.Pattern[str]]
+    ) -> list[DocumentationFile]:
         """Find documentation within code files (docstrings, comments).
 
         Args:
@@ -138,37 +178,69 @@ class DocumentFinder:
         query = '\n        MATCH (f:File)\n        WHERE f.extension IN ["py", "js", "ts", "java", "c", "cpp", "h", "hpp"]\n        RETURN ID(f) as id, f.path as path, f.name as name, f.extension as extension\n        '
         files = self.connector.run_query(query, fetch_all=True)
         for file_data in files:
-            file_path = file_data['path']
-            file_extension = file_data.get('extension', '').lower()
-            file_id = str(file_data['id'])
+            file_path = file_data["path"]
+            file_extension = file_data.get("extension", "").lower()
+            file_id = str(file_data["id"])
             if self._should_ignore(file_path, ignore_patterns):
                 continue
             absolute_path = os.path.join(self.repository_path, file_path)
-            if file_extension == 'py':
+            if file_extension == "py":
                 try:
-                    with open(absolute_path, encoding='utf-8') as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
                         if '"""' in content or "'''" in content:
-                            doc_file = DocumentationFile(path=file_path, name=file_data['name'], doc_type=DocumentType.DOCSTRING, content=content, file_id=file_id, metadata={'extension': file_extension, 'source_type': 'python'})
+                            doc_file = DocumentationFile(
+                                path=file_path,
+                                name=file_data["name"],
+                                doc_type=DocumentType.DOCSTRING,
+                                content=content,
+                                file_id=file_id,
+                                metadata={
+                                    "extension": file_extension,
+                                    "source_type": "python",
+                                },
+                            )
                             result.append(doc_file)
                 except Exception as e:
-                    logger.warning(f'Error reading file {absolute_path}: {e}')
-            elif file_extension in ['js', 'ts']:
+                    logger.warning(f"Error reading file {absolute_path}: {e}")
+            elif file_extension in ["js", "ts"]:
                 try:
-                    with open(absolute_path, encoding='utf-8') as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
-                        if '/**' in content and '*/' in content:
-                            doc_file = DocumentationFile(path=file_path, name=file_data['name'], doc_type=DocumentType.DOCSTRING, content=content, file_id=file_id, metadata={'extension': file_extension, 'source_type': 'javascript' if file_extension == 'js' else 'typescript'})
+                        if "/**" in content and "*/" in content:
+                            doc_file = DocumentationFile(
+                                path=file_path,
+                                name=file_data["name"],
+                                doc_type=DocumentType.DOCSTRING,
+                                content=content,
+                                file_id=file_id,
+                                metadata={
+                                    "extension": file_extension,
+                                    "source_type": "javascript"
+                                    if file_extension == "js"
+                                    else "typescript",
+                                },
+                            )
                             result.append(doc_file)
                 except Exception as e:
-                    logger.warning(f'Error reading file {absolute_path}: {e}')
-            elif file_extension in ['java', 'c', 'cpp', 'h', 'hpp']:
+                    logger.warning(f"Error reading file {absolute_path}: {e}")
+            elif file_extension in ["java", "c", "cpp", "h", "hpp"]:
                 try:
-                    with open(absolute_path, encoding='utf-8') as f:
+                    with open(absolute_path, encoding="utf-8") as f:
                         content = f.read()
-                        if '/**' in content and '*/' in content:
-                            doc_file = DocumentationFile(path=file_path, name=file_data['name'], doc_type=DocumentType.DOCSTRING, content=content, file_id=file_id, metadata={'extension': file_extension, 'source_type': file_extension})
+                        if "/**" in content and "*/" in content:
+                            doc_file = DocumentationFile(
+                                path=file_path,
+                                name=file_data["name"],
+                                doc_type=DocumentType.DOCSTRING,
+                                content=content,
+                                file_id=file_id,
+                                metadata={
+                                    "extension": file_extension,
+                                    "source_type": file_extension,
+                                },
+                            )
                             result.append(doc_file)
                 except Exception as e:
-                    logger.warning(f'Error reading file {absolute_path}: {e}')
+                    logger.warning(f"Error reading file {absolute_path}: {e}")
         return result

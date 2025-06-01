@@ -216,8 +216,12 @@ async def ask_question(
     description="Generate an interactive HTML visualization of the code graph.",
 )
 async def generate_visualization(
-    type: VisualizationType = Query(VisualizationType.FORCE, description="Type of visualization"),
-    theme: VisualizationTheme = Query(VisualizationTheme.AUTO, description="Color theme"),
+    type: VisualizationType = Query(
+        VisualizationType.FORCE, description="Type of visualization"
+    ),
+    theme: VisualizationTheme = Query(
+        VisualizationTheme.AUTO, description="Color theme"
+    ),
     focus_node_id: str | None = Query(None, description="Node ID to focus on"),
     depth: int = Query(
         2, description="Depth of relationships to include from focus node", ge=1, le=5
@@ -264,7 +268,10 @@ async def generate_visualization(
 
         # Create visualization request
         has_custom_filter = (
-            parsed_node_types or search_query is not None or max_nodes != 100 or include_orphans
+            parsed_node_types
+            or search_query is not None
+            or max_nodes != 100
+            or include_orphans
         )
 
         # Import NodeFilter here to avoid circular imports
@@ -387,7 +394,9 @@ async def clear_database(
         HTTPException: If the operation fails or user lacks permissions
     """
     try:
-        logger.warning(f"Database clear requested by user: {user.get('name', 'unknown')}")
+        logger.warning(
+            f"Database clear requested by user: {user.get('name', 'unknown')}"
+        )
         return await graph_service.clear_database(request)
     except Exception as e:
         logger.error(f"Error clearing database: {e!s}")

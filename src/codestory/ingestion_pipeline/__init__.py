@@ -9,7 +9,8 @@ from typing import Any
 from .manager import PipelineManager
 from .step import PipelineStep, StepStatus
 
-__all__ = ['PipelineManager', 'PipelineStep', 'StepStatus']
+__all__ = ["PipelineManager", "PipelineStep", "StepStatus"]
+
 
 def main() -> None:
     """Entry point for running the module.
@@ -17,6 +18,9 @@ def main() -> None:
     This allows running with 'python -m codestory.ingestion_pipeline'
     """
     from .run_worker import main as run_worker_main
+
     run_worker_main()
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

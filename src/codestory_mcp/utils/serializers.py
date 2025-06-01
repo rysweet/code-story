@@ -101,11 +101,15 @@ class NodeSerializer:
             if isinstance(item, tuple):
                 node, score = item
                 matches.append(
-                    NodeSerializer.to_dict(node, score, include_properties, exclude_properties)
+                    NodeSerializer.to_dict(
+                        node, score, include_properties, exclude_properties
+                    )
                 )
             else:
                 matches.append(
-                    NodeSerializer.to_dict(item, None, include_properties, exclude_properties)
+                    NodeSerializer.to_dict(
+                        item, None, include_properties, exclude_properties
+                    )
                 )
 
         return {"matches": matches}
@@ -136,9 +140,17 @@ class RelationshipSerializer:
         """
         # Start with basic identification
         # Fix: Add proper null checks for start_node and end_node
-        start_node_id = str(relationship.start_node.id) if relationship.start_node is not None else "unknown"
-        end_node_id = str(relationship.end_node.id) if relationship.end_node is not None else "unknown"
-        
+        start_node_id = (
+            str(relationship.start_node.id)
+            if relationship.start_node is not None
+            else "unknown"
+        )
+        end_node_id = (
+            str(relationship.end_node.id)
+            if relationship.end_node is not None
+            else "unknown"
+        )
+
         result: dict[str, Any] = {
             "id": str(relationship.id),
             "type": relationship.type,
@@ -212,7 +224,9 @@ class RelationshipSerializer:
                             {
                                 "element_type": "relationship",
                                 **RelationshipSerializer.to_dict(
-                                    element, include_rel_properties, exclude_rel_properties
+                                    element,
+                                    include_rel_properties,
+                                    exclude_rel_properties,
                                 ),
                             }
                         )

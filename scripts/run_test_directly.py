@@ -30,15 +30,21 @@ def create_sample_repo():
 
         # Create some files
         (repo_dir / "README.md").write_text("# Sample Repository")
-        (repo_dir / "src" / "main" / "app.py").write_text("def main():\n    print('Hello, world!')")
-        (repo_dir / "src" / "test" / "test_app.py").write_text("def test_main():\n    assert True")
+        (repo_dir / "src" / "main" / "app.py").write_text(
+            "def main():\n    print('Hello, world!')"
+        )
+        (repo_dir / "src" / "test" / "test_app.py").write_text(
+            "def test_main():\n    assert True"
+        )
         (repo_dir / "docs" / "index.md").write_text("# Documentation")
 
         # Add some files that should be ignored
         (repo_dir / ".git").mkdir()
         (repo_dir / ".git" / "config").write_text("# Git config")
         (repo_dir / "src" / "__pycache__").mkdir()
-        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text("# Bytecode")
+        (repo_dir / "src" / "__pycache__" / "app.cpython-310.pyc").write_text(
+            "# Bytecode"
+        )
 
         return str(repo_dir)
 

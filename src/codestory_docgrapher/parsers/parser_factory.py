@@ -1,12 +1,13 @@
 from collections.abc import Callable
 from typing import Dict, Optional, Type
 
-'Parser factory for creating appropriate parsers for different document types.\n\nThis module provides a factory for creating the appropriate parser based on\nthe type of documentation file.\n'
+"Parser factory for creating appropriate parsers for different document types.\n\nThis module provides a factory for creating the appropriate parser based on\nthe type of documentation file.\n"
 import logging
 
 from ..models import DocumentationFile, DocumentType
 
 logger = logging.getLogger(__name__)
+
 
 class Parser:
     """Base class for document parsers.
@@ -23,13 +24,15 @@ class Parser:
         Returns:
             Dict containing extracted entities and relationships
         """
-        raise NotImplementedError('Subclasses must implement parse()')
+        raise NotImplementedError("Subclasses must implement parse()")
+
 
 class ParserFactory:
     """Factory for creating parsers based on document type.
 
     This class creates the appropriate parser for a given document type.
     """
+
     _parsers: Dict[DocumentType, Type[Parser]] = {}
 
     @classmethod
@@ -48,6 +51,7 @@ class ParserFactory:
         def decorator(parser_class: Type[Parser]) -> Type[Parser]:
             cls._parsers[doc_type] = parser_class
             return parser_class
+
         return decorator
 
     @classmethod
@@ -62,9 +66,10 @@ class ParserFactory:
         """
         parser_class = cls._parsers.get(doc_type)
         if parser_class is None:
-            logger.warning(f'No parser registered for document type: {doc_type}')
+            logger.warning(f"No parser registered for document type: {doc_type}")
             return None
         return parser_class()
+
 
 def get_parser_for_file(document: DocumentationFile) -> Optional[Parser]:
     """Get a parser for the given documentation file.

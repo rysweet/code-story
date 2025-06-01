@@ -31,7 +31,9 @@ def main():
 
     # Print configuration info - mask tenant and subscription IDs
     if tenant_id:
-        tenant_id_masked = tenant_id[:4] + "..." + tenant_id[-4:] if len(tenant_id) > 8 else "..."
+        tenant_id_masked = (
+            tenant_id[:4] + "..." + tenant_id[-4:] if len(tenant_id) > 8 else "..."
+        )
     else:
         tenant_id_masked = "[Not set]"
 
@@ -44,13 +46,15 @@ def main():
     else:
         subscription_id_masked = "[Not set]"
 
-    print("Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script")
+    print(
+        "Note: Make sure you've run 'az login --tenant <tenant-id>' before running this script"
+    )
     print("Note: The script will attempt to set subscription if configured")
     print(f"Endpoint: {os.environ.get('OPENAI__ENDPOINT')}")
     print(f"Tenant ID: {tenant_id_masked}")
     print(f"Subscription ID: {subscription_id_masked}")
-    chat_model = os.environ.get('OPENAI__CHAT_MODEL')
-    reasoning_model = os.environ.get('OPENAI__REASONING_MODEL')
+    chat_model = os.environ.get("OPENAI__CHAT_MODEL")
+    reasoning_model = os.environ.get("OPENAI__REASONING_MODEL")
     print(f"Models: {chat_model} (chat), {reasoning_model} (reasoning)")
 
     try:
@@ -60,7 +64,9 @@ def main():
         # Test chat
         messages = [
             ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
-            ChatMessage(role=ChatRole.USER, content="Hello, what's the capital of France?"),
+            ChatMessage(
+                role=ChatRole.USER, content="Hello, what's the capital of France?"
+            ),
         ]
 
         print("\nSending chat request...")

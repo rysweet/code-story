@@ -4,7 +4,7 @@ import os
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import tomli
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
@@ -129,6 +129,38 @@ class PluginSettings(BaseModel):
         description="List of enabled plugins",
     )
     plugin_directory: str = Field("plugins", description="Directory for plugin discovery")
+
+    @field_validator("enabled", mode="before")
+    @classmethod
+    def coerce_enabled(cls: type["PluginSettings"], v: object) -> list[str]:
+        """
+        Coerce a comma-separated string or other input to a list of strings.
+
+        Raise ValueError if not possible.
+        """
+        if isinstance(v, str):
+            # Accept comma or semicolon separated
+            v_list = [s.strip() for s in v.split(",") if s.strip()]
+            if not v_list:
+                raise ValueError("PLUGINS__ENABLED must not be empty")
+            return v_list
+        if isinstance(v, list):
+            if not all(isinstance(i, str) for i in v):
+                raise ValueError("PLUGINS__ENABLED must be a list of strings")
+            return cast("list[str]", v)
+        raise ValueError(f"Invalid value for PLUGINS__ENABLED: {v!r}. Must be a list of plugin names (list[str]) or a comma-separated string.")
+
+    @model_validator(mode="after")
+    def validate_enabled_model(self) -> "PluginSettings":
+        """
+        Ensure enabled is always a list of strings after all parsing/coercion.
+        """
+        enabled = self.enabled
+        if not isinstance(enabled, list) or not all(isinstance(i, str) for i in enabled):
+            raise ValueError(
+                f"Invalid value for PLUGINS__ENABLED: {enabled!r}. Must be a list of plugin names (list[str])."
+            )
+        return self
 
 
 class TelemetrySettings(BaseModel):

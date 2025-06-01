@@ -1,6 +1,6 @@
 from typing import Any
 
-'ResourceTokenManager for ingestion resource throttling using Redis.'
+"ResourceTokenManager for ingestion resource throttling using Redis."
 import logging
 import os
 import time
@@ -9,12 +9,20 @@ import redis
 
 logger = logging.getLogger(__name__)
 
+
 class ResourceTokenManager:
     """
     Implements a simple token bucket using Redis to throttle concurrent resource usage.
     """
 
-    def __init__(self: Any, redis_url: str, token_key: str='codestory:ingestion:resource_tokens', max_tokens: int=4, acquire_timeout: int=30, token_ttl: int=3600) -> None:
+    def __init__(
+        self: Any,
+        redis_url: str,
+        token_key: str = "codestory:ingestion:resource_tokens",
+        max_tokens: int = 4,
+        acquire_timeout: int = 30,
+        token_ttl: int = 3600,
+    ) -> None:
         self.redis_url = redis_url
         self.token_key = token_key
         self.max_tokens = max_tokens
@@ -28,7 +36,7 @@ class ResourceTokenManager:
         """
         if not self.redis.exists(self.token_key):
             self.redis.set(self.token_key, self.max_tokens, ex=self.token_ttl)
-            logger.info(f'Initialized resource tokens: {self.max_tokens}')
+            logger.info(f"Initialized resource tokens: {self.max_tokens}")
 
     def acquire_token(self: Any) -> bool:
         """
@@ -47,13 +55,13 @@ class ResourceTokenManager:
                         pipe.multi()
                         pipe.decr(self.token_key)
                         pipe.execute()
-                        logger.info('Acquired resource token')
+                        logger.info("Acquired resource token")
                         return True
                     pipe.unwatch()
                 except redis.WatchError:
                     continue
             time.sleep(0.5)
-        logger.warning('Failed to acquire resource token: timeout')
+        logger.warning("Failed to acquire resource token: timeout")
         return False
 
     def release_token(self: Any) -> None:
@@ -69,7 +77,7 @@ class ResourceTokenManager:
                         pipe.multi()
                         pipe.incr(self.token_key)
                         pipe.execute()
-                        logger.info('Released resource token')
+                        logger.info("Released resource token")
                         break
                     else:
                         pipe.unwatch()
@@ -83,4 +91,4 @@ class ResourceTokenManager:
         """
         self.initialize_tokens()
         tokens = int(self.redis.get(self.token_key) or 0)
-        return {'available_tokens': tokens, 'max_tokens': self.max_tokens}
+        return {"available_tokens": tokens, "max_tokens": self.max_tokens}

@@ -115,7 +115,9 @@ def test_transaction_management(neo4j_connector: Neo4jConnector) -> None:
     assert len(results) == 3
 
     # Verify all nodes were created
-    count_result = neo4j_connector.execute_query("MATCH (n:Test) RETURN count(n) AS count")
+    count_result = neo4j_connector.execute_query(
+        "MATCH (n:Test) RETURN count(n) AS count"
+    )
     assert count_result[0]["count"] == 3
 
 
@@ -135,7 +137,9 @@ def test_transaction_rollback(neo4j_connector: Neo4jConnector) -> None:
         neo4j_connector.execute_many(queries, params_list, write=True)
 
     # Verify no nodes were created (transaction rolled back)
-    count_result = neo4j_connector.execute_query("MATCH (n:TestRollback) RETURN count(n) AS count")
+    count_result = neo4j_connector.execute_query(
+        "MATCH (n:TestRollback) RETURN count(n) AS count"
+    )
     assert count_result[0]["count"] == 0
 
 

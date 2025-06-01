@@ -72,7 +72,7 @@ class IngestionRequest(BaseModel):
     dependencies: list[str] | None = Field(
         None,
         description="List of job IDs or step names this job depends on. "
-                    "Job will not start until all dependencies are complete.",
+        "Job will not start until all dependencies are complete.",
     )
     config: dict[str, Any] | None = Field(
         None,
@@ -193,7 +193,10 @@ class IngestionRequest(BaseModel):
             ValueError: If the model is invalid
         """
         # If branch is specified, it should only be for Git sources
-        if self.branch is not None and self.source_type == IngestionSourceType.LOCAL_PATH:
+        if (
+            self.branch is not None
+            and self.source_type == IngestionSourceType.LOCAL_PATH
+        ):
             raise ValueError("Branch can only be specified for Git repositories")
 
         return self
@@ -208,7 +211,9 @@ class IngestionStarted(BaseModel):
     started_at: datetime = Field(default_factory=datetime.now, description="Start time")
     steps: list[str] = Field(..., description="Steps to be executed")
     message: str | None = Field(None, description="Status message")
-    eta: int | None = Field(None, description="Estimated time of start (unix timestamp)")
+    eta: int | None = Field(
+        None, description="Estimated time of start (unix timestamp)"
+    )
 
     @field_serializer("started_at")
     def serialize_dt(self, dt: datetime, _info: Any) -> str | None:
@@ -241,10 +246,18 @@ class StepProgress(BaseModel):
     started_at: datetime | None = Field(None, description="Start time")
     completed_at: datetime | None = Field(None, description="Completion time")
     duration: float | None = Field(None, description="Duration in seconds")
-    cpu_percent: float | None = Field(None, description="CPU usage percent for the step process")
-    memory_mb: float | None = Field(None, description="Memory usage (MB) for the step process")
-    retry_count: int | None = Field(None, description="Number of retry attempts for this step")
-    last_error: str | None = Field(None, description="Last error message for this step, if any")
+    cpu_percent: float | None = Field(
+        None, description="CPU usage percent for the step process"
+    )
+    memory_mb: float | None = Field(
+        None, description="Memory usage (MB) for the step process"
+    )
+    retry_count: int | None = Field(
+        None, description="Number of retry attempts for this step"
+    )
+    last_error: str | None = Field(
+        None, description="Last error message for this step, if any"
+    )
 
     @field_serializer("started_at", "completed_at")
     def serialize_dt(self, dt: datetime, _info: Any) -> str | None:
@@ -258,7 +271,9 @@ class IngestionJob(BaseModel):
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatus = Field(..., description="Overall job status")
     source: str | None = Field(None, description="Source being ingested")
-    source_type: IngestionSourceType | None = Field(None, description="Type of ingestion source")
+    source_type: IngestionSourceType | None = Field(
+        None, description="Type of ingestion source"
+    )
     branch: str | None = Field(None, description="Branch name if applicable")
     progress: float = Field(..., description="Overall progress percentage (0-100)")
     created_at: int | None = Field(None, description="Creation timestamp")
@@ -298,14 +313,16 @@ class IngestionJob(BaseModel):
         if self.steps and isinstance(self.steps, dict):
             # Only include steps that have started
             active_steps = {
-                name: step for name, step in self.steps.items() if step.status != StepStatus.PENDING
+                name: step
+                for name, step in self.steps.items()
+                if step.status != StepStatus.PENDING
             }
 
             if active_steps:
                 # Simple average for now - could be weighted in the future
-                self.progress = sum(step.progress for step in active_steps.values()) / len(
-                    active_steps
-                )
+                self.progress = sum(
+                    step.progress for step in active_steps.values()
+                ) / len(active_steps)
 
             # If all steps are completed, ensure progress is 100%
             if all(step.status == StepStatus.COMPLETED for step in self.steps.values()):
@@ -333,8 +350,12 @@ class JobProgressEvent(BaseModel):
     progress: float = Field(..., description="Progress percentage (0-100)")
     overall_progress: float = Field(..., description="Overall job progress")
     message: str | None = Field(None, description="Status message")
-    cpu_percent: float | None = Field(None, description="CPU usage percent for the job process")
-    memory_mb: float | None = Field(None, description="Memory usage (MB) for the job process")
+    cpu_percent: float | None = Field(
+        None, description="CPU usage percent for the job process"
+    )
+    memory_mb: float | None = Field(
+        None, description="Memory usage (MB) for the job process"
+    )
     timestamp: float = Field(default_factory=time.time, description="Event timestamp")
 
 
@@ -342,7 +363,9 @@ class PaginationParams(BaseModel):
     """Pagination parameters for list endpoints."""
 
     offset: int = Field(0, description="Number of items to skip", ge=0)
-    limit: int = Field(10, description="Maximum number of items to return", ge=1, le=100)
+    limit: int = Field(
+        10, description="Maximum number of items to return", ge=1, le=100
+    )
 
 
 class PaginatedResponse(BaseModel):

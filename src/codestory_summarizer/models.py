@@ -1,6 +1,6 @@
 from typing import Any
 
-'Data models for summaries and intermediate representations.\n\nThis module defines the data models used by the Summarizer workflow step\nfor representing summaries and tracking processing state.\n'
+"Data models for summaries and intermediate representations.\n\nThis module defines the data models used by the Summarizer workflow step\nfor representing summaries and tracking processing state.\n"
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -8,27 +8,32 @@ from pydantic import BaseModel, Field
 
 class NodeType(str, Enum):
     """Types of nodes that can be summarized."""
-    REPOSITORY = 'Repository'
-    DIRECTORY = 'Directory'
-    FILE = 'File'
-    CLASS = 'Class'
-    FUNCTION = 'Function'
-    METHOD = 'Method'
-    MODULE = 'Module'
-    VARIABLE = 'Variable'
-    NAMESPACE = 'Namespace'
+
+    REPOSITORY = "Repository"
+    DIRECTORY = "Directory"
+    FILE = "File"
+    CLASS = "Class"
+    FUNCTION = "Function"
+    METHOD = "Method"
+    MODULE = "Module"
+    VARIABLE = "Variable"
+    NAMESPACE = "Namespace"
+
 
 class ProcessingStatus(str, Enum):
     """Status of a node in the summarization process."""
-    PENDING = 'pending'
-    READY = 'ready'
-    PROCESSING = 'processing'
-    COMPLETED = 'completed'
-    FAILED = 'failed'
-    SKIPPED = 'skipped'
+
+    PENDING = "pending"
+    READY = "ready"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
 
 class NodeData(BaseModel):
     """Data for a node in the dependency graph."""
+
     id: str
     name: str
     type: NodeType
@@ -38,8 +43,10 @@ class NodeData(BaseModel):
     dependents: set[str] = Field(default_factory=set)
     properties: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
+
 class SummaryData(BaseModel):
     """Data for a generated summary."""
+
     node_id: str
     node_type: NodeType
     summary: str
@@ -48,8 +55,10 @@ class SummaryData(BaseModel):
     confidence: float = 1.0
     metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
+
 class DependencyGraph(BaseModel):
     """Represents the dependency graph of nodes to be summarized."""
+
     nodes: dict[str, NodeData] = Field(default_factory=dict)
     leaf_nodes: set[str] = Field(default_factory=set)
     root_nodes: set[str] = Field(default_factory=set)
@@ -123,7 +132,10 @@ class DependencyGraph(BaseModel):
                 if dep_id not in self.nodes:
                     continue
                 dep_status = self.nodes[dep_id].status
-                if dep_status not in (ProcessingStatus.COMPLETED, ProcessingStatus.SKIPPED):
+                if dep_status not in (
+                    ProcessingStatus.COMPLETED,
+                    ProcessingStatus.SKIPPED,
+                ):
                     dependencies_processed = False
                     break
             if dependencies_processed:

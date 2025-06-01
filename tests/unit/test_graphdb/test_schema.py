@@ -47,7 +47,9 @@ def test_get_vector_index_query() -> None:
     assert '`vector.similarity_function`: "cosine"' in query
 
     # Test with custom parameters
-    query = get_vector_index_query("CustomLabel", "vectors", dimensions=768, similarity="euclidean")
+    query = get_vector_index_query(
+        "CustomLabel", "vectors", dimensions=768, similarity="euclidean"
+    )
     assert "CREATE VECTOR INDEX customlabel_vectors_vector_idx" in query
     assert "FOR (n:CustomLabel)" in query
     assert "ON (n.vectors)" in query
@@ -79,11 +81,17 @@ def test_get_all_schema_elements() -> None:
     assert any("file_content" in idx for idx in schema_elements["fulltext_indexes"])
     assert any("code_name" in idx for idx in schema_elements["fulltext_indexes"])
 
-    assert any("file_extension_idx" in idx for idx in schema_elements["property_indexes"])
-
-    assert any("Summary" in idx and "embedding" in idx for idx in schema_elements["vector_indexes"])
     assert any(
-        "Documentation" in idx and "embedding" in idx for idx in schema_elements["vector_indexes"]
+        "file_extension_idx" in idx for idx in schema_elements["property_indexes"]
+    )
+
+    assert any(
+        "Summary" in idx and "embedding" in idx
+        for idx in schema_elements["vector_indexes"]
+    )
+    assert any(
+        "Documentation" in idx and "embedding" in idx
+        for idx in schema_elements["vector_indexes"]
     )
 
 

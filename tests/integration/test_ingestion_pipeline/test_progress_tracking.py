@@ -125,7 +125,9 @@ def mock_step_progress() -> Generator[dict[str, Any], None, None]:
 
         # Create side effect functions to return progress values in sequence
         def fs_side_effect(self: Any, job_id: str) -> dict[str, Any]:
-            progress = fs_progress[min(len(progress_updates["filesystem"]), len(fs_progress) - 1)]
+            progress = fs_progress[
+                min(len(progress_updates["filesystem"]), len(fs_progress) - 1)
+            ]
             progress_updates["filesystem"].append(progress)
             return progress
 
@@ -162,7 +164,9 @@ def mock_step_progress() -> Generator[dict[str, Any], None, None]:
 def pipeline_manager() -> Generator[PipelineManager, None, None]:
     """Create a pipeline manager with mock step implementations."""
     # Mock the orchestrate_pipeline task
-    with patch("codestory.ingestion_pipeline.tasks.orchestrate_pipeline") as mock_orchestrate:
+    with patch(
+        "codestory.ingestion_pipeline.tasks.orchestrate_pipeline"
+    ) as mock_orchestrate:
         # Set up a return value that includes job_id and status
         mock_orchestrate.return_value = {
             "status": StepStatus.RUNNING,
@@ -188,7 +192,9 @@ def pipeline_manager() -> Generator[PipelineManager, None, None]:
         yield manager
 
 
-def test_step_progress_reporting(sample_repo: str, mock_step_progress: dict[str, Any]) -> None:
+def test_step_progress_reporting(
+    sample_repo: str, mock_step_progress: dict[str, Any]
+) -> None:
     """Test that individual steps correctly report progress."""
     # Create step instances
     fs_step = FileSystemStep()
@@ -219,10 +225,16 @@ def test_step_progress_reporting(sample_repo: str, mock_step_progress: dict[str,
         # Verify resource usage fields are present (may be None)
         assert "cpu_percent" in fs_status, "Filesystem step should include cpu_percent"
         assert "memory_mb" in fs_status, "Filesystem step should include memory_mb"
-        assert "cpu_percent" in blarify_status, "Blarify step should include cpu_percent"
+        assert (
+            "cpu_percent" in blarify_status
+        ), "Blarify step should include cpu_percent"
         assert "memory_mb" in blarify_status, "Blarify step should include memory_mb"
-        assert "cpu_percent" in summarizer_status, "Summarizer step should include cpu_percent"
-        assert "memory_mb" in summarizer_status, "Summarizer step should include memory_mb"
+        assert (
+            "cpu_percent" in summarizer_status
+        ), "Summarizer step should include cpu_percent"
+        assert (
+            "memory_mb" in summarizer_status
+        ), "Summarizer step should include memory_mb"
 
         time.sleep(0.1)  # Small delay between status checks
 
@@ -242,10 +254,14 @@ def test_step_progress_reporting(sample_repo: str, mock_step_progress: dict[str,
         assert (
             updates[-1]["status"] == StepStatus.COMPLETED
         ), f"{step_name} final status should be COMPLETED"
-        assert updates[-1]["progress"] == 100, f"{step_name} final progress should be 100%"
+        assert (
+            updates[-1]["progress"] == 100
+        ), f"{step_name} final progress should be 100%"
 
 
-def test_pipeline_overall_progress(sample_repo: str, pipeline_manager: PipelineManager) -> None:
+def test_pipeline_overall_progress(
+    sample_repo: str, pipeline_manager: PipelineManager
+) -> None:
     """Test that the pipeline manager correctly calculates overall progress."""
     # Create status sequences for three steps
     fs_statuses = [
@@ -318,7 +334,9 @@ def test_pipeline_overall_progress(sample_repo: str, pipeline_manager: PipelineM
                 active_weight_sum += summarizer_weight
 
             # Calculate progress as a percentage of active steps
-            overall_progress = active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
+            overall_progress = (
+                active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
+            )
 
         # Determine overall status
         if all(
@@ -327,7 +345,8 @@ def test_pipeline_overall_progress(sample_repo: str, pipeline_manager: PipelineM
         ):
             overall_status = StepStatus.COMPLETED
         elif any(
-            s["status"] == StepStatus.FAILED for s in [fs_status, blarify_status, summarizer_status]
+            s["status"] == StepStatus.FAILED
+            for s in [fs_status, blarify_status, summarizer_status]
         ):
             overall_status = StepStatus.FAILED
         elif any(
@@ -369,9 +388,15 @@ def test_pipeline_overall_progress(sample_repo: str, pipeline_manager: PipelineM
         # Verify that status includes the right fields
         assert "progress" in status, "Pipeline status should include progress"
         assert "steps" in status, "Pipeline status should include steps"
-        assert "filesystem" in status["steps"], "Pipeline status should include filesystem step"
-        assert "blarify" in status["steps"], "Pipeline status should include blarify step"
-        assert "summarizer" in status["steps"], "Pipeline status should include summarizer step"
+        assert (
+            "filesystem" in status["steps"]
+        ), "Pipeline status should include filesystem step"
+        assert (
+            "blarify" in status["steps"]
+        ), "Pipeline status should include blarify step"
+        assert (
+            "summarizer" in status["steps"]
+        ), "Pipeline status should include summarizer step"
 
     # Verify that overall progress increased
     assert (
@@ -441,7 +466,9 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
 
         # Verify final status is FAILED
         final_status = statuses[2]
-        assert final_status["status"] == StepStatus.FAILED, "Final status should be FAILED"
+        assert (
+            final_status["status"] == StepStatus.FAILED
+        ), "Final status should be FAILED"
         assert "error" in final_status, "Failed status should include error message"
         assert (
             final_status["error"] == "Container execution failed"
@@ -453,7 +480,9 @@ def test_progress_for_failed_step(sample_repo: str) -> None:
         ), "Progress should be the last reported value before failure"
 
 
-def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: PipelineManager) -> None:
+def test_progress_with_parallel_steps(
+    sample_repo: str, pipeline_manager: PipelineManager
+) -> None:
     """Test that progress is correctly tracked when steps are running in parallel."""
     # Create status sequences for parallel-running steps
     # In this scenario, filesystem and blarify are running concurrently
@@ -529,7 +558,9 @@ def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: Pipeli
                 active_weight_sum += summarizer_weight
 
             # Calculate progress as a percentage of active steps
-            overall_progress = active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
+            overall_progress = (
+                active_progress / active_weight_sum if active_weight_sum > 0 else 0.0
+            )
 
         # Determine overall status
         if all(
@@ -538,7 +569,8 @@ def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: Pipeli
         ):
             overall_status = StepStatus.COMPLETED
         elif any(
-            s["status"] == StepStatus.FAILED for s in [fs_status, blarify_status, summarizer_status]
+            s["status"] == StepStatus.FAILED
+            for s in [fs_status, blarify_status, summarizer_status]
         ):
             overall_status = StepStatus.FAILED
         elif any(
@@ -580,9 +612,12 @@ def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: Pipeli
     # Expected progress = (25 * 0.33 + 20 * 0.33) / (0.33 + 0.33) ≈ 22.5% for first check
     # Expected progress increases with each check
     expected_progress = [
-        (0.0 * fs_weight + 0.0 * blarify_weight) / (fs_weight + blarify_weight),  # Initial progress
-        (25.0 * fs_weight + 20.0 * blarify_weight) / (fs_weight + blarify_weight),  # Second check
-        (50.0 * fs_weight + 40.0 * blarify_weight) / (fs_weight + blarify_weight),  # Third check
+        (0.0 * fs_weight + 0.0 * blarify_weight)
+        / (fs_weight + blarify_weight),  # Initial progress
+        (25.0 * fs_weight + 20.0 * blarify_weight)
+        / (fs_weight + blarify_weight),  # Second check
+        (50.0 * fs_weight + 40.0 * blarify_weight)
+        / (fs_weight + blarify_weight),  # Third check
         # Fourth check includes all three steps
         (75.0 * fs_weight + 80.0 * blarify_weight + 50.0 * summarizer_weight)
         / (fs_weight + blarify_weight + summarizer_weight),
@@ -597,9 +632,7 @@ def test_progress_with_parallel_steps(sample_repo: str, pipeline_manager: Pipeli
         progress_readings.append(status["progress"])
 
         # Verify progress is calculated correctly for parallel steps
-        assert (
-            abs(progress_readings[i] - expected_progress[i]) < 0.1
-        ), (
+        assert abs(progress_readings[i] - expected_progress[i]) < 0.1, (
             f"Progress at step {i} should be {expected_progress[i]:.1f}%, "
             f"got {progress_readings[i]:.1f}%"
         )
@@ -713,7 +746,9 @@ def test_nonlinear_progress_reporting(sample_repo: str) -> None:
 
         # Verify completion
         final_status = statuses[-1]
-        assert final_status["status"] == StepStatus.COMPLETED, "Final status should be COMPLETED"
+        assert (
+            final_status["status"] == StepStatus.COMPLETED
+        ), "Final status should be COMPLETED"
         assert final_status["progress"] == 100, "Final progress should be 100%"
 
         # Verify progress is monotonically increasing or staying the same

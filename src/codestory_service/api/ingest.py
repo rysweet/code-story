@@ -81,7 +81,9 @@ async def start_ingestion(
     description="Get a paginated list of ingestion jobs with optional filtering by status.",
 )
 async def list_jobs(
-    job_status: Union[List[JobStatus], None] = Query(None, description="Filter by job status"),
+    job_status: Union[List[JobStatus], None] = Query(
+        None, description="Filter by job status"
+    ),
     limit: int = Query(10, description="Maximum number of jobs to return"),
     offset: int = Query(0, description="Number of jobs to skip"),
     sort_by: str = Query("created_at", description="Field to sort by"),
@@ -209,11 +211,11 @@ async def get_resource_status(
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get the current resource token usage, limits, and recent job metrics for ingestion.
-    
+
     Args:
         ingestion_service: Ingestion service instance
         user: Current authenticated user
-        
+
     Returns:
         Dictionary containing resource status information
     """

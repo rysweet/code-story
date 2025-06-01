@@ -23,7 +23,9 @@ class TestPipelineManager:
         self._stop_event = threading.Event()
         self._job_complete = threading.Event()
 
-    def register_step(self: Any, step: PipelineStep, dependencies: list[PipelineStep] | None=None) -> None:
+    def register_step(
+        self: Any, step: PipelineStep, dependencies: list[PipelineStep] | None = None
+    ) -> None:
         """Register a step with the pipeline manager.
 
         Args:
@@ -32,8 +34,10 @@ class TestPipelineManager:
         """
         with self._lock:
             step_name = self._get_step_name(step)
-            self.steps_status[step_name] = 'pending'
-            self.dependency_graph[step_name] = [self._get_step_name(d) for d in dependencies] if dependencies else []
+            self.steps_status[step_name] = "pending"
+            self.dependency_graph[step_name] = (
+                [self._get_step_name(d) for d in dependencies] if dependencies else []
+            )
             self._step_instances[step_name] = step
 
     def start_job(self: Any, parameters: dict[str, Any]) -> str:
@@ -47,9 +51,9 @@ class TestPipelineManager:
         """
         with self._lock:
             if self._thread and self._thread.is_alive():
-                raise RuntimeError('A job is already running')
+                raise RuntimeError("A job is already running")
             self.job_parameters = parameters
-            self.steps_status = dict.fromkeys(self.dependency_graph, 'pending')
+            self.steps_status = dict.fromkeys(self.dependency_graph, "pending")
             self.steps_results = {}
             self.steps_errors = {}
             self._job_complete.clear()
@@ -65,40 +69,56 @@ class TestPipelineManager:
             remaining_steps = set(self.dependency_graph.keys())
             completed_steps: set[str] = set()
             while remaining_steps and (not self._stop_event.is_set()):
-                runnable_steps = [step for step in remaining_steps if set(self.dependency_graph[step]).issubset(completed_steps)]
+                runnable_steps = [
+                    step
+                    for step in remaining_steps
+                    if set(self.dependency_graph[step]).issubset(completed_steps)
+                ]
                 if not runnable_steps:
                     with self._lock:
                         for step in remaining_steps:
-                            self.steps_status[step] = 'failed'
-                            self.steps_errors[step] = 'Dependency cycle or missing dependencies'
+                            self.steps_status[step] = "failed"
+                            self.steps_errors[
+                                step
+                            ] = "Dependency cycle or missing dependencies"
                     break
                 for step_name in runnable_steps:
                     with self._lock:
-                        self.steps_status[step_name] = 'running'
+                        self.steps_status[step_name] = "running"
                     try:
                         step_instance = self._get_step_instance(step_name)
                         if not step_instance:
-                            raise ValueError(f'Step {step_name} not found')
-                        print(f'Running step {step_name} using parameters: {self.job_parameters}')
-                        job_id = step_instance.run(repository_path=self.job_parameters['repo_path'], **self.job_parameters)
+                            raise ValueError(f"Step {step_name} not found")
+                        print(
+                            f"Running step {step_name} using parameters: {self.job_parameters}"
+                        )
+                        job_id = step_instance.run(
+                            repository_path=self.job_parameters["repo_path"],
+                            **self.job_parameters,
+                        )
                         max_wait = 60
                         for _ in range(max_wait):
                             status = step_instance.status(job_id)
-                            if status['status'] in [StepStatus.COMPLETED, StepStatus.FAILED]:
+                            if status["status"] in [
+                                StepStatus.COMPLETED,
+                                StepStatus.FAILED,
+                            ]:
                                 break
                             time.sleep(1)
-                        if status['status'] == StepStatus.COMPLETED:
+                        if status["status"] == StepStatus.COMPLETED:
                             with self._lock:
-                                self.steps_status[step_name] = 'completed'
-                                self.steps_results[step_name] = status.get('result', {})
+                                self.steps_status[step_name] = "completed"
+                                self.steps_results[step_name] = status.get("result", {})
                                 completed_steps.add(step_name)
                                 remaining_steps.remove(step_name)
                         else:
-                            raise RuntimeError(f"Step {step_name} failed: {status.get('error', 'Unknown error')}")
+                            raise RuntimeError(
+                                f"Step {step_name} failed: {status.get('error', 'Unknown error')}"
+                            )
                     except Exception as e:
-                        print(f'Error running step {step_name}: {e}')
+                        print(f"Error running step {step_name}: {e}")
                         with self._lock:
-                            self.steps_status[step_name] = 'failed'
+                            self.steps_status[step_name] = "failed"
                             self.steps_errors[step_name] = str(e)
                             remaining_steps.remove(step_name)
                             self._propagate_failure(step_name, remaining_steps, str(e))
@@ -108,18 +128,26 @@ class TestPipelineManager:
             with self._lock:
                 for step in self.dependency_graph:
                     if step not in completed_steps:
-                        self.steps_status[step] = 'failed'
-                        self.steps_errors[step] = f'Pipeline error: {e!s}'
+                        self.steps_status[step] = "failed"
+                        self.steps_errors[step] = f"Pipeline error: {e!s}"
             self._job_complete.set()
 
-    def _propagate_failure(self: Any, failed_step: str, remaining_steps: set[str], error: str) -> None:
+    def _propagate_failure(
+        self: Any, failed_step: str, remaining_steps: set[str], error: str
+    ) -> None:
         """Mark all steps that depend on the failed step as failed."""
-        dependent_steps = [step for step in remaining_steps if failed_step in self.dependency_graph[step]]
+        dependent_steps = [
+            step
+            for step in remaining_steps
+            if failed_step in self.dependency_graph[step]
+        ]
         for step in dependent_steps:
-            self.steps_status[step] = 'failed'
+            self.steps_status[step] = "failed"
             self.steps_errors[step] = f"Dependency '{failed_step}' failed: {error}"
             remaining_steps.remove(step)
-            self._propagate_failure(step, remaining_steps, f"Dependency chain failure from '{failed_step}'")
+            self._propagate_failure(
+                step, remaining_steps, f"Dependency chain failure from '{failed_step}'"
+            )
 
     def _get_step_name(self: Any, step: PipelineStep) -> str:
         """Get a consistent name for a step instance."""
@@ -147,19 +175,34 @@ class TestPipelineManager:
             status: Job status dictionary
         """
         if job_id != self.job_id:
-            return {'status': 'not_found'}
+            return {"status": "not_found"}
         with self._lock:
-            all_completed = all(status == 'completed' for status in self.steps_status.values())
-            any_failed = any(status == 'failed' for status in self.steps_status.values())
+            all_completed = all(
+                status == "completed" for status in self.steps_status.values()
+            )
+            any_failed = any(
+                status == "failed" for status in self.steps_status.values()
+            )
             if any_failed:
-                job_status = 'failed'
+                job_status = "failed"
             elif all_completed:
-                job_status = 'completed'
+                job_status = "completed"
             else:
-                job_status = 'running'
-            return {'job_id': self.job_id, 'status': job_status, 'steps': {step: {'status': self.steps_status.get(step, 'unknown'), 'result': self.steps_results.get(step), 'error': self.steps_errors.get(step)} for step in self.dependency_graph}}
+                job_status = "running"
+            return {
+                "job_id": self.job_id,
+                "status": job_status,
+                "steps": {
+                    step: {
+                        "status": self.steps_status.get(step, "unknown"),
+                        "result": self.steps_results.get(step),
+                        "error": self.steps_errors.get(step),
+                    }
+                    for step in self.dependency_graph
+                },
+            }
 
-    def wait_for_job(self: Any, job_id: str, timeout: float | None=None) -> bool:
+    def wait_for_job(self: Any, job_id: str, timeout: float | None = None) -> bool:
         """Wait for a job to complete.
 
         Args:
@@ -196,4 +239,6 @@ class TestPipelineManager:
         This should be implemented by subclasses to return all step classes
         relevant to the test.
         """
-        raise NotImplementedError('Subclasses must implement _registered_steps to return relevant step classes')
+        raise NotImplementedError(
+            "Subclasses must implement _registered_steps to return relevant step classes"
+        )

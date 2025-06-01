@@ -23,13 +23,15 @@ def test_neo4j_connection_env_vars(use_env_check: Any, test_databases: Any) -> N
     """
     # The test_databases fixture should have started the databases and set environment variables
     db_info = test_databases
-    
+
     # Check Neo4j environment variables are set correctly for testing
     neo4j_uri = os.environ.get("NEO4J__URI")
     assert neo4j_uri is not None, "NEO4J__URI environment variable not set"
 
     # The environment variable should contain the test port 7688
-    assert "7688" in neo4j_uri, f"NEO4J__URI should use test port 7688 (got {neo4j_uri})"
+    assert (
+        "7688" in neo4j_uri
+    ), f"NEO4J__URI should use test port 7688 (got {neo4j_uri})"
 
     # Get settings to make sure they're loading properly
     settings = get_settings()

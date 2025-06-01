@@ -60,7 +60,8 @@ def test_run_step_task_name_mapping() -> None:
     # Check if the mapping contains the filesystem task with the new naming pattern
     assert "task_name_map" in source, "task_name_map not found in run_step function"
     assert (
-        "filesystem" in source and "codestory_filesystem.step.process_filesystem" in source
+        "filesystem" in source
+        and "codestory_filesystem.step.process_filesystem" in source
     ), "Filesystem task mapping not found in run_step function"
 
 
@@ -77,9 +78,7 @@ def test_step_class_task_delegation() -> None:
     assert (
         "current_app.send_task" in source
     ), "current_app.send_task not found in FileSystemStep.run method"
-    assert (
-        "codestory_filesystem.step.process_filesystem" in source
-    ), (
+    assert "codestory_filesystem.step.process_filesystem" in source, (
         "Task name 'codestory_filesystem.step.process_filesystem' not found in "
         "FileSystemStep.run method"
     )

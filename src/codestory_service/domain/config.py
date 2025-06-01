@@ -61,8 +61,12 @@ class ConfigMetadata(BaseModel):
     description: str = Field(..., description="Description of the configuration key")
     default_value: Any | None = Field(default=None, description="Default value")
     source: ConfigSource = Field(..., description="Source of the current value")
-    permission: ConfigPermission = Field(..., description="Permission level for the key")
-    env_var: str | None = Field(default=None, description="Name of the environment variable")
+    permission: ConfigPermission = Field(
+        ..., description="Permission level for the key"
+    )
+    env_var: str | None = Field(
+        default=None, description="Name of the environment variable"
+    )
     required: bool = Field(default=False, description="Whether the value is required")
     json_schema: dict[str, Any] | None = Field(
         default=None, description="JSON Schema for validation"
@@ -95,7 +99,9 @@ class ConfigGroup(BaseModel):
     """Group of configuration items in a section."""
 
     section: ConfigSection = Field(..., description="Configuration section")
-    items: dict[str, ConfigItem] = Field(..., description="Configuration items in this section")
+    items: dict[str, ConfigItem] = Field(
+        ..., description="Configuration items in this section"
+    )
 
 
 class ConfigDump(BaseModel):
@@ -112,9 +118,13 @@ class ConfigDump(BaseModel):
         redacted_groups: dict[Any, Any] = {}
 
         for section, group in self.groups.items():
-            redacted_items = {key: item.redact_if_sensitive() for key, item in group.items.items()}
+            redacted_items = {
+                key: item.redact_if_sensitive() for key, item in group.items.items()
+            }
 
-            redacted_groups[section] = ConfigGroup(section=section, items=redacted_items)
+            redacted_groups[section] = ConfigGroup(
+                section=section, items=redacted_items
+            )
 
         return ConfigDump(
             groups=redacted_groups, version=self.version, last_updated=self.last_updated
@@ -131,8 +141,12 @@ class ConfigPatchItem(BaseModel):
 class ConfigPatch(BaseModel):
     """Patch with configuration updates."""
 
-    items: list[ConfigPatchItem] = Field(..., description="Configuration items to update")
-    comment: str | None = Field(default=None, description="Comment describing the changes")
+    items: list[ConfigPatchItem] = Field(
+        ..., description="Configuration items to update"
+    )
+    comment: str | None = Field(
+        default=None, description="Comment describing the changes"
+    )
 
     @field_validator("items")
     @classmethod
@@ -152,15 +166,25 @@ class ConfigSchemaProperty(BaseModel):
     title: str = Field(..., description="Display title")
     description: str = Field(..., description="Property description")
     default: Any | None = Field(default=None, description="Default value")
-    enum: list[Any] | None = Field(default=None, description="Enum values if applicable")
+    enum: list[Any] | None = Field(
+        default=None, description="Enum values if applicable"
+    )
     format: str | None = Field(default=None, description="Format hint (e.g., password)")
     minimum: float | None = Field(default=None, description="Minimum value for numbers")
     maximum: float | None = Field(default=None, description="Maximum value for numbers")
-    min_length: int | None = Field(default=None, description="Minimum length for strings", alias="minLength")
-    max_length: int | None = Field(default=None, description="Maximum length for strings", alias="maxLength")
+    min_length: int | None = Field(
+        default=None, description="Minimum length for strings", alias="minLength"
+    )
+    max_length: int | None = Field(
+        default=None, description="Maximum length for strings", alias="maxLength"
+    )
     pattern: str | None = Field(default=None, description="Regex pattern for strings")
-    read_only: bool | None = Field(default=None, description="If true, value is read-only")
-    write_only: bool | None = Field(default=None, description="If true, value is write-only")
+    read_only: bool | None = Field(
+        default=None, description="If true, value is read-only"
+    )
+    write_only: bool | None = Field(
+        default=None, description="If true, value is write-only"
+    )
 
 
 class ConfigSchemaSection(BaseModel):

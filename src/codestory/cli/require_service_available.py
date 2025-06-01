@@ -8,14 +8,14 @@ from .client import ServiceClient, ServiceError
 
 def require_service_available() -> None:
     """Checks if the Code Story service is running and healthy.
-    
+
     If not, prints an error and exits.
     Skips the check in test environments (when PYTEST_CURRENT_TEST is set).
     """
     if os.environ.get("PYTEST_CURRENT_TEST"):
         # In test environment, do nothing
         return
-    
+
     console = Console()
     try:
         client = ServiceClient(console=console)

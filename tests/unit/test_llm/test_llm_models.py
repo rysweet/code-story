@@ -66,8 +66,12 @@ def test_llm_chat_response_message() -> None:
     assert message.function_call is None
 
     # With function call
-    func_call = ChatFunctionCall(name="get_weather", arguments='{"location": "New York"}')
-    message = ChatResponseMessage(role=ChatRole.ASSISTANT, content=None, function_call=func_call)
+    func_call = ChatFunctionCall(
+        name="get_weather", arguments='{"location": "New York"}'
+    )
+    message = ChatResponseMessage(
+        role=ChatRole.ASSISTANT, content=None, function_call=func_call
+    )
     assert message.role == ChatRole.ASSISTANT
     assert message.content is None
     assert message.function_call.name == "get_weather"
@@ -84,7 +88,9 @@ def test_llm_chat_response_choice() -> None:
 
 def test_llm_completion_choice() -> None:
     """Test CompletionChoice model."""
-    choice = CompletionChoice(text="Paris is the capital of France.", index=0, finish_reason="stop")
+    choice = CompletionChoice(
+        text="Paris is the capital of France.", index=0, finish_reason="stop"
+    )
     assert choice.text == "Paris is the capital of France."
     assert choice.index == 0
     assert choice.finish_reason == "stop"
@@ -110,7 +116,9 @@ def test_llm_usage_info() -> None:
 def test_llm_completion_request() -> None:
     """Test CompletionRequest model."""
     # Basic request
-    request = CompletionRequest(model="text-davinci-003", prompt="Write a poem about AI.")
+    request = CompletionRequest(
+        model="text-davinci-003", prompt="Write a poem about AI."
+    )
     assert request.model == "text-davinci-003"
     assert request.prompt == "Write a poem about AI."
     assert request.max_tokens is None
@@ -178,13 +186,17 @@ def test_llm_embedding_request() -> None:
     assert len(request.input) == 2
 
     # With dimensions
-    request = EmbeddingRequest(model="text-embedding-3-small", input="Hello world", dimensions=256)
+    request = EmbeddingRequest(
+        model="text-embedding-3-small", input="Hello world", dimensions=256
+    )
     assert request.dimensions == 256
 
 
 def test_llm_completion_response() -> None:
     """Test CompletionResponse model."""
-    choice = CompletionChoice(text="Paris is the capital of France.", index=0, finish_reason="stop")
+    choice = CompletionChoice(
+        text="Paris is the capital of France.", index=0, finish_reason="stop"
+    )
     usage = UsageInfo(prompt_tokens=10, completion_tokens=8, total_tokens=18)
 
     response = CompletionResponse(

@@ -1,8 +1,0 @@
-src/codestory/cli/commands/ingest.py:362: error: unexpected indent  [syntax]
-            if console:
-            ^
-Found 1 error in 1 file (errors prevented further checking)
-src/codestory/cli/commands/ingest.py:362: error: unexpected indent  [syntax]
-            if console:
-            ^
-Found 1 error in 1 file (errors prevented further checking)

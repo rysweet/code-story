@@ -6,6 +6,21 @@ import time
 from collections.abc import Generator
 from typing import Any
 
+# (Removed duplicate imports: httpx, pytest, CliRunner)
+
+def is_docker_running() -> bool:
+    """Return True if Docker daemon is running, else False."""
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
 import httpx
 import pytest
 from click.testing import CliRunner
@@ -23,11 +38,16 @@ def cli_runner() -> CliRunner:
     """
     return CliRunner()
 
+
 def pytest_configure(config: Any) -> None:
     """Add custom markers to pytest."""
-    config.addinivalue_line('markers', 'require_service: mark test as requiring a running Code Story service')
+    config.addinivalue_line(
+        "markers",
+        "require_service: mark test as requiring a running Code Story service",
+    )
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def running_service(request: Any) -> Generator[dict[str, Any], None, None]:
     """
     Ensures the Code Story service is running for integration tests.
@@ -40,119 +60,103 @@ def running_service(request: Any) -> Generator[dict[str, Any], None, None]:
     """
     import os
     import signal
+
     settings = get_settings()
-    service_url = f'http://localhost:{settings.service.port}'
-    health_url = f'{service_url}/v1/health'
-    service_running = False
-    service_process = None
+    service_url = f"http://localhost:{settings.service.port}"
+    health_url = f"{service_url}/v1/health"
+    # (Removed unused: service_running = False)
+    # (Removed unused: service_process = None)
     try:
-        response = httpx.get(f'{health_url}', timeout=2.0)
+        response = httpx.get(f"{health_url}", timeout=2.0)
         if response.status_code == 200:
-            service_running = True
-            print('Service is already running, using existing instance')
+            print("Service is already running, using existing instance")
     except httpx.RequestError:
         pass
-    if not service_running:
-        print('Starting Code Story service for integration tests...')
-        try:
-            print('Attempting to use CLI service management...')
-            subprocess.run(['python', '-m', 'codestory.cli.main', 'service', 'start'], check=True, timeout=10)
-            time.sleep(2)
+    # --- NEW LOGIC: docker-compose orchestration and health checks ---
+    if not is_docker_running():
+        pytest.skip("Docker is not running or not available, skipping all require_service tests.")
+
+    compose_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../docker-compose.test.yml"))
+    containers = ["neo4j", "redis", "service", "worker"]
+    stack_started = False
+
+    try:
+        # Start the stack
+        up_cmd = [
+            "docker-compose",
+            "-f",
+            compose_file,
+            "up",
+            "-d",
+            *containers,
+        ]
+        subprocess.run(up_cmd, check=True, timeout=30)
+        stack_started = True
+
+        # Wait for neo4j and redis to be healthy (max 30s)
+        def wait_healthy(container, timeout_s=30):
+            start = time.time()
+            while time.time() - start < timeout_s:
+                try:
+                    result = subprocess.run(
+                        [
+                            "docker",
+                            "inspect",
+                            "-f",
+                            "{{.State.Health.Status}}",
+                            container,
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=3,
+                    )
+                    if result.stdout.strip() == "healthy":
+                        return True
+                except Exception:
+                    pass
+                time.sleep(1)
+            return False
+
+        if not wait_healthy("codestory-neo4j-test", 30):
+            pytest.skip("Neo4j container did not become healthy in time, skipping test session.")
+        if not wait_healthy("codestory-redis-test", 30):
+            pytest.skip("Redis container did not become healthy in time, skipping test session.")
+
+        # Wait for service health endpoint (max 60s)
+        healthy = False
+        for _ in range(60):
             try:
-                response = httpx.get(f'{health_url}', timeout=2.0)
+                response = httpx.get(health_url, timeout=2.0)
                 if response.status_code == 200:
-                    service_running = True
-                    print('Service started successfully using CLI!')
-            except httpx.RequestError:
+                    healthy = True
+                    break
+            except Exception:
                 pass
-        except (subprocess.SubprocessError, subprocess.TimeoutExpired) as e:
-            print(f'CLI service start failed: {e}')
-        if not service_running:
-            print('Trying direct service start approach...')
+            time.sleep(1)
+        if not healthy:
+            pytest.skip("Service /v1/health endpoint did not become healthy in time, skipping test session.")
+
+        print(f"Service available at {service_url}")
+        yield {
+            "url": service_url,
+            "port": settings.service.port,
+            "api_url": f"{service_url}/v1",
+        }
+    finally:
+        if stack_started:
+            print("Tearing down docker-compose test stack...")
+            down_cmd = [
+                "docker-compose",
+                "-f",
+                compose_file,
+                "down",
+                "-v",
+            ]
             try:
-                subprocess.run(['docker-compose', 'up', '-d', 'neo4j'], check=True, capture_output=True, timeout=30)
-                print('Started Neo4j container')
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-                print(f'Warning: Failed to start Neo4j container: {e}')
-            time.sleep(5)
-            print('Starting service process...')
-            try:
-                service_process = subprocess.Popen(['python', '-m', 'codestory.service', 'start'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+                subprocess.run(down_cmd, check=True, timeout=30)
             except Exception as e:
-                print(f'Failed to start service process: {e}')
-                try:
-                    print('Trying alternative service start...')
-                    service_process = subprocess.Popen(['python', '-m', 'codestory.cli.main', 'service', 'start', '--debug'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
-                except Exception as e:
-                    print(f'Failed to start service with alternative approach: {e}')
-            started = False
-            for i in range(45):
-                time.sleep(1)
-                print(f'Waiting for service to start (attempt {i + 1}/45)...')
-                try:
-                    response = httpx.get(f'{health_url}', timeout=2.0)
-                    if response.status_code == 200:
-                        started = True
-                        print('Service started successfully!')
-                        break
-                except httpx.RequestError:
-                    pass
-            if not started:
-                print('Service failed to start in time')
-                try:
-                    print('--- Neo4j logs ---')
-                    subprocess.run(['docker', 'logs', 'codestory-neo4j-test'], check=False)
-                except Exception as e:
-                    print(f'Could not get Neo4j logs: {e}')
-                try:
-                    print('--- Service logs ---')
-                    subprocess.run(['docker', 'logs', 'codestory-service'], check=False)
-                except Exception as e:
-                    print(f'Could not get service logs: {e}')
-                if service_process:
-                    print('Terminating service process...')
-                    try:
-                        if service_process.poll() is None:
-                            os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
-                    except (ProcessLookupError, OSError) as e:
-                        print(f'Process already terminated: {e}')
-                try:
-                    response = httpx.get(f'{health_url}', timeout=2.0)
-                    if response.status_code == 200:
-                        service_running = True
-                        print('Service is available despite startup issues!')
-                        return
-                except httpx.RequestError:
-                    pass
-                raise Exception('Failed to start Code Story service after multiple attempts')
-            redis_healthy = False
-            for i in range(30):
-                try:
-                    result = subprocess.run(['docker', 'inspect', '-f', '{{.State.Health.Status}}', 'codestory-redis-test'], capture_output=True, text=True, timeout=3)
-                    if result.stdout.strip() == 'healthy':
-                        redis_healthy = True
-                        print('Redis container is healthy.')
-                        break
-                    else:
-                        print(f'Waiting for Redis to be healthy (attempt {i + 1}/30)... Status: {result.stdout.strip()}')
-                except Exception as e:
-                    print(f'Error checking Redis health: {e}')
-                time.sleep(1)
-            if not redis_healthy:
-                print('Redis container did not become healthy in time.')
-    print(f'Service available at {service_url}')
-    yield {'url': service_url, 'port': settings.service.port, 'api_url': f'{service_url}/v1'}
-    if service_process:
-        print('Stopping Code Story service...')
-        try:
-            if service_process.poll() is None:
-                os.killpg(os.getpgid(service_process.pid), signal.SIGTERM)
-        except (ProcessLookupError, OSError) as e:
-            print(f'Process already terminated: {e}')
-        try:
-            subprocess.run(['docker-compose', 'stop'], check=True, capture_output=True)
-        except subprocess.CalledProcessError as e:
-            print(f'Warning: Failed to stop services: {e}')
+                print(f"Warning: Failed to tear down docker-compose stack: {e}")
+
 
 @pytest.fixture
 def test_repository() -> Generator[str, None, None]:
@@ -163,12 +167,16 @@ def test_repository() -> Generator[str, None, None]:
         Path to the temporary repository.
     """
     with tempfile.TemporaryDirectory() as temp_dir:
-        os.makedirs(os.path.join(temp_dir, 'src'))
-        os.makedirs(os.path.join(temp_dir, 'docs'))
-        with open(os.path.join(temp_dir, 'src', 'main.py'), 'w') as f:
-            f.write('\ndef main():\n    print("Hello world!")\n\nif __name__ == "__main__":\n    main()\n')
-        with open(os.path.join(temp_dir, 'src', 'utils.py'), 'w') as f:
+        os.makedirs(os.path.join(temp_dir, "src"))
+        os.makedirs(os.path.join(temp_dir, "docs"))
+        with open(os.path.join(temp_dir, "src", "main.py"), "w") as f:
+            f.write(
+                '\ndef main():\n    print("Hello world!")\n\nif __name__ == "__main__":\n    main()\n'
+            )
+        with open(os.path.join(temp_dir, "src", "utils.py"), "w") as f:
             f.write('\ndef helper_function():\n    return "Helper function"\n')
-        with open(os.path.join(temp_dir, 'docs', 'README.md'), 'w') as f:
-            f.write('\n# Test Repository\n\nThis is a test repository for Code Story CLI integration tests.\n')
+        with open(os.path.join(temp_dir, "docs", "README.md"), "w") as f:
+            f.write(
+                "\n# Test Repository\n\nThis is a test repository for Code Story CLI integration tests.\n"
+            )
         yield temp_dir

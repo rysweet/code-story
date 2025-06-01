@@ -105,9 +105,13 @@ def run_step(
 
     acquired = token_manager.acquire_token()
     if not acquired:
-        logger.error("Resource throttling: could not acquire resource token for step execution")
+        logger.error(
+            "Resource throttling: could not acquire resource token for step execution"
+        )
         result["status"] = StepStatus.FAILED
-        result["error"] = "Resource throttling: could not acquire resource token (system busy)"
+        result[
+            "error"
+        ] = "Resource throttling: could not acquire resource token (system busy)"
         end_time = time.time()
         result["end_time"] = end_time
         result["duration"] = end_time - start_time
@@ -143,7 +147,9 @@ def run_step(
         # This avoids the "got multiple values for argument" error
         if "repository_path" in step_config_copy:
             # If it's already in the config, remove it to avoid conflicts
-            logger.warning("Removing duplicate repository_path from step config to avoid conflicts")
+            logger.warning(
+                "Removing duplicate repository_path from step config to avoid conflicts"
+            )
             del step_config_copy["repository_path"]
 
         # Include job_id in kwargs if present
@@ -187,7 +193,11 @@ def run_step(
         except Exception as e:
             logger.error(f"Error sending task {task_name}: {e}")
             # Retry on transient errors (example: network, resource busy)
-            if hasattr(e, "errno") and e.errno in (11, 10060, 110):  # EAGAIN, ETIMEDOUT, ECONNREFUSED
+            if hasattr(e, "errno") and e.errno in (
+                11,
+                10060,
+                110,
+            ):  # EAGAIN, ETIMEDOUT, ECONNREFUSED
                 if self.request.retries < max_retries:
                     logger.warning(
                         f"Transient error in step {step_name}, retrying "
@@ -209,7 +219,9 @@ def run_step(
         start_poll = time.time()
         step_result = None
 
-        logger.info(f"Waiting for task {task_name} (id: {step_task.id}) with timeout {timeout}s")
+        logger.info(
+            f"Waiting for task {task_name} (id: {step_task.id}) with timeout {timeout}s"
+        )
         last_log_time = start_poll
         poll_counter = 0
 
@@ -230,7 +242,7 @@ def run_step(
                     memory_mb = None
 
             # Emit progress update every 10 seconds or every 20 polls
-            if (current_time - last_log_time > 10 or poll_counter % 20 == 0):
+            if current_time - last_log_time > 10 or poll_counter % 20 == 0:
                 self.update_state(
                     state="PROGRESS",
                     meta={
@@ -246,15 +258,21 @@ def run_step(
             # Check for task revocation/cancellation
             if hasattr(self, "request") and getattr(self.request, "is_revoked", None):
                 if self.request.is_revoked():
-                    logger.warning(f"Step task {self.request.id} was revoked. Cancelling step execution.")
+                    logger.warning(
+                        f"Step task {self.request.id} was revoked. Cancelling step execution."
+                    )
                     result["status"] = StepStatus.CANCELLED
                     result["error"] = "Step was cancelled by user"
                     end_time = time.time()
                     result["end_time"] = end_time
                     result["duration"] = end_time - start_time
                     result["retry_count"] = self.request.retries
-                    record_step_metrics(step_name, StepStatus.CANCELLED, end_time - start_time)
-                    logger.info(f"Step cancelled after {end_time - start_time:.2f} seconds")
+                    record_step_metrics(
+                        step_name, StepStatus.CANCELLED, end_time - start_time
+                    )
+                    logger.info(
+                        f"Step cancelled after {end_time - start_time:.2f} seconds"
+                    )
                     return result
 
             # Log status every 30 seconds
@@ -274,7 +292,9 @@ def run_step(
                     logger.error(f"Error getting task state: {e}")
 
             if async_result.ready():
-                logger.info(f"Task {task_name} is ready after {time.time() - start_poll:.1f}s")
+                logger.info(
+                    f"Task {task_name} is ready after {time.time() - start_poll:.1f}s"
+                )
                 if async_result.successful():
                     try:
                         step_result = async_result.result
@@ -303,7 +323,11 @@ def run_step(
                         error_info = f"Could not retrieve error info: {e}"
                     logger.error(f"Task failed: {error_info}")
                     # Retry on transient error in step execution
-                    if hasattr(error_info, "errno") and error_info.errno in (11, 10060, 110):
+                    if hasattr(error_info, "errno") and error_info.errno in (
+                        11,
+                        10060,
+                        110,
+                    ):
                         if self.request.retries < max_retries:
                             logger.warning(
                                 f"Transient error in step {step_name}, retrying "
@@ -318,7 +342,9 @@ def run_step(
             time.sleep(1)  # Wait before checking again
 
         if step_result is None:
-            logger.error(f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s")
+            logger.error(
+                f"Task {task_name} (id: {step_task.id}) timed out after {timeout}s"
+            )
             # Retry on timeout if not exceeded max_retries
             if self.request.retries < max_retries:
                 logger.warning(
@@ -413,7 +439,9 @@ def orchestrate_pipeline(
     """
     # Record start time
     start_time = time.time()
-    logger.info(f"Starting pipeline for repository: {repository_path} (job_id: {job_id})")
+    logger.info(
+        f"Starting pipeline for repository: {repository_path} (job_id: {job_id})"
+    )
 
     # Record metric for job start
     record_job_metrics(StepStatus.RUNNING)
@@ -453,7 +481,9 @@ def orchestrate_pipeline(
         # Run the workflow as a chain (sequential execution)
         # Prepare arguments for the chain
         try:
-            logger.info(f"Sending args=[{repository_path}] to chain with {len(workflow)} steps")
+            logger.info(
+                f"Sending args=[{repository_path}] to chain with {len(workflow)} steps"
+            )
 
             # The first argument to the chain is the repository_path
             # This will be passed to the first task in the chain
@@ -476,11 +506,14 @@ def orchestrate_pipeline(
         start_poll = time.time()
         all_results = None
 
-        logger.info(f"Waiting for chain (id: {chain_result.id}) with timeout {timeout}s")
+        logger.info(
+            f"Waiting for chain (id: {chain_result.id}) with timeout {timeout}s"
+        )
         last_log_time = start_poll
         poll_counter = 0
 
         import celery
+
         while time.time() - start_poll < timeout:
             poll_counter += 1
             current_time = time.time()
@@ -488,14 +521,18 @@ def orchestrate_pipeline(
             # Check for task revocation/cancellation
             if hasattr(self, "request") and getattr(self.request, "is_revoked", None):
                 if self.request.is_revoked():
-                    logger.warning(f"Pipeline task {self.request.id} was revoked. Cancelling pipeline execution.")
+                    logger.warning(
+                        f"Pipeline task {self.request.id} was revoked. Cancelling pipeline execution."
+                    )
                     result["status"] = StepStatus.CANCELLED
                     result["error"] = "Pipeline was cancelled by user"
                     end_time = time.time()
                     result["end_time"] = end_time
                     result["duration"] = end_time - start_time
                     record_job_metrics(StepStatus.CANCELLED)
-                    logger.info(f"Pipeline cancelled after {end_time - start_time:.2f} seconds")
+                    logger.info(
+                        f"Pipeline cancelled after {end_time - start_time:.2f} seconds"
+                    )
                     return result
 
             # Log status every 30 seconds or each 15 polls
@@ -542,7 +579,9 @@ def orchestrate_pipeline(
                 if async_result.successful():
                     try:
                         all_results = async_result.result
-                        logger.info(f"Chain completed successfully: {type(all_results)}")
+                        logger.info(
+                            f"Chain completed successfully: {type(all_results)}"
+                        )
                         break
                     except Exception as e:
                         logger.error(f"Error getting chain result: {e}")
@@ -599,7 +638,9 @@ def orchestrate_pipeline(
     record_job_metrics(StepStatus(result["status"]))
 
     # Log completion
-    logger.info(f"Completed pipeline with status {result['status']} in {duration:.2f} seconds")
+    logger.info(
+        f"Completed pipeline with status {result['status']} in {duration:.2f} seconds"
+    )
 
     return result
 

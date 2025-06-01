@@ -1,9 +1,0 @@
-src/codestory/cli/client/progress_client.py:187: error: unexpected indent 
-[syntax]
-                self._stop_event.set()
-                ^
-Found 1 error in 1 file (errors prevented further checking)
-src/codestory/cli/main.py:13: error: invalid syntax  [syntax]
-        import rich_click as rich_click_module[assignment]
-                                               ^
-Found 1 error in 1 file (errors prevented further checking)

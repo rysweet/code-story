@@ -57,7 +57,9 @@ class DocumentationGrapherStep(PipelineStep):
         """
         # Validate repository path
         if not os.path.isdir(repository_path):
-            raise ValueError(f"Repository path is not a valid directory: {repository_path}")
+            raise ValueError(
+                f"Repository path is not a valid directory: {repository_path}"
+            )
 
         # Generate job ID
         job_id = f"docgrapher-{uuid4()}"
@@ -90,7 +92,9 @@ class DocumentationGrapherStep(PipelineStep):
             "config": config,
         }
 
-        logger.info(f"Started DocumentationGrapher job {job_id} for repository: {repository_path}")
+        logger.info(
+            f"Started DocumentationGrapher job {job_id} for repository: {repository_path}"
+        )
 
         return job_id
 
@@ -125,8 +129,8 @@ class DocumentationGrapherStep(PipelineStep):
                     return {
                         "status": StepStatus.COMPLETED,
                         "message": "Task completed successfully",
-                        "result": result.result,  # Fixed: Use result directly instead of 
-                                                  # blocking get()
+                        "result": result.result,  # Fixed: Use result directly instead of
+                        # blocking get()
                     }
                 elif result.state == "FAILURE":
                     return {
@@ -293,7 +297,11 @@ def run_docgrapher(
     connector = Neo4jConnector(
         uri=settings.neo4j.uri,
         username=settings.neo4j.username,
-        password=(settings.neo4j.password.get_secret_value() if settings.neo4j.password is not None else ""),
+        password=(
+            settings.neo4j.password.get_secret_value()
+            if settings.neo4j.password is not None
+            else ""
+        ),
         database=settings.neo4j.database,
     )
 
@@ -340,8 +348,13 @@ def run_docgrapher(
                 parsed_data = parser.parse(doc_file)
 
                 # Add entities and relationships to graph
-                entities = cast("list[DocumentationEntity]", parsed_data.get("entities", []))
-                relationships = cast("list[DocumentationRelationship]", parsed_data.get("relationships", []))
+                entities = cast(
+                    "list[DocumentationEntity]", parsed_data.get("entities", [])
+                )
+                relationships = cast(
+                    "list[DocumentationRelationship]",
+                    parsed_data.get("relationships", []),
+                )
                 knowledge_graph.add_entities(entities)
                 knowledge_graph.add_relationships(relationships)
 

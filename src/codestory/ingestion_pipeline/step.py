@@ -10,12 +10,14 @@ from typing import Any
 
 class StepStatus(str, Enum):
     """Status values for pipeline steps."""
-    PENDING = 'PENDING'
-    RUNNING = 'RUNNING'
-    COMPLETED = 'COMPLETED'
-    FAILED = 'FAILED'
-    STOPPED = 'STOPPED'
-    CANCELLED = 'CANCELLED'
+
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    STOPPED = "STOPPED"
+    CANCELLED = "CANCELLED"
+
 
 class PipelineStep(abc.ABC):
     """Base interface for all ingestion pipeline workflow steps.
@@ -117,10 +119,11 @@ class PipelineStep(abc.ABC):
         """
         pass
 
+
 def generate_job_id() -> str:
     """Generate a unique job ID for tracking pipeline steps.
 
     Returns:
         str: A unique identifier in the format 'step-{uuid}'
     """
-    return f'job-{uuid.uuid4()}'
+    return f"job-{uuid.uuid4()}"

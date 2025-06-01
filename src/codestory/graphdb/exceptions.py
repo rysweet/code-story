@@ -59,7 +59,11 @@ class ConnectionError(Neo4jError):
     """Error establishing connection to Neo4j."""
 
     def __init__(
-        self, message: str, uri: str | None = None, cause: Exception | None = None, **kwargs: Any
+        self,
+        message: str,
+        uri: str | None = None,
+        cause: Exception | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize ConnectionError.
 
@@ -99,7 +103,10 @@ class QueryError(Neo4jError):
         if parameters:
             safe_params = {}
             for k, v in parameters.items():
-                if any(sensitive in k.lower() for sensitive in ["password", "secret", "key"]):
+                if any(
+                    sensitive in k.lower()
+                    for sensitive in ["password", "secret", "key"]
+                ):
                     safe_params[k] = "********"  # Redact sensitive values
                 else:
                     safe_params[k] = v
@@ -118,7 +125,11 @@ class SchemaError(Neo4jError):
     """Error with graph schema operation."""
 
     def __init__(
-        self, message: str, operation: str | None = None, cause: Exception | None = None, **kwargs: Any
+        self,
+        message: str,
+        operation: str | None = None,
+        cause: Exception | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize SchemaError.
 
@@ -141,7 +152,11 @@ class TransactionError(Neo4jError):
     """Error in transaction management."""
 
     def __init__(
-        self, message: str, operation: str | None = None, cause: Exception | None = None, **kwargs: Any
+        self,
+        message: str,
+        operation: str | None = None,
+        cause: Exception | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize TransactionError.
 

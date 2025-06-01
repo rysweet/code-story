@@ -82,6 +82,8 @@ def test_llm_context_length_error() -> None:
     assert error.input_tokens is None
 
     # With token counts
-    error = ContextLengthError("Context length exceeded", max_tokens=8192, input_tokens=9000)
+    error = ContextLengthError(
+        "Context length exceeded", max_tokens=8192, input_tokens=9000
+    )
     assert error.max_tokens == 8192
     assert error.input_tokens == 9000

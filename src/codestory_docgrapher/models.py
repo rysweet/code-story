@@ -10,8 +10,6 @@ representing documentation entities, their relationships, and metadata.
 """
 
 
-
-
 class DocumentType(str, Enum):
     """Types of documentation documents."""
 

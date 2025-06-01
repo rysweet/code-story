@@ -44,7 +44,11 @@ def get_retry_after(retry_state: RetryCallState) -> float | None:
     """
     if retry_state.outcome is not None:
         exception = retry_state.outcome.exception()
-        if exception is not None and hasattr(exception, "retry_after") and exception.retry_after is not None:
+        if (
+            exception is not None
+            and hasattr(exception, "retry_after")
+            and exception.retry_after is not None
+        ):
             return float(min(exception.retry_after, 60))  # Cap at 60 seconds
 
     # Return None when no retry_after is specified to allow exponential backoff to handle timing
@@ -62,7 +66,9 @@ def before_retry_callback(retry_state: RetryCallState) -> None:
         exception = retry_state.outcome.exception()
     attempt = retry_state.attempt_number
 
-    operation = getattr(retry_state.kwargs.get("_operation_type", None), "value", "unknown")
+    operation = getattr(
+        retry_state.kwargs.get("_operation_type", None), "value", "unknown"
+    )
     model = retry_state.kwargs.get("model", "unknown")
 
     wait_time = None
@@ -142,7 +148,9 @@ def retry_on_openai_errors(
                     f"Rate limit exceeded: {e!s}", retry_after=retry_after, cause=e
                 ) from e
             except openai.APIConnectionError as e:
-                raise ServiceUnavailableError(f"API connection error: {e!s}", cause=e) from e
+                raise ServiceUnavailableError(
+                    f"API connection error: {e!s}", cause=e
+                ) from e
             except openai.APITimeoutError as e:
                 raise TimeoutError(f"API request timed out: {e!s}", cause=e) from e
             except openai.BadRequestError as e:
@@ -161,7 +169,9 @@ def retry_on_openai_errors(
             except openai.AuthenticationError as e:
                 from .exceptions import AuthenticationError
 
-                raise AuthenticationError(f"Authentication error: {e!s}", cause=e) from e
+                raise AuthenticationError(
+                    f"Authentication error: {e!s}", cause=e
+                ) from e
             except openai.APIError as e:
                 raise ServiceUnavailableError(f"API error: {e!s}", cause=e) from e
             except Exception as e:
@@ -229,7 +239,9 @@ def retry_on_openai_errors_async(
                     f"Rate limit exceeded: {e!s}", retry_after=retry_after, cause=e
                 ) from e
             except openai.APIConnectionError as e:
-                raise ServiceUnavailableError(f"API connection error: {e!s}", cause=e) from e
+                raise ServiceUnavailableError(
+                    f"API connection error: {e!s}", cause=e
+                ) from e
             except openai.APITimeoutError as e:
                 raise TimeoutError(f"API request timed out: {e!s}", cause=e) from e
             except openai.BadRequestError as e:
@@ -248,7 +260,9 @@ def retry_on_openai_errors_async(
             except openai.AuthenticationError as e:
                 from .exceptions import AuthenticationError
 
-                raise AuthenticationError(f"Authentication error: {e!s}", cause=e) from e
+                raise AuthenticationError(
+                    f"Authentication error: {e!s}", cause=e
+                ) from e
             except openai.APIError as e:
                 raise ServiceUnavailableError(f"API error: {e!s}", cause=e) from e
             except Exception as e:

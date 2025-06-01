@@ -1,6 +1,6 @@
 from typing import Any
 
-'Parser for ReStructuredText documentation files.\n\nThis module provides a parser for extracting entities and relationships\nfrom ReStructuredText documentation files.\n'
+"Parser for ReStructuredText documentation files.\n\nThis module provides a parser for extracting entities and relationships\nfrom ReStructuredText documentation files.\n"
 import logging
 import re
 
@@ -16,6 +16,7 @@ from .parser_factory import Parser, ParserFactory
 
 logger = logging.getLogger(__name__)
 
+
 @ParserFactory.register(DocumentType.RESTRUCTURED_TEXT)
 class RstParser(Parser):
     """Parser for ReStructuredText documentation files.
@@ -25,16 +26,36 @@ class RstParser(Parser):
 
     def __init__(self: Any) -> None:
         """Initialize the RST parser."""
-        self.heading_pattern1 = re.compile('^([=\\-`:\\\'"~^_*+#])\\1{2,}\\s*$\\n^(.+?)$\\n([=\\-`:\\\'"~^_*+#])\\3{2,}\\s*$', re.MULTILINE)
-        self.heading_pattern2 = re.compile('^(.+?)$\\n([=\\-`:\\\'"~^_*+#])\\2{2,}\\s*$', re.MULTILINE)
-        self.directive_pattern = re.compile('^\\.\\. ([a-z]+)::\\s*(.*?)$\\n(?:\\s{3}(.*?)$)?(?:\\n\\s{3}(.*?)$)*', re.MULTILINE)
-        self.code_block_pattern = re.compile('^\\.\\. code-block::\\s*(\\w*)\\s*$\\n\\s+(.+?)$(?:\\n\\s+.*?)*$', re.MULTILINE | re.DOTALL)
-        self.link_pattern = re.compile('`([^`]+)`_')
-        self.ext_link_pattern = re.compile('`([^`]+)`__')
-        self.link_def_pattern = re.compile('^\\.\\. _([^:]+):\\s*(.+)$', re.MULTILINE)
-        self.image_pattern = re.compile('^\\.\\. image::\\s*(.+?)$(?:\\n\\s+:([a-z]+):\\s*(.+?)$)*', re.MULTILINE)
-        self.list_pattern = re.compile('(?:^\\s*(?:[*+#-]|\\d+[.)]) .+$\\n?)+', re.MULTILINE)
-        self.code_ref_patterns = [re.compile(':func:`([^`]+)`'), re.compile(':class:`([^`]+)`'), re.compile(':mod:`([^`]+)`'), re.compile(':file:`([^`]+)`')]
+        self.heading_pattern1 = re.compile(
+            "^([=\\-`:\\'\"~^_*+#])\\1{2,}\\s*$\\n^(.+?)$\\n([=\\-`:\\'\"~^_*+#])\\3{2,}\\s*$",
+            re.MULTILINE,
+        )
+        self.heading_pattern2 = re.compile(
+            "^(.+?)$\\n([=\\-`:\\'\"~^_*+#])\\2{2,}\\s*$", re.MULTILINE
+        )
+        self.directive_pattern = re.compile(
+            "^\\.\\. ([a-z]+)::\\s*(.*?)$\\n(?:\\s{3}(.*?)$)?(?:\\n\\s{3}(.*?)$)*",
+            re.MULTILINE,
+        )
+        self.code_block_pattern = re.compile(
+            "^\\.\\. code-block::\\s*(\\w*)\\s*$\\n\\s+(.+?)$(?:\\n\\s+.*?)*$",
+            re.MULTILINE | re.DOTALL,
+        )
+        self.link_pattern = re.compile("`([^`]+)`_")
+        self.ext_link_pattern = re.compile("`([^`]+)`__")
+        self.link_def_pattern = re.compile("^\\.\\. _([^:]+):\\s*(.+)$", re.MULTILINE)
+        self.image_pattern = re.compile(
+            "^\\.\\. image::\\s*(.+?)$(?:\\n\\s+:([a-z]+):\\s*(.+?)$)*", re.MULTILINE
+        )
+        self.list_pattern = re.compile(
+            "(?:^\\s*(?:[*+#-]|\\d+[.)]) .+$\\n?)+", re.MULTILINE
+        )
+        self.code_ref_patterns = [
+            re.compile(":func:`([^`]+)`"),
+            re.compile(":class:`([^`]+)`"),
+            re.compile(":mod:`([^`]+)`"),
+            re.compile(":file:`([^`]+)`"),
+        ]
 
     def parse(self: Any, document: DocumentationFile) -> dict[str, Any]:
         """Parse a ReStructuredText documentation file.
@@ -75,9 +96,11 @@ class RstParser(Parser):
         relationships.extend(rel_heading_lists)
         rel_heading_refs = self._create_entity_relationships(headings, code_refs)
         relationships.extend(rel_heading_refs)
-        return {'entities': entities, 'relationships': relationships}
+        return {"entities": entities, "relationships": relationships}
 
-    def _extract_headings_style1(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_headings_style1(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract headings with over/underlines from ReStructuredText content.
 
         Args:
@@ -94,13 +117,24 @@ class RstParser(Parser):
             match.group(3)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
+            line_number = content[:start_pos].count("\n") + 1
             level = self._get_heading_level(overline_char)
-            entity = DocumentationEntity(type=EntityType.HEADING, content=heading_text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'level': level, 'style': 'overunder', 'char': overline_char})
+            entity = DocumentationEntity(
+                type=EntityType.HEADING,
+                content=heading_text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"level": level, "style": "overunder", "char": overline_char},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_headings_style2(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_headings_style2(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract headings with underlines from ReStructuredText content.
 
         Args:
@@ -116,9 +150,18 @@ class RstParser(Parser):
             underline_char = match.group(2)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
+            line_number = content[:start_pos].count("\n") + 1
             level = self._get_heading_level(underline_char)
-            entity = DocumentationEntity(type=EntityType.HEADING, content=heading_text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'level': level, 'style': 'under', 'char': underline_char})
+            entity = DocumentationEntity(
+                type=EntityType.HEADING,
+                content=heading_text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"level": level, "style": "under", "char": underline_char},
+            )
             entities.append(entity)
         return entities
 
@@ -131,14 +174,16 @@ class RstParser(Parser):
         Returns:
             Heading level (1-6)
         """
-        chars = ['#', '*', '=', '-', '^', '"']
+        chars = ["#", "*", "=", "-", "^", '"']
         try:
             level = chars.index(char) + 1
         except ValueError:
             level = 6
         return min(level, 6)
 
-    def _create_heading_hierarchy(self: Any, headings: list[DocumentationEntity]) -> list[DocumentationRelationship]:
+    def _create_heading_hierarchy(
+        self: Any, headings: list[DocumentationEntity]
+    ) -> list[DocumentationRelationship]:
         """Create hierarchy relationships between headings.
 
         Args:
@@ -151,19 +196,25 @@ class RstParser(Parser):
         sorted_headings = sorted(headings, key=lambda h: h.start_pos or 0)
         stack: list[Any] = []
         for heading in sorted_headings:
-            level = heading.metadata.get('level', 1)
-            while stack and stack[-1].metadata.get('level', 1) >= level:
+            level = heading.metadata.get("level", 1)
+            while stack and stack[-1].metadata.get("level", 1) >= level:
                 stack.pop()
             if stack:
                 parent = stack[-1]
                 heading.parent_id = parent.id
                 parent.children.append(heading.id)
-                relationship = DocumentationRelationship(type=RelationType.CONTAINS, source_id=parent.id, target_id=heading.id)
+                relationship = DocumentationRelationship(
+                    type=RelationType.CONTAINS,
+                    source_id=parent.id,
+                    target_id=heading.id,
+                )
                 relationships.append(relationship)
             stack.append(heading)
         return relationships
 
-    def _extract_code_blocks(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_code_blocks(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract code blocks from ReStructuredText content.
 
         Args:
@@ -179,12 +230,23 @@ class RstParser(Parser):
             code = match.group(2)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.CODE_BLOCK, content=code, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'language': language})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.CODE_BLOCK,
+                content=code,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"language": language},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_links(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_links(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract links from ReStructuredText content.
 
         Args:
@@ -199,27 +261,56 @@ class RstParser(Parser):
             text = match.group(1)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.LINK, content=text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'url': f"#{text.lower().replace(' ', '-')}"})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.LINK,
+                content=text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"url": f"#{text.lower().replace(' ', '-')}"},
+            )
             entities.append(entity)
         for match in self.ext_link_pattern.finditer(content):
             text = match.group(1)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.LINK, content=text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'url': f"#external-{text.lower().replace(' ', '-')}"})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.LINK,
+                content=text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"url": f"#external-{text.lower().replace(' ', '-')}"},
+            )
             entities.append(entity)
         for match in self.link_def_pattern.finditer(content):
             text = match.group(1)
             url = match.group(2)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.LINK, content=text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'url': url})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.LINK,
+                content=text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"url": url},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_images(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_images(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract images from ReStructuredText content.
 
         Args:
@@ -234,12 +325,23 @@ class RstParser(Parser):
             url = match.group(1)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.IMAGE, content=f'Image: {url}', file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'url': url})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.IMAGE,
+                content=f"Image: {url}",
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"url": url},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_lists(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_lists(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract lists from ReStructuredText content.
 
         Args:
@@ -254,12 +356,23 @@ class RstParser(Parser):
             list_text = match.group(0)
             start_pos = match.start()
             end_pos = match.end()
-            line_number = content[:start_pos].count('\n') + 1
-            entity = DocumentationEntity(type=EntityType.LIST, content=list_text, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'items': list_text.count('\n') + 1})
+            line_number = content[:start_pos].count("\n") + 1
+            entity = DocumentationEntity(
+                type=EntityType.LIST,
+                content=list_text,
+                file_path=file_path,
+                source_text=match.group(0),
+                start_pos=start_pos,
+                end_pos=end_pos,
+                line_number=line_number,
+                metadata={"items": list_text.count("\n") + 1},
+            )
             entities.append(entity)
         return entities
 
-    def _extract_code_references(self: Any, content: str, file_path: str) -> list[DocumentationEntity]:
+    def _extract_code_references(
+        self: Any, content: str, file_path: str
+    ) -> list[DocumentationEntity]:
         """Extract code references from ReStructuredText content.
 
         Args:
@@ -275,21 +388,34 @@ class RstParser(Parser):
                 reference = match.group(1)
                 start_pos = match.start()
                 end_pos = match.end()
-                line_number = content[:start_pos].count('\n') + 1
-                ref_type = 'unknown'
-                if ':func:' in match.group(0):
-                    ref_type = 'function'
-                elif ':class:' in match.group(0):
-                    ref_type = 'class'
-                elif ':mod:' in match.group(0):
-                    ref_type = 'module'
-                elif ':file:' in match.group(0):
-                    ref_type = 'file'
-                entity = DocumentationEntity(type=EntityType.REFERENCE, content=reference, file_path=file_path, source_text=match.group(0), start_pos=start_pos, end_pos=end_pos, line_number=line_number, metadata={'ref_type': ref_type})
+                line_number = content[:start_pos].count("\n") + 1
+                ref_type = "unknown"
+                if ":func:" in match.group(0):
+                    ref_type = "function"
+                elif ":class:" in match.group(0):
+                    ref_type = "class"
+                elif ":mod:" in match.group(0):
+                    ref_type = "module"
+                elif ":file:" in match.group(0):
+                    ref_type = "file"
+                entity = DocumentationEntity(
+                    type=EntityType.REFERENCE,
+                    content=reference,
+                    file_path=file_path,
+                    source_text=match.group(0),
+                    start_pos=start_pos,
+                    end_pos=end_pos,
+                    line_number=line_number,
+                    metadata={"ref_type": ref_type},
+                )
                 entities.append(entity)
         return entities
 
-    def _create_entity_relationships(self: Any, containers: list[DocumentationEntity], contained: list[DocumentationEntity]) -> list[DocumentationRelationship]:
+    def _create_entity_relationships(
+        self: Any,
+        containers: list[DocumentationEntity],
+        contained: list[DocumentationEntity],
+    ) -> list[DocumentationRelationship]:
         """Create relationships between container entities and contained entities.
 
         Args:
@@ -313,7 +439,11 @@ class RstParser(Parser):
                 else:
                     break
             if container:
-                relationship = DocumentationRelationship(type=RelationType.CONTAINS, source_id=container.id, target_id=entity.id)
+                relationship = DocumentationRelationship(
+                    type=RelationType.CONTAINS,
+                    source_id=container.id,
+                    target_id=entity.id,
+                )
                 relationships.append(relationship)
                 entity.parent_id = container.id
                 container.children.append(entity.id)

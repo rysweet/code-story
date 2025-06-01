@@ -1,6 +1,6 @@
 from typing import Any
 
-'Prometheus metrics collection for the MCP Adapter.\n\nThis module provides metrics collection for the MCP Adapter using Prometheus.\n'
+"Prometheus metrics collection for the MCP Adapter.\n\nThis module provides metrics collection for the MCP Adapter using Prometheus.\n"
 from functools import lru_cache
 
 from prometheus_client import Counter, Gauge, Histogram
@@ -14,15 +14,75 @@ class MCPMetrics:
 
     def __init__(self: Any) -> None:
         """Initialize metrics collectors."""
-        self.tool_calls_total = Counter('mcp_tool_calls_total', 'Total number of tool calls', ['tool_name', 'status'])
-        self.tool_call_duration = Histogram('mcp_tool_call_duration_seconds', 'Duration of tool calls in seconds', ['tool_name'], buckets=(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, float('inf')))
-        self.auth_attempts_total = Counter('mcp_auth_attempts_total', 'Total number of authentication attempts', ['status'])
-        self.active_connections = Gauge('mcp_active_connections', 'Number of active connections', ['protocol'])
-        self.service_api_calls_total = Counter('mcp_service_api_calls_total', 'Total number of calls to the Code Story service API', ['endpoint', 'status'])
-        self.service_api_call_duration = Histogram('mcp_service_api_call_duration_seconds', 'Duration of calls to the Code Story service API in seconds', ['endpoint'], buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, float('inf')))
-        self.graph_operation_total = Counter('mcp_graph_operation_total', 'Total number of graph operations', ['operation_type'])
+        self.tool_calls_total = Counter(
+            "mcp_tool_calls_total",
+            "Total number of tool calls",
+            ["tool_name", "status"],
+        )
+        self.tool_call_duration = Histogram(
+            "mcp_tool_call_duration_seconds",
+            "Duration of tool calls in seconds",
+            ["tool_name"],
+            buckets=(
+                0.005,
+                0.01,
+                0.025,
+                0.05,
+                0.075,
+                0.1,
+                0.25,
+                0.5,
+                0.75,
+                1.0,
+                2.5,
+                5.0,
+                7.5,
+                10.0,
+                float("inf"),
+            ),
+        )
+        self.auth_attempts_total = Counter(
+            "mcp_auth_attempts_total",
+            "Total number of authentication attempts",
+            ["status"],
+        )
+        self.active_connections = Gauge(
+            "mcp_active_connections", "Number of active connections", ["protocol"]
+        )
+        self.service_api_calls_total = Counter(
+            "mcp_service_api_calls_total",
+            "Total number of calls to the Code Story service API",
+            ["endpoint", "status"],
+        )
+        self.service_api_call_duration = Histogram(
+            "mcp_service_api_call_duration_seconds",
+            "Duration of calls to the Code Story service API in seconds",
+            ["endpoint"],
+            buckets=(
+                0.01,
+                0.025,
+                0.05,
+                0.1,
+                0.25,
+                0.5,
+                0.75,
+                1.0,
+                2.5,
+                5.0,
+                7.5,
+                10.0,
+                float("inf"),
+            ),
+        )
+        self.graph_operation_total = Counter(
+            "mcp_graph_operation_total",
+            "Total number of graph operations",
+            ["operation_type"],
+        )
 
-    def record_tool_call(self: Any, tool_name: str, status: str, duration: float) -> None:
+    def record_tool_call(
+        self: Any, tool_name: str, status: str, duration: float
+    ) -> None:
         """Record a tool call.
 
         Args:
@@ -41,7 +101,7 @@ class MCPMetrics:
         """
         self.auth_attempts_total.labels(status=status).inc()
 
-    def record_connection(self: Any, protocol: str, count: int=1) -> None:
+    def record_connection(self: Any, protocol: str, count: int = 1) -> None:
         """Record a connection.
 
         Args:
@@ -50,7 +110,9 @@ class MCPMetrics:
         """
         self.active_connections.labels(protocol=protocol).inc(count)
 
-    def record_service_api_call(self: Any, endpoint: str, status: str, duration: float) -> None:
+    def record_service_api_call(
+        self: Any, endpoint: str, status: str, duration: float
+    ) -> None:
         """Record a call to the Code Story service API.
 
         Args:
@@ -68,6 +130,7 @@ class MCPMetrics:
             operation_type: Type of operation (search, path_finding, summarization)
         """
         self.graph_operation_total.labels(operation_type=operation_type).inc()
+
 
 @lru_cache
 def get_metrics() -> MCPMetrics:

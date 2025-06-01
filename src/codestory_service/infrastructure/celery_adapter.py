@@ -74,7 +74,9 @@ class CeleryAdapter:
                 "status": "healthy",
                 "details": {
                     "active_workers": len(active_workers) if active_workers else 0,
-                    "registered_tasks": len(registered_workers) if registered_workers else 0,
+                    "registered_tasks": len(registered_workers)
+                    if registered_workers
+                    else 0,
                 },
             }
         except Exception as e:
@@ -139,7 +141,9 @@ class CeleryAdapter:
                     if step_name == "blarify":
                         # Blarify step doesn't use certain parameters
                         filtered_options = {
-                            k: v for k, v in request.options.items() if k not in ["concurrency"]
+                            k: v
+                            for k, v in request.options.items()
+                            if k not in ["concurrency"]
                         }
                         step_config.update(filtered_options)
                         logger.debug(
@@ -173,7 +177,11 @@ class CeleryAdapter:
             # For testing, use a local reference that can be mocked
             task_func = getattr(self, "_run_ingestion_pipeline", run_ingestion_pipeline)
             # Map priority to queue name
-            queue_name = request.priority if request.priority in {"high", "default", "low"} else "default"
+            queue_name = (
+                request.priority
+                if request.priority in {"high", "default", "low"}
+                else "default"
+            )
             # Scheduling support: determine eta/countdown
             eta = None
             countdown = 0
@@ -206,7 +214,9 @@ class CeleryAdapter:
                 source=request.source,  # Add required source field
                 steps=request.steps or ["default_pipeline"],  # Add required steps field
                 message="Ingestion job submitted successfully",
-                eta=int(eta.timestamp()) if eta else (int(time.time()) + countdown if countdown else int(time.time())),
+                eta=int(eta.timestamp())
+                if eta
+                else (int(time.time()) + countdown if countdown else int(time.time())),
             )
 
         except Exception as e:
@@ -236,7 +246,11 @@ class CeleryAdapter:
             def build_steps_from_result(result: Any) -> dict[str, StepProgress]:
                 steps = {}
                 # If result is a list of step dicts (from orchestrate_pipeline)
-                if isinstance(result, dict) and "steps" in result and isinstance(result["steps"], list):
+                if (
+                    isinstance(result, dict)
+                    and "steps" in result
+                    and isinstance(result["steps"], list)
+                ):
                     for step in result["steps"]:
                         name = step.get("step") or step.get("name") or "unknown"
                         steps[name] = StepProgress(
@@ -247,12 +261,22 @@ class CeleryAdapter:
                             error=step.get("error"),
                             started_at=(
                                 datetime.fromtimestamp(start_time_val)
-                                if (start_time_val := CeleryAdapter._safe_float(step.get("start_time"))) is not None
+                                if (
+                                    start_time_val := CeleryAdapter._safe_float(
+                                        step.get("start_time")
+                                    )
+                                )
+                                is not None
                                 else None
                             ),
                             completed_at=(
                                 datetime.fromtimestamp(end_time_val)
-                                if (end_time_val := CeleryAdapter._safe_float(step.get("end_time"))) is not None
+                                if (
+                                    end_time_val := CeleryAdapter._safe_float(
+                                        step.get("end_time")
+                                    )
+                                )
+                                is not None
                                 else None
                             ),
                             duration=step.get("duration"),
@@ -272,12 +296,22 @@ class CeleryAdapter:
                         error=result.get("error"),
                         started_at=(
                             datetime.fromtimestamp(start_time_val)
-                            if (start_time_val := CeleryAdapter._safe_float(result.get("start_time"))) is not None
+                            if (
+                                start_time_val := CeleryAdapter._safe_float(
+                                    result.get("start_time")
+                                )
+                            )
+                            is not None
                             else None
                         ),
                         completed_at=(
                             datetime.fromtimestamp(end_time_val)
-                            if (end_time_val := CeleryAdapter._safe_float(result.get("end_time"))) is not None
+                            if (
+                                end_time_val := CeleryAdapter._safe_float(
+                                    result.get("end_time")
+                                )
+                            )
+                            is not None
                             else None
                         ),
                         duration=result.get("duration"),
@@ -558,7 +592,9 @@ async def get_celery_adapter() -> CeleryAdapter:
         if celery_health["status"] == "healthy":
             return adapter
         # If not healthy, raise an exception
-        error_msg = celery_health["details"].get("error", "No active Celery workers found")
+        error_msg = celery_health["details"].get(
+            "error", "No active Celery workers found"
+        )
         logger.error(f"Celery adapter not healthy: {error_msg}")
         raise RuntimeError(f"Celery component unhealthy: {error_msg}")
     except Exception as e:

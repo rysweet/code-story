@@ -91,7 +91,9 @@ class ContentAnalyzer:
             section_type = "usage"
         elif any(kw in content.lower() for kw in ["api", "reference", "documentation"]):
             section_type = "api"
-        elif any(kw in content.lower() for kw in ["config", "configuration", "setting"]):
+        elif any(
+            kw in content.lower() for kw in ["config", "configuration", "setting"]
+        ):
             section_type = "configuration"
 
         return {"keywords": keywords, "section_type": section_type}
@@ -345,7 +347,9 @@ class ContentAnalyzer:
 
         try:
             assert self.llm_client is not None
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
+            response = self.llm_client.chat(
+                messages=messages, max_tokens=100, temperature=0.0
+            )
             result = response.choices[0].message.content
             return result.strip() if isinstance(result, str) else ""
         except Exception as e:
@@ -381,7 +385,9 @@ class ContentAnalyzer:
 
         try:
             assert self.llm_client is not None
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
+            response = self.llm_client.chat(
+                messages=messages, max_tokens=100, temperature=0.0
+            )
             result = response.choices[0].message.content
             return result.strip() if isinstance(result, str) else ""
         except Exception as e:
@@ -417,7 +423,9 @@ class ContentAnalyzer:
 
         try:
             assert self.llm_client is not None
-            response = self.llm_client.chat(messages=messages, max_tokens=100, temperature=0.0)
+            response = self.llm_client.chat(
+                messages=messages, max_tokens=100, temperature=0.0
+            )
             result = response.choices[0].message.content
             return result.strip() if isinstance(result, str) else ""
         except Exception as e:

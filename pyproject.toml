@@ -46,6 +46,7 @@ docs = ["sphinx", "sphinx-rtd-theme", "myst-parser", "sphinxcontrib-mermaid", "s
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
+pytest-xdist = "^3.5.0"
 pytest-asyncio = "^0.23.5"
 pytest-cov = "^4.1.0"
 testcontainers = "^3.7.1"

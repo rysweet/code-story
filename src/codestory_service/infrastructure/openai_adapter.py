@@ -35,7 +35,9 @@ def get_azure_tenant_id_from_environment() -> str | None:
     for env_var in ["AZURE_TENANT_ID", "AZURE_OPENAI__TENANT_ID", "OPENAI__TENANT_ID"]:
         if os.environ.get(env_var):
             tenant_id = os.environ[env_var]
-            logger.info(f"Found tenant ID in environment variable {env_var}: {tenant_id}")
+            logger.info(
+                f"Found tenant ID in environment variable {env_var}: {tenant_id}"
+            )
             return tenant_id
 
     # Check .azure/config file
@@ -135,7 +137,9 @@ class OpenAIAdapter:
         logger.info(f"Azure Tenant ID: {tenant_id}")
 
         # Check if API key is set (but don't log the actual value)
-        api_key = os.environ.get("AZURE_OPENAI__API_KEY") or os.environ.get("OPENAI__API_KEY")
+        api_key = os.environ.get("AZURE_OPENAI__API_KEY") or os.environ.get(
+            "OPENAI__API_KEY"
+        )
         logger.info(f"API Key configured: {'Yes' if api_key else 'No'}")
 
         # Check Azure CLI authentication status
@@ -157,7 +161,9 @@ class OpenAIAdapter:
 
         # Check current working directory and container info
         logger.info(f"Current working directory: {os.getcwd()}")
-        logger.info(f"Running in container: {'Yes' if os.path.exists('/.dockerenv') else 'No'}")
+        logger.info(
+            f"Running in container: {'Yes' if os.path.exists('/.dockerenv') else 'No'}"
+        )
 
         try:
             # Create or use provided client
@@ -165,21 +171,31 @@ class OpenAIAdapter:
             try:
                 self.client = client or OpenAIClient(
                     endpoint=os.environ.get("AZURE_OPENAI__ENDPOINT"),
-                    embedding_model=os.environ.get("OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"),
+                    embedding_model=os.environ.get(
+                        "OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"
+                    ),
                     chat_model=os.environ.get("OPENAI__CHAT_MODEL", "gpt-4o"),
                     reasoning_model=os.environ.get("OPENAI__REASONING_MODEL", "gpt-4o"),
-                    api_version=os.environ.get("AZURE_OPENAI__API_VERSION", "2025-03-01-preview"),
+                    api_version=os.environ.get(
+                        "AZURE_OPENAI__API_VERSION", "2025-03-01-preview"
+                    ),
                 )
                 logger.info("OpenAI client initialized successfully.")
-                logger.info(f"Client details: Endpoint={self.client.endpoint}, ChatModel={self.client.chat_model}, EmbeddingModel={self.client.embedding_model}, ReasoningModel={self.client.reasoning_model}")
+                logger.info(
+                    f"Client details: Endpoint={self.client.endpoint}, ChatModel={self.client.chat_model}, EmbeddingModel={self.client.embedding_model}, ReasoningModel={self.client.reasoning_model}"
+                )
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAI client: {e}")
                 raise
 
             # Log client configuration details
             logger.info(f"Chat model: {getattr(self.client, 'chat_model', 'NOT_SET')}")
-            logger.info(f"Embedding model: {getattr(self.client, 'embedding_model', 'NOT_SET')}")
-            logger.info(f"Reasoning model: {getattr(self.client, 'reasoning_model', 'NOT_SET')}")
+            logger.info(
+                f"Embedding model: {getattr(self.client, 'embedding_model', 'NOT_SET')}"
+            )
+            logger.info(
+                f"Reasoning model: {getattr(self.client, 'reasoning_model', 'NOT_SET')}"
+            )
 
         except AuthenticationError as e:
             logger.error(f"OpenAI authentication error during initialization: {e!s}")
@@ -197,9 +213,13 @@ class OpenAIAdapter:
 
             # Log additional debug info for common issues
             if "404" in str(e):
-                logger.error("404 error suggests endpoint or deployment configuration issue")
+                logger.error(
+                    "404 error suggests endpoint or deployment configuration issue"
+                )
             elif "401" in str(e) or "403" in str(e):
-                logger.error("Authentication error suggests credential or permission issue")
+                logger.error(
+                    "Authentication error suggests credential or permission issue"
+                )
             elif "timeout" in str(e).lower():
                 logger.error("Timeout suggests network connectivity issue")
 
@@ -207,10 +227,9 @@ class OpenAIAdapter:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize OpenAI client: {e!s}",
             ) from e
+
     async def answer_question(
-        self,
-        request: AskRequest,
-        context_items: list[dict[str, Any]]
+        self, request: AskRequest, context_items: list[dict[str, Any]]
     ) -> AskAnswer:
         """
         Generate a natural language answer to a codebase question.
@@ -266,20 +285,28 @@ class OpenAIAdapter:
         """
         try:
             # Get the actual deployment model from environment first, then fallback to client default
-            test_model = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID") or self.client.chat_model
+            test_model = (
+                os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID") or self.client.chat_model
+            )
             test_message = "Hello! This is a health check."
-            
+
             logger.info(f"Health check using model: {test_model}")
             logger.info(f"Test message: {test_message}")
 
             # Check if this is a reasoning model and adjust parameters accordingly
-            is_reasoning_model = any(reasoning_model in test_model.lower() for reasoning_model in ["o1", "o1-preview", "o1-mini"])
+            is_reasoning_model = any(
+                reasoning_model in test_model.lower()
+                for reasoning_model in ["o1", "o1-preview", "o1-mini"]
+            )
             logger.info(f"Is reasoning model: {is_reasoning_model}")
-            
+
             # Use the client's chat_async method which handles reasoning models properly
             from codestory.llm.models import ChatMessage, ChatRole
+
             messages = [
-                ChatMessage(role=ChatRole.SYSTEM, content="You are a helpful assistant."),
+                ChatMessage(
+                    role=ChatRole.SYSTEM, content="You are a helpful assistant."
+                ),
                 ChatMessage(role=ChatRole.USER, content=test_message),
             ]
 
@@ -287,20 +314,17 @@ class OpenAIAdapter:
 
             if is_reasoning_model:
                 # For reasoning models, use max_completion_tokens and no temperature
-                logger.info("Using max_completion_tokens=10 for reasoning model (no temperature)")
+                logger.info(
+                    "Using max_completion_tokens=10 for reasoning model (no temperature)"
+                )
                 response = await self.client.chat_async(
-                    messages,
-                    model=test_model,
-                    max_completion_tokens=10
+                    messages, model=test_model, max_completion_tokens=10
                 )
             else:
                 # For regular models, use max_tokens and temperature
                 logger.info("Using max_tokens=10 and temperature=0.1 for regular model")
                 response = await self.client.chat_async(
-                    messages,
-                    model=test_model,
-                    max_tokens=10,
-                    temperature=0.1
+                    messages, model=test_model, max_tokens=10, temperature=0.1
                 )
 
             logger.info("Health check request completed successfully")
@@ -404,7 +428,9 @@ class OpenAIAdapter:
 
                 logger.error(f"Tenant ID for renewal: {tenant_id}")
 
-                renewal_cmd = "az login --scope https://cognitiveservices.azure.com/.default"
+                renewal_cmd = (
+                    "az login --scope https://cognitiveservices.azure.com/.default"
+                )
                 if tenant_id:
                     renewal_cmd = f"az login --tenant {tenant_id} --scope https://cognitiveservices.azure.com/.default"
 
@@ -423,7 +449,9 @@ class OpenAIAdapter:
                     },
                 }
             else:
-                logger.warning(f"OpenAI health check failed with unexpected error: {error_message}")
+                logger.warning(
+                    f"OpenAI health check failed with unexpected error: {error_message}"
+                )
 
                 # Log additional context for debugging
                 logger.error(f"Client type: {type(self.client)}")

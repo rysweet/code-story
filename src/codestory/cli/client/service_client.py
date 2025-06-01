@@ -156,7 +156,9 @@ class ServiceClient:
                 # so it depends on whether we're in a test or not
                 if "pytest" in sys.modules:
                     # In test mode, raise the error to match test expectations
-                    self.console.print(f"[dim]Health check failed: {e!s}[/]", style="dim")
+                    self.console.print(
+                        f"[dim]Health check failed: {e!s}[/]", style="dim"
+                    )
                     raise ServiceError(f"Health check failed: {e!s}")
 
                 # In normal operation, try one more request
@@ -184,7 +186,9 @@ class ServiceClient:
                 self.console.print(
                     f"[dim]Server connection failed: {connect_err!s}[/]", style="dim"
                 )
-                raise ServiceError(f"Health check failed: {connect_err!s}") from connect_err
+                raise ServiceError(
+                    f"Health check failed: {connect_err!s}"
+                ) from connect_err
 
             # For normal operation outside of tests, give a helpful message and service partial data
             self.console.print(f"[dim]Health check failed: {e!s}[/]", style="dim")
@@ -210,7 +214,8 @@ class ServiceClient:
                 if (
                     openai_details.get("type") == "AuthenticationError"
                     or "DefaultAzureCredential" in str(openai_details.get("error", ""))
-                    or "AzureIdentityCredentialAdapter" in str(openai_details.get("error", ""))
+                    or "AzureIdentityCredentialAdapter"
+                    in str(openai_details.get("error", ""))
                     or "AADSTS700003" in str(openai_details.get("error", ""))
                 ):
                     # Extract solution if provided
@@ -226,7 +231,9 @@ class ServiceClient:
                     renewal_success = openai_details.get("renewal_success", False)
 
                     # Display a clear error message
-                    self.console.print("[bold red]Azure Authentication Issue Detected[/bold red]")
+                    self.console.print(
+                        "[bold red]Azure Authentication Issue Detected[/bold red]"
+                    )
                     self.console.print(
                         "The service is having trouble authenticating with Azure OpenAI."
                     )
@@ -242,7 +249,9 @@ class ServiceClient:
                                 "This might be because the service hasn't fully recognized "
                                 "the new tokens yet."
                             )
-                            self.console.print("\n[bold yellow]Recommendations:[/bold yellow]")
+                            self.console.print(
+                                "\n[bold yellow]Recommendations:[/bold yellow]"
+                            )
                             self.console.print(
                                 "1. Wait a minute and check the status again: "
                                 "codestory service status"
@@ -264,7 +273,9 @@ class ServiceClient:
                                     f"[dim]Error: {openai_details['renewal_error']}[/dim]"
                                 )
 
-                            self.console.print("\n[bold yellow]Recommendations:[/bold yellow]")
+                            self.console.print(
+                                "\n[bold yellow]Recommendations:[/bold yellow]"
+                            )
                             self.console.print(
                                 "1. Run the CLI auth renewal: "
                                 "codestory service auth-renew"
@@ -281,7 +292,9 @@ class ServiceClient:
                         self.console.print(
                             "Run the following command to renew your Azure credentials:"
                         )
-                        self.console.print("[bold cyan]codestory service auth-renew[/bold cyan]\n")
+                        self.console.print(
+                            "[bold cyan]codestory service auth-renew[/bold cyan]\n"
+                        )
 
                         if tenant_id:
                             self.console.print("Or with specific tenant ID:")
@@ -308,7 +321,7 @@ class ServiceClient:
 
     def _handle_error_package(self, data: dict[str, Any]) -> dict[str, Any]:
         """Detects service-side errors in response and handles them.
-        
+
         - Prints errors
         - Runs a health status check.
         """
@@ -352,7 +365,9 @@ class ServiceClient:
         repo_config_path = None
         if not is_container_path:
             # Check if repository has config indicating it's been mounted
-            repo_config_path = os.path.join(abs_repository_path, ".codestory", "repository.toml")
+            repo_config_path = os.path.join(
+                abs_repository_path, ".codestory", "repository.toml"
+            )
             # Repository config exists but wasn't used - log it but don't use it
             # (This might be relevant for debugging)
             if os.path.exists(repo_config_path):
@@ -411,16 +426,16 @@ class ServiceClient:
                 repo_name = os.path.basename(abs_repository_path)
                 error_detail += "\n\nTry these solutions:"
                 error_detail += "\n1. Mount the repository using our script:"
-                error_detail += (
-                    f'\n   ./scripts/mount_repository.sh "{abs_repository_path}" --restart'
-                )
+                error_detail += f'\n   ./scripts/mount_repository.sh "{abs_repository_path}" --restart'
                 error_detail += "\n\n2. Or use the container path format with the CLI:"
-                error_detail += f'\n   codestory ingest start "{abs_repository_path}" --container'
                 error_detail += (
-                    "\n\n3. For manual mounting, modify your docker-compose.yml to include:"
+                    f'\n   codestory ingest start "{abs_repository_path}" --container'
                 )
+                error_detail += "\n\n3. For manual mounting, modify your docker-compose.yml to include:"
                 error_detail += "\n   volumes:"
-                error_detail += f"\n     - {abs_repository_path}:/repositories/{repo_name}"
+                error_detail += (
+                    f"\n     - {abs_repository_path}:/repositories/{repo_name}"
+                )
 
             raise ServiceError(f"Failed to start ingestion: {error_detail}") from None
 
@@ -488,7 +503,9 @@ class ServiceClient:
                 elif "job_id" in data:
                     # Special case for mock service
                     if data.get("job_id") == "jobs" and self.console:
-                        self.console.print("[yellow]Warning: Mock service detected[/yellow]")
+                        self.console.print(
+                            "[yellow]Warning: Mock service detected[/yellow]"
+                        )
                     return [data]
                 # Invalid format
                 else:
@@ -518,7 +535,7 @@ class ServiceClient:
         Args:
             query: Cypher query or MCP tool call string.
             parameters: Optional query parameters.
-            query_type: Optional query type ("read" or "write"). If None, auto-detected 
+            query_type: Optional query type ("read" or "write"). If None, auto-detected
                 based on query.
 
         Returns:
@@ -555,11 +572,15 @@ class ServiceClient:
             )
             endpoint_type = "cypher" if is_cypher else "mcp"
 
-            # If query_type wasn't provided but this is a Cypher query, auto-detect 
+            # If query_type wasn't provided but this is a Cypher query, auto-detect
             # if it's a write operation
             if query_type is None and is_cypher:
                 # Writing operations typically start with these keywords
-                if query.strip().upper().startswith(("CREATE", "MERGE", "DELETE", "REMOVE", "SET")):
+                if (
+                    query.strip()
+                    .upper()
+                    .startswith(("CREATE", "MERGE", "DELETE", "REMOVE", "SET"))
+                ):
                     data["query_type"] = "write"
                 else:
                     data["query_type"] = "read"
@@ -662,7 +683,7 @@ class ServiceClient:
 
     def get_service_status(self, renew_auth: bool = False) -> dict[str, Any]:
         """Query the health endpoint and return the status of the Code Story service.
-        
+
         Returns the status of the service and its dependencies.
         """
         import traceback
@@ -678,7 +699,9 @@ class ServiceClient:
         console.log(f"[debug] get_service_status: base_url={self.base_url}")
         try:
             response = self.session.get(f"{self.base_url}/health", timeout=10)
-            console.log(f"[debug] GET {self.base_url}/health -> status {response.status_code}")
+            console.log(
+                f"[debug] GET {self.base_url}/health -> status {response.status_code}"
+            )
             response.raise_for_status()
             health_data = response.json()
             console.log("[debug] Health endpoint response:")
@@ -732,7 +755,9 @@ class ServiceClient:
                         # If endpoint has /v1/ but base_url doesn't end with /v1
                         # use the endpoint as is, but with the base URL without any path
                         base_url_parts = self.base_url.split("/")
-                        base_url_without_path = "/".join(base_url_parts[:3])  # http://host:port
+                        base_url_without_path = "/".join(
+                            base_url_parts[:3]
+                        )  # http://host:port
                         temp_client = httpx.Client(
                             base_url=base_url_without_path,
                             timeout=30.0,
@@ -842,9 +867,7 @@ class ServiceClient:
             except Exception:
                 pass
 
-            if (
-                "CLI error" in error_detail or "NormalizedResponse" in error_detail
-            ):
+            if "CLI error" in error_detail or "NormalizedResponse" in error_detail:
                 raise ServiceError(
                     f"Azure authentication renewal failed due to Azure CLI "
                     f"installation issue: {error_detail}\n"
@@ -852,7 +875,9 @@ class ServiceClient:
                     "brew update && brew upgrade azure-cli"
                 ) from None
             else:
-                raise ServiceError(f"Azure authentication renewal failed: {error_detail}") from None
+                raise ServiceError(
+                    f"Azure authentication renewal failed: {error_detail}"
+                ) from None
 
     def clear_database(self, confirm: bool = False) -> dict[str, Any]:
         """
@@ -883,7 +908,9 @@ class ServiceClient:
 
             # Re-initialize the schema
             self.console.print("[yellow]Reinitializing database schema...[/]")
-            self.execute_query(query="CALL apoc.schema.assert({}, {})", query_type="write")
+            self.execute_query(
+                query="CALL apoc.schema.assert({}, {})", query_type="write"
+            )
 
             return {
                 "status": "success",
@@ -895,7 +922,9 @@ class ServiceClient:
             # Check if this is an authorization error
             error_message = str(e)
             if "403" in error_message or "forbidden" in error_message.lower():
-                raise ServiceError("Administrative privileges required to clear database") from e
+                raise ServiceError(
+                    "Administrative privileges required to clear database"
+                ) from e
             raise ServiceError(f"Failed to clear database: {error_message}") from e
         except Exception as e:
             raise ServiceError(f"Failed to clear database: {e!s}") from e

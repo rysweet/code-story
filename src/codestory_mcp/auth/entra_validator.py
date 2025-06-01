@@ -12,6 +12,7 @@ from codestory_mcp.auth.scope_manager import ScopeManager
 
 logger = structlog.get_logger(__name__)
 
+
 class AuthenticationError(Exception):
     """Authentication error."""
 
@@ -24,6 +25,7 @@ class AuthenticationError(Exception):
         self.message = message
         super().__init__(message)
 
+
 class AuthorizationError(Exception):
     """Authorization error."""
 
@@ -35,6 +37,7 @@ class AuthorizationError(Exception):
         """
         self.message = message
         super().__init__(message)
+
 
 class EntraValidator:
     """JWT token validator for Microsoft Entra ID."""
@@ -56,7 +59,9 @@ class EntraValidator:
         """
         self.tenant_id = tenant_id
         self.audience = audience
-        self.jwks_client = jwks_client or PyJWKClient(f'https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys')
+        self.jwks_client = jwks_client or PyJWKClient(
+            f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
+        )
         self.scope_manager = scope_manager or ScopeManager()
 
     async def validate_token(self, token: str) -> Dict[str, Any]:
@@ -77,19 +82,23 @@ class EntraValidator:
             claims = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=['RS256'],
+                algorithms=["RS256"],
                 audience=self.audience,
-                options={'verify_signature': True},
+                options={"verify_signature": True},
             )
-            logger.info('Token validated successfully', sub=claims.get('sub', 'unknown'), client_id=claims.get('azp', 'unknown'))
+            logger.info(
+                "Token validated successfully",
+                sub=claims.get("sub", "unknown"),
+                client_id=claims.get("azp", "unknown"),
+            )
             self._verify_scopes(claims)
-            return cast('Dict[str, Any]', claims)
+            return cast("Dict[str, Any]", claims)
         except jwt.PyJWTError as e:
-            logger.warning('Token validation failed', error=str(e))
-            raise AuthenticationError(f'Token validation failed: {e!s}') from e
+            logger.warning("Token validation failed", error=str(e))
+            raise AuthenticationError(f"Token validation failed: {e!s}") from e
         except Exception as e:
-            logger.exception('Unexpected error during token validation')
-            raise AuthenticationError(f'Token validation failed: {e!s}') from e
+            logger.exception("Unexpected error during token validation")
+            raise AuthenticationError(f"Token validation failed: {e!s}") from e
 
     def _verify_scopes(self, claims: Dict[str, Any]) -> None:
         """Verify the token contains required scopes.
@@ -100,7 +109,7 @@ class EntraValidator:
         Raises:
             AuthorizationError: If token lacks required scopes
         """
-        raw_scopes = claims.get('scp', claims.get('scope', ''))
+        raw_scopes = claims.get("scp", claims.get("scope", ""))
         scopes: List[str]
         if isinstance(raw_scopes, str):
             scopes = raw_scopes.split()
@@ -109,5 +118,9 @@ class EntraValidator:
         else:
             scopes = []
         if not self.scope_manager.has_required_scope(scopes):
-            logger.warning('Token lacks required scopes', provided_scopes=scopes, required_scopes=self.scope_manager.get_required_scopes())
-            raise AuthorizationError('Token lacks required scopes')
+            logger.warning(
+                "Token lacks required scopes",
+                provided_scopes=scopes,
+                required_scopes=self.scope_manager.get_required_scopes(),
+            )
+            raise AuthorizationError("Token lacks required scopes")
