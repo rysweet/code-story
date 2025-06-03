@@ -205,7 +205,9 @@ class RelationshipSerializer:
             for i, element in enumerate(path):
                 if i % 2 == 0:  # Node (even indices)
                     # Fix: Add type guard to ensure element is a Node
-                    if isinstance(element, Node):
+                    if isinstance(element, Node) or (
+                        hasattr(element, "id") and hasattr(element, "labels")
+                    ):
                         path_elements.append(
                             {
                                 "element_type": "node",
@@ -218,8 +220,12 @@ class RelationshipSerializer:
                             }
                         )
                 else:  # Relationship (odd indices)
-                    # Fix: Add type guard to ensure element is a Relationship
-                    if isinstance(element, Relationship):
+                    if isinstance(element, Relationship) or (
+                        hasattr(element, "id")
+                        and hasattr(element, "type")
+                        and hasattr(element, "start_node")
+                        and hasattr(element, "end_node")
+                    ):
                         path_elements.append(
                             {
                                 "element_type": "relationship",

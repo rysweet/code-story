@@ -3,7 +3,6 @@ from typing import Any
 "Integration tests for the Documentation Grapher workflow step.\n\nThese tests verify that the DocumentationGrapherStep can correctly process\na repository, extract documentation entities, and store them in Neo4j.\n"
 import os
 
-neo4j_port = "7688"
 import tempfile
 import time
 from pathlib import Path
@@ -11,11 +10,11 @@ from unittest.mock import patch
 
 import pytest
 
-os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
+os.environ["NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "testdb"
-os.environ["REDIS__URI"] = "redis://localhost:6380"
+os.environ["NEO4J__DATABASE"] = "neo4j"
+os.environ["REDIS__URI"] = os.getenv("REDIS_URI", "redis://localhost:6379/0")
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.llm.models import (
     ChatCompletionResponse,
@@ -56,10 +55,10 @@ def sample_repo() -> None:
 def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     connector = Neo4jConnector(
-        uri=f"bolt://localhost:{neo4j_port}",
+        uri=os.environ["NEO4J_URI"],
         username="neo4j",
         password="password",
-        database="testdb",
+        database="neo4j",
     )
     connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
     yield connector

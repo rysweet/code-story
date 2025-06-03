@@ -17,6 +17,13 @@ logger = logging.getLogger(__name__)
 class TestFilesystemIngestionSimple:
     """Simplified filesystem ingestion tests that run the step directly."""
 
+    @pytest.fixture(autouse=True, scope="class")
+    def patch_celery_redis(self):
+        import os
+        from codestory.ingestion_pipeline.celery_app import app
+        redis_uri = os.environ["REDIS_URI"]
+        app.conf.update(broker_url=redis_uri, result_backend=redis_uri)
+
     @pytest.fixture(autouse=True)
     def setup_and_cleanup(self: Any) -> None:
         """Set up test environment and clean up afterwards."""

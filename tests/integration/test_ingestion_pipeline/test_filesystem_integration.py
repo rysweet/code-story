@@ -3,8 +3,6 @@ from typing import Any
 "Integration tests for the filesystem workflow step.\n\nThese tests verify that the FileSystemStep can correctly process a repository\nand store its structure in the Neo4j database.\n"
 import os
 
-ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 import time
 from pathlib import Path
@@ -161,10 +159,10 @@ def sample_repo() -> None:
 def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     connector = Neo4jConnector(
-        uri=f"bolt://localhost:{neo4j_port}",
+        uri=os.environ["NEO4J_URI"],
         username="neo4j",
         password="password",
-        database="testdb",
+        database="neo4j",
     )
     try:
         connector.execute_query("MATCH (n) DETACH DELETE n", write=True, params={})

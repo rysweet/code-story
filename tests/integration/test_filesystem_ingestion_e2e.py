@@ -407,8 +407,7 @@ class TestFilesystemIngestionE2E:
         """
         import re
 
-        os.environ["REDIS__URI"] = "redis://redis:6380/0"
-        os.environ["REDIS_URI"] = "redis://redis:6380/0"
+        os.environ["REDIS__URI"] = os.environ["REDIS_URI"]
         logger.info("Checking CodeStory service container status...")
         required_services = {
             "neo4j": ["neo4j", "codestory-neo4j"],

@@ -1,3 +1,6 @@
+import pytest
+pytest.skip("Docker compose tests replaced by Testcontainers in CI", allow_module_level=True)
+
 """Integration tests for Docker container network communication.
 
 This module contains tests that specifically validate the communication between

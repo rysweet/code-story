@@ -16,11 +16,10 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
 @pytest.fixture
-def neo4j_connector(neo4j_env: Any) -> None:
+def neo4j_connector() -> None:
     """Return a Neo4j connector for tests.
 
-    This uses the neo4j_env fixture defined in conftest.py to ensure
-    proper environment configuration.
+    Uses environment variables set by the autouse Neo4j container fixture.
     """
 
     settings = get_settings()

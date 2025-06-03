@@ -433,8 +433,7 @@ class Neo4jConnector:
             List of results for each query
 
         Raises:
-            QueryError: If any query execution fails
-            ValueError: If queries and params_list have different lengths
+            TransactionError: If any query execution fails
         """
         if params_list and len(queries) != len(params_list):
             raise ValueError("Number of queries and parameter sets must match")

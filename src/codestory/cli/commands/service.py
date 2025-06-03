@@ -883,15 +883,15 @@ def renew_azure_auth(
                 success = inject_proc.returncode == 0
 
                 # Show the output if successful
-                if success and process.stdout:
-                    console.print(process.stdout)
+                if success and inject_proc.stdout:
+                    console.print(inject_proc.stdout)
 
                 # Show a summary if not successful
                 if not success:
                     console.print("[red]Azure authentication renewal failed.[/]")
                     console.print("Run with --verbose for full output.")
                     # Show the last few lines of the error
-                    if process.stderr:
+                    if inject_proc.stderr:
                         error_lines = inject_proc.stderr.strip().split("\n")[-5:]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:
@@ -1067,14 +1067,14 @@ def renew_azure_auth(
                 success = renew_proc.returncode == 0
 
                 # Show the output if successful
-                if success and process.stdout:
-                    console.print(process.stdout)
+                if success and renew_proc.stdout:
+                    console.print(renew_proc.stdout)
 
                 # Show errors if not successful
                 if not success:
                     console.print("[red]Token injection failed.[/]")
                     console.print("Run with --verbose for full output.")
-                    if process.stderr:
+                    if renew_proc.stderr:
                         error_lines = renew_proc.stderr.strip().split("\n")[-5:]
                         console.print("\n[bold red]Error output:[/]")
                         for line in error_lines:

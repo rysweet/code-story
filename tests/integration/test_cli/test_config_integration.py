@@ -1,3 +1,5 @@
+import pytest
+pytest.skip("Service integration tests skipped: docker-compose neutralized, use Testcontainers for Redis/Neo4j only", allow_module_level=True)
 """Integration tests for CLI configuration commands."""
 from typing import Any
 

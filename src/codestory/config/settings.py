@@ -14,7 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Neo4jSettings(BaseModel):
     """Neo4j database connection settings."""
 
-    uri: str = Field(..., description="Neo4j connection URI")
+    uri: str = Field("bolt://localhost:7687", description="Neo4j connection URI")
     username: str = Field("neo4j", description="Neo4j username")
     password: SecretStr | None = Field(None, description="Neo4j password")
     database: str = Field("neo4j", description="Neo4j database name")
@@ -288,22 +288,28 @@ class Settings(BaseSettings):
 
         # For tests, use the test configuration
         if in_test_env:
-            # Look for test_config.toml in various locations
-            test_config_paths = [
-                os.path.join(get_project_root(), "tests/fixtures/test_config.toml"),
-                os.path.join(os.getcwd(), "tests/fixtures/test_config.toml"),
-                os.path.join(os.getcwd(), "test_config.toml"),
-                # Additional paths for CI
-                "/home/runner/work/code-story/code-story/tests/fixtures/test_config.toml",
-            ]
+            # First check for a test-specific config file with testcontainer URIs
+            test_runtime_config = os.environ.get("CODESTORY_TEST_RUNTIME_CONFIG")
+            if test_runtime_config and os.path.exists(test_runtime_config):
+                config_files_to_try = [test_runtime_config]
+                print(f"Using test runtime config: {test_runtime_config}")
+            else:
+                # Look for test_config.toml in various locations
+                test_config_paths = [
+                    os.path.join(get_project_root(), "tests/fixtures/test_config.toml"),
+                    os.path.join(os.getcwd(), "tests/fixtures/test_config.toml"),
+                    os.path.join(os.getcwd(), "test_config.toml"),
+                    # Additional paths for CI
+                    "/home/runner/work/code-story/code-story/tests/fixtures/test_config.toml",
+                ]
 
-            for test_path in test_config_paths:
-                if os.path.exists(test_path):
-                    config_files_to_try = [test_path]
-                    print(f"Found test config at: {test_path}")
-                    break
-                else:
-                    print(f"Test config not found at: {test_path}")
+                for test_path in test_config_paths:
+                    if os.path.exists(test_path):
+                        config_files_to_try = [test_path]
+                        print(f"Found test config at: {test_path}")
+                        break
+                    else:
+                        print(f"Test config not found at: {test_path}")
         else:
             # Normal operation - try configs in order of precedence
             if custom_config_file:
@@ -342,11 +348,21 @@ class Settings(BaseSettings):
                     # Try the next config file
 
         # If no config files were loaded successfully
-        if not config_loaded and in_test_env:
-            pass
+        if not config_loaded:
+            if in_test_env:
+                print("No test configuration loaded successfully. Using default test settings.")
+            # Continue with defaults
+        elif in_test_env and not toml_settings:
+            # Config file loaded but no settings extracted
+            print("Test configuration loaded but no settings found. Using default test settings.")
         elif in_test_env:
-            # Provide default settings for tests if no config file is found
-            print("No test configuration found. Using default test settings.")
+            print(f"Test configuration loaded successfully with {len(toml_settings)} settings.")
+            # Don't override with defaults if we have a runtime config loaded
+            # This section was overriding our runtime config - removed the hardcoded fallback
+        
+        # Only provide default settings if no config was loaded at all
+        if in_test_env and not config_loaded and not toml_settings:
+            print("Using fallback test settings.")
             toml_settings = {
                 # Core settings
                 "app_name": "code-story-test",
@@ -441,6 +457,31 @@ class Settings(BaseSettings):
             }
 
         # Merge settings, with environment variables taking precedence
+        # For test environments, ensure environment variables override missing TOML values
+        if in_test_env:
+            # Add missing neo4j URI from environment if not in TOML
+            if "neo4j__uri" not in toml_settings and (
+                os.environ.get("NEO4J_URI") or os.environ.get("CODESTORY_NEO4J__URI")
+            ):
+                neo4j_uri = os.environ.get("NEO4J_URI") or os.environ.get("CODESTORY_NEO4J__URI")
+                toml_settings["neo4j__uri"] = neo4j_uri
+                if in_test_env:
+                    print(f"DEBUG: Using Neo4j URI from environment: {neo4j_uri}")
+            
+            # Also ensure other Neo4j settings can come from environment
+            for setting in ["username", "password", "database"]:
+                key = f"neo4j__{setting}"
+                env_key = f"NEO4J_{setting.upper()}"
+                codestory_env_key = f"CODESTORY_NEO4J__{setting.upper()}"
+                
+                if key not in toml_settings and (
+                    os.environ.get(env_key) or os.environ.get(codestory_env_key)
+                ):
+                    value = os.environ.get(env_key) or os.environ.get(codestory_env_key)
+                    toml_settings[key] = value
+                    if in_test_env:
+                        print(f"DEBUG: Using Neo4j {setting} from environment: {value}")
+        
         merged_settings = {**toml_settings, **data}
 
         # Debug the settings before initialization (only in test environment)

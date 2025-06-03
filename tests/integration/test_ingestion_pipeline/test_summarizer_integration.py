@@ -5,8 +5,6 @@ import os
 import tempfile
 import time
 
-ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -190,10 +188,10 @@ def sample_repo() -> None:
 def neo4j_connector() -> None:
     """Create a Neo4j connector for testing."""
     connector = Neo4jConnector(
-        uri=f"bolt://localhost:{neo4j_port}",
+        uri=os.environ["NEO4J_URI"],
         username="neo4j",
         password="password",
-        database="testdb",
+        database="neo4j",
     )
     connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
     yield connector

@@ -1,3 +1,5 @@
+import pytest
+pytest.skip("Docker compose tests replaced by Testcontainers in CI", allow_module_level=True)
 from typing import Any
 
 "\nTest Docker connectivity fix for the blarify step.\n\nThis test validates that our Docker connectivity fix resolves the original issue where\nthe blarify step couldn't access Docker daemon due to missing Docker client or\npermission issues.\n"

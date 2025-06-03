@@ -31,23 +31,17 @@ def get_test_settings() -> Settings:
         Settings: Test-configured settings instance
     """
     # Define neo4j test settings
-    # Determine the correct port based on environment
-    ci_env = os.environ.get("CI") == "true"
-    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
-    neo4j_port = "7687" if ci_env else ("7689" if docker_env else "7688")
-
-    # Determine URI based on environment
-    neo4j_uri = "bolt://neo4j:7687" if docker_env else f"bolt://localhost:{neo4j_port}"
+    neo4j_uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 
     neo4j = Neo4jSettings(  # type: ignore[call-arg]
         uri=neo4j_uri,
         username="neo4j",
         password="password",  # type: ignore[arg-type]
-        database="testdb",  # Match test DB name in docker-compose.test.yml
+        database="neo4j",  # Match test DB name in docker-compose.test.yml
     )
 
     # Define redis test settings based on environment
-    redis_uri = "redis://redis:6379/0" if docker_env else "redis://localhost:6389/0"
+    redis_uri = os.getenv("REDIS_URI", "redis://localhost:6379/0")
 
     redis = RedisSettings(
         uri=redis_uri,

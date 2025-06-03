@@ -3,8 +3,6 @@ from typing import Any
 "Test for the config API."
 import os
 
-ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
 import time
 import unittest.mock as mock
 from contextlib import asynccontextmanager
@@ -23,10 +21,10 @@ from codestory_service.main import create_app
 def neo4j_connector() -> None:
     """Create a Neo4j connector for integration tests."""
     connector = Neo4jConnector(
-        uri=f"bolt://localhost:{neo4j_port}",
+        uri=os.environ["NEO4J_URI"],
         username="neo4j",
         password="password",
-        database="testdb",
+        database="neo4j",
     )
     try:
         connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
@@ -44,16 +42,17 @@ def test_client(neo4j_connector: Any) -> None:
     """Create a test client for the FastAPI application."""
     os.environ["CODESTORY_SERVICE_DEV_MODE"] = "true"
     os.environ["CODESTORY_SERVICE_AUTH_ENABLED"] = "false"
-    os.environ["NEO4J_DATABASE"] = "testdb"
-    os.environ["CS_NEO4J_DATABASE"] = "testdb"
-    os.environ["NEO4J_URI"] = f"bolt://localhost:{neo4j_port}"
-    os.environ["CS_NEO4J_URI"] = f"bolt://localhost:{neo4j_port}"
+    os.environ["NEO4J_DATABASE"] = "neo4j"
+    os.environ["CS_NEO4J_DATABASE"] = "neo4j"
+    neo4j_uri = os.environ["NEO4J_URI"]
+    os.environ["NEO4J_URI"] = neo4j_uri
+    os.environ["CS_NEO4J_URI"] = neo4j_uri
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["CS_NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
     os.environ["CS_NEO4J_PASSWORD"] = "password"
-    os.environ["GRAPHDB_DATABASE"] = "testdb"
-    os.environ["CODESTORY_NEO4J_DATABASE"] = "testdb"
+    os.environ["GRAPHDB_DATABASE"] = "neo4j"
+    os.environ["CODESTORY_NEO4J_DATABASE"] = "neo4j"
     test_user = {
         "sub": "test-user-id",
         "name": "Test User",
@@ -72,7 +71,7 @@ def test_client(neo4j_connector: Any) -> None:
 
     @asynccontextmanager
     async def test_lifespan(app) -> None:
-        neo4j_connector.database = "testdb"
+        neo4j_connector.database = "neo4j"
         app.state.db = neo4j_connector
         yield
 
@@ -92,7 +91,7 @@ def test_client(neo4j_connector: Any) -> None:
                 }
             },
         }
-        os.environ["NEO4J_DATABASE"] = "testdb"
+        os.environ["NEO4J_DATABASE"] = "neo4j"
         test_client = TestClient(app)
         yield test_client
         app.dependency_overrides.pop(get_current_user, None)
@@ -108,7 +107,7 @@ def test_client(neo4j_connector: Any) -> None:
 @pytest.mark.integration
 def test_config_api_simple(test_client: Any) -> None:
     """Test the configuration API endpoints with basic validation."""
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "neo4j"
     response = test_client.get("/v1/config")
     assert response.status_code == 200
     data = response.json()

@@ -13,9 +13,10 @@ def test_cli_version_command_no_debug_output() -> None:
     )
 
     # Check the output - it should be clean with no debug messages
-    # In the newer version the format is changed to 'python -m codestory.cli.main, version 0.1.0'
-    assert "codestory.cli.main" in process.stdout
-    assert "version" in process.stdout
+    # Accept either format for version output
+    assert "Code Story CLI v" in process.stdout or "codestory.cli.main" in process.stdout
+    # Check for version info (either "version" or "v")
+    assert "version" in process.stdout or "v0.1.0" in process.stdout
 
     # Ensure no debug output is present
     assert "Loading config" not in process.stdout

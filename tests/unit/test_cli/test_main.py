@@ -124,3 +124,15 @@ class TestCliMain:
             click.Context.fail(mock_ctx, "Some random error")
             click.Context.fail.assert_called_once_with(mock_ctx, "Some random error")
         assert click.Context.fail == original_fail
+
+    def test_version_command(self: Any, cli_runner: CliRunner) -> None:
+        """Test that --version command prints the correct format."""
+        with patch("codestory.cli.main.get_settings") as mock_get_settings:
+            mock_settings = MagicMock()
+            mock_settings.service.port = 8000
+            mock_get_settings.return_value = mock_settings
+            result = cli_runner.invoke(app, ["--version"])
+            assert result.exit_code == 0
+            assert "Code Story CLI" in result.output
+            # Should contain version number (v0.1.0 or similar format)
+            assert "v" in result.output

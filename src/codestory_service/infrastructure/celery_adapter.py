@@ -5,6 +5,7 @@ facilitating interaction with the ingestion pipeline and other background tasks.
 """
 
 import logging
+import os
 import time
 from datetime import datetime
 from typing import Any
@@ -47,44 +48,40 @@ class CeleryAdapter:
 
     def __init__(self) -> None:
         """Initialize the Celery adapter."""
-        self.app = celery_app
+        self._app = celery_app
 
-    async def check_health(self) -> dict[str, Any]:
+    async def check_health(self) -> tuple[str, dict[str, Any]]:
         """Check Celery worker health.
 
         Returns:
-            Dictionary containing health information
+            Tuple containing (status, details) where status is "healthy" or "unhealthy"
         """
         try:
+            # Early return if task_always_eager is enabled
+            if (self._app.conf.task_always_eager is True or
+                os.getenv("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true")):
+                return "healthy", {"message": "Eager mode enabled, no workers needed"}
+            
             # Perform a simple ping to check if Celery is responsive
-            inspector = self.app.control.inspect()
+            inspector = self._app.control.inspect()
             active_workers = inspector.active()
             registered_workers = inspector.registered()
 
             if not active_workers and not registered_workers:
-                return {
-                    "status": "unhealthy",
-                    "details": {
-                        "error": "No active Celery workers found",
-                        "type": "CeleryHealthCheckError",
-                    },
+                return "unhealthy", {
+                    "error": "No active Celery workers found",
+                    "type": "CeleryHealthCheckError",
                 }
 
-            return {
-                "status": "healthy",
-                "details": {
-                    "active_workers": len(active_workers) if active_workers else 0,
-                    "registered_tasks": len(registered_workers)
-                    if registered_workers
-                    else 0,
-                },
+            return "healthy", {
+                "active_workers": len(active_workers) if active_workers else 0,
+                "registered_tasks": len(registered_workers)
+                if registered_workers
+                else 0,
             }
         except Exception as e:
             logger.error(f"Celery health check failed: {e!s}")
-            return {
-                "status": "unhealthy",
-                "details": {"error": str(e), "type": type(e).__name__},
-            }
+            return "unhealthy", {"error": str(e), "type": type(e).__name__}
 
     async def start_ingestion(self, request: IngestionRequest) -> IngestionStarted:
         """Start an ingestion pipeline job.
@@ -240,7 +237,7 @@ class CeleryAdapter:
         """
         try:
             # Check if job exists
-            task = self.app.AsyncResult(job_id)
+            task = self._app.AsyncResult(job_id)
 
             # Helper to build steps dict from Celery result
             def build_steps_from_result(result: Any) -> dict[str, StepProgress]:
@@ -474,7 +471,7 @@ class CeleryAdapter:
         """
         try:
             # Check if job exists
-            task = self.app.AsyncResult(job_id)
+            task = self._app.AsyncResult(job_id)
 
             if task.state in ["SUCCESS", "FAILURE", "REVOKED"]:
                 # Job is already in a terminal state
@@ -504,7 +501,7 @@ class CeleryAdapter:
                 )
 
             # Attempt to revoke the task
-            self.app.control.revoke(job_id, terminate=True)
+            self._app.control.revoke(job_id, terminate=True)
 
             # Return updated job status
             return IngestionJob(
@@ -587,14 +584,21 @@ async def get_celery_adapter() -> CeleryAdapter:
     try:
         # Try to create a real adapter
         adapter = CeleryAdapter()
+        
+        # Skip health check if eager mode is enabled
+        if (adapter._app.conf.task_always_eager is True or
+            os.getenv("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true")):
+            return adapter
+        
         # Check health to verify connection
-        celery_health = await adapter.check_health()
-        if celery_health["status"] == "healthy":
+        status, details = await adapter.check_health()
+        if status == "healthy":
             return adapter
         # If not healthy, raise an exception
-        error_msg = celery_health["details"].get(
-            "error", "No active Celery workers found"
-        )
+        if isinstance(details, dict):
+            error_msg = details.get("error", "No active Celery workers found")
+        else:
+            error_msg = str(details)
         logger.error(f"Celery adapter not healthy: {error_msg}")
         raise RuntimeError(f"Celery component unhealthy: {error_msg}")
     except Exception as e:

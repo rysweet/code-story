@@ -25,10 +25,10 @@ def setup_mcp() -> None:
     os.chdir(project_root)
 
     # Set environment variables for testing
-    os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+    os.environ["NEO4J_URI"] = os.environ["NEO4J_URI"]
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "neo4j"
     os.environ["CODESTORY_TEST_ENV"] = "true"
     os.environ["MCP_HOST"] = "localhost"
     os.environ["MCP_PORT"] = "8080"

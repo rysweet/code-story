@@ -20,59 +20,62 @@ def test_connection(neo4j_connector: Neo4jConnector) -> None:
 
 
 def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
-    """Test creating and retrieving nodes."""
-    # Create test nodes
+    """Test creating and retrieving nodes in a single transaction."""
     file_node = FileNode(
         path="/test/file.py",
         name="file.py",
         extension="py",
         size=1024,
         content="print('hello')",
-        # Note: not using metadata for now as Neo4j doesn't support nested properties directly
     )
-
     dir_node = DirectoryNode(path="/test", name="test")
 
-    # Create nodes in database
-    file_query = """
-    CREATE (f:File {
-        path: $path,
-        name: $name, 
-        extension: $extension,
-        size: $size,
-        content: $content
-    })
-    RETURN f
-    """
-    file_params = {
-        "path": file_node.path,
-        "name": file_node.name,
-        "extension": file_node.extension,
-        "size": file_node.size,
-        "content": file_node.content,
-    }
+    def create_nodes_and_relationship(tx):
+        file_query = """
+        CREATE (f:File {
+            path: $path,
+            name: $name,
+            extension: $extension,
+            size: $size,
+            content: $content
+        })
+        RETURN f
+        """
+        file_params = {
+            "path": file_node.path,
+            "name": file_node.name,
+            "extension": file_node.extension,
+            "size": file_node.size,
+            "content": file_node.content,
+        }
 
-    dir_query = """
-    CREATE (d:Directory {
-        path: $path,
-        name: $name
-    })
-    RETURN d
-    """
-    dir_params = {"path": dir_node.path, "name": dir_node.name}
+        dir_query = """
+        CREATE (d:Directory {
+            path: $path,
+            name: $name
+        })
+        RETURN d
+        """
+        dir_params = {"path": dir_node.path, "name": dir_node.name}
 
-    neo4j_connector.execute_query(file_query, file_params, write=True)
-    neo4j_connector.execute_query(dir_query, dir_params, write=True)
+        tx.run(file_query, file_params)
+        tx.run(dir_query, dir_params)
 
-    # Create relationship
-    rel_query = """
-    MATCH (d:Directory {path: $dir_path})
-    MATCH (f:File {path: $file_path})
-    CREATE (d)-[r:CONTAINS]->(f)
-    RETURN r
-    """
-    rel_params = {"dir_path": dir_node.path, "file_path": file_node.path}
-    neo4j_connector.execute_query(rel_query, rel_params, write=True)
+        rel_query = """
+        MATCH (d:Directory {path: $dir_path})
+        MATCH (f:File {path: $file_path})
+        CREATE (d)-[r:CONTAINS]->(f)
+        RETURN r
+        """
+        rel_params = {"dir_path": dir_node.path, "file_path": file_node.path}
+        tx.run(rel_query, rel_params)
+
+    # Use a single transaction for all operations
+    session = neo4j_connector.driver.session(database=neo4j_connector.database)
+    try:
+        session.execute_write(create_nodes_and_relationship)
+    finally:
+        session.close()
 
     # Retrieve and verify file node
     result = neo4j_connector.execute_query(
@@ -89,7 +92,7 @@ def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
         MATCH (d:Directory {path: $dir_path})-[r:CONTAINS]->(f:File {path: $file_path})
         RETURN type(r) as rel_type
     """,
-        rel_params,
+        {"dir_path": dir_node.path, "file_path": file_node.path},
     )
     assert len(result) == 1
     assert result[0]["rel_type"] == "CONTAINS"

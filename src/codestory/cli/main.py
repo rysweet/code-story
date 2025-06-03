@@ -21,6 +21,20 @@ from codestory.config import get_settings
 
 from .client import ServiceClient, ServiceError
 
+# Import version from main package
+try:
+    from codestory import __version__
+except ImportError:
+    __version__ = "0.0.0"
+
+
+def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+    """Print version and exit."""
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo(f"Code Story CLI v{__version__}")
+    ctx.exit()
+
 
 class _RichClickAttrs(Protocol):
     USE_RICH_MARKUP: bool
@@ -97,7 +111,14 @@ class CodeStoryCommandGroup(DYMGroup):
     max_suggestions=5,
     cutoff=0.5,
 )
-@click.version_option()
+@click.option(
+    "--version",
+    is_flag=True,
+    callback=print_version,
+    expose_value=False,
+    is_eager=True,
+    help="Show version and exit.",
+)
 @click.option(
     "--service-url",
     help="URL of the Code Story service.",
@@ -167,7 +188,7 @@ def register_commands() -> None:
 register_commands()
 
 
-def _wrap_click_command(cmd: click.BaseCommand) -> Callable[..., Any]:
+def _wrap_click_command(cmd: click.Command) -> Callable[..., Any]:
     """Create a wrapper around a Click command to intercept UsageError exceptions."""
     original_main: Callable[..., Any] = cmd.main
 

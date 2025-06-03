@@ -105,3 +105,22 @@ The `fix/mypy-cleanup` branch is ready for review and merge. All type errors in 
 **Prompt**: Global MyPy errors remain ~4 000. Next highest-error file: src/codestory/graphdb/neo4j_connector.py (many attr-defined, no-untyped-def, no-any-return). Phase 7 target – fully clean this file. Required steps: 1. Add precise type annotations to every public class/function in neo4j_connector.py using neo4j.Driver, neo4j.Session, Result, Iterable, dict[str, Any], etc. Replace Any only where unavoidable; concrete return types for all methods. 2. Remove obsolete "# type: ignore" and bracket-token leftovers. 3. Focused check with poetry run mypy --show-error-codes --pretty -p codestory.graphdb.neo4j_connector. 4. Stage neo4j_connector.py + mypy_connector.txt and commit "feat(graphdb.connector): full annotations – mypy clean". 5. Push to origin/fix/mypy-cleanup and attempt_completion.
 
 **Response**: [Working on Phase 7 MyPy cleanup for neo4j_connector.py]
+
+## Prompt 3 (2025-06-03 07:38 AM)
+
+**Prompt**: Phase 2 – test-suite hardening & remaining failures
+
+Goals
+1. Run full unit suite serially via uv/venv-correct pytest, stop at first failure, fix, re-run units.
+2. When unit suite is green, run integration suite (uv pytest -q tests/integration), again iterating failure-by-failure.
+   • No mocks inside integration tests.
+   • Each test must fully provision & tear-down its own resources (temp dirs, containers, files).
+   • Parallel-safe: use worker-scoped tmp dirs, ensure cleanup.
+   • Commands executed through the same uv-based venv that pytest uses.
+3. Maintain passing Group A CLI tests we just fixed.
+
+**Response**:
+• Updated prompt history file with new Phase 2 task entry
+• Starting systematic unit test suite execution to identify first failure
+• Will fix failures one by one and re-run until unit suite is green
+• Then proceed to integration test suite with same approach

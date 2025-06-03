@@ -399,13 +399,17 @@ async def _health_check_impl(
     ) -> dict[str, Any]:
         try:
             result = await asyncio.wait_for(check_func(), timeout=timeout_seconds)
-            # Assume result is dict[str, Any], otherwise fallback to unhealthy
+            # Handle both dict format and tuple format
             if isinstance(result, dict):
                 return result
+            elif isinstance(result, tuple) and len(result) == 2:
+                # New tuple format: (status, details)
+                status, details = result
+                return {"status": status, "details": details}
             return {
                 "status": "unhealthy",
                 "details": {
-                    "error": "Health check did not return a dict",
+                    "error": "Health check did not return a dict or valid tuple",
                     "type": type(result).__name__,
                 },
             }

@@ -3,8 +3,6 @@ from typing import Any
 "Integration tests for the filesystem workflow step using direct execution.\n\nThese tests verify that the FileSystemStep can correctly process a repository\nand store its structure in the Neo4j database by directly executing the task.\n"
 import os
 
-ci_env = os.environ.get("CI") == "true"
-neo4j_port = "7687" if ci_env else "7688"
 import tempfile
 from pathlib import Path
 
@@ -13,14 +11,14 @@ import pytest
 from codestory.config.settings import Neo4jSettings
 from codestory.ingestion_pipeline.step import StepStatus, generate_job_id
 
-os.environ["NEO4J__URI"] = f"bolt://localhost:{neo4j_port}"
+os.environ["NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "testdb"
-TEST_URI = f"bolt://localhost:{neo4j_port}"
+os.environ["NEO4J__DATABASE"] = "neo4j"
+TEST_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 TEST_USERNAME = "neo4j"
 TEST_PASSWORD = "password"
-TEST_DATABASE = "testdb"
+TEST_DATABASE = "neo4j"
 TEST_NEO4J_SETTINGS = Neo4jSettings(uri=TEST_URI, username=TEST_USERNAME, password=TEST_PASSWORD, database=TEST_DATABASE)  # type: ignore[arg-type,call-arg]
 
 

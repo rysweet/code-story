@@ -6,10 +6,11 @@ environment = "development"
 
 [neo4j]
 # Use Docker service name and default port when running in Docker Compose
-uri = "bolt://localhost:7687"
+# URI is now set via environment variable NEO4J_URI (default: bolt://localhost:7687)
+# Note: When uri is omitted, Pydantic will require it from environment variables
 username = "neo4j"
 password = "password"
-database = "testdb"
+database = "neo4j"
 
 [redis]
 # Use Docker service name and default port when running in Docker Compose

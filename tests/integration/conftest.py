@@ -119,87 +119,38 @@ def mock_settings() -> None:
         yield
 
 
-@pytest.fixture(scope="session")
-def neo4j_env() -> None:
-    """Setup Neo4j environment variables for tests."""
-    ci_env = os.environ.get("CI") == "true"
-    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
-    neo4j_port = "7687" if ci_env else "7689" if docker_env else "7688"
-    if docker_env:
-        neo4j_uri = "bolt://neo4j:7687"
-        redis_uri = "redis://redis:6379/0"
-        redis_host = "redis"
-        redis_port = "6379"
-    else:
-        neo4j_uri = f"bolt://localhost:{neo4j_port}"
-        redis_host = "localhost"
-        redis_port = "6380"
-        redis_uri = f"redis://{redis_host}:{redis_port}/0"
-    os.environ["NEO4J_URI"] = neo4j_uri
-    os.environ["NEO4J__URI"] = neo4j_uri
-    os.environ["NEO4J_USERNAME"] = "neo4j"
-    os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
-    os.environ["NEO4J__USERNAME"] = "neo4j"
-    os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
-    os.environ["REDIS_URI"] = redis_uri
-    os.environ["REDIS__URI"] = redis_uri
-    os.environ["REDIS_HOST"] = redis_host
-    os.environ["REDIS_PORT"] = redis_port
-    os.environ["CELERY_BROKER_URL"] = redis_uri
-    os.environ["CELERY_RESULT_BACKEND"] = redis_uri
+# Removed neo4j_env fixture: environment variables for Neo4j/Redis are now set by container fixtures.
 
 
-@pytest.fixture(scope="session", autouse=True)
-def load_env_vars() -> None:
-    """Load environment variables for integration tests.
+# Removed load_env_vars fixture: environment variables for Neo4j/Redis are now set by container fixtures.
 
-    This fixture automatically loads environment variables from .env file
-    and ensures that the Neo4j connection settings are available for tests.
-    """
-    env_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
-    )
-    load_dotenv(env_path)
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    ci_env = os.environ.get("CI") == "true"
-    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
-    neo4j_port = "7687" if ci_env else "7689" if docker_env else "7688"
-    if docker_env:
-        neo4j_uri = "bolt://neo4j:7687"
-        redis_uri = "redis://redis:6379/0"
-        redis_host = "redis"
-        redis_port = "6379"
-    else:
-        neo4j_uri = f"bolt://localhost:{neo4j_port}"
-        redis_host = "localhost"
-        redis_port = "6380"
-        redis_uri = f"redis://{redis_host}:{redis_port}/0"
-    os.environ["NEO4J_URI"] = neo4j_uri
-    os.environ["NEO4J__URI"] = neo4j_uri
-    os.environ["NEO4J_USERNAME"] = "neo4j"
-    os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["NEO4J_DATABASE"] = "testdb"
-    os.environ["NEO4J__USERNAME"] = "neo4j"
-    os.environ["NEO4J__PASSWORD"] = "password"
-    os.environ["NEO4J__DATABASE"] = "testdb"
-    os.environ["REDIS_URI"] = redis_uri
-    os.environ["REDIS__URI"] = redis_uri
-    os.environ["REDIS_HOST"] = redis_host
-    os.environ["REDIS_PORT"] = redis_port
-    os.environ["CELERY_BROKER_URL"] = redis_uri
-    os.environ["CELERY_RESULT_BACKEND"] = redis_uri
-    os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
-    os.environ["OPENAI__API_KEY"] = "sk-test-key-openai"
 
+import socket
+import time
 
 @pytest.fixture
 def neo4j_connector() -> None:
-    """Return a Neo4j connector for tests."""
+    """Return a Neo4j connector for tests, waiting for Bolt port to be ready."""
     from codestory.graphdb.neo4j_connector import Neo4jConnector
+    from urllib.parse import urlparse
+
+    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI")
+    if not uri:
+        raise RuntimeError("NEO4J_URI environment variable not set by container fixture")
+
+    parsed = urlparse(uri)
+    bolt_host = parsed.hostname
+    bolt_port = parsed.port
+
+    def wait_for_bolt(host: str, port: int, timeout: float = 60.0) -> None:
+        start = time.time()
+        while time.time() - start < timeout:
+            try:
+                with socket.create_connection((host, port), timeout=2):
+                    return
+            except (OSError, ConnectionRefusedError):
+                time.sleep(1)
+        raise RuntimeError(f"Timed out waiting for Neo4j Bolt at {host}:{port}")
 
     username = (
         os.environ.get("NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME") or "neo4j"
@@ -212,14 +163,9 @@ def neo4j_connector() -> None:
     database = (
         os.environ.get("NEO4J__DATABASE") or os.environ.get("NEO4J_DATABASE") or "neo4j"
     )
-    ci_env = os.environ.get("CI") == "true"
-    docker_env = os.environ.get("CODESTORY_IN_CONTAINER") == "true"
-    if docker_env:
-        default_uri = "bolt://neo4j:7687"
-    else:
-        neo4j_port = "7687" if ci_env else "7688"
-        default_uri = f"bolt://localhost:{neo4j_port}"
-    uri = os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI") or default_uri
+    print(f"DEBUG: Using Neo4j database: {database}")
+    wait_for_bolt(bolt_host, int(bolt_port))
+
     connector = Neo4jConnector(
         uri=uri, username=username, password=password, database=database
     )
@@ -251,8 +197,11 @@ def redis_client() -> None:
     redis_uri = (
         os.environ.get("REDIS__URI")
         or os.environ.get("REDIS_URI")
-        or "redis://localhost:6380/0"
+        or os.getenv("REDIS_URI", "redis://localhost:6379/0")
     )
+    os.environ["REDIS_URI"] = redis_uri
+    os.environ["REDIS__URI"] = redis_uri
+    print(f"DEBUG: Using Redis URI: {redis_uri}")
     client = redis.from_url(redis_uri)
     try:
         client.flushdb()
@@ -281,7 +230,7 @@ def celery_app(redis_client: Any) -> None:
     redis_uri = (
         os.environ.get("REDIS__URI")
         or os.environ.get("REDIS_URI")
-        or "redis://localhost:6380/0"
+        or os.getenv("REDIS_URI", "redis://localhost:6379/0")
     )
     app.conf.update(
         broker_url=redis_uri,

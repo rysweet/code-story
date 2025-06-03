@@ -3,7 +3,7 @@
 This module defines Pydantic models for various node and relationship types
 in the knowledge graph.
 """
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from typing import Any, cast
 
@@ -40,8 +40,8 @@ class BaseNode(BaseModel):
     id: str | None = None
     labels: list[str] = Field(default_factory=list)
     properties: dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_modified: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_modified: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self: Any) -> dict[str, Any]:
         """Convert the node to a dictionary suitable for Neo4j.
@@ -62,7 +62,7 @@ class BaseRelationship(BaseModel):
     start_node_id: str
     end_node_id: str
     properties: dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self: Any) -> dict[str, Any]:
         """Convert the relationship to a dictionary suitable for Neo4j.

@@ -99,14 +99,14 @@ class TestServiceClient:
         client.client.post.return_value = mock_response
         result = client.start_ingestion("/path/to/repo")
         assert result == {"job_id": "test-123"}
-        client.client.post.assert_called_once_with(
-            "/ingest",
-            json={
-                "source_type": "local_path",
-                "source": "/path/to/repo",
-                "description": "CLI ingestion of repository: /path/to/repo",
-            },
-        )
+        client.client.post.assert_called_once()
+        call_args, call_kwargs = client.client.post.call_args
+        assert call_args[0] == "/ingest"
+        payload = call_kwargs["json"]
+        assert payload["source_type"] == "local_path"
+        assert payload["source"] == "/path/to/repo"
+        assert payload["description"] == "CLI ingestion of repository: /path/to/repo"
+        assert payload["priority"] == "default"
 
     def test_execute_query(self: Any) -> None:
         """Test executing a query."""
