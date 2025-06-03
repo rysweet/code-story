@@ -10,6 +10,8 @@ from rich.console import Console
 
 from codestory.cli.client.service_client import ServiceClient, ServiceError
 
+pytestmark = pytest.mark.integration
+
 
 class TestServiceClient:
     """Tests for the ServiceClient class."""

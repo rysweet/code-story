@@ -588,6 +588,8 @@ async def get_celery_adapter() -> CeleryAdapter:
         # Skip health check if eager mode is enabled
         if (adapter._app.conf.task_always_eager is True or
             os.getenv("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true")):
+            # In eager mode, forcibly set a dummy backend to avoid Redis connection attempts
+            adapter._app.conf.result_backend = "cache+memory://"
             return adapter
         
         # Check health to verify connection

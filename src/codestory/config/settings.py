@@ -468,19 +468,18 @@ class Settings(BaseSettings):
                 if in_test_env:
                     print(f"DEBUG: Using Neo4j URI from environment: {neo4j_uri}")
             
-            # Also ensure other Neo4j settings can come from environment
+            # Also ensure other Neo4j settings can come from environment (with override)
             for setting in ["username", "password", "database"]:
                 key = f"neo4j__{setting}"
                 env_key = f"NEO4J_{setting.upper()}"
                 codestory_env_key = f"CODESTORY_NEO4J__{setting.upper()}"
                 
-                if key not in toml_settings and (
-                    os.environ.get(env_key) or os.environ.get(codestory_env_key)
-                ):
+                # Allow environment variables to override TOML values
+                if os.environ.get(env_key) or os.environ.get(codestory_env_key):
                     value = os.environ.get(env_key) or os.environ.get(codestory_env_key)
                     toml_settings[key] = value
                     if in_test_env:
-                        print(f"DEBUG: Using Neo4j {setting} from environment: {value}")
+                        print(f"DEBUG: Using Neo4j {setting} from environment (override): {value}")
         
         merged_settings = {**toml_settings, **data}
 

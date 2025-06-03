@@ -1,6 +1,9 @@
 from typing import Any
 
 "Unit tests for the ProgressClient class."
+import pytest
+
+pytestmark = pytest.mark.integration
 from unittest.mock import MagicMock, patch
 
 import redis

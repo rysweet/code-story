@@ -54,7 +54,7 @@ def test_get_settings() -> None:
 
     # Check redis settings
     assert hasattr(settings, "redis")
-    assert settings.redis.uri == "redis://localhost:6379/0"
+    assert settings.redis.uri == "redis://localhost:6379"
 
     # Check openai settings
     assert hasattr(settings, "openai")

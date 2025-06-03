@@ -1,8 +1,9 @@
 # Test configuration file for CI environments
 
-app_name = "code-story"
+app_name = "code-story-test"
 version = "0.1.0"
 environment = "development"
+log_level = "DEBUG"
 
 [neo4j]
 # Use Docker service name and default port when running in Docker Compose
@@ -10,11 +11,11 @@ environment = "development"
 # Note: When uri is omitted, Pydantic will require it from environment variables
 username = "neo4j"
 password = "password"
-database = "neo4j"
+database = "testdb"
 
 [redis]
 # Use Docker service name and default port when running in Docker Compose
-uri = "redis://redis:6379/0"  # Use this for Docker Compose; fallback to localhost:6380 for local
+uri = "redis://localhost:6379"  # Use this for Docker Compose; fallback to localhost:6380 for local
 
 [openai]
 api_key = "sk-test-key-openai"
@@ -33,7 +34,7 @@ reasoning_model = "gpt-4o"
 
 [service]
 host = "0.0.0.0"
-port = 9000
+port = 8000
 workers = 4
 log_level = "INFO"
 enable_telemetry = true
@@ -57,7 +58,7 @@ plugin_directory = "plugins"
 metrics_port = 9090
 metrics_endpoint = "/metrics"
 trace_sample_rate = 1.0
-log_format = "text"
+log_format = "json"
 
 [interface]
 theme = "dark"

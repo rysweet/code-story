@@ -13,10 +13,12 @@ COPY README.md ./
 # Copy minimal source for Poetry install
 COPY src ./src
 
-# Install Poetry and project dependencies
-RUN pip install --no-cache-dir poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi --with dev
+# Create venv and install Poetry and project dependencies
+RUN python -m venv /app/.venv && \
+    /app/.venv/bin/pip install --upgrade pip wheel && \
+    /app/.venv/bin/pip install poetry && \
+    /app/.venv/bin/poetry config virtualenvs.create false && \
+    /app/.venv/bin/poetry install --no-interaction --no-ansi --with dev
 
 # Create non-root user
 RUN useradd -m appuser
@@ -27,6 +29,8 @@ WORKDIR /app
 COPY --chown=appuser:appuser . /app
 
 ENV PYTHONUNBUFFERED=1
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Default command runs celery worker
-CMD ["celery", "-A", "codestory.ingestion_pipeline.celery_app", "worker", "-l", "info", "-Q", "ingestion", "--concurrency=4"]
+# Default command runs celery worker using venv python
+CMD ["/app/.venv/bin/celery", "-A", "codestory.ingestion_pipeline.celery_app", "worker", "-l", "info", "-Q", "ingestion", "--concurrency=4"]

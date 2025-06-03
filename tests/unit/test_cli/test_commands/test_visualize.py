@@ -98,8 +98,12 @@ class TestVisualizeCommands:
             orig_dir = os.getcwd()
             os.chdir(temp_dir)
             try:
-                open("codestory-graph-20250101-121212.html", "w").write("test")
-                open("codestory-graph-20250101-121313.html", "w").write("test")
+                # Use context-managed writes to avoid leaving files open which
+                # triggers ResourceWarning captured by pytest.
+                with open("codestory-graph-20250101-121212.html", "w") as f1:
+                    f1.write("test")
+                with open("codestory-graph-20250101-121313.html", "w") as f2:
+                    f2.write("test")
                 result = cli_runner.invoke(app, ["visualize", "list"])
                 assert result.exit_code == 0
                 assert "Recently generated visualizations" in result.output

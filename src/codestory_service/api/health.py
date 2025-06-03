@@ -129,9 +129,12 @@ async def health_check(
             ):
                 logger.info("Azure authentication issue detected, attempting renewal")
                 try:
-                    renewal_result = await asyncio.wait_for(
-                        openai.check_health(), timeout=15
-                    )
+                    # Run the renewal in its own task so that, if it times out,
+                    # we can cancel it and await the cancellation to prevent
+                    # "coroutine was never awaited" warnings that surface as
+                    # PytestUnraisableExceptionWarning.
+                    renewal_task = asyncio.create_task(openai.check_health())
+                    renewal_result = await asyncio.wait_for(renewal_task, timeout=15)
                     if renewal_result.get("status") == "healthy":
                         health_report.components["openai"] = ComponentHealth(
                             status="healthy",
@@ -141,6 +144,15 @@ async def health_check(
                             },
                         )
                         health_report.status = "healthy"
+                except TimeoutError as e:
+                    logger.error("Azure authentication renewal timed out")
+                    renewal_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await renewal_task
+                    if not health_report.components["openai"].details:
+                        health_report.components["openai"].details = {}
+                    health_report.components["openai"].details["renewal_attempted"] = True
+                    health_report.components["openai"].details["renewal_error"] = str(e)
                 except Exception as e:
                     logger.error(f"Azure authentication renewal failed: {e}")
                     if not health_report.components["openai"].details:
@@ -398,7 +410,12 @@ async def _health_check_impl(
         component_name: str, check_func: Callable[[], Any], timeout_seconds: int = 5
     ) -> dict[str, Any]:
         try:
-            result = await asyncio.wait_for(check_func(), timeout=timeout_seconds)
+            # Wrap the coroutine in a task so that if a TimeoutError is raised
+            # we can explicitly cancel/await it. Otherwise the underlying
+            # coroutine stays pending and pytest captures it as an
+            # unraisable exception (see unit-test failure).
+            task = asyncio.create_task(check_func())
+            result = await asyncio.wait_for(task, timeout=timeout_seconds)
             # Handle both dict format and tuple format
             if isinstance(result, dict):
                 return result
@@ -417,6 +434,9 @@ async def _health_check_impl(
             logger.error(
                 f"{component_name} health check timed out after {timeout_seconds} seconds"
             )
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
             return {
                 "status": "unhealthy",
                 "details": {
@@ -475,9 +495,18 @@ async def _health_check_impl(
             }
 
     try:
-        redis_health = await asyncio.wait_for(check_redis_health(), timeout=5)
+        # Run the Redis health-check in a background task so that we can
+        # reliably cancel/await it on timeout and avoid un-awaited coroutine
+        # warnings raised by pytest (see GH-issue #test_failures).
+        redis_task = asyncio.create_task(check_redis_health())
+        redis_health = await asyncio.wait_for(redis_task, timeout=5)
     except TimeoutError:
         logger.error("Redis health check timed out")
+        # Cancel the task to ensure the coroutine does not get garbage-collected
+        # without being awaited, which triggers PytestUnraisableExceptionWarning.
+        redis_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await redis_task
         redis_health = {
             "status": "unhealthy",
             "details": {
