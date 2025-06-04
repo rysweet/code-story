@@ -29,6 +29,17 @@
   - **Action:** CLI integration suite is now fully validated and marked as Fixed.
 
 
+- [2025-06-04] GraphDB integration suite (`tests/integration/test_graphdb/`) after container-name conflict fix:
+  - **Fail:** All tests failed to start due to port allocation error.
+  - **First failure:** `tests/integration/test_graphdb/test_neo4j_integration.py::test_transaction_management`
+  - **Traceback:** `docker.errors.APIError: 500 Server Error ... Bind for 0.0.0.0:7474 failed: port is already allocated`
+  - **Diagnosis:** The fixture now removes stale containers, but the host port 7474 is still in use (by another process or zombie container/network). This prevents the Neo4j container from starting. This is a test infrastructure issue, not a product code error. No product code tests were executed.
+
+- [2025-06-04] **GraphDB integration suite (`tests/integration/test_graphdb/`) after random port allocation fix:**
+ - **Fixed:** Neo4j container now binds to random available host ports for Bolt and HTTP, avoiding port conflicts.
+ - **Suite result:** All GraphDB integration tests pass with `-W error`, no warnings or errors, exit code 0.
+ - **Action:** Port allocation issue is fully resolved; GraphDB integration suite is marked as Fixed.
+ - **Files changed:** `tests/integration/test_graphdb/conftest.py`
 - [2025-06-04] CLI integration suite (`tests/integration/test_cli/`) after Docker client close fix in all fixtures:
   - **Fixed:** All ResourceWarnings from unclosed Docker clients in integration fixtures (`redis_container`, `celery_worker_container`, `service_container`) are resolved by always calling `client.close()` in teardown.
   - **Fixed:** `tests/integration/test_cli/test_command_suggestions.py::test_help_flag_shows_help` (no ResourceWarning, test now skipped as expected).
