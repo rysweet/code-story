@@ -16,6 +16,9 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+- [2025-06-04] Confirmed: All tests in `tests/integration/test_ingestion_pipeline/` (excluding `test_cancellation.py`) pass with `-W error` and no Pytest warnings.  
+  - The `filterwarnings = ignore::pytest.PytestAssertRewriteWarning` line has been removed from `pytest.ini`.  
+  - Warning is fully cleared; test suite is warning-free.
 - [2025-06-04] Fixed: All tests in `tests/integration/test_ingestion_pipeline/` (excluding `test_cancellation.py`) now pass with no Pytest warnings (PytestAssertRewriteWarning for celery eliminated).
   - Pytest warning filters and assert rewrite for celery applied.
   - All ingestion-pipeline integration tests (except cancellation) are now marked as "Fixed (warnings cleared)".
