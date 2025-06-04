@@ -80,26 +80,34 @@ def redis_container():
         else:
             raise RuntimeError("Redis container did not become ready in time")
 
+        import os, importlib, sys
+        redis_url = "redis://localhost:6379/0"
         os.environ.update({
-            "REDIS_URL": "redis://localhost:6379/0",
-            "CELERY_BROKER_URL": "redis://localhost:6379/0",
-            "CELERY_RESULT_BACKEND": "redis://localhost:6379/0"
+            "REDIS_URL": redis_url,
+            "CELERY_BROKER_URL": redis_url,
+            "CELERY_RESULT_BACKEND": redis_url,
         })
 
-        # Monkey-patch application settings before FastAPI/Celery import
-        import importlib, sys
-        try:
-            from codestory_service import settings as svc_settings
-            svc_settings.REDIS_URL = "redis://localhost:6379/0"
-            svc_settings.CELERY_BROKER_URL = "redis://localhost:6379/0"
-            svc_settings.CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-            if hasattr(svc_settings, "Settings"):
-                svc_settings.Settings().redis_url = "redis://localhost:6379/0"
-            # reload celery_app so new settings propagate
-            if "codestory.ingestion_pipeline.celery_app" in sys.modules:
-                importlib.reload(sys.modules["codestory.ingestion_pipeline.celery_app"])
-        except ImportError:
-            pass  # If settings module not present, skip patch
+        # Patch application settings
+        from codestory_service import settings as svc_settings
+        if hasattr(svc_settings, "REDIS_URL"):
+            svc_settings.REDIS_URL = redis_url
+        if hasattr(svc_settings, "CELERY_BROKER_URL"):
+            svc_settings.CELERY_BROKER_URL = redis_url
+        if hasattr(svc_settings, "CELERY_RESULT_BACKEND"):
+            svc_settings.CELERY_RESULT_BACKEND = redis_url
+        if hasattr(svc_settings, "Settings"):
+            cfg = svc_settings.Settings()
+            if hasattr(cfg, "redis_url"):
+                cfg.redis_url = redis_url
+            if hasattr(cfg, "broker_url"):
+                cfg.broker_url = redis_url
+            if hasattr(cfg, "result_backend"):
+                cfg.result_backend = redis_url
+
+        # Reload celery_app so new settings propagate
+        if "codestory.ingestion_pipeline.celery_app" in sys.modules:
+            importlib.reload(sys.modules["codestory.ingestion_pipeline.celery_app"])
 
         yield
     finally:
