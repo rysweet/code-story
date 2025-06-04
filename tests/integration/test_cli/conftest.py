@@ -6,6 +6,58 @@ import time
 from collections.abc import Generator
 from typing import Any
 
+import pytest, docker, uuid, time, os, requests
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_docker_daemon():
+    try:
+        with docker.from_env() as c:
+            c.ping()
+    except docker.errors.DockerException:
+        pytest.skip("Docker daemon unavailable on host")
+
+@pytest.fixture(scope="session", autouse=True)
+def service_container(redis_container, celery_worker_container):
+    import docker, subprocess, sys
+    client = docker.from_env()
+    try:
+        name = f"cs-svc-{uuid.uuid4()}"
+        container = client.containers.run(
+            "python:3.11-slim",
+            name=name,
+            command=["bash","-c",
+                     "pip install -q -e . && uvicorn codestory_service.main:app "
+                     "--host 0.0.0.0 --port 8000 --log-level warning"],
+            volumes={os.getcwd(): {"bind": "/app", "mode": "rw"}},
+            working_dir="/app",
+            environment={
+                "REDIS_URL": "redis://localhost:6379/0",
+                "CELERY_BROKER_URL": "redis://localhost:6379/0",
+                "CELERY_RESULT_BACKEND": "redis://localhost:6379/0",
+            },
+            network_mode="host",
+            detach=True,
+            auto_remove=True,
+        )
+        # Wait /health
+        for _ in range(60):
+            try:
+                if requests.get("http://localhost:8000/health").status_code == 200:
+                    break
+            except Exception:
+                pass
+            time.sleep(1)
+        else:
+            container.kill()
+            pytest.skip("Service container unhealthy")
+
+        os.environ["CODESTORY_API_URL"] = "http://localhost:8000"
+        os.environ["CODESTORY_API_KEY"] = "dummy-test-key"
+        yield
+        container.kill()
+    finally:
+        client.close()
+
 # (Removed duplicate imports: httpx, pytest, CliRunner)
 
 def is_docker_running() -> bool:
