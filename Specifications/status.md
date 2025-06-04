@@ -16,6 +16,18 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+- [2025-06-03] Cancellation tests after env var setup at file top and import fix:
+  - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
+  - First failure: `test_cancel_completed_job`
+  - Traceback: AssertionError at `assert status == JobStatus.COMPLETED` (status is always `"pending"`).
+  - Diagnosis: Job did not reach 'completed' state before cancellation; status remained 'pending'. Warnings show "Redis not available for publishing progress", indicating the app is not connecting to Redis as expected. The application cannot update job status or process cancellation without a working Redis connection.
+- [2025-06-03] Cancellation tests after early env var injection (no monkey-patching):
+  - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
+  - First failure: `test_cancel_completed_job`
+  - Traceback: docker.errors.APIError: 500 Server Error ("Ports are not available: exposing port TCP 0.0.0.0:6379 ... bind: address already in use")
+  - Second failure: `test_cancel_pending_job`
+  - Traceback: AssertionError at `assert status == JobStatus.CANCELLED` (status is always `"pending"`).
+  - Diagnosis: Redis port 6379 is already in use, so the Redis container cannot start. As a result, the application cannot connect to Redis, and job status remains `"pending"`. Job cancellation cannot complete while jobs are stuck in `"pending"`.
 - [2025-06-03] Cancellation tests after redis_container fixture patch:
   - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
   - First failure: `test_cancel_pending_job`

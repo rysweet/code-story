@@ -1,3 +1,8 @@
+import os
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
+os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+
 from pathlib import Path
 import pytest
 import tempfile
@@ -87,27 +92,6 @@ def redis_container():
             "CELERY_BROKER_URL": redis_url,
             "CELERY_RESULT_BACKEND": redis_url,
         })
-
-        # Patch application settings
-        from codestory_service import settings as svc_settings
-        if hasattr(svc_settings, "REDIS_URL"):
-            svc_settings.REDIS_URL = redis_url
-        if hasattr(svc_settings, "CELERY_BROKER_URL"):
-            svc_settings.CELERY_BROKER_URL = redis_url
-        if hasattr(svc_settings, "CELERY_RESULT_BACKEND"):
-            svc_settings.CELERY_RESULT_BACKEND = redis_url
-        if hasattr(svc_settings, "Settings"):
-            cfg = svc_settings.Settings()
-            if hasattr(cfg, "redis_url"):
-                cfg.redis_url = redis_url
-            if hasattr(cfg, "broker_url"):
-                cfg.broker_url = redis_url
-            if hasattr(cfg, "result_backend"):
-                cfg.result_backend = redis_url
-
-        # Reload celery_app so new settings propagate
-        if "codestory.ingestion_pipeline.celery_app" in sys.modules:
-            importlib.reload(sys.modules["codestory.ingestion_pipeline.celery_app"])
 
         yield
     finally:
