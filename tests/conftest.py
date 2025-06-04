@@ -1,3 +1,5 @@
+import pytest
+pytest.register_assert_rewrite("celery")
 # --- Self-contained integration test fixture template for all required services ---
 
 # Force Docker SDK to use a minimal config.json for integration tests
