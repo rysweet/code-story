@@ -10,7 +10,26 @@
   - Add/expand unit and integration tests to verify dependent tasks wait for prerequisites
   - Update specs and documentation to describe dependency support
   - Run all checks and tests before each commit
+## Unit Test Status
 
+- Fixed: `tests/unit/test_cli/test_main.py::TestCliMain::test_api_key_option`
+- All unit tests passing as of 2025-06-03
+
+## Integration Test Status
+
+- Fixed: `tests/integration/test_demos/test_cli_demo.py::test_cli_version`
+- Fix: Integration test suite now forces Docker SDK to use a temporary config with no credential helpers, enabling anonymous pulls and bypassing the missing `docker-credential-desktop` error.
+- Integration test run status (2025-06-03):
+  Fixed: `tests/integration/test_cli/test_visualize_integration.py::TestVisualizeCommands::test_visualize_list`
+  First failing test:
+    - `tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_gitignore_patterns_comprehensive`
+    - `tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion`
+  Error: `UnboundLocalError: cannot access local variable 'os' where it is not associated with a value`
+  Traceback (topmost):
+    >       os.environ["REDIS__URI"] = os.environ["REDIS_URI"]
+    E       UnboundLocalError: cannot access local variable 'os' where it is not associated with a value
+    (see test output for full details)
+  Diagnosis: The test uses `os.environ` before importing `os` in the test method after a recent patch. The `import os` statement must be at the top of the file or before its first use in each method.
 ## Last Completed Task (May 22, 2025)
 
 - Updated prompt history, shell history, and status files

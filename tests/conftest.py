@@ -1,27 +1,103 @@
 # --- Self-contained integration test fixture template for all required services ---
 
-import pytest
+# Force Docker SDK to use a minimal config.json for integration tests
 import os
+import sys
+import tempfile
+import json
+from pathlib import Path
+
+def _should_force_docker_config():
+    # Only activate for integration tests (not unit)
+    args = sys.argv
+    # If only tests/unit is being collected, do not run integration fixtures
+    if any("tests/unit" in arg for arg in args if not arg.startswith("-")):
+        return False
+    # If -m "not integration" is present, skip
+    if "-m" in args:
+        m_idx = args.index("-m")
+        if m_idx + 1 < len(args):
+            expr = args[m_idx + 1]
+            if "not integration" in expr:
+                return False
+            if "integration" in expr:
+                return True
+    # Default: if running tests/integration or no -m, activate
+    if any("tests/integration" in arg for arg in args):
+        return True
+    return False
+
+if _should_force_docker_config():
+    _tmpdir = tempfile.TemporaryDirectory()
+    config_path = os.path.join(_tmpdir.name, "config.json")
+    with open(config_path, "w") as f:
+        json.dump({"auths": {}}, f)
+    os.environ["DOCKER_CONFIG"] = _tmpdir.name
+    print(
+        "\n[pytest] Integration tests: Forcing Docker anonymous pulls by setting DOCKER_CONFIG to temp dir with minimal config.json"
+    )
+
+import pytest
 import time
 from testcontainers.neo4j import Neo4jContainer
 from testcontainers.redis import RedisContainer
 from testcontainers.core.container import DockerContainer
 import docker
-from pathlib import Path
 
 import pytest
+import tempfile
+import json
+
+@pytest.fixture(scope="session", autouse=True)
+def force_docker_anonymous_for_integration(request):
+    """
+    Ensure Docker SDK uses a minimal config.json with no credential helpers
+    for integration tests, to avoid host credential helper errors.
+    """
+    config = request.config
+    from pathlib import Path
+    # Only activate for integration tests
+    session_items = getattr(config, "args", [])
+    is_integration = False
+    expr = (config.getoption("-m") or "").strip()
+    if all(str(Path(arg)).startswith("tests/unit") for arg in session_items if not arg.startswith("-")):
+        is_integration = False
+    elif not expr:
+        is_integration = True
+    elif "not integration" in expr:
+        is_integration = False
+    else:
+        is_integration = "integration" in expr
+    if not is_integration:
+        yield
+        return
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = os.path.join(tmpdir, "config.json")
+        with open(config_path, "w") as f:
+            json.dump({"auths": {}}, f)
+        os.environ["DOCKER_CONFIG"] = tmpdir
+        print(
+            "\n[pytest] Integration tests: Forcing Docker anonymous pulls by setting DOCKER_CONFIG to temp dir with minimal config.json"
+        )
+        yield
+    # TemporaryDirectory cleans up automatically.
 
 def _running_integration_tests(config: pytest.Config) -> bool:
     """
     Return True if the current pytest invocation is intended to
     run integration tests.  Works for:
-      • no -m flag          → treat as full run  (True)
+      • no -m flag          → treat as full run  (True, unless only unit tests are collected)
       • -m "integration"    → integration only  (True)
       • -m "slow and integration"              (True)
       • -m "not integration"                   (False)
       • -m "unit"                              (False)
+    Additionally, if only tests under tests/unit are being run, returns False.
     """
     expr = (config.getoption("-m") or "").strip()
+    # If only tests/unit is being collected, do not run integration fixtures
+    session_items = getattr(config, "args", [])
+    if all(str(Path(arg)).startswith("tests/unit") for arg in session_items if not arg.startswith("-")):
+        return False
     if not expr:
         return True                       # full run
     if "not integration" in expr:
@@ -50,6 +126,8 @@ def redis_container():
         os.environ["REDIS__URI"] = uri
         yield redis
 
+import uuid
+
 @pytest.fixture(scope="session")
 def celery_worker_container(request):
     # Only start the worker container for integration tests
@@ -73,7 +151,11 @@ def celery_worker_container(request):
             rm=True,
         )
 
-    worker = DockerContainer(image_tag).with_name("codestory-worker")
+    # Generate a unique container name for this test session
+    unique_worker_name = f"codestory-worker-{uuid.uuid4()}"
+    os.environ["CODESTORY_WORKER_CONTAINER_NAME"] = unique_worker_name
+
+    worker = DockerContainer(image_tag).with_name(unique_worker_name)
     worker.with_env("CELERY_TASK_ALWAYS_EAGER", "true")
     worker.with_env("CELERY_TASK_STORE_EAGER_RESULT", "true")
     worker.start()

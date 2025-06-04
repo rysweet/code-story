@@ -17,39 +17,25 @@ class TestDockerConnectivityFix:
     @pytest.fixture(scope="class")
     def worker_container(self: Any) -> None:
         """Fixture to ensure worker container is running with our Docker fix"""
-        result = subprocess.run(
-            ["docker", "compose", "up", "-d", "redis"],
-            capture_output=True,
-            text=True,
-            cwd=Path.cwd(),
-        )
-        if result.returncode != 0:
-            pytest.skip("Failed to start Redis for Docker test")
-        result = subprocess.run(
-            ["docker", "compose", "up", "-d", "worker"],
-            capture_output=True,
-            text=True,
-            cwd=Path.cwd(),
-        )
-        if result.returncode != 0:
-            pytest.skip("Failed to start worker for Docker test")
-        time.sleep(45)
+        import os
+        worker_name = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
+        # The actual container is started by the test suite fixture, so just check for its presence
         result = subprocess.run(
             [
                 "docker",
                 "ps",
                 "--filter",
-                "name=codestory-worker",
+                f"name={worker_name}",
                 "--format",
                 "{{.Names}}",
             ],
             capture_output=True,
             text=True,
         )
-        if "codestory-worker" not in result.stdout:
+        if worker_name not in result.stdout:
             pytest.skip("Worker container not running")
-        yield "codestory-worker"
-        subprocess.run(["docker", "compose", "down"], capture_output=True)
+        yield worker_name
+        # No teardown needed; handled by test suite fixture
 
     def test_docker_socket_accessibility(self: Any, worker_container: Any) -> None:
         """Test that Docker socket is properly mounted and accessible"""

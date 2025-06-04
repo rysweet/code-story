@@ -409,10 +409,12 @@ class TestFilesystemIngestionE2E:
 
         os.environ["REDIS__URI"] = os.environ["REDIS_URI"]
         logger.info("Checking CodeStory service container status...")
+        import os
+        worker_container_name = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
         required_services = {
             "neo4j": ["neo4j", "codestory-neo4j"],
             "redis": ["redis", "codestory-redis"],
-            "worker": ["worker", "codestory-worker"],
+            "worker": ["worker", worker_container_name],
             "service": ["service", "codestory-service"],
         }
         healthy_services = set()
@@ -499,10 +501,12 @@ class TestFilesystemIngestionE2E:
         import re
 
         logger.info("Waiting for all CodeStory containers to be running and healthy...")
+        import os
+        worker_container_name = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
         required_services = {
             "neo4j": ["neo4j", "codestory-neo4j"],
             "redis": ["redis", "codestory-redis"],
-            "worker": ["worker", "codestory-worker"],
+            "worker": ["worker", worker_container_name],
             "service": ["service", "codestory-service"],
         }
 
