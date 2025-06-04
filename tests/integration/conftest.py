@@ -23,6 +23,7 @@ def force_docker_anonymous_for_tests():
     # No cleanup needed; TemporaryDirectory cleans up automatically.
 import uuid
 import docker
+import docker.errors
 import redis
 import time
 import socket
@@ -48,13 +49,19 @@ def redis_container():
     except OSError:
         pytest.skip("Redis port 6379 in use")
 
-    container = client.containers.run(
-        "redis:7.2-alpine",
-        name=container_name,
-        ports={"6379/tcp": 6379},
-        detach=True,
-        auto_remove=True,
-    )
+    try:
+        container = client.containers.run(
+            "redis:7.2-alpine",
+            name=container_name,
+            ports={"6379/tcp": 6379},
+            detach=True,
+            auto_remove=True,
+        )
+    except docker.errors.APIError as e:
+        if "port is already allocated" in str(e):
+            pytest.skip("Redis port 6379 in use")
+        else:
+            raise
     try:
         # Find mapped host port
         container.reload()
