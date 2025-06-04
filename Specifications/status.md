@@ -31,16 +31,12 @@
     - Now fails for service readiness (TimeoutError: Services not ready after 120 seconds. Missing: ['neo4j', 'redis', 'service']).
 
   Fixed: `tests/integration/test_ingestion_pipeline/test_blarify_integration.py::test_blarify_step_run`
-    - Fixture patch applied; now fails with ERROR at setup: fixture 'celery_app' not found
+    - Celery fixture error resolved (no longer fails with fixture 'celery_app' not found).
 
-  Next failing test: `tests/integration/test_filesystem_ingestion_simple.py::TestFilesystemIngestionSimple::test_filesystem_step_with_various_file_types`
-    - AssertionError: Step should succeed
-    - `tests/integration/test_cli/test_repository_mounting.py::TestCliAutoMount::test_cli_mount_verification_function`
-      - ClickException: Repository not mounted in container
-    - `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_completed_job`
-      - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
+  Failing: `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_completed_job`
+    - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
 
-  Diagnosis: Worker container startup error is fixed. Current blockers are missing test fixtures and service/container readiness issues.
+  Diagnosis: Celery/Redis is not available for integration tests; next blocker is ingestion pipeline cancellation test failing due to Celery/Redis connection refused.
 ## Last Completed Task (May 22, 2025)
 
 - Updated prompt history, shell history, and status files

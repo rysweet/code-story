@@ -1,1 +1,1 @@
-"""Integration tests for the ingestion pipeline."""
+pytest_plugins = ["celery", "tests.conftest_celery_eager"]
