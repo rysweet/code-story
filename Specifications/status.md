@@ -16,6 +16,11 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+- [2025-06-03] Cancellation tests after Redis env var update:
+  - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
+  - First failure: `test_cancel_running_job`
+  - Traceback: AssertionError at `assert status == JobStatus.CANCELLED` (status is always `"pending"`).
+  - Diagnosis: Job status remained `"pending"` after cancellation; warnings show "Redis not available for publishing progress", indicating the app is not connecting to Redis as expected. The test environment may still not provide a usable Redis instance on localhost:6379 for the application under test.
 - [2025-06-03] Cancellation tests after Redis fixture import fix:
   - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
   - First failure: `test_cancel_pending_job`

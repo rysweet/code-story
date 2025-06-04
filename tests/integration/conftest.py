@@ -80,10 +80,11 @@ def redis_container():
         else:
             raise RuntimeError("Redis container did not become ready in time")
 
-        url = f"redis://localhost:{port}/0"
-        os.environ["REDIS_URL"] = url
-        os.environ["CELERY_BROKER_URL"] = url
-        os.environ["CELERY_RESULT_BACKEND"] = url
+        os.environ.update({
+            "REDIS_URL": "redis://localhost:6379/0",
+            "CELERY_BROKER_URL": "redis://localhost:6379/0",
+            "CELERY_RESULT_BACKEND": "redis://localhost:6379/0"
+        })
         yield
     finally:
         try:
