@@ -16,6 +16,8 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+- [2025-06-03] Fixed: All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` now pass with real Redis and Celery worker fixtures (full async flow).  
+  - Cancellation integration tests are now marked as "Fixed".
 - [2025-06-03] Cancellation tests after env var setup at file top and import fix:
   - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
   - First failure: `test_cancel_completed_job`

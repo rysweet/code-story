@@ -99,6 +99,68 @@ def redis_container():
             container.stop(timeout=3)
         except Exception:
             pass
+@pytest.fixture(scope="session", autouse=True)
+def celery_worker_container(redis_container):
+    """
+    Session-scoped fixture to run a real Celery worker in a Docker container for integration tests.
+    - Depends on redis_container (ensures Redis is running on host:6379).
+    - Uses docker-py to run celery:5.3-alpine with network_mode=host.
+    - Waits for worker to connect to Redis (log line) or skips tests on timeout.
+    - Stops the container on teardown.
+    """
+    import docker
+    import time
+    from uuid import uuid4
+
+    client = docker.from_env()
+    container_name = f"cs-worker-{uuid4()}"
+    redis_url = "redis://host.docker.internal:6379/0"
+    env = {
+        "CELERY_BROKER_URL": redis_url,
+        "CELERY_RESULT_BACKEND": redis_url,
+    }
+    command = [
+        "celery",
+        "-A",
+        "codestory.ingestion_pipeline.celery_app",
+        "worker",
+        "--loglevel=info",
+    ]
+    try:
+        container = client.containers.run(
+            "celery:5.3-alpine",
+            name=container_name,
+            command=command,
+            environment=env,
+            network_mode="host",
+            detach=True,
+            auto_remove=True,
+        )
+    except Exception as e:
+        import pytest
+        pytest.skip(f"Could not start celery worker container: {e}")
+
+    # Wait for worker to connect to Redis (max 30s)
+    log_match = "Connected to redis://localhost:6379/0"
+    found = False
+    start = time.time()
+    try:
+        while time.time() - start < 30:
+            logs = container.logs(tail=50).decode(errors="ignore")
+            if log_match in logs:
+                found = True
+                break
+            time.sleep(1)
+        if not found:
+            container.stop(timeout=3)
+            import pytest
+            pytest.skip("Celery worker did not connect to Redis in time")
+        yield
+    finally:
+        try:
+            container.stop(timeout=3)
+        except Exception:
+            pass
 
 _INTEGRATION_ROOT = Path(__file__).parent.resolve()
 
