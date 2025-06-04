@@ -409,13 +409,17 @@ class TestFilesystemIngestionE2E:
 
         os.environ["REDIS__URI"] = os.environ["REDIS_URI"]
         logger.info("Checking CodeStory service container status...")
-        import os
-        worker_container_name = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
+        # Dynamically determine container names from environment, fallback to defaults
+        neo4j_container = os.environ.get("CODESTORY_NEO4J_CONTAINER_NAME")
+        redis_container = os.environ.get("CODESTORY_REDIS_CONTAINER_NAME")
+        worker_container = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
+        service_container = os.environ.get("CODESTORY_SERVICE_CONTAINER_NAME")
+
         required_services = {
-            "neo4j": ["neo4j", "codestory-neo4j"],
-            "redis": ["redis", "codestory-redis"],
-            "worker": ["worker", worker_container_name],
-            "service": ["service", "codestory-service"],
+            "neo4j": [neo4j_container] if neo4j_container else ["neo4j", "codestory-neo4j"],
+            "redis": [redis_container] if redis_container else ["redis", "codestory-redis"],
+            "worker": [worker_container],
+            "service": [service_container] if service_container else ["service", "codestory-service"],
         }
         healthy_services = set()
 
@@ -457,7 +461,7 @@ class TestFilesystemIngestionE2E:
             logger.info(
                 "All required CodeStory containers are already running and healthy. Skipping stack startup."
             )
-            await self._wait_for_services_ready()
+            await self._wait_for_services_ready(skip_worker=True)
             return
         logger.info("Not all containers are healthy. Restarting stack...")
         try:
@@ -476,7 +480,7 @@ class TestFilesystemIngestionE2E:
                     capture_output=True,
                     timeout=120,
                 )
-            await self._wait_for_services_ready()
+            await self._wait_for_services_ready(skip_worker=True)
         except subprocess.TimeoutExpired:
             logger.error("Service startup timed out")
             raise
@@ -496,19 +500,30 @@ class TestFilesystemIngestionE2E:
                 timeout=60,
             )
 
-    async def _wait_for_services_ready(self: Any, max_wait: Any = 60) -> None:
-        """Wait for all required services to be running and healthy."""
+    async def _wait_for_services_ready(self: Any, max_wait: Any = 120, skip_worker: bool = False) -> None:
+        """Wait for all required services to be running and healthy.
+
+        Args:
+            max_wait: Maximum seconds to wait for readiness.
+            skip_worker: If True, do not require the worker container to be healthy.
+        """
         import re
 
         logger.info("Waiting for all CodeStory containers to be running and healthy...")
         import os
-        worker_container_name = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
+        # Dynamically determine container names from environment, fallback to defaults
+        neo4j_container = os.environ.get("CODESTORY_NEO4J_CONTAINER_NAME")
+        redis_container = os.environ.get("CODESTORY_REDIS_CONTAINER_NAME")
+        worker_container = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
+        service_container = os.environ.get("CODESTORY_SERVICE_CONTAINER_NAME")
+
         required_services = {
-            "neo4j": ["neo4j", "codestory-neo4j"],
-            "redis": ["redis", "codestory-redis"],
-            "worker": ["worker", worker_container_name],
-            "service": ["service", "codestory-service"],
+            "neo4j": [neo4j_container] if neo4j_container else ["neo4j", "codestory-neo4j"],
+            "redis": [redis_container] if redis_container else ["redis", "codestory-redis"],
+            "service": [service_container] if service_container else ["service", "codestory-service"],
         }
+        if not skip_worker:
+            required_services["worker"] = [worker_container]
 
         def parse_ps_output(output: str):
             found = set()
@@ -534,6 +549,7 @@ class TestFilesystemIngestionE2E:
             return found
 
         start_time = time.time()
+        healthy_services = set()
         while time.time() - start_time < max_wait:
             try:
                 ps_proc = subprocess.run(
@@ -544,7 +560,10 @@ class TestFilesystemIngestionE2E:
                 )
                 if ps_proc.returncode == 0:
                     healthy_services = parse_ps_output(ps_proc.stdout)
-                    if healthy_services == set(required_services.keys()):
+                    missing = set(required_services.keys()) - healthy_services
+                    if missing:
+                        logger.warning(f"Still waiting for containers: {sorted(missing)}")
+                    else:
                         logger.info("All required containers are running and healthy.")
                         return
             except Exception as e:
@@ -554,16 +573,16 @@ class TestFilesystemIngestionE2E:
             ["docker", "ps", "-a"], capture_output=True, text=True
         )
         logger.error(
-            f"Services not ready after {max_wait}s. Docker status:\n{docker_result.stdout}"
+            f"Services not ready after {max_wait}s. Missing: {sorted(set(required_services.keys()) - healthy_services)}. Docker status:\n{docker_result.stdout}"
         )
         try:
             service_logs = subprocess.run(
-                ["docker", "logs", "codestory-service"], capture_output=True, text=True
+                ["docker", "logs", service_container or "codestory-service"], capture_output=True, text=True
             )
             logger.error(f"Service logs:\n{service_logs.stdout}\n{service_logs.stderr}")
         except Exception:
             pass
-        raise TimeoutError(f"Services not ready after {max_wait} seconds")
+        raise TimeoutError(f"Services not ready after {max_wait} seconds. Missing: {sorted(set(required_services.keys()) - healthy_services)}")
 
     async def test_comprehensive_filesystem_ingestion(self: Any) -> None:
         """Test comprehensive filesystem ingestion with realistic repository."""

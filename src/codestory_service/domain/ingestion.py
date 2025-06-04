@@ -54,8 +54,8 @@ class IngestionRequest(BaseModel):
     """
 
     source_type: IngestionSourceType = Field(
-        ...,
-        description="Type of ingestion source",
+        default=IngestionSourceType.LOCAL_PATH,
+        description="Type of ingestion source (default: local_path)",
     )
     source: str = Field(
         ...,

@@ -74,6 +74,50 @@ def load_env_vars() -> None:
     os.environ["AZURE__KEYVAULT_NAME"] = "test-key-vault"
     os.environ["CODESTORY_TEST_ENV"] = "true"
 
+@pytest.fixture(autouse=True)
+def patch_docker_for_unit_tests(monkeypatch):
+    """
+    Prevent real Docker access in unit tests by monkeypatching docker.from_env and docker.DockerClient
+    to lightweight stubs. This ensures no Docker socket or credential store is accessed.
+    """
+    try:
+        import docker
+    except ImportError:
+        # If docker is not installed, nothing to patch
+        yield
+        return
+
+    class StubContainer:
+        def __init__(self):
+            self.attrs = {}
+        def logs(self, *a, **kw):
+            return b""
+        def reload(self):
+            pass
+        def stop(self, *a, **kw):
+            pass
+        def remove(self, *a, **kw):
+            pass
+
+    class StubContainers:
+        def run(self, *a, **kw):
+            return StubContainer()
+        def get(self, *a, **kw):
+            return StubContainer()
+        def list(self, *a, **kw):
+            return []
+
+    class StubDockerClient:
+        def __init__(self, *a, **kw):
+            self.containers = StubContainers()
+        def ping(self):
+            return True
+        def close(self):
+            pass
+
+    monkeypatch.setattr(docker, "from_env", lambda *a, **kw: StubDockerClient())
+    monkeypatch.setattr(docker, "DockerClient", StubDockerClient)
+    yield
 
 @pytest.fixture(scope="function")
 def celery_config() -> Any:

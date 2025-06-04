@@ -1,23 +1,28 @@
 import os
+
+# Set Celery to eager mode and use in-memory broker/result backend before any project code is imported
+os.environ.update({
+    "CODESTORY_CELERY_EAGER": "true",
+    "CELERY_TASK_ALWAYS_EAGER": "true",
+    "CELERY_BROKER_URL": "memory://",
+    "CELERY_RESULT_BACKEND": "cache+memory://",
+    "CODESTORY_BROKER_URL": "memory://",
+    "CODESTORY_RESULT_BACKEND": "cache+memory://",
+})
+
+import importlib
+import sys
+
+# Force reload of celery_app to pick up new env vars before any manager/tasks import
+importlib.reload(importlib.import_module("codestory.ingestion_pipeline.celery_app"))
+
 import pytest
 
 @pytest.fixture(scope="session", autouse=True)
 def celery_eager_env(monkeypatch):
     """
-    Ensure Celery runs in eager mode with in-memory broker for all tests.
-
-    This fixture sets environment variables and monkeypatches redis.Redis
-    to prevent any real Redis connections. It must run before any Celery app
-    or ingestion pipeline code is imported.
+    Monkeypatch redis.Redis to a dummy stub to prevent real connections during tests.
     """
-    # Force Celery eager mode and in-memory broker/result backend
-    os.environ["CELERY_TASK_ALWAYS_EAGER"] = "true"
-    os.environ["CELERY_TASK_EAGER_PROPAGATES"] = "true"
-    os.environ["CELERY_TASK_STORE_EAGER_RESULT"] = "true"
-    os.environ["REDIS_URI"] = "memory://"
-    os.environ["REDIS__URI"] = "memory://"
-
-    # Monkeypatch redis.Redis to a dummy stub to prevent real connections
     try:
         import redis
         class DummyRedis:

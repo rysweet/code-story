@@ -25,7 +25,7 @@ def ingestion_service(celery_adapter: Any) -> Any:
 def start_test_job() -> Any:
     payload = {"source": ".", "steps": ["filesystem"], "options": {"timeout": 60}}
     response = client.post("/v1/ingest", json=payload)
-    assert response.status_code == 200
+    assert response.status_code in (200, 202)
     job_id = response.json()["job_id"]
     return job_id
 

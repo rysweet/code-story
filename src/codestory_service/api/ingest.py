@@ -8,7 +8,7 @@ import contextlib
 import logging
 from typing import Any, Dict, List, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status, Body
 
 from ..application.ingestion_service import IngestionService, get_ingestion_service
 from ..domain.ingestion import (
@@ -172,6 +172,7 @@ async def get_job_status(
 )
 async def cancel_job(
     job_id: str,
+    body: dict = Body(default_factory=dict),  # Accept and ignore any body for compatibility
     ingestion_service: IngestionService = Depends(get_ingestion_service),
     user: Dict[str, Any] = Depends(get_current_user),
 ) -> IngestionJob:
