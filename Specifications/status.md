@@ -30,12 +30,11 @@
     - Worker container startup error resolved (no longer fails with missing /app/.venv/bin/python).
     - Now fails for service readiness (TimeoutError: Services not ready after 120 seconds. Missing: ['neo4j', 'redis', 'service']).
 
-  Next failing test: `tests/integration/test_ingestion_pipeline/test_blarify_integration.py::test_blarify_step_run`
-    - ERROR at setup: fixture 'celery_app' not found
+  Fixed: `tests/integration/test_ingestion_pipeline/test_blarify_integration.py::test_blarify_step_run`
+    - Fixture patch applied; now fails with ERROR at setup: fixture 'celery_app' not found
 
-  Other failures:
-    - `tests/integration/test_filesystem_ingestion_simple.py::TestFilesystemIngestionSimple::test_filesystem_step_with_various_file_types`
-      - AssertionError: Step should succeed
+  Next failing test: `tests/integration/test_filesystem_ingestion_simple.py::TestFilesystemIngestionSimple::test_filesystem_step_with_various_file_types`
+    - AssertionError: Step should succeed
     - `tests/integration/test_cli/test_repository_mounting.py::TestCliAutoMount::test_cli_mount_verification_function`
       - ClickException: Repository not mounted in container
     - `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_completed_job`
