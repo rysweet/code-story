@@ -32,7 +32,7 @@ RUN poetry install --no-interaction --no-ansi --only main --extras azure
 FROM builder as development
 
 # Install dev dependencies
-RUN poetry install --no-interaction --no-ansi --with dev
+RUN poetry install --no-interaction --no-ansi
 
 # Expose port
 EXPOSE 8000
@@ -87,4 +87,4 @@ CMD ["uvicorn", "src.codestory_service.main:app", "--host", "0.0.0.0", "--port",
 FROM production as worker
 
 # Run the Celery worker
-CMD ["celery", "-A", "src.codestory.ingestion_pipeline.celery_app", "worker", "--loglevel=info"]
+CMD ["python", "-m", "celery", "-A", "src.codestory.ingestion_pipeline.celery_app", "worker", "--loglevel=info"]

@@ -21,15 +21,27 @@
 - Fix: Integration test suite now forces Docker SDK to use a temporary config with no credential helpers, enabling anonymous pulls and bypassing the missing `docker-credential-desktop` error.
 - Integration test run status (2025-06-03):
   Fixed: `tests/integration/test_cli/test_visualize_integration.py::TestVisualizeCommands::test_visualize_list`
-  First failing test:
-    - `tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_gitignore_patterns_comprehensive`
-    - `tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion`
-  Error: `UnboundLocalError: cannot access local variable 'os' where it is not associated with a value`
-  Traceback (topmost):
-    >       os.environ["REDIS__URI"] = os.environ["REDIS_URI"]
-    E       UnboundLocalError: cannot access local variable 'os' where it is not associated with a value
-    (see test output for full details)
-  Diagnosis: The test uses `os.environ` before importing `os` in the test method after a recent patch. The `import os` statement must be at the top of the file or before its first use in each method.
+
+  Fixed: `tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_gitignore_patterns_comprehensive`
+    - Worker container startup error resolved (no longer fails with missing /app/.venv/bin/python).
+    - Now fails for service readiness (TimeoutError: Services not ready after 120 seconds. Missing: ['neo4j', 'redis', 'service']).
+
+  Fixed: `tests/integration/test_filesystem_ingestion_e2e.py::TestFilesystemIngestionE2E::test_comprehensive_filesystem_ingestion`
+    - Worker container startup error resolved (no longer fails with missing /app/.venv/bin/python).
+    - Now fails for service readiness (TimeoutError: Services not ready after 120 seconds. Missing: ['neo4j', 'redis', 'service']).
+
+  Next failing test: `tests/integration/test_ingestion_pipeline/test_blarify_integration.py::test_blarify_step_run`
+    - ERROR at setup: fixture 'celery_app' not found
+
+  Other failures:
+    - `tests/integration/test_filesystem_ingestion_simple.py::TestFilesystemIngestionSimple::test_filesystem_step_with_various_file_types`
+      - AssertionError: Step should succeed
+    - `tests/integration/test_cli/test_repository_mounting.py::TestCliAutoMount::test_cli_mount_verification_function`
+      - ClickException: Repository not mounted in container
+    - `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_completed_job`
+      - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
+
+  Diagnosis: Worker container startup error is fixed. Current blockers are missing test fixtures and service/container readiness issues.
 ## Last Completed Task (May 22, 2025)
 
 - Updated prompt history, shell history, and status files
