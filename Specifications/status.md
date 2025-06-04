@@ -35,8 +35,12 @@
 
   Failing: `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_completed_job`
     - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
+    - [2025-06-03] Fixture patched to force in-memory Celery and stub Redis, but error persists. Likely cause: application code imports Celery/config before fixture runs, so env vars are not set in time.
 
-  Diagnosis: Celery/Redis is not available for integration tests; next blocker is ingestion pipeline cancellation test failing due to Celery/Redis connection refused.
+  Next failing test: `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_running_job`
+    - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
+
+  Diagnosis: Celery/Redis is not available for integration tests; attempted fixture patch did not resolve the issue. App code may import Celery/config before test fixture sets env vars.
 ## Last Completed Task (May 22, 2025)
 
 - Updated prompt history, shell history, and status files
