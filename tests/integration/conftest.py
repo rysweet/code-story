@@ -85,6 +85,22 @@ def redis_container():
             "CELERY_BROKER_URL": "redis://localhost:6379/0",
             "CELERY_RESULT_BACKEND": "redis://localhost:6379/0"
         })
+
+        # Monkey-patch application settings before FastAPI/Celery import
+        import importlib, sys
+        try:
+            from codestory_service import settings as svc_settings
+            svc_settings.REDIS_URL = "redis://localhost:6379/0"
+            svc_settings.CELERY_BROKER_URL = "redis://localhost:6379/0"
+            svc_settings.CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+            if hasattr(svc_settings, "Settings"):
+                svc_settings.Settings().redis_url = "redis://localhost:6379/0"
+            # reload celery_app so new settings propagate
+            if "codestory.ingestion_pipeline.celery_app" in sys.modules:
+                importlib.reload(sys.modules["codestory.ingestion_pipeline.celery_app"])
+        except ImportError:
+            pass  # If settings module not present, skip patch
+
         yield
     finally:
         try:
