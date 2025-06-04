@@ -16,6 +16,11 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+- [2025-06-03] Cancellation tests with Redis fixture:
+  - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
+  - First failure: `test_cancel_pending_job`
+  - Traceback: AssertionError at `assert status == JobStatus.CANCELLED` (status is always `"pending"`).
+  - Diagnosis: Redis container is started and env vars are set by the fixture, but the application under test does not use the mapped port (still attempts to connect to localhost:6379). This suggests the application runs in a subprocess or container that does not inherit the test process's environment variables. Job progress and cancellation cannot complete without a working Redis connection.
 
 - Fixed: `tests/integration/test_demos/test_cli_demo.py::test_cli_version`
 - Fix: Integration test suite now forces Docker SDK to use a temporary config with no credential helpers, enabling anonymous pulls and bypassing the missing `docker-credential-desktop` error.
@@ -33,14 +38,29 @@
   Fixed: `tests/integration/test_ingestion_pipeline/test_blarify_integration.py::test_blarify_step_run`
     - Celery fixture error resolved (no longer fails with fixture 'celery_app' not found).
 
-  Failing: `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_completed_job`
-    - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
-    - [2025-06-03] Fixture patched to force in-memory Celery and stub Redis, but error persists. Likely cause: application code imports Celery/config before fixture runs, so env vars are not set in time.
+  [2025-06-03] Celery eager patch and override cleanup completed.
 
-  Next failing test: `tests/integration/test_ingestion_pipeline/test_cancellation.py::test_cancel_running_job`
-    - RuntimeError: Celery component required but unavailable: Celery component unhealthy: Error 61 connecting to localhost:6379. Connection refused.
+  [2025-06-03] Cancellation tests failed:
+    - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` now fail because job status remains `"pending"` after cancellation attempts.
+    - Failing test-ids:
+        * test_cancel_running_job
+        * test_cancel_completed_job
+        * test_cancel_pending_job
+    - Traceback: AssertionError at `assert status == JobStatus.CANCELLED` or `assert status == JobStatus.COMPLETED` (status is always `"pending"`).
+    - Diagnosis: The ingestion API now accepts the test payload (no 422 errors), but jobs do not progress due to Redis/Celery being unavailable (`Failed to connect to Redis: ... connecting to localhost:6379`). Cancellation cannot complete while jobs are stuck in `"pending"`.
+    - Proposed fix: Ensure Redis and Celery worker are running and available for job state transitions.
 
-  Diagnosis: Celery/Redis is not available for integration tests; attempted fixture patch did not resolve the issue. App code may import Celery/config before test fixture sets env vars.
+  Diagnosis: Awaiting next uninterrupted integration test run to confirm Celery/Redis patch effectiveness.
+
+  [2025-06-03] Cancellation tests re-run with `uv run pytest -q -x`:
+    - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` still fail.
+    - Failing test-ids:
+        * test_cancel_running_job
+        * test_cancel_completed_job
+        * test_cancel_pending_job
+    - Traceback: AssertionError at `assert status == JobStatus.CANCELLED` or `assert status == JobStatus.COMPLETED` (status is always `"pending"`).
+    - Diagnosis: Ingestion pipeline cannot update job status because Redis is not running or accessible on localhost:6379. Job progress and cancellation signaling require a working Redis instance.
+    - Proposed fix: Ensure Redis is running and accessible on localhost:6379 before running these tests. The test environment must have a working Redis instance.
 ## Last Completed Task (May 22, 2025)
 
 - Updated prompt history, shell history, and status files
