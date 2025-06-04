@@ -16,6 +16,14 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+
+- [2025-06-03] Cancellation tests with Redis bound to host port 6379:
+  - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
+  - First failure: `test_cancel_running_job`
+  - Traceback: AssertionError at `assert status == JobStatus.CANCELLED` (status is always `"pending"`).
+  - Other failures: docker.errors.APIError 500 ("failed to set up container networking: ... Bind for 0.0.0.0:6379 failed: port is already allocated").
+  - Diagnosis: Redis port 6379 is already in use or not available, so the Redis container cannot start. As a result, the application cannot update job status, and cancellation cannot complete. Resource isolation is enforced, but the test environment must ensure Redis is available on localhost:6379 for these tests to pass.
+
 - [2025-06-03] Cancellation tests with Redis fixture:
   - All tests in `tests/integration/test_ingestion_pipeline/test_cancellation.py` failed.
   - First failure: `test_cancel_pending_job`

@@ -38,10 +38,20 @@ def redis_container():
     """
     client = docker.from_env()
     container_name = f"test-redis-{uuid.uuid4()}"
+
+    # Check if port 6379 is available
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("127.0.0.1", 6379))
+        sock.close()
+    except OSError:
+        pytest.skip("Redis port 6379 in use")
+
     container = client.containers.run(
         "redis:7.2-alpine",
         name=container_name,
-        ports={"6379/tcp": 0},
+        ports={"6379/tcp": 6379},
         detach=True,
         auto_remove=True,
     )
