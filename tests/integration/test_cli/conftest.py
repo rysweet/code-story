@@ -27,6 +27,12 @@ from click.testing import CliRunner
 
 from codestory.config import get_settings
 
+@pytest.fixture(autouse=True)
+def set_api_url(monkeypatch):
+    # FastAPI service_container listens on host port 8000
+    monkeypatch.setenv("CODESTORY_API_URL", "http://localhost:8000")
+    # Provide dummy API key env var if CLI requires it
+    monkeypatch.setenv("CODESTORY_API_KEY", "dummy-test-key")
 
 @pytest.fixture
 def cli_runner() -> CliRunner:

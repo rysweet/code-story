@@ -16,6 +16,31 @@
 - All unit tests passing as of 2025-06-03
 
 ## Integration Test Status
+- [2025-06-04] CLI integration suite (`tests/integration/test_cli/`) run with autouse API URL fixture:
+  - **First failure:** `tests/integration/test_cli/test_query_integration.py::TestQueryCommands::test_query_run_cypher`
+  - **Error:** `pytest.PytestUnraisableExceptionWarning: Exception ignored in: <socket.socket ...>` (ResourceWarning: unclosed socket) during teardown.
+  - **Diagnosis:** Resource warnings from unclosed sockets in subprocesses or dependencies (e.g., Docker SDK, HTTPX, requests) are promoted to errors by `-W error`. The tests themselves pass, but teardown triggers these warnings.
+  - **Proposed fix:** Patch test environment/fixtures to ensure all sockets and clients are properly closed after use. Review subprocess and Docker usage for proper cleanup. Not a CLI logic bug.
+- [2025-06-04] CLI integration suite (`tests/integration/test_cli/`) run with real service fixture:
+  - **Fixed:** `tests/integration/test_cli/test_query_integration.py::TestQueryCommands::test_query_run_cypher` (CLI now closes all httpx clients after each run)
+  - **Next failure:** Persistent `ResourceWarning: unclosed <socket.socket ...>` from `urllib3/requests` sockets in CLI integration tests (e.g., test_query_run_with_limit, test_query_export, test_ingest_start_and_status).
+  - **Diagnosis:** These warnings are not caused by the CLI code, but by subprocesses or dependencies (e.g., Docker SDK, requests) in the integration test environment.
+  - **Proposed fix:** Investigate and patch the test environment or dependencies to ensure all sockets are closed after use. Not directly fixable in CLI code.
+- [2025-06-04] **CLI integration test skip analysis**:
+  - **First skip cause**:  
+    - `@pytest.mark.skip(reason="CLI subprocess testcontainer networking issue - config coordination works but connection fails. See shell_history for details.")` in `tests/integration/test_demos/test_cli_demo.py`.
+  - **Diagnosis**:  
+    - The CLI subprocess test is skipped because the CLI, when run as a subprocess, cannot connect to the service started in the testcontainer. This is due to Docker networking isolation: the test process and the CLI subprocess do not share a network namespace, so the CLI cannot reach the service endpoint.
+    - The conftest.py fixtures start Redis and Celery worker containers using host networking and port mapping, but the service under test is not accessible to the CLI subprocess as expected.
+  - **Proposed fixture-based fix**:  
+    - Implement a fixture that starts the service in a way that is accessible to both the test process and the CLI subprocess. This may involve:
+      - Using Docker host networking for both the service and the CLI subprocess.
+      - Exposing the service on a known port/address and passing that information to the CLI subprocess via environment variables or CLI arguments.
+      - Ensuring that all subprocesses and containers share the same network namespace or can resolve each other's addresses.
+    - This approach would allow the CLI integration test to run without skipping, by satisfying the networking requirements in the test environment.
+- [2025-06-04] CLI integration suite (`tests/integration/test_cli/`) run: **all tests skipped** (no pass, fail, or warning).  
+  - No CLI integration functionality was validated in this run.  
+  - Action required: Investigate why all CLI integration tests are skipped and ensure they are enabled for future runs.
 - [2025-06-04] Confirmed: All tests in `tests/integration/test_ingestion_pipeline/` (excluding `test_cancellation.py`) pass with `-W error` and no Pytest warnings.  
   - The `filterwarnings = ignore::pytest.PytestAssertRewriteWarning` line has been removed from `pytest.ini`.  
   - Warning is fully cleared; test suite is warning-free.
