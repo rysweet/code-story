@@ -37,3 +37,7 @@ poetry run mypy --show-error-codes --pretty src/codestory src/codestory_blarify 
 docker compose -f docker-compose.yml down -v --remove-orphans
 ```
 # Stopped and removed all containers, volumes, and networks defined in the repo's docker-compose file to ensure a clean environment before test troubleshooting.
+```bash
+docker ps -aq --filter name=codestory | xargs -r docker rm -f
+```
+# Removed any stray Docker containers with names matching "codestory" to ensure no project-related containers remain running outside of docker-compose management.
