@@ -31,3 +31,9 @@ python scripts/auto_annotate_return_types.py
 poetry run mypy --show-error-codes --pretty src/codestory src/codestory_blarify src/codestory_docgrapher src/codestory_filesystem src/codestory_mcp src/codestory_service src/codestory_summarizer tests > mypy_after_auto.txt 2>&1
 ```
 # Comprehensive MyPy check after auto-annotation to measure impact on error count
+## 2025-06-05
+
+```bash
+docker compose -f docker-compose.yml down -v --remove-orphans
+```
+# Stopped and removed all containers, volumes, and networks defined in the repo's docker-compose file to ensure a clean environment before test troubleshooting.
