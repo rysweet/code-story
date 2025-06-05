@@ -45,3 +45,7 @@ docker ps -aq --filter name=codestory | xargs -r docker rm -f
 docker ps -aq --filter name=neo4j | xargs -r docker rm -f
 ```
 # Removed any stray Docker containers with names matching "neo4j" to ensure no Neo4j-related containers remain running outside of docker-compose management.
+```bash
+docker ps -a
+```
+# Verified that no running or exited containers with names matching "codestory" or "neo4j" remain; environment is clean for test troubleshooting.
