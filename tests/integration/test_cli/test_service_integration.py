@@ -1,5 +1,3 @@
-import pytest
-pytest.skip("Service integration tests skipped: docker-compose neutralized, use Testcontainers for Redis/Neo4j only", allow_module_level=True)
 """Integration tests for CLI service commands."""
 import os
 import subprocess
@@ -38,7 +36,7 @@ class TestServiceCommands:
         assert "Code Story Service Information" in result.output
         assert str(running_service["port"]) in result.output
 
-    @pytest.mark.skipif(os.environ.get("CI") == "true", reason="Skip in CI environment")
+    # @pytest.mark.skipif(os.environ.get("CI") == "true", reason="Skip in CI environment")
     @pytest.mark.require_service
     def test_service_ui_open(
         self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
@@ -48,7 +46,7 @@ class TestServiceCommands:
             cli_runner.invoke(app, ["ui", "open"], catch_exceptions=False)
         assert exc_info.value.code in [0, None]
 
-    @pytest.mark.skipif(os.environ.get("CI") == "true", reason="Skip in CI environment")
+    # @pytest.mark.skipif(os.environ.get("CI") == "true", reason="Skip in CI environment")
     def test_service_start_stop_subprocess(self: Any) -> None:
         """Test that the service can be started and stopped using subprocess.
 

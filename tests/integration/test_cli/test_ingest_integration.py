@@ -1,5 +1,3 @@
-import pytest
-pytest.skip("Service integration tests skipped: docker-compose neutralized, use Testcontainers for Redis/Neo4j only", allow_module_level=True)
 """Integration tests for CLI ingestion commands."""
 import os
 import tempfile
@@ -158,7 +156,8 @@ class TestIngestCommands:
     ) -> None:
         """Test the 'ingest mount' command with a real repository."""
         if not is_docker_running():
-            pytest.skip("Docker is not running, skipping test")
+            # pytest.skip("Docker is not running, skipping test")
+            pass
         with tempfile.TemporaryDirectory() as temp_dir:
             with open(os.path.join(temp_dir, "test.txt"), "w") as f:
                 f.write("test content")
@@ -179,7 +178,8 @@ class TestIngestCommands:
     ) -> None:
         """Test the '--force-remount' option with a real repository."""
         if not is_docker_running():
-            pytest.skip("Docker is not running, skipping test")
+            # pytest.skip("Docker is not running, skipping test")
+            pass
         with tempfile.TemporaryDirectory() as temp_dir:
             with open(os.path.join(temp_dir, "test.txt"), "w") as f:
                 f.write("test content")

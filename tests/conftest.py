@@ -126,6 +126,9 @@ def redis_container():
         uri = f"redis://{redis.get_container_host_ip()}:{redis.get_exposed_port(6379)}/0"
         os.environ["REDIS_URI"] = uri
         os.environ["REDIS__URI"] = uri
+        os.environ["REDIS_URL"] = uri
+        os.environ["CELERY_BROKER_URL"] = uri
+        os.environ["CELERY_RESULT_BACKEND"] = uri
         yield redis
 
 import uuid
@@ -308,12 +311,18 @@ from testcontainers.neo4j import Neo4jContainer
 
 @pytest.fixture(scope="session", autouse=True)
 def neo4j_container(request):
-    """Spin up a Neo4j container for the test session and set NEO4J_URI env vars, but only for integration tests."""
+    """Spin up a Neo4j container for the test session and set NEO4J_URI env vars, but only for integration tests.
+    Teardown suppresses docker.errors.APIError with 404/409 to avoid warnings as errors.
+    """
+    import docker
+    from docker.errors import APIError
     # Skip container startup unless integration tests are being run
     if not _running_integration_tests(request.config):
         yield None
         return
-    with Neo4jContainer("neo4j:5.22") as neo4j:
+    neo4j = Neo4jContainer("neo4j:5.22")
+    try:
+        neo4j.start()
         uri = neo4j.get_connection_url()
         os.environ["NEO4J_URI"] = uri
         os.environ["NEO4J__URI"] = uri
@@ -324,6 +333,16 @@ def neo4j_container(request):
         os.environ["NEO4J_DATABASE"] = "neo4j"
         os.environ["NEO4J__DATABASE"] = "neo4j"
         yield uri
+    finally:
+        try:
+            neo4j.stop()
+        except APIError as e:
+            if hasattr(e, "status_code") and e.status_code in (404, 409):
+                pass
+            else:
+                raise
+        except Exception:
+            pass
 
 import os
 import pytest

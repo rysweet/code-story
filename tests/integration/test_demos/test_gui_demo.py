@@ -71,10 +71,17 @@ def setup_gui() -> None:
     os.chdir(original_dir)
 
 
-@pytest.mark.skip(reason="Requires full GUI setup")
 @pytest.mark.gui
 def test_gui_homepage(setup_gui: Any) -> None:
     """Test the GUI homepage loads correctly."""
+    # Xfail if GUI server is not available
+    import requests
+    try:
+        response = requests.get("http://localhost:5173")
+        if response.status_code != 200:
+            pytest.xfail("GUI dev server is not running or not reachable")
+    except Exception:
+        pytest.xfail("GUI dev server is not running or not reachable")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -95,10 +102,16 @@ def test_gui_homepage(setup_gui: Any) -> None:
         browser.close()
 
 
-@pytest.mark.skip(reason="Requires full GUI setup")
 @pytest.mark.gui
 def test_gui_configuration(setup_gui: Any) -> None:
     """Test the GUI configuration page loads correctly."""
+    import requests
+    try:
+        response = requests.get("http://localhost:5173/config")
+        if response.status_code != 200:
+            pytest.xfail("GUI dev server is not running or not reachable")
+    except Exception:
+        pytest.xfail("GUI dev server is not running or not reachable")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -122,10 +135,16 @@ def test_gui_configuration(setup_gui: Any) -> None:
         browser.close()
 
 
-@pytest.mark.skip(reason="Requires full GUI setup")
 @pytest.mark.gui
 def test_gui_ingestion(setup_gui: Any) -> None:
     """Test the GUI ingestion page loads correctly."""
+    import requests
+    try:
+        response = requests.get("http://localhost:5173/ingest")
+        if response.status_code != 200:
+            pytest.xfail("GUI dev server is not running or not reachable")
+    except Exception:
+        pytest.xfail("GUI dev server is not running or not reachable")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -143,10 +162,17 @@ def test_gui_ingestion(setup_gui: Any) -> None:
         browser.close()
 
 
-@pytest.mark.skip(reason="Requires graph data")
 @pytest.mark.gui
 def test_gui_graph(setup_gui: Any) -> None:
     """Test the GUI graph page loads correctly."""
+    import requests
+    try:
+        response = requests.get("http://localhost:5173/graph")
+        if response.status_code != 200:
+            pytest.xfail("GUI dev server is not running or not reachable")
+    except Exception:
+        pytest.xfail("GUI dev server is not running or not reachable")
+    # TODO: Add check for graph data availability, xfail if not present
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -163,10 +189,16 @@ def test_gui_graph(setup_gui: Any) -> None:
         browser.close()
 
 
-@pytest.mark.skip(reason="Requires full setup")
 @pytest.mark.gui
 def test_gui_ask(setup_gui: Any) -> None:
     """Test the GUI ask page loads correctly."""
+    import requests
+    try:
+        response = requests.get("http://localhost:5173/ask")
+        if response.status_code != 200:
+            pytest.xfail("GUI dev server is not running or not reachable")
+    except Exception:
+        pytest.xfail("GUI dev server is not running or not reachable")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -184,10 +216,16 @@ def test_gui_ask(setup_gui: Any) -> None:
         browser.close()
 
 
-@pytest.mark.skip(reason="Requires full setup")
 @pytest.mark.gui
 def test_gui_mcp(setup_gui: Any) -> None:
     """Test the GUI MCP page loads correctly."""
+    import requests
+    try:
+        response = requests.get("http://localhost:5173/mcp")
+        if response.status_code != 200:
+            pytest.xfail("GUI dev server is not running or not reachable")
+    except Exception:
+        pytest.xfail("GUI dev server is not running or not reachable")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()

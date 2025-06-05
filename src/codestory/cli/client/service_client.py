@@ -17,6 +17,29 @@ from codestory.config import Settings, get_settings
 class ServiceClient:
     """Client for interacting with the Code Story service API."""
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        """Close the underlying httpx client to release sockets."""
+        if hasattr(self, "client") and self.client is not None:
+            self.client.close()
+        if hasattr(self, "session") and self.session is not None and self.session is not self.client:
+            # Defensive: close session if it's not the same as client
+            try:
+                self.session.close()
+            except Exception:
+                pass
+
     def __init__(
         self,
         base_url: str | None = None,

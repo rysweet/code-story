@@ -39,8 +39,17 @@ def neo4j_container():
     # Clean up any stale cs-neo4j containers
     for c in client.containers.list(all=True, filters={"ancestor": NEO4J_IMAGE}):
         try:
-            c.remove(force=True)
-        except docker.errors.APIError:
+            try:
+                c.reload()
+            except docker.errors.NotFound:
+                continue
+            try:
+                c.remove(force=True)
+            except docker.errors.NotFound:
+                continue
+            except docker.errors.APIError:
+                pass
+        except Exception:
             pass
     bolt_port = get_free_port()
     http_port = get_free_port()
@@ -61,5 +70,10 @@ def neo4j_container():
     finally:
         try:
             container.remove(force=True)
+        except docker.errors.APIError as e:
+            if hasattr(e, "status_code") and e.status_code in (404, 409):
+                pass
+            else:
+                raise
         except Exception:
             pass

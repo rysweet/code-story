@@ -61,10 +61,14 @@ class TestIngestAPI:
     @pytest.mark.asyncio
     async def test_cancel_job(self: Any, mock_service: Any) -> None:
         """Test cancelling a job."""
+        # Ensure mock_service is a mock with cancel_job method
+        assert hasattr(mock_service, "cancel_job") and callable(getattr(mock_service, "cancel_job", None)), (
+            f"mock_service must have a cancel_job method, got {type(mock_service)}"
+        )
         mock_service.cancel_job.return_value = mock.MagicMock(
             job_id="job123", status=JobStatus.CANCELLING
         )
-        result = await ingest.cancel_job("job123", mock_service, {})
+        result = await ingest.cancel_job("job123", body={}, ingestion_service=mock_service, user={})
         mock_service.cancel_job.assert_called_once_with("job123")
         assert result.job_id == "job123"
         assert result.status == JobStatus.CANCELLING

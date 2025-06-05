@@ -157,6 +157,8 @@ def run_query(
 
     except ServiceError as e:
         console.print(f"[bold red]Query failed:[/] {e!s}")
+    finally:
+        client.close()
 
 
 @query.command(name="explore", help="Interactive query explorer for the graph.")
@@ -304,6 +306,8 @@ def export_query(
         console.print(f"[bold red]Export failed:[/] {e!s}")
     except OSError as e:
         console.print(f"[bold red]Failed to write file:[/] {e!s}")
+    finally:
+        client.close()
 
 
 def _display_query_result(

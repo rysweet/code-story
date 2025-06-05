@@ -11,8 +11,11 @@ import pytest, docker, uuid, time, os, requests
 @pytest.fixture(scope="session", autouse=True)
 def ensure_docker_daemon():
     try:
-        with docker.from_env() as c:
-            c.ping()
+        client = docker.from_env()
+        try:
+            client.ping()
+        finally:
+            client.close()
     except docker.errors.DockerException:
         pytest.skip("Docker daemon unavailable on host")
 
@@ -37,7 +40,7 @@ def service_container(redis_container, celery_worker_container):
             },
             network_mode="host",
             detach=True,
-            auto_remove=True,
+            # auto_remove=True,  # Remove auto_remove so we can stop/remove explicitly
         )
         # Wait /health
         for _ in range(60):
@@ -48,13 +51,23 @@ def service_container(redis_container, celery_worker_container):
                 pass
             time.sleep(1)
         else:
-            container.kill()
+            try:
+                container.kill()
+            except Exception:
+                pass
             pytest.skip("Service container unhealthy")
 
         os.environ["CODESTORY_API_URL"] = "http://localhost:8000"
         os.environ["CODESTORY_API_KEY"] = "dummy-test-key"
         yield
-        container.kill()
+        try:
+            container.kill()
+        except Exception:
+            pass
+        try:
+            container.remove(force=True)
+        except Exception:
+            pass
     finally:
         client.close()
 

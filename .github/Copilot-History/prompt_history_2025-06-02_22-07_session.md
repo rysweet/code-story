@@ -10,6 +10,16 @@
 - Run tests to validate changes
 - Summarize integration test results and Neo4j connector status
 
+## Prompt 2 (2025-06-05)
+**Prompt**: I want you to examine the specs for the neo4j connector and please ensure that they get updated to match the current implementation.
+
+**Response**: 
+- Update prompt history for current session
+- Review current project status and Neo4j connector implementation
+- Compare current spec against actual implementation in `src/codestory/graphdb/neo4j_connector.py`
+- Identify gaps and outdated sections in specification
+- Update specification to match current implementation
+
 **Implementation Summary**:
 1. **Modified CeleryAdapter.check_health()** to return early when eager mode is enabled:
    - Check `self._app.conf.task_always_eager` configuration

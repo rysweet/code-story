@@ -281,13 +281,11 @@ def test_get_settings_cache() -> None:
     get_settings.cache_clear()
 
 
-@pytest.mark.skip(reason="Refresh settings behavior has changed to modify in place")
 def test_refresh_settings() -> None:
     """Test refreshing settings clears the cache.
 
-    This test has been skipped because the behavior of refresh_settings
-    has changed to modify the settings object in place rather than creating
-    a new instance, which is a valid implementation choice.
+    This test validates that refresh_settings modifies the settings object in place,
+    which is the current and valid implementation.
     """
     # Get the id of the cached settings instance
     settings1 = get_settings()
@@ -307,7 +305,6 @@ def test_refresh_settings() -> None:
     get_settings.cache_clear()
 
 
-@pytest.mark.skip(reason="Test fails due to dependency on environment state")
 def test_get_config_value(mock_env: Any) -> None:
     """Test getting a config value by path."""
     # Rather than mocking, use the actual get_settings function
@@ -345,12 +342,7 @@ def test_get_config_value(mock_env: Any) -> None:
         get_config_value("invalid.path")
 
 
-@pytest.mark.skip(reason="Complex mocking causing recursion issues, to be fixed later")
-def test_update_config() -> None:
-    """Test updating a config value in memory."""
-    # Simplified test just to ensure test suite passes
-    # This will be revisited later to fix the mocking issues
-    pass
+# Removed test_update_config: was a skipped placeholder, did not test any functionality.
 
 
 def test_export_to_json() -> None:

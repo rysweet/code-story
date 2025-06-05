@@ -296,6 +296,13 @@ def main() -> None:
         sys.exit(1)
     finally:
         click.exceptions.UsageError.show = original_error_callback  # type: ignore[method-assign]
+        # Ensure ServiceClient is closed to avoid unclosed socket warnings
+        try:
+            ctx = click.get_current_context(silent=True)
+            if ctx and "client" in ctx.obj and hasattr(ctx.obj["client"], "close"):
+                ctx.obj["client"].close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

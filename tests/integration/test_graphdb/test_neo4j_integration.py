@@ -190,7 +190,7 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         result = neo4j_connector.execute_query(check_query)
         print(f"Using GDS version: {result[0]['version']}")
     except Exception as e:
-        pytest.skip(
+        pytest.fail(
             f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin."
         )
 

@@ -1,5 +1,4 @@
 import pytest
-pytest.skip("Docker compose tests replaced by Testcontainers in CI", allow_module_level=True)
 from typing import Any
 
 "\nTest Docker connectivity fix for the blarify step.\n\nThis test validates that our Docker connectivity fix resolves the original issue where\nthe blarify step couldn't access Docker daemon due to missing Docker client or\npermission issues.\n"
@@ -15,27 +14,15 @@ class TestDockerConnectivityFix:
     """Test suite for Docker connectivity fix validation"""
 
     @pytest.fixture(scope="class")
-    def worker_container(self: Any) -> None:
-        """Fixture to ensure worker container is running with our Docker fix"""
-        import os
-        worker_name = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
-        # The actual container is started by the test suite fixture, so just check for its presence
-        result = subprocess.run(
-            [
-                "docker",
-                "ps",
-                "--filter",
-                f"name={worker_name}",
-                "--format",
-                "{{.Names}}",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        if worker_name not in result.stdout:
-            pytest.skip("Worker container not running")
-        yield worker_name
-        # No teardown needed; handled by test suite fixture
+    def worker_container(self: Any, celery_worker_container: str) -> str:  # noqa: D401
+        """Return the **name** of the running Celery worker container.
+
+        The session-scoped ``celery_worker_container`` fixture spins up a real
+        worker in Docker and yields its container name.  Re-export that same
+        value here so the existing tests (which expect a *worker_container*
+        parameter) continue to work without additional changes.
+        """
+        return celery_worker_container
 
     def test_docker_socket_accessibility(self: Any, worker_container: Any) -> None:
         """Test that Docker socket is properly mounted and accessible"""
@@ -66,7 +53,7 @@ class TestDockerConnectivityFix:
                 "docker",
                 "exec",
                 worker_container,
-                "/app/.venv/bin/python",
+                "python",
                 "-c",
                 "import docker; print('Docker module imported successfully')",
             ],
@@ -83,7 +70,7 @@ class TestDockerConnectivityFix:
                 "docker",
                 "exec",
                 worker_container,
-                "/app/.venv/bin/python",
+                "python",
                 "-c",
                 "import docker; client = docker.from_env(); print('Docker client created'); print('SUCCESS')",
             ],
@@ -115,7 +102,7 @@ class TestDockerConnectivityFix:
                 "docker",
                 "exec",
                 worker_container,
-                "/app/.venv/bin/python",
+                "python",
                 "-c",
                 test_code,
             ],

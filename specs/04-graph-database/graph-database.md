@@ -23,73 +23,192 @@ Provide a self‑hosted **Neo4j 5.x** backend with semantic index and vector sea
 - Provide a unified `Neo4jConnector` interface with connection pooling and error handling for other components
 - Support both synchronous and asynchronous query execution patterns
 - Enable efficient storage and retrieval of various node types (AST, filesystem, documentation, summaries)
-- Support semantic search through vector indexes and embeddings
+- Support semantic search through vector indexes and embeddings using GDS similarity functions
 - Manage connection lifecycle and provide retry mechanisms for transient failures
-- Expose metrics for monitoring database performance and connection health
+- Expose Prometheus metrics for monitoring database performance and connection health
 - Facilitate Docker-based local development and Azure Container Apps deployment
+- Provide factory function for connector creation with automatic configuration from settings
+- Support transaction management with automatic retry and instrumentation
 
 ## 4.3 Architecture and Code Structure
 
 ```text
 src/codestory/graphdb/
-├── __init__.py                  # Exports Neo4jConnector
+├── __init__.py                  # Exports Neo4jConnector and create_connector
 ├── neo4j_connector.py           # Primary connector interface with pooling, async and vector search
 ├── schema.py                    # Schema definitions and initialization
-├── exceptions.py                # Graph-specific exception classes
+├── exceptions.py                # Graph-specific exception classes  
 ├── models.py                    # Data models for graph entities
-└── metrics.py                   # Prometheus metrics for Neo4j operations
+├── metrics.py                   # Prometheus metrics for Neo4j operations
+└── export.py                    # Data export utilities
 ```
 
-### 4.3.1 Neo4jConnector Interface
+### 4.3.1 Factory Function
+
+The module provides a `create_connector()` factory function that creates a configured `Neo4jConnector` instance using application settings:
+
+```python
+def create_connector() -> Neo4jConnector:
+    """Create a Neo4jConnector instance using application settings.
+    
+    Returns:
+        Neo4jConnector: Configured connector instance
+        
+    Raises:
+        ConnectionError: If connection to Neo4j fails
+        RuntimeError: If get_settings is not available
+        
+    Example:
+        from codestory.graphdb import create_connector
+        
+        # Create connector from environment/settings
+        connector = create_connector()
+        
+        # Use with context manager for automatic cleanup
+        with create_connector() as connector:
+            result = connector.execute_query("RETURN 1 as num")
+    """
+```
+
+### 4.3.2 Neo4jConnector Interface
 
 The `Neo4jConnector` class provides a unified interface for interacting with Neo4j, supporting both synchronous and asynchronous operations:
 
 ```python
 class Neo4jConnector:
-    def __init__(self, uri=None, username=None, password=None, **config_options):
-        """Initialize connector with connection parameters from env vars or args."""
+    def __init__(
+        self, 
+        uri: str | None = None,
+        username: str | None = None, 
+        password: str | None = None,
+        database: str | None = None,
+        async_mode: bool = False,
+        **config_options: Any
+    ) -> None:
+        """Initialize connector with connection parameters.
+        
+        Falls back to settings from get_settings() if parameters not provided.
+        """
         
     # Synchronous methods
-    def execute_query(self, query, params=None, write=False, retry_count=3):
+    @instrument_query(query_type=QueryType.READ)
+    @retry_on_transient()
+    def execute_query(
+        self, 
+        query: str, 
+        params: dict[str, Any] | None = None, 
+        write: bool = False, 
+        retry_count: int = 3
+    ) -> list[dict[str, Any]]:
         """Execute a Cypher query with automatic connection management."""
         
-    def execute_many(self, queries, params_list=None, write=False):
+    @instrument_query(query_type=QueryType.WRITE)
+    @retry_on_transient()
+    def execute_many(
+        self, 
+        queries: list[str], 
+        params_list: list[dict[str, Any]] | None = None, 
+        write: bool = False
+    ) -> list[list[dict[str, Any]]]:
         """Execute multiple queries in a single transaction."""
     
-    # Asynchronous methods
-    async def execute_query_async(self, query, params=None, write=False):
+    # Asynchronous methods (using thread executor)
+    async def execute_query_async(
+        self, 
+        query: str, 
+        params: dict[str, Any] | None = None, 
+        write: bool = False
+    ) -> list[dict[str, Any]]:
         """Execute a Cypher query asynchronously."""
         
-    async def check_connection_async(self):
-        """Check database connectivity asynchronously."""
-        
-    async def close_async(self):
-        """Close connections asynchronously."""
+    async def execute_many_async(
+        self, 
+        queries: list[dict[str, Any]], 
+        write: bool = False
+    ) -> list[list[dict[str, Any]]]:
+        """Execute multiple queries asynchronously."""
     
     # Schema management
-    def initialize_schema(self):
+    @instrument_query(query_type=QueryType.SCHEMA)
+    def initialize_schema(self) -> None:
         """Create constraints, indexes, and schema elements."""
         
-    def create_vector_index(self, label, property_name, dimensions, similarity="cosine"):
+    @instrument_query(query_type=QueryType.SCHEMA)
+    def create_vector_index(
+        self, 
+        label: str, 
+        property_name: str, 
+        dimensions: int = 1536, 
+        similarity: str = "cosine"
+    ) -> None:
         """Create a vector index for semantic search."""
     
-    # Vector search
-    def semantic_search(self, query_embedding, node_label, limit=10):
-        """Perform vector similarity search using the provided embedding."""
+    # Vector search using GDS
+    def semantic_search(
+        self, 
+        query_embedding: list[float], 
+        node_label: str, 
+        property_name: str = "embedding", 
+        limit: int = 10,
+        similarity_cutoff: float | None = None
+    ) -> list[dict[str, Any]]:
+        """Perform vector similarity search using GDS cosine similarity."""
+    
+    # Node and relationship operations
+    def create_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
+        """Create a node in the Neo4j database."""
+        
+    def find_node(self, label: str, properties: dict[str, Any]) -> dict[str, Any]:
+        """Find a node with the given label and properties."""
+        
+    def create_relationship(
+        self,
+        start_node: dict[str, Any],
+        end_node: dict[str, Any], 
+        rel_type: str,
+        properties: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Create a relationship between two nodes."""
+    
+    # Transaction management
+    def with_transaction(
+        self, 
+        func: Callable[..., Any], 
+        write: bool = False, 
+        **kwargs: Any
+    ) -> Any:
+        """Execute a function within a Neo4j transaction."""
+        
+    def get_session(self) -> Any:
+        """Get a Neo4j session for direct operations."""
     
     # Connection management
-    def check_connection(self):
+    def check_connection(self) -> dict[str, Any]:
         """Check if database is accessible and return basic info."""
         
-    def close(self):
+    def close(self) -> None:
         """Close all connections in the pool."""
         
     # Context manager support
-    def __enter__(self):
+    def __enter__(self) -> "Neo4jConnector":
         """Support for context manager protocol."""
         
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Clean up resources when exiting context."""
+```
+
+### 4.3.3 Retry and Instrumentation Decorators
+
+The connector uses decorators for automatic retry and metrics instrumentation:
+
+```python
+@retry_on_transient(max_retries: int = 3, backoff_factor: float = 1.5)
+def decorated_function():
+    """Decorator for retrying operations on transient Neo4j errors."""
+
+@instrument_query(query_type: QueryType)  
+def decorated_function():
+    """Decorator for recording metrics about query execution."""
 ```
 
 ## 4.4 Data Model and Schema
@@ -143,58 +262,109 @@ OPTIONS {indexConfig: {
 }};
 ```
 
-## 4.5 Connection Management
+## 4.5 Connection Management and Configuration
 
 The `Neo4jConnector` implements smart connection pooling with these features:
 
 - **Dynamic Pool Sizing** - Scales connections based on load with configurable min/max size
 - **Connection Validation** - Checks connection health before returning from pool
-- **Automatic Retry** - Exponential backoff for transient failures
-- **Metrics Collection** - Tracks connection usage and query performance
+- **Automatic Retry** - Exponential backoff for transient failures using `@retry_on_transient` decorator
+- **Metrics Collection** - Tracks connection usage and query performance via Prometheus
 - **Transaction Management** - Ensures proper transaction handling for write operations
 - **Resource Cleanup** - Graceful connection closure on service shutdown
+- **Settings Integration** - Automatic fallback to application settings when parameters not provided
+- **Mock Support** - Special handling for testing environments with mock drivers
 
 Configuration parameters are integrated with the global settings pattern from section 3.0:
 
 ```python
-from codestory.config.settings import get_settings
+from codestory.graphdb import create_connector
 
-def create_connector():
-    settings = get_settings()
-    
-    connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        max_connection_pool_size=settings.neo4j.max_connection_pool_size,
-        connection_timeout=settings.neo4j.connection_timeout,
-        max_transaction_retry_time=settings.neo4j.max_transaction_retry_time
-    )
-    
-    return connector
+# Simple usage with settings
+connector = create_connector()
+
+# Manual configuration
+connector = Neo4jConnector(
+    uri="bolt://localhost:7687",
+    username="neo4j", 
+    password="password",
+    database="neo4j",
+    max_connection_pool_size=50,
+    connection_timeout=30,
+    skip_connection_check=False  # For testing
+)
+```
+
+The connector automatically falls back to settings if parameters are not provided:
+
+```python
+# Falls back to settings.neo4j.* configuration automatically
+settings = get_settings()
+connector = Neo4jConnector(
+    uri=settings.neo4j.uri,
+    username=settings.neo4j.username,
+    password=settings.neo4j.password.get_secret_value(),
+    database=settings.neo4j.database,
+    max_connection_pool_size=settings.neo4j.max_connection_pool_size,
+    connection_timeout=settings.neo4j.connection_timeout,
+    max_transaction_retry_time=getattr(settings.neo4j, "max_transaction_retry_time", None)
+)
+
+# Auto-initialize schema if configured
+try:
+    auto_initialize = getattr(settings.neo4j, "auto_initialize_schema", False)
+    force_update = getattr(settings.neo4j, "force_schema_update", False)
+
+    if auto_initialize:
+        from .schema import initialize_schema
+
+        initialize_schema(connector, force=force_update)
+        logger.info("Neo4j schema initialized successfully")
+except Exception as e:
+    logger.warning(f"Failed to auto-initialize Neo4j schema: {e!s}")
+
+return connector
 ```
 
 ## 4.6 Vector Search Implementation
 
-Vector search is implemented directly in the `Neo4jConnector` class using Neo4j 5.x's native vector index capabilities:
+Vector search is implemented directly in the `Neo4jConnector` class using Neo4j's GDS (Graph Data Science) library for similarity functions:
 
 ```python
-def semantic_search(self, query_embedding, node_label, limit=10):
+def semantic_search(
+    self, 
+    query_embedding: list[float], 
+    node_label: str, 
+    property_name: str = "embedding", 
+    limit: int = 10,
+    similarity_cutoff: float | None = None
+) -> list[dict[str, Any]]:
     """
-    Perform vector similarity search using the provided embedding.
+    Perform vector similarity search using GDS cosine similarity.
     
     Args:
         query_embedding: The vector embedding to search against
         node_label: The node label to search within
+        property_name: The property containing the embedding vector
         limit: Maximum number of results
+        similarity_cutoff: Minimum similarity score (0-1) to include in results
         
     Returns:
         List of nodes with similarity scores
+        
+    Raises:
+        QueryError: If the search fails
     """
     cypher = f"""
     MATCH (n:{node_label})
-    WHERE n.embedding IS NOT NULL
-    WITH n, gds.similarity.cosine(n.embedding, $embedding) AS score
+    WHERE n.{property_name} IS NOT NULL
+    WITH n, gds.similarity.cosine(n.{property_name}, $embedding) AS score
+    """
+    
+    if similarity_cutoff is not None:
+        cypher += f"\nWHERE score >= {similarity_cutoff}"
+    
+    cypher += """
     ORDER BY score DESC
     LIMIT $limit
     RETURN n, score
@@ -206,45 +376,147 @@ def semantic_search(self, query_embedding, node_label, limit=10):
     )
 ```
 
+Vector search features:
+- **GDS Integration** - Uses `gds.similarity.cosine()` for accurate similarity calculations
+- **Flexible Property Names** - Configurable embedding property names
+- **Similarity Cutoff** - Optional minimum similarity threshold filtering
+- **Performance Metrics** - Automatic recording of search execution time via `record_vector_search()`
+- **Error Handling** - Comprehensive error handling with detailed context
+
 ## 4.7 Error Handling Strategy
 
-The connector implements a comprehensive error handling strategy:
-
-- **Categorized Exceptions** - Custom exception hierarchy for different error types
-- **Automatic Retries** - Configurable retry policy for transient failures
-- **Detailed Logging** - Structured logging of all errors with context
-- **Graceful Degradation** - Fallback mechanisms for non-critical failures
-- **Circuit Breaking** - Protection against cascading failures during outages
-
-Error hierarchy:
+The connector implements a comprehensive error handling strategy with custom exception hierarchy:
 
 ```python
+# Exception hierarchy from exceptions.py
 class Neo4jError(Exception):
     """Base exception for all Neo4j-related errors."""
     
 class ConnectionError(Neo4jError):
     """Error establishing connection to Neo4j."""
+    def __init__(self, message: str, uri: str | None = None, cause: Exception | None = None):
+        self.uri = uri
+        self.cause = cause
+        super().__init__(message)
     
 class QueryError(Neo4jError):
     """Error executing a Cypher query."""
+    def __init__(
+        self, 
+        message: str, 
+        query: str | None = None, 
+        parameters: dict[str, Any] | None = None,
+        cause: Exception | None = None
+    ):
+        self.query = query
+        self.parameters = parameters
+        self.cause = cause
+        super().__init__(message)
     
 class SchemaError(Neo4jError):
     """Error with graph schema operation."""
+    def __init__(
+        self, 
+        message: str, 
+        operation: str | None = None,
+        cause: Exception | None = None,
+        **context: Any
+    ):
+        self.operation = operation
+        self.cause = cause
+        self.context = context
+        super().__init__(message)
     
 class TransactionError(Neo4jError):
     """Error in transaction management."""
+    def __init__(
+        self, 
+        message: str, 
+        operation: str | None = None,
+        cause: Exception | None = None
+    ):
+        self.operation = operation  
+        self.cause = cause
+        super().__init__(message)
 ```
 
-## 4.8 Usage Examples
+Error handling features:
+- **Categorized Exceptions** - Custom exception hierarchy for different error types with rich context
+- **Automatic Retries** - `@retry_on_transient` decorator with configurable retry policy for transient failures
+- **Detailed Logging** - Structured logging of all errors with query context and parameters
+- **Graceful Degradation** - Fallback mechanisms for non-critical failures
+- **Metrics Integration** - Error recording via `record_connection_error()` and `record_transaction()` functions
+- **Mock Compatibility** - Special handling for testing environments to avoid connection errors
 
-### 4.8.1 Basic Query Execution
+## 4.8 Metrics and Monitoring
+
+The connector integrates with Prometheus for comprehensive monitoring:
+
+### 4.8.1 Available Metrics
 
 ```python
-from codestory.graphdb import Neo4jConnector
+# From metrics.py
+class QueryType(str, Enum):
+    READ = "read"
+    WRITE = "write" 
+    SCHEMA = "schema"
 
-# Using context manager for automatic resource cleanup
-with Neo4jConnector() as connector:
-    # Simple query
+# Metrics collected:
+QUERY_DURATION: HistogramLike     # Query execution time by type
+QUERY_COUNT: CounterLike          # Total queries executed by type  
+POOL_SIZE: GaugeLike              # Connection pool size
+POOL_ACQUIRED: GaugeLike          # Acquired connections
+RETRY_COUNT: CounterLike          # Retry attempts by query type
+CONNECTION_ERRORS: CounterLike    # Connection failure count
+TRANSACTION_COUNT: CounterLike    # Transaction success/failure count
+VECTOR_SEARCH_DURATION: HistogramLike  # Vector search execution time
+```
+
+### 4.8.2 Instrumentation Usage
+
+The `@instrument_query` decorator automatically records metrics:
+
+```python
+@instrument_query(query_type=QueryType.READ)
+def execute_query(self, query: str, ...):
+    # Automatically records:
+    # - Query duration histogram
+    # - Query count increment  
+    # - Error rates if query fails
+```
+
+### 4.8.3 Manual Metrics Recording
+
+```python
+# Manual metrics recording for specific operations
+record_vector_search(node_label, execution_time)
+record_connection_error()
+record_transaction(success=True/False)
+record_retry(query_type)
+update_pool_metrics(pool_size, acquired_connections)
+```
+
+### 4.8.4 Graceful Degradation
+
+When Prometheus is not available, the module provides dummy implementations that safely no-op:
+
+```python
+# Automatically handles missing prometheus_client
+if not PROMETHEUS_AVAILABLE:
+    # Uses DummyHistogram, DummyCounter, etc.
+    # All metric calls become no-ops
+```
+
+## 4.9 Usage Examples
+
+### 4.9.1 Basic Query Execution
+
+```python
+from codestory.graphdb import create_connector
+
+# Using factory function with automatic settings
+with create_connector() as connector:
+    # Simple read query
     result = connector.execute_query(
         "MATCH (f:File) WHERE f.path CONTAINS $keyword RETURN f.path",
         {"keyword": "README"}
@@ -253,9 +525,26 @@ with Neo4jConnector() as connector:
     # Print results
     for record in result:
         print(record["f.path"])
+        
+# Manual connector creation
+connector = Neo4jConnector(
+    uri="bolt://localhost:7687",
+    username="neo4j",
+    password="password"
+)
+
+try:
+    # Write operation
+    result = connector.execute_query(
+        "CREATE (n:Node {name: $name}) RETURN n",
+        {"name": "test_node"},
+        write=True
+    )
+finally:
+    connector.close()
 ```
 
-### 4.8.2 Transaction Management
+### 4.9.2 Transaction Management
 
 ```python
 # Multiple operations in a single transaction
@@ -282,21 +571,58 @@ def create_class_hierarchy(connector, base_class, derived_classes):
         })
     
     # Execute all in one transaction
-    connector.execute_many(queries, params_list, write=True)
+    return connector.execute_many(queries, params_list, write=True)
+
+# Using with_transaction for custom transaction logic
+def complex_operation(connector, tx=None, **kwargs):
+    # Custom transaction logic
+    result1 = tx.run("CREATE (n:Node) RETURN n")
+    result2 = tx.run("MATCH (n:Node) RETURN count(n) as total")
+    return {"created": result1.single(), "total": result2.single()["total"]}
+
+result = connector.with_transaction(complex_operation, write=True)
 ```
 
-### 4.8.3 Async Usage with FastAPI
+### 4.9.3 Vector Search Usage
+
+```python
+# Semantic search with embeddings
+query_embedding = [0.1, 0.2, 0.3, ...]  # 1536-dimensional vector
+
+# Basic vector search
+results = connector.semantic_search(
+    query_embedding=query_embedding,
+    node_label="Summary",
+    property_name="embedding",
+    limit=5
+)
+
+for result in results:
+    node = result["n"]
+    score = result["score"]
+    print(f"Node: {node['name']}, Similarity: {score:.3f}")
+
+# Vector search with similarity cutoff
+high_similarity_results = connector.semantic_search(
+    query_embedding=query_embedding,
+    node_label="Documentation", 
+    similarity_cutoff=0.8,
+    limit=10
+)
+```
+
+### 4.9.4 Async Usage with FastAPI
 
 ```python
 from fastapi import FastAPI, Depends
-from codestory.graphdb import Neo4jConnector
+from codestory.graphdb import create_connector
 
 app = FastAPI()
-connector = Neo4jConnector()
+connector = create_connector()
 
 @app.on_event("shutdown")
 async def shutdown():
-    await connector.close_async()
+    connector.close()
 
 @app.get("/files/{path}")
 async def get_file_info(path: str):
@@ -307,28 +633,72 @@ async def get_file_info(path: str):
         return {"error": "File not found"}
     
     return {"file": dict(result[0]["f"])}
+
+@app.post("/batch-queries")
+async def execute_batch(queries: list[dict]):
+    # queries = [{"query": "...", "params": {...}}, ...]
+    results = await connector.execute_many_async(queries, write=False)
+    return {"results": results}
 ```
 
-## 4.9 Docker Configuration
+### 4.9.5 Node and Relationship Operations
+
+```python
+# Create a node
+file_node = connector.create_node(
+    label="File",
+    properties={
+        "path": "/src/main.py",
+        "size": 1024,
+        "content": "print('hello')"
+    }
+)
+
+# Find a node
+found_node = connector.find_node(
+    label="File", 
+    properties={"path": "/src/main.py"}
+)
+
+# Create a directory node  
+dir_node = connector.create_node(
+    label="Directory",
+    properties={"path": "/src"}
+)
+
+# Create containment relationship
+relationship = connector.create_relationship(
+    start_node=dir_node,
+    end_node=file_node,
+    rel_type="CONTAINS",
+    properties={"created_at": "2024-01-01"}
+)
+```
+
+## 4.10 Docker Configuration
 
 The Neo4j database runs in a Docker container with the following configuration:
 
 ```yaml
 neo4j:
-  image: neo4j:5.11
+  image: neo4j:${NEO4J_VERSION:-5.18.0-enterprise}
+  container_name: ${CONTAINER_PREFIX:-codestory}-neo4j
   ports:
-    - "7474:7474"  # HTTP for browser access
-    - "7687:7687"  # Bolt protocol
+    - "${NEO4J_HTTP_PORT:-7476}:7474"  # HTTP for browser access
+    - "${NEO4J_BOLT_PORT:-7689}:7687"  # Bolt protocol
   environment:
-    - NEO4J_AUTH=neo4j/password  # Default credentials
-    - NEO4J_apoc_export_file_enabled=true
-    - NEO4J_apoc_import_file_enabled=true
+    - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password}  # Default credentials
+    - NEO4J_PLUGINS=["apoc", "graph-data-science"]
     - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
-    - NEO4J_dbms_memory_heap_initial__size=1G
-    - NEO4J_dbms_memory_heap_max__size=2G
+    - NEO4J_dbms_memory_heap_initial__size=${NEO4J_MEMORY_HEAP_INITIAL:-512m}
+    - NEO4J_dbms_memory_heap_max__size=${NEO4J_MEMORY_HEAP_MAX:-2G}
+    - NEO4J_dbms_memory_pagecache_size=${NEO4J_MEMORY_PAGECACHE:-512m}
+    - NEO4J_initial_dbms_default__database=${NEO4J_DATABASE:-neo4j}
+    - NEO4J_server_config_strict__validation_enabled=false
   volumes:
-    - neo4j_data:/data  # Persistent data
-    - ./plugins:/plugins  # Custom plugins
+    - codestory_neo4j_data:/data  # Persistent data
+  networks:
+    - codestory
   healthcheck:
     test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7474"]
     interval: 10s
@@ -336,102 +706,137 @@ neo4j:
     retries: 5
 ```
 
-## 4.10 User Stories and Acceptance Criteria
+Required plugins are automatically installed via the `NEO4J_PLUGINS` environment variable:
+- **APOC** - Advanced procedures and functions
+- **GDS** - Graph Data Science library for vector similarity functions
 
-| User Story | Acceptance Criteria |
-|------------|---------------------|
-| As a developer, I want to be able to run the Neo4j database in a container so that I can develop and test the graph service locally. | • The Neo4j database can be started and stopped using the provided scripts.<br>• The Neo4j database can be queried using the Neo4j Connector module.<br>• Data persists between container restarts via volume mounting. |
-| As a developer, I want to be able to run the Neo4j database in Azure Container Apps so that I can deploy the graph service in Azure. | • The Neo4j database can be deployed to Azure Container Apps.<br>• The Neo4j database can be securely accessed from other Azure services.<br>• Data is persistently stored in Azure. |
-| As a developer, I want to easily execute Cypher queries against the graph service so that I can retrieve and manipulate graph data. | • The Neo4j Connector provides intuitive methods for executing queries.<br>• Query parameters are properly sanitized to prevent injection.<br>• Results are returned in a consistent, easy-to-use format. |
-| As a developer, I want reliable connection handling so that transient database issues don't crash my application. | • Connection failures are automatically retried with backoff.<br>• Connection pooling optimizes resource usage.<br>• Clear error messages are provided when retries are exhausted. |
-| As a developer, I want to access advanced APOC features so that I can use the graph service to its full potential. | • APOC plugins are properly installed and configured.<br>• The Neo4j Connector provides methods to utilize APOC features.<br>• APOC functions can be called securely from queries. |
-| As a developer, I want to use vector search for semantic similarity so that I can find related code elements by meaning. | • Vector indexes are properly configured for embedding properties.<br>• The Neo4j Connector provides methods for vector similarity search.<br>• Search performance is optimized for large numbers of embeddings. |
-| As a developer, I want transaction management so I can perform multiple operations atomically. | • The Neo4j Connector provides methods for transaction management.<br>• Transactions are automatically retried on transient failures.<br>• Nested transactions are properly handled. |
-| As a developer, I want to observe database performance metrics so I can identify and address bottlenecks. | • The Neo4j Connector exposes Prometheus metrics for query performance.<br>• Connection pool utilization is tracked.<br>• Error rates and types are monitored. |
-| As a developer, I want to use the Neo4j browser interface for debugging so I can visually inspect the graph. | • The Neo4j browser is accessible at http://localhost:7474.<br>• Authentication works with configured credentials.<br>• Graph visualization aids in understanding complex relationships. |
-| As a developer, I want async-compatible database access so I can use it with FastAPI endpoints. | • The Neo4jConnector class provides non-blocking database operations through async methods.<br>• Async operations have equivalent functionality to sync operations.<br>• Resource management works correctly in async contexts. |
+The plugins are installed automatically when the container starts, eliminating the need for manual plugin management.
 
 ## 4.11 Testing Strategy
 
-- **Unit Tests**
-  - Test Neo4jConnector methods with mocked driver
-  - Test error handling and retry logic
-  - Test vector search functionality
-  - Test async connector operations
+### 4.11.1 Unit Tests
+- **Neo4jConnector methods** - Test with mocked Neo4j driver using `unittest.mock.MagicMock`
+- **Error handling and retry logic** - Test transient error scenarios and backoff behavior  
+- **Vector search functionality** - Test GDS similarity search with mock embeddings
+- **Async connector operations** - Test thread executor usage for async methods
+- **Transaction management** - Test `with_transaction` and `execute_many` methods
+- **Settings integration** - Test fallback to `get_settings()` configuration
+- **Metrics instrumentation** - Test decorator behavior and metrics recording
 
-- **Integration Tests**
-  - Use Neo4j Testcontainers to spin up actual database
-  - Test schema initialization
-  - Test data persistence between connections
-  - Test connection pooling behavior under load
-  - Test vector index creation and search
+### 4.11.2 Integration Tests  
+- **Neo4j Testcontainers** - Spin up actual Neo4j database for testing
+- **Schema initialization** - Test constraint and index creation
+- **Data persistence** - Test data survives connection cycling
+- **Connection pooling** - Test pool behavior under concurrent load
+- **Vector index creation and search** - Test end-to-end vector operations
+- **GDS plugin availability** - Test GDS functions work correctly
+- **Real embedding search** - Test semantic search with actual OpenAI embeddings
 
-## 4.12 Implementation Steps
+### 4.11.3 Mock Support in Tests
+The connector provides special handling for test environments:
 
-1. **Set up Neo4j container configuration**
-   - Configure Neo4j image in docker-compose.yaml
-   - Set up volume mounting for data persistence
-   - Configure environment variables for plugins and settings
-   - Add health check for container orchestration
+```python
+# Automatic mock detection
+if isinstance(self.driver, MagicMock | AsyncMock):
+    # Return mock responses directly
+    # Skip connection verification
+    # Enable test-specific behavior
+```
 
-2. **Implement core Neo4jConnector class**
-   - Create base connector with connection pooling
-   - Implement query execution methods (both sync and async)
-   - Add transaction management
-   - Set up retry logic for transient failures
-   - Integrate with configuration system
-   - Implement vector search capabilities
+Key test configuration options:
+- `skip_connection_check=True` - Disable connection verification for tests
+- `skip_settings=True` - Avoid loading settings in test environments
+- Mock driver detection - Automatic handling of `MagicMock` and `AsyncMock` drivers
 
-3. **Create schema initialization**
-   - Implement constraint and index creation
-   - Set up vector indexes for embeddings
-   - Create utility for schema verification
-   - Design schema update mechanism for migrations
+## 4.12 User Stories and Acceptance Criteria
 
-4. **Add monitoring and metrics**
-   - Implement Prometheus metrics for query performance
-   - Track connection pool statistics
-   - Add logging for query execution and errors
-   - Create health check endpoint
+| User Story | Acceptance Criteria |
+|------------|---------------------|
+| As a developer, I want to easily create a configured Neo4j connector so that I don't have to manually manage settings. | • The `create_connector()` factory function creates a fully configured connector.<br>• Settings are automatically loaded from the application configuration.<br>• Schema can be auto-initialized if configured.<br>• Connection errors provide clear diagnostic information. |
+| As a developer, I want to execute Cypher queries with automatic retry and instrumentation so that my application is resilient. | • Queries are automatically retried on transient failures with exponential backoff.<br>• All queries are instrumented with Prometheus metrics.<br>• Query execution times and error rates are tracked.<br>• Retry attempts are recorded in metrics. |
+| As a developer, I want to perform vector similarity search so that I can find semantically related content. | • Vector search uses GDS cosine similarity for accuracy.<br>• Configurable embedding property names are supported.<br>• Similarity cutoff filtering is available.<br>• Search performance is tracked via metrics. |
+| As a developer, I want to create and manipulate graph nodes and relationships easily so that I can build the knowledge graph. | • Simple methods for creating nodes with properties.<br>• Easy relationship creation between existing nodes.<br>• Node finding by label and properties.<br>• Proper handling of Neo4j internal IDs. |
+| As a developer, I want comprehensive error handling so that I can diagnose and handle different failure scenarios. | • Custom exception hierarchy with rich context information.<br>• Errors include original query, parameters, and cause information.<br>• Connection errors include URI and configuration context.<br>• Schema errors include operation details and additional context. |
+| As a developer, I want to use the connector in async contexts so that I can integrate with FastAPI and other async frameworks. | • Async methods use thread executors to avoid blocking.<br>• Async operations have equivalent functionality to sync versions.<br>• Resource management works correctly in async contexts.<br>• Mock compatibility is maintained for async tests. |
+| As a developer, I want transaction management so I can perform multiple operations atomically. | • `execute_many()` runs multiple queries in a single transaction.<br>• `with_transaction()` supports custom transaction logic.<br>• Transactions are automatically retried on transient failures.<br>• Transaction success/failure is tracked in metrics. |
+| As a developer, I want the connector to work seamlessly in test environments so that I can write reliable tests. | • Mock drivers are automatically detected and handled.<br>• Connection checks can be skipped for testing.<br>• Settings loading can be bypassed in test environments.<br>• Test-specific configuration options are available. |
+| As a developer, I want monitoring and observability so that I can track database performance and health. | • Prometheus metrics are automatically collected for all operations.<br>• Connection pool utilization is monitored.<br>• Query performance is tracked by type (read/write/schema).<br>• Graceful degradation when Prometheus is unavailable. |
 
-5. **Create helper scripts**
-   - Add database initialization script
-   - Create backup/restore utilities
-   - Implement schema migration tool
-   - Add data export/import utilities
+## 4.13 Implementation Details
 
-6. **Write comprehensive tests**
-   - Unit tests for all connector methods
-   - Integration tests with testcontainers
-   - Performance benchmarks for critical operations
-   - Chaos testing for resilience verification
+### 4.13.1 Current Implementation Status
+The Neo4j connector is fully implemented with the following features:
 
-7. **Document API and usage**
-   - Add detailed docstrings to all public methods
-   - Create usage examples
-   - Document error handling strategies
-   - Create visualization of database schema
+✅ **Core Connector** - `Neo4jConnector` class with connection management  
+✅ **Factory Function** - `create_connector()` with automatic settings integration  
+✅ **Sync/Async Operations** - Both synchronous and asynchronous query execution  
+✅ **Vector Search** - GDS-based semantic similarity search  
+✅ **Error Handling** - Comprehensive exception hierarchy with context  
+✅ **Retry Logic** - Automatic retry with exponential backoff via decorators  
+✅ **Metrics Integration** - Prometheus instrumentation for all operations  
+✅ **Transaction Management** - Support for single and multi-query transactions  
+✅ **Mock Support** - Test-friendly design with mock driver detection  
+✅ **Node/Relationship Operations** - High-level graph manipulation methods  
+✅ **Schema Management** - Constraint and index creation utilities
 
-8. **Finalize deployment configurations**
-   - Optimize container settings for production
-   - Configure Azure Container Apps deployment
-   - Set up backup and monitoring in cloud environment
-   - Document production deployment best practices
+### 4.13.2 Key Architectural Decisions
 
-9. **Verification and Review**
-   - Run all unit, integration, and performance tests to ensure correct functionality
-   - Verify test coverage meets or exceeds target thresholds
-   - Conduct chaos testing to verify resilience and recovery capabilities
-   - Run linting and static analysis on all code
-   - Perform thorough code review against requirements and design principles
-   - Test all error handling paths and connection failure scenarios
-   - Verify proper initialization of constraints and indexes in Neo4j
-   - Test vector search functionality with real embeddings
-   - Validate connection pooling behavior under load
-   - Make necessary adjustments based on findings
-   - Re-run all tests after changes
-   - Document issues found and their resolutions
-   - Create detailed PR for final review
+**Settings Integration**: The connector automatically falls back to application settings when connection parameters are not explicitly provided, enabling flexible configuration management.
+
+**Thread-based Async**: Async operations use `asyncio.run_in_executor()` with thread pools rather than native async Neo4j drivers, providing compatibility while maintaining performance.
+
+**GDS for Vector Search**: Vector similarity calculations use the Graph Data Science library's `gds.similarity.cosine()` function rather than native vector indexes, providing more flexibility and compatibility.
+
+**Decorator-based Instrumentation**: Retry logic and metrics collection are implemented as decorators (`@retry_on_transient`, `@instrument_query`), promoting clean separation of concerns.
+
+**Mock-aware Design**: The connector automatically detects and handles mock drivers in test environments, enabling comprehensive unit testing without requiring actual database connections.
+
+### 4.13.3 Dependencies and Integration Points
+
+**Configuration Module**: Tight integration with the settings system for automatic configuration loading.
+
+**Metrics System**: Deep integration with Prometheus metrics collection, with graceful degradation when Prometheus is unavailable.
+
+**Error Handling**: Custom exception hierarchy provides rich context for error diagnosis and handling.
+
+### 4.13.3 Dependencies and Integration Points
+
+**Configuration Module**: Tight integration with the settings system for automatic configuration loading via `get_settings()` with graceful fallback when settings are unavailable.
+
+**Metrics System**: Deep integration with Prometheus metrics collection, with graceful degradation when Prometheus is unavailable using dummy implementations.
+
+**Error Handling**: Custom exception hierarchy provides rich context for error diagnosis and handling, including cause chaining and sensitive parameter redaction.
+
+**Testing Framework**: Special accommodations for unit testing with mock drivers (`isinstance(self.driver, MagicMock | AsyncMock)`) and configurable connection behavior.
+
+### 4.13.4 Current Implementation Completeness
+
+**Fully Implemented Features:**
+- ✅ Factory function with automatic settings integration and schema auto-initialization
+- ✅ Connection pooling with configurable pool sizes and timeouts
+- ✅ Synchronous and asynchronous query execution using thread executors
+- ✅ Transaction management with retry logic and instrumentation
+- ✅ Vector similarity search using GDS `gds.similarity.cosine()` function
+- ✅ Comprehensive error handling with custom exception hierarchy
+- ✅ Prometheus metrics integration with graceful degradation
+- ✅ Mock driver detection for test environments
+- ✅ Schema initialization and management utilities
+- ✅ Node and relationship creation/manipulation methods
+- ✅ Context manager support for resource cleanup
+
+**Configuration Features:**
+- ✅ Environment variable-based Docker configuration
+- ✅ Automatic plugin installation via `NEO4J_PLUGINS` environment variable
+- ✅ Configurable memory settings and security policies
+- ✅ Health checks and network isolation in Docker Compose
+
+**Testing Support:**
+- ✅ Mock-aware implementation for unit testing
+- ✅ Integration test support with testcontainers
+- ✅ Test-specific configuration options (`skip_connection_check`, `skip_settings`)
+- ✅ Sensitive parameter redaction in error messages
+
+The Neo4j connector implementation is complete and production-ready, with comprehensive error handling, monitoring, and testing support. All documented features are implemented and match the current codebase.
 
 ---
 

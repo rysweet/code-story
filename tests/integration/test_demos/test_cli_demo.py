@@ -129,15 +129,21 @@ def test_cli_config_show(setup_test_env: Any) -> None:
     assert "openai" in result.stdout
 
 
-@pytest.mark.skip(reason="CLI subprocess testcontainer networking issue - config coordination works but connection fails. See shell_history for details.")
 @pytest.mark.integration
 def test_cli_query_run(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI query run command.
-    
+
     NOTE: Configuration coordination between test fixture and CLI subprocess is WORKING.
     Both processes use the same testcontainer URI (verified in logs).
     Issue is networking/timing between CLI subprocess and testcontainer.
     """
+    # Xfail if testcontainer networking is not available
+    import socket
+    try:
+        sock = socket.create_connection(("localhost", 7687), timeout=2)
+        sock.close()
+    except Exception:
+        pytest.xfail("Neo4j testcontainer is not reachable on localhost:7687 (networking issue)")
     # Create some test data in the database
     neo4j_connector.execute_query(
         """
@@ -278,10 +284,13 @@ keyvault_name = ""
             pass
 
 
-@pytest.mark.skip(reason="Requires OpenAI API key")
 @pytest.mark.integration
 def test_cli_ask(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI ask command."""
+    # Xfail if OpenAI API key is not set
+    import os
+    if not os.environ.get("OPENAI_API_KEY") and not os.environ.get("OPENAI__API_KEY"):
+        pytest.xfail("OpenAI API key not set in environment")
     # Create some test data in the database
     neo4j_connector.execute_query(
         """
@@ -307,10 +316,16 @@ def test_cli_ask(setup_test_env: Any, neo4j_connector: Any) -> None:
     assert len(result.stdout) > 0
 
 
-@pytest.mark.skip(reason="Requires full setup")
 @pytest.mark.integration
 def test_cli_visualize(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI visualize command."""
+    # Xfail if required setup is not present (e.g., Neo4j not reachable)
+    import socket
+    try:
+        sock = socket.create_connection(("localhost", 7687), timeout=2)
+        sock.close()
+    except Exception:
+        pytest.xfail("Neo4j testcontainer is not reachable on localhost:7687 (networking issue)")
     # Create some test data in the database
     neo4j_connector.execute_query(
         """

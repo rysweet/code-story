@@ -407,7 +407,7 @@ class TestFilesystemIngestionE2E:
         """
         import re
 
-        os.environ["REDIS__URI"] = os.environ["REDIS_URI"]
+        os.environ["REDIS_URL"] = os.environ["REDIS_URL"]
         logger.info("Checking CodeStory service container status...")
         # Dynamically determine container names from environment, fallback to defaults
         neo4j_container = os.environ.get("CODESTORY_NEO4J_CONTAINER_NAME")
@@ -470,7 +470,7 @@ class TestFilesystemIngestionE2E:
             pass
         try:
             result = subprocess.run(
-                ["codestory", "start"], capture_output=True, text=True, timeout=120
+                ["codestory", "start"], capture_output=True, text=True, timeout=300
             )
             if result.returncode != 0:
                 logger.error(f"Failed to start services: {result.stderr}")

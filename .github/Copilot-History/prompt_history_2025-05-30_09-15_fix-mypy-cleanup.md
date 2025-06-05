@@ -156,3 +156,19 @@ No manual edits outside these automated passes.
 - Created robust automation infrastructure for future cleanup rounds
 
 The automation scripts provide a solid foundation for iterative MyPy cleanup, with this first sweep establishing baseline type coverage across the entire codebase.
+## Prompt 5 (2025-06-04 09:42 AM)
+**Prompt**: Fix Docker-client ResourceWarning in CLI “command suggestions” test.
+
+Tasks:
+1. Edit `tests/integration/test_cli/test_command_suggestions.py` to ensure Docker client is closed.
+2. Add unit test `tests/unit/test_cli/test_commands/test_command_suggestions_close.py` to assert no ResourceWarning.
+3. Re-run failing test with warnings as errors, then run full CLI suite fail-fast.
+4. Update `Specifications/status.md` with test status and diagnosis if needed.
+5. Commit all changes and summarize files changed, CLI suite result, and status update.
+
+**Response**:
+- Updated prompt history for Docker ResourceWarning fix
+- Will locate and refactor Docker client usage in integration test
+- Will add a unit test to check for ResourceWarning
+- Will re-run CLI tests with warnings as errors and capture results
+- Will update status.md and commit all changes as required

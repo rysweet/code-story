@@ -428,6 +428,21 @@ class OpenAIClient:
                 )
             raise
 
+    def close(self) -> None:
+        """Close underlying HTTP clients to avoid ResourceWarning."""
+        # Close sync client if possible
+        if hasattr(self, "_sync_client") and hasattr(self._sync_client, "close"):
+            try:
+                self._sync_client.close()
+            except Exception:
+                pass
+        # Close async client if possible (sync close for test teardown)
+        if hasattr(self, "_async_client") and hasattr(self._async_client, "close"):
+            try:
+                self._async_client.close()
+            except Exception:
+                pass
+
     def _prepare_request_data(
         self, request: CompletionRequest | ChatCompletionRequest | EmbeddingRequest
     ) -> tuple[str, dict[str, Any]]:

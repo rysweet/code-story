@@ -64,6 +64,16 @@ class BlarifyStep(PipelineStep):
             )
             self.docker_client = None
 
+    def close(self) -> None:
+        """Close the Docker client if it was initialized."""
+        if hasattr(self, "docker_client") and self.docker_client is not None:
+            try:
+                self.docker_client.close()
+                logger.info("Docker client closed successfully")
+            except Exception as e:
+                logger.warning(f"Error closing Docker client: {e}")
+            self.docker_client = None
+
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the Blarify step.
 
@@ -492,13 +502,13 @@ def run_blarify(
 
     try:
         # Try to use Docker directly
-        client = docker.from_env()
+        with docker.from_env() as client:
 
-        # Make sure the repository path exists
-        if not os.path.isdir(repository_path):
-            raise ValueError(
-                f"Repository path is not a valid directory: {repository_path}"
-            )
+            # Make sure the repository path exists
+            if not os.path.isdir(repository_path):
+                raise ValueError(
+                    f"Repository path is not a valid directory: {repository_path}"
+                )
 
         # Check if we're running inside Docker and modify paths accordingly
         container_repository_path = repository_path

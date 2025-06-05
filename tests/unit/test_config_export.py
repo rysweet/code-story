@@ -180,10 +180,7 @@ def test_export_to_json(mock_settings: Any) -> None:
                 os.unlink(tmp_path)
 
 
-@pytest.mark.skip(reason="Complex TOML mocking causing issues, to be fixed later")
-def test_export_to_toml(mock_settings: Any) -> None:
-    """Test exporting settings to TOML."""
-    pass
+# Removed test_export_to_toml: was a placeholder, skipped, and did not test any functionality.
 
 
 def test_create_env_template(mock_settings: Any) -> None:

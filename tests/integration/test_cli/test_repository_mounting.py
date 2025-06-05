@@ -63,7 +63,8 @@ class TestRepositoryMounting:
         """Test that the mount verification correctly detects issues."""
         docker_check = subprocess.run(["docker", "ps"], capture_output=True, text=True)
         if docker_check.returncode != 0:
-            pytest.skip("Docker is not running")
+            # pytest.skip("Docker is not running")
+            pass
         print(f"\nTesting repository mounting verification with: {temp_repository}")
         container_name = "codestory-mount-test"
         os.path.basename(temp_repository)
@@ -191,7 +192,8 @@ class TestCliAutoMount:
         """Test that ingest command correctly verifies container paths."""
         docker_check = subprocess.run(["docker", "ps"], capture_output=True, text=True)
         if docker_check.returncode != 0:
-            pytest.skip("Docker is not running")
+            # pytest.skip("Docker is not running")
+            pass
         from io import StringIO
         from unittest.mock import MagicMock
 

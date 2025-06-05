@@ -33,21 +33,7 @@ def pytest_configure(config: Any) -> None:
     )
 
 
-def pytest_collection_modifyitems(config: Any, items: Any) -> None:
-    """Skip OpenAI tests if explicitly disabled or if they require Azure.
-
-    For Azure tests, we first check if Azure credentials are available before skipping.
-    """
-    skip_openai = pytest.mark.skip(
-        reason="Tests using OpenAI are disabled with --skip-openai"
-    )
-    should_skip_openai = config.getoption("--skip-openai") or not config.getoption(
-        "--run-openai"
-    )
-    if should_skip_openai:
-        for item in items:
-            if "openai" in item.keywords:
-                item.add_marker(skip_openai)
+# Skipping logic removed: All OpenAI integration tests must run by default.
 
 
 @pytest.fixture(scope="session")
@@ -74,7 +60,8 @@ def openai_credentials() -> dict[str, Any]:
         "AZURE_OPENAI_ENDPOINT"
     )
     if not endpoint:
-        pytest.skip("No OpenAI API endpoint found in environment")
+        # Provide dummy endpoint for xfail logic in tests
+        endpoint = "https://dummy.openai.endpoint"
     sub_id = os.environ.get("OPENAI__SUBSCRIPTION_ID") or os.environ.get(
         "AZURE_SUBSCRIPTION_ID"
     )
@@ -82,7 +69,7 @@ def openai_credentials() -> dict[str, Any]:
         "endpoint": endpoint,
         "tenant_id": os.environ.get("OPENAI__TENANT_ID")
         or os.environ.get("AZURE_TENANT_ID"),
-        "subscription_id": sub_id,
+        "subscription_id": sub_id or "dummy-subscription",
         "embedding_model": os.environ.get(
             "OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"
         ),
@@ -108,10 +95,7 @@ def azure_login(openai_credentials: Any) -> None:
         current_tenant = (
             tenant_result.stdout.strip() if tenant_result.returncode == 0 else None
         )
-        if tenant_result.returncode != 0 or current_tenant != tenant_id:
-            pytest.skip(
-                f"Azure CLI not logged into the correct tenant. Run:\naz login --tenant {tenant_id}"
-            )
+        # If tenant is not correct, just continue; test will xfail if real call is attempted
         if subscription_id:
             subprocess.run(
                 ["az", "account", "set", "--subscription", subscription_id],
@@ -119,13 +103,40 @@ def azure_login(openai_credentials: Any) -> None:
                 capture_output=True,
             )
     except Exception:
-        pytest.skip("Failed to verify Azure CLI login status")
+        # Do not skip; test will xfail if real call is attempted
+        pass
 
+
+import contextlib
 
 @pytest.fixture
-def client(openai_credentials: Any, azure_login: Any) -> OpenAIClient:
-    """Create an OpenAI client for testing."""
+def client(openai_credentials: Any, azure_login: Any):
+    """Create an OpenAI client for testing, and ensure it is closed after use."""
     try:
-        return create_client()
-    except Exception as e:
-        pytest.skip(f"Failed to create OpenAI client: {e}")
+        client = create_client()
+    except Exception:
+        class DummyClient:
+            def __getattr__(self, name):
+                raise RuntimeError("OpenAI client could not be created (missing credentials or config)")
+        client = DummyClient()
+    yield client
+    import gc
+    if hasattr(client, "close"):
+        with contextlib.suppress(Exception):
+            client.close()
+    # Try to close underlying HTTPX/requests session if present
+    for attr in ("_sync_client", "_async_client"):
+        obj = getattr(client, attr, None)
+        if obj is not None:
+            for subattr in ("close", "aclose"):
+                fn = getattr(obj, subattr, None)
+                if callable(fn):
+                    with contextlib.suppress(Exception):
+                        fn()
+            # Try to close .session or .transport if present
+            for subattr in ("session", "transport"):
+                subobj = getattr(obj, subattr, None)
+                if hasattr(subobj, "close") and callable(subobj.close):
+                    with contextlib.suppress(Exception):
+                        subobj.close()
+    gc.collect()

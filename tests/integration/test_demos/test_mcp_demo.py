@@ -76,29 +76,41 @@ def setup_mcp() -> None:
     os.chdir(original_dir)
 
 
-@pytest.mark.skip(reason="Requires MCP service setup")
 @pytest.mark.mcp
 def test_mcp_ping(setup_mcp: Any) -> None:
     """Test the MCP ping endpoint."""
-    response = requests.get("http://localhost:8080/ping")
+    try:
+        response = requests.get("http://localhost:8080/ping")
+        if response.status_code != 200:
+            pytest.xfail("MCP service is not running or not reachable")
+    except Exception:
+        pytest.xfail("MCP service is not running or not reachable")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
 
 
-@pytest.mark.skip(reason="Requires MCP service setup")
 @pytest.mark.mcp
 def test_mcp_health(setup_mcp: Any) -> None:
     """Test the MCP health endpoint."""
-    response = requests.get("http://localhost:8080/health")
+    try:
+        response = requests.get("http://localhost:8080/health")
+        if response.status_code != 200:
+            pytest.xfail("MCP service is not running or not reachable")
+    except Exception:
+        pytest.xfail("MCP service is not running or not reachable")
     assert response.status_code == 200
     assert "status" in response.json()
 
 
-@pytest.mark.skip(reason="Requires MCP service setup")
 @pytest.mark.mcp
 def test_mcp_tools_list(setup_mcp: Any) -> None:
     """Test the MCP tools list endpoint."""
-    response = requests.get("http://localhost:8080/tools")
+    try:
+        response = requests.get("http://localhost:8080/tools")
+        if response.status_code != 200:
+            pytest.xfail("MCP service is not running or not reachable")
+    except Exception:
+        pytest.xfail("MCP service is not running or not reachable")
     assert response.status_code == 200
 
     tools = response.json()
@@ -111,10 +123,16 @@ def test_mcp_tools_list(setup_mcp: Any) -> None:
     assert "summarize_node" in tool_names
 
 
-@pytest.mark.skip(reason="Requires graph data and MCP service")
 @pytest.mark.mcp
 def test_mcp_search_graph(setup_mcp: Any, neo4j_connector: Any) -> None:
     """Test the MCP search_graph tool."""
+    # Xfail if MCP service is not running
+    try:
+        response = requests.get("http://localhost:8080/ping")
+        if response.status_code != 200:
+            pytest.xfail("MCP service is not running or not reachable")
+    except Exception:
+        pytest.xfail("MCP service is not running or not reachable")
     # Create some test data in the database
     neo4j_connector.execute_query(
         """
@@ -135,10 +153,16 @@ def test_mcp_search_graph(setup_mcp: Any, neo4j_connector: Any) -> None:
     assert "/test/file.py" in result[0]["FilePath"]
 
 
-@pytest.mark.skip(reason="Requires graph data and MCP service")
 @pytest.mark.mcp
 def test_mcp_path_to(setup_mcp: Any, neo4j_connector: Any) -> None:
     """Test the MCP path_to tool."""
+    # Xfail if MCP service is not running
+    try:
+        response = requests.get("http://localhost:8080/ping")
+        if response.status_code != 200:
+            pytest.xfail("MCP service is not running or not reachable")
+    except Exception:
+        pytest.xfail("MCP service is not running or not reachable")
     # Create some test data in the database
     neo4j_connector.execute_query(
         """
@@ -165,17 +189,26 @@ def test_mcp_path_to(setup_mcp: Any, neo4j_connector: Any) -> None:
     assert len(result["paths"]) > 0
 
 
-@pytest.mark.skip(reason="Requires OpenAI API key and MCP service")
 @pytest.mark.mcp
 def test_mcp_summarize_node(setup_mcp: Any, neo4j_connector: Any) -> None:
     """Test the MCP summarize_node tool."""
+    # Xfail if MCP service or OpenAI API key is not available
+    import os
+    try:
+        response = requests.get("http://localhost:8080/ping")
+        if response.status_code != 200:
+            pytest.xfail("MCP service is not running or not reachable")
+    except Exception:
+        pytest.xfail("MCP service is not running or not reachable")
+    if not os.environ.get("OPENAI_API_KEY") and not os.environ.get("OPENAI__API_KEY"):
+        pytest.xfail("OpenAI API key not set in environment")
     # Create some test data in the database
     neo4j_connector.execute_query(
         """
         CREATE (f:File {
-            path: '/test/file.py', 
-            name: 'file.py', 
-            extension: 'py', 
+            path: '/test/file.py',
+            name: 'file.py',
+            extension: 'py',
             id: 'file:///test/file.py',
             content: 'def hello(): print("Hello, world!")'
         })
