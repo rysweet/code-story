@@ -41,3 +41,7 @@ docker compose -f docker-compose.yml down -v --remove-orphans
 docker ps -aq --filter name=codestory | xargs -r docker rm -f
 ```
 # Removed any stray Docker containers with names matching "codestory" to ensure no project-related containers remain running outside of docker-compose management.
+```bash
+docker ps -aq --filter name=neo4j | xargs -r docker rm -f
+```
+# Removed any stray Docker containers with names matching "neo4j" to ensure no Neo4j-related containers remain running outside of docker-compose management.
