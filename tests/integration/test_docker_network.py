@@ -18,56 +18,75 @@ import pytest
 
 @pytest.fixture(scope="module")
 def docker_compose_project() -> Generator[dict[str, Any], None, None]:
-    """Spin up the Docker Compose project for testing.
-
-    This fixture starts the Docker Compose services, runs the tests,
-    and then tears down the services.
-
+    """
+    Spin up the Docker Compose project for testing, robustly waiting for all services to be healthy.
     Yields:
         Dictionary with Docker Compose project information
     """
+    import shutil
+
+    compose_file = "docker-compose.test.yml"
+    required_services = ["neo4j", "redis", "service", "worker"]
+    max_wait = 120  # seconds
+    poll_interval = 3
+
+    if not shutil.which("docker-compose"):
+        pytest.skip("docker-compose is not installed")
+
     try:
         # Start containers using test compose file
         result = subprocess.run(
-            ["docker-compose", "-f", "docker-compose.test.yml", "up", "-d"],
+            ["docker-compose", "-f", compose_file, "up", "-d"],
             capture_output=True,
             text=True,
             check=True,
-            timeout=300,  # 5 minutes timeout
+            timeout=300,
         )
         print(f"Docker Compose started: {result.stdout}")
 
-        # Wait for services to be healthy
-        print("Waiting for services to be healthy...")
-        health_check_result = subprocess.run(
-            ["docker-compose", "-f", "docker-compose.test.yml", "ps"],
-            capture_output=True,
-            text=True,
-        )
-        print(f"Service status: {health_check_result.stdout}")
+        # Poll for all required services to be healthy
+        start = time.time()
+        healthy = {s: False for s in required_services}
+        print("Polling for service health...")
+        while time.time() - start < max_wait:
+            ps = subprocess.run(
+                ["docker-compose", "-f", compose_file, "ps", "--format", "json"],
+                capture_output=True,
+                text=True,
+            )
+            try:
+                containers = json.loads(ps.stdout)
+            except Exception:
+                containers = []
+            for c in containers:
+                name = c.get("Name") or c.get("Service")
+                health = c.get("Health") or c.get("State")
+                if name in healthy and health and "healthy" in health:
+                    healthy[name] = True
+            if all(healthy.values()):
+                print("All services healthy.")
+                break
+            time.sleep(poll_interval)
+        else:
+            # Print logs for debugging
+            logs = subprocess.run(
+                ["docker-compose", "-f", compose_file, "logs", "--no-color"],
+                capture_output=True,
+                text=True,
+            )
+            print(f"Service logs:\n{logs.stdout}")
+            raise RuntimeError(f"Not all services became healthy in {max_wait}s: {healthy}")
 
-        # Give additional time for services to fully initialize
-        time.sleep(30)
-
-        # Get container info
+        # Get final container info
         result = subprocess.run(
-            [
-                "docker-compose",
-                "-f",
-                "docker-compose.test.yml",
-                "ps",
-                "--format",
-                "json",
-            ],
+            ["docker-compose", "-f", compose_file, "ps", "--format", "json"],
             capture_output=True,
             text=True,
             check=True,
         )
-
         try:
             containers = json.loads(result.stdout)
         except json.JSONDecodeError:
-            # Handle older docker-compose versions that don't support JSON output
             containers = result.stdout
 
         yield {"containers": containers}
@@ -78,13 +97,12 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     finally:
         # Tear down containers but keep logs
         subprocess.run(
-            ["docker-compose", "-f", "docker-compose.test.yml", "logs", "--no-color"],
+            ["docker-compose", "-f", compose_file, "logs", "--no-color"],
             capture_output=True,
             text=True,
         )
-
         subprocess.run(
-            ["docker-compose", "-f", "docker-compose.test.yml", "down"],
+            ["docker-compose", "-f", compose_file, "down"],
             capture_output=True,
             text=True,
         )

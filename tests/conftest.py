@@ -322,8 +322,14 @@ def neo4j_container(request):
         return
     neo4j = Neo4jContainer("neo4j:5.22")
     try:
-        neo4j.start()
-        uri = neo4j.get_connection_url()
+        try:
+            neo4j.start()
+        except Exception as e:
+            pytest.fail(f"Failed to start Neo4j testcontainer: {e}")
+        try:
+            uri = neo4j.get_connection_url()
+        except Exception as e:
+            pytest.fail(f"Neo4j container started but connection URL unavailable: {e}")
         os.environ["NEO4J_URI"] = uri
         os.environ["NEO4J__URI"] = uri
         os.environ["NEO4J_USERNAME"] = "neo4j"
@@ -336,13 +342,14 @@ def neo4j_container(request):
     finally:
         try:
             neo4j.stop()
-        except APIError as e:
+        except Exception as e:
+            # Only suppress 404/409 errors, raise others
             if hasattr(e, "status_code") and e.status_code in (404, 409):
+                pass
+            elif "No such container" in str(e):
                 pass
             else:
                 raise
-        except Exception:
-            pass
 
 import os
 import pytest

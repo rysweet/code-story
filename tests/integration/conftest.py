@@ -1,12 +1,23 @@
 import os
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
-os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
-os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+
+# Use compose-mapped ports for integration tests by default
+os.environ.setdefault("REDIS_URL", "redis://localhost:6380/0")
+os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6380/0")
+os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6380/0")
+os.environ.setdefault("NEO4J_URI", "bolt://localhost:7688")
+os.environ.setdefault("NEO4J_HTTP_URL", "http://localhost:7475")
+
+import contextlib
+import socket
+
+def _find_free_port() -> int:
+    with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
 
 from pathlib import Path
 import pytest
 import tempfile
-import os
 import json
 
 @pytest.fixture(scope="session", autouse=True)
@@ -36,10 +47,10 @@ import socket
 @pytest.fixture(scope="session")
 def redis_container():
     """
-    Session-scoped fixture to start a Redis container for integration tests.
-    Returns the mapped Redis port for use by dependent fixtures.
+    Session-scoped fixture to start a Redis container for integration tests on a user-defined bridge network.
+    Returns the container name for use by dependent fixtures.
     """
-    import socket
+    import docker
 
     client = docker.from_env()
     container_name = f"test-redis-{uuid.uuid4()}"
@@ -56,20 +67,13 @@ def redis_container():
             name=container_name,
             ports={"6379/tcp": free_port},
             detach=True,
-            # auto_remove=True,  # REMOVE auto_remove so we can inspect logs if it fails
         )
     except docker.errors.APIError as e:
         raise RuntimeError(f"Could not start Redis container: {e}")
 
     try:
-        # Find mapped host port
-        container.reload()
-        port_info = container.attrs["NetworkSettings"]["Ports"]["6379/tcp"][0]
-        host = port_info["HostIp"]
-        port = int(port_info["HostPort"])
-
         # Wait for Redis to be ready
-        r = redis.Redis(host=host, port=port, db=0)
+        r = redis.Redis(host="localhost", port=free_port, db=0)
         for _ in range(30):
             try:
                 r.ping()
@@ -79,14 +83,14 @@ def redis_container():
         else:
             raise RuntimeError("Redis container did not become ready in time")
 
-        redis_url = f"redis://localhost:{port}/0"
+        redis_url = f"redis://localhost:{free_port}/0"
         os.environ.update({
             "REDIS_URL": redis_url,
             "CELERY_BROKER_URL": redis_url,
             "CELERY_RESULT_BACKEND": redis_url,
         })
 
-        yield port
+        yield free_port
     finally:
         try:
             container.stop(timeout=3)
@@ -99,15 +103,110 @@ def redis_container():
             pass
         client.close()
 @pytest.fixture(scope="session")
+def neo4j_container():
+    """
+    Session-scoped fixture to start a Neo4j container for integration tests.
+    Always uses random free ports for bolt and http to avoid collisions.
+    Sets required env, waits for bolt, and cleans up.
+    """
+    import docker
+    import time
+    import platform
+    import uuid
+    import json
+    import os
+
+    client = docker.from_env()
+    container_name = f"test-neo4j-{uuid.uuid4()}"
+
+    # Always use random free ports for bolt and http
+    bolt_port, http_port = _find_free_port(), _find_free_port()
+    print(f"[neo4j_container] Using bolt={bolt_port}, http={http_port}")
+
+    image = "neo4j:5.18.0-enterprise"
+
+    env = {
+        "NEO4J_AUTH": "neo4j/password",
+        "NEO4J_ACCEPT_LICENSE_AGREEMENT": "yes",
+        "NEO4J_PLUGINS": json.dumps(["apoc", "graph-data-science"]),
+        "NEO4J_dbms_security_procedures_unrestricted": "apoc.*,gds.*",
+        "NEO4J_dbms_connector_bolt_advertised__address": f"localhost:{bolt_port}",
+        "NEO4J_dbms_connector_http_advertised__address": f"localhost:{http_port}",
+    }
+
+    ports = {
+        "7687/tcp": bolt_port,
+        "7474/tcp": http_port,
+    }
+
+    try:
+        container = client.containers.run(
+            image,
+            name=container_name,
+            ports=ports,
+            environment=env,
+            detach=True,
+        )
+        # Store Docker DNS name for downstream fixtures
+        neo4j_host_dns = container.name  # Docker bridge DNS
+        os.environ["NEO4J_HOST_DNS"] = neo4j_host_dns
+    except docker.errors.APIError as e:
+        client.close()
+        raise RuntimeError(f"Could not start Neo4j container: {e}")
+
+    try:
+        # Wait for bolt port to be ready (max 90s)
+        start = time.time()
+        while time.time() - start < 90:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                s.settimeout(1)
+                s.connect(("localhost", bolt_port))
+                s.close()
+                break
+            except Exception:
+                time.sleep(1)
+            finally:
+                s.close()
+        else:
+            logs = container.logs().decode(errors="ignore")
+            print(f"[neo4j_container] Neo4j did not become ready in time. Logs:\n{logs}")
+            container.stop(timeout=3)
+            client.close()
+            raise RuntimeError("Neo4j container did not become ready in time")
+
+        # Set environment variables for other fixtures/tests
+        os.environ.update({
+            "NEO4J_URI": f"bolt://localhost:{bolt_port}",
+            "NEO4J_HTTP_URL": f"http://localhost:{http_port}",
+            "NEO4J_USERNAME": "neo4j",
+            "NEO4J_PASSWORD": "password",
+        })
+
+        yield  # No need to yield ports; service_container will use env values
+    finally:
+        try:
+            container.stop(timeout=3)
+        except docker.errors.APIError as e:
+            if hasattr(e, "status_code") and e.status_code in (404, 409):
+                pass
+            else:
+                raise
+        except Exception:
+            pass
+        client.close()
+
+@pytest.fixture(scope="session")
 def celery_worker_container(redis_container):
     """
     Session-scoped fixture to run a real Celery worker in a Docker container for integration tests.
-    Uses bridge networking and the mapped Redis port for cross-platform compatibility.
+    Uses the mapped host port for Redis. Builds the worker image once per session for fast startup.
     """
     import docker
     import time
     from uuid import uuid4
     import platform
+    import pathlib
 
     port = redis_container
     # Use host.docker.internal on Mac/Windows, localhost on Linux
@@ -119,16 +218,44 @@ def celery_worker_container(redis_container):
 
     client = docker.from_env()
     container_name = f"cs-worker-{uuid4()}"
+    image_tag = "codestory-celery-worker:test"
+    project_root = pathlib.Path(__file__).resolve().parents[1]
+
+    # Build the worker image once per session if not present
+    try:
+        client.images.get(image_tag)
+    except docker.errors.ImageNotFound:
+        print(f"[celery_worker_container] Building worker image {image_tag} ...")
+        try:
+            client.images.remove(image=image_tag, force=True)
+        except docker.errors.ImageNotFound:
+            pass
+        client.images.build(
+            path=str(project_root.parent),
+            dockerfile="Dockerfile.worker",
+            tag=image_tag,
+            rm=True,
+            pull=True,
+            nocache=True,
+        )
+
     env = {
         "CELERY_BROKER_URL": redis_url,
         "CELERY_RESULT_BACKEND": redis_url,
     }
     command = [
-        "celery",
-        "-A",
-        "codestory.ingestion_pipeline.celery_app",
-        "worker",
-        "--loglevel=info",
+        "bash",
+        "-c",
+        (
+            "python -m venv /tmp/venv && "
+            ". /tmp/venv/bin/activate && "
+            "export PIP_DEFAULT_TIMEOUT=120 && "
+            "/tmp/venv/bin/pip install --retries 20 --progress-bar off --no-cache-dir "
+            "wheel celery docker azure-identity && "
+            "/tmp/venv/bin/pip install --retries 20 --progress-bar off --no-cache-dir -e . && "
+            "celery -A codestory.ingestion_pipeline.celery_app worker "
+            "--loglevel=info --concurrency=4 -Q ingestion"
+        ),
     ]
     try:
         # Clean up any prior worker containers
@@ -138,19 +265,9 @@ def celery_worker_container(redis_container):
             except docker.errors.APIError:
                 pass
         container = client.containers.run(
-            # Use slim Python 3.12 image and install CodeStory package in-container
-            "python:3.12-slim",
+            image_tag,
             name=container_name,
-            command=[
-                "bash",
-                "-c",
-                (
-                    "apt-get update && apt-get install -y procps docker.io && "
-                    "pip install -e . && pip install docker "
-                    "&& "  # once installed, launch celery
-                    + " ".join(command)
-                ),
-            ],
+            command=command,
             volumes={
                 os.getcwd(): {"bind": "/app", "mode": "rw"},
                 "/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"},
@@ -158,14 +275,13 @@ def celery_worker_container(redis_container):
             working_dir="/app",
             environment=env,
             detach=True,
-            auto_remove=False,  # keep container for explicit stop in teardown
-            network_mode="host",  # enable host networking for DNS resolution
+            auto_remove=False,
         )
     except Exception as e:
         import pytest
-        pytest.skip(f"Could not start celery worker container: {e}")
+        pytest.fail(f"Could not start celery worker container: {e}")
 
-    # Wait for worker to connect to Redis (max 30s)
+    # Wait for worker to connect to Redis (max 180s)
     log_match = f"Connected to redis://{redis_host}:{port}/0"
     found = False
     start = time.time()
@@ -185,11 +301,7 @@ def celery_worker_container(redis_container):
             print(f"Celery worker logs (connection failure):\n{logs}")
             container.stop(timeout=3)
             import pytest
-            pytest.skip("Celery worker did not connect to Redis in time")
-        # ----------------------------------------------------------------
-        # Yield the **container name** so downstream tests can interact with
-        # the running worker (e.g., docker exec …).
-        # ----------------------------------------------------------------
+            pytest.fail("Celery worker did not connect to Redis in time")
         yield container.name
     finally:
         try:
@@ -201,16 +313,20 @@ def celery_worker_container(redis_container):
                 raise
         except Exception:
             pass
+        
+        try:
+            container.remove(force=True)
+        except docker.errors.NotFound:
+            pass
+        
         client.close()
 
 @pytest.fixture(scope="session")
-def service_container(redis_container, celery_worker_container):
+def service_container(redis_container, celery_worker_container, neo4j_container):
     """
     Session-scoped fixture that launches the real CodeStory FastAPI service inside a
-    Docker container.  It uses a throw-away Python base image so we avoid shipping a
-    custom image to CI, and it connects to the Redis instance started by the
-    ``redis_container`` fixture.  The fixture is fully self-contained: it starts all
-    required resources and guarantees they are cleaned up in the ``finally`` block.
+    Docker container. Uses the Redis and Neo4j containers started by the other fixtures.
+    Reads Neo4j ports from environment variables set by neo4j_container.
     """
     import docker
     import os
@@ -220,42 +336,71 @@ def service_container(redis_container, celery_worker_container):
     from uuid import uuid4
 
     # ------------------------------------------------------------------ networking
-    port = redis_container
+    redis_port = redis_container
     redis_host = "localhost" if platform.system() == "Linux" else "host.docker.internal"
-    redis_url = f"redis://{redis_host}:{port}/0"
+    redis_url = f"redis://{redis_host}:{redis_port}/0"
+
+    # Find a free port for the service
+    service_port = _find_free_port()
+
+    # Neo4j ports from env
+    # Use Neo4j container's Docker DNS name and default internal ports
+    neo4j_host = os.getenv("NEO4J_HOST_DNS")
+    bolt_port = 7687  # inside network (container's default)
+    http_port = 7474
+    neo4j_uri = f"bolt://{neo4j_host}:{bolt_port}"
+    neo4j_http_url = f"http://{neo4j_host}:{http_port}"
 
     # ------------------------------------------------------------------ container
     client = docker.from_env()
     name = f"cs-service-{uuid4()}"
     container: "docker.models.containers.Container | None" = None
+
+    # Explicitly construct environment dict after computing neo4j_uri and neo4j_http_url
+    environment = {
+        "REDIS_URL": redis_url,
+        "CELERY_BROKER_URL": redis_url,
+        "CELERY_RESULT_BACKEND": redis_url,
+        "NEO4J__URI": neo4j_uri,
+        "NEO4J__HTTP_URL": neo4j_http_url,
+        "NEO4J__USERNAME": "neo4j",
+        "NEO4J__PASSWORD": "password",
+    }
+
     try:
+        image_tag = "codestory-celery-worker:test"
+        command = [
+            "bash",
+            "-c",
+            (
+                # Copy current source code and use system Python with pip install
+                "cp -r /host-app/src /app/ && "
+                "cp -r /host-app/pyproject.toml /app/ && "
+                "pip install --quiet --no-cache-dir --upgrade pydantic-core pydantic && "
+                "pip install --quiet --no-cache-dir -e . && "
+                "python -m uvicorn codestory_service.main:app --host 0.0.0.0 --port 8000"
+            ),
+        ]
         container = client.containers.run(
-            "python:3.11-slim",
+            image_tag,
             name=name,
-            command=[
-                "bash",
-                "-c",
-                (
-                    "pip install -e . "
-                    "&& uvicorn codestory_service.main:app --host 0.0.0.0 --port 8000"
-                ),
-            ],
-            volumes={os.getcwd(): {"bind": "/app", "mode": "rw"}},
+            command=command,
+            ports={"8000/tcp": service_port},
+            volumes={
+                os.getcwd(): {"bind": "/host-app", "mode": "ro"},
+                "/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"},
+            },
             working_dir="/app",
             detach=True,
             auto_remove=False,  # keep container for explicit stop() in finally
-            environment={
-                "REDIS_URL": redis_url,
-                "CELERY_BROKER_URL": redis_url,
-                "CELERY_RESULT_BACKEND": redis_url,
-            },
+            environment=environment,
         )
-        print(f"[tests] Started service container: {name}")
+        print(f"[tests] Started service container: {name} on port {service_port}")
 
         # ------------------------------------------------------- wait for /health
-        url = "http://localhost:8000/health"
+        url = f"http://localhost:{service_port}/health"
         start = time.time()
-        while time.time() - start < 60:
+        while time.time() - start < 90:
             try:
                 if requests.get(url, timeout=2).status_code == 200:
                     break
@@ -267,6 +412,9 @@ def service_container(redis_container, celery_worker_container):
             print(f"[tests] Service failed to start, logs:\n{logs}")
             raise RuntimeError("Service container did not become healthy in time")
 
+        # Set environment variable for tests to know the service URL
+        os.environ["CODESTORY_API_URL"] = f"http://localhost:{service_port}"
+        
         yield  # --------------------------- the test(s) using this fixture execute
     finally:
         # -------------------------------------------------------------- tear-down
@@ -274,11 +422,17 @@ def service_container(redis_container, celery_worker_container):
             try:
                 container.stop(timeout=3)
             except docker.errors.APIError as e:
-                # Ignore “container already stopped/removed” races
+                # Ignore "container already stopped/removed" races
                 if not (hasattr(e, "status_code") and e.status_code in (404, 409)):
                     raise
             except Exception:
                 pass
+            
+            try:
+                container.remove(force=True)
+            except docker.errors.NotFound:
+                pass
+        
         client.close()
 # ------------------------------------------------------------------------------- end service_container
 

@@ -750,3 +750,80 @@ No other edits; resolve these errors completely.
 - Will remove bracket token from models.py line 90 constructor
 - Will sweep all src/codestory/**/*.py files for bracket tokens and remove them
 - Will run MyPy with explicit package list and commit if zero errors, otherwise report count and first 30 lines
+## Prompt 117 (December 5, 2025)
+
+**Prompt**: Goal #29 – diagnose current service-container failure quickly.
+
+Steps  
+1. Run one failing test to reproduce the issue fast:  
+   ```
+   uv run pytest -s -vv tests/integration/test_cli/test_service_integration.py::TestServiceCommands::test_service_status --maxfail=1
+   ```
+   ‑ The `-s` flag prints fixture log lines so we see the service-container name.
+
+2. After pytest stops, capture the last 400 lines of that container's logs:  
+   ```
+   docker logs <captured_service_name> --tail 400
+   ```
+
+3. Do NOT edit any source files.
+
+4. Use the attempt_completion tool to return:  
+   • Pytest first-failure traceback  
+   • 400-line service-container log excerpt  
+   • Pytest exit code
+
+These diagnostics confirm if the Neo4j URI is now correct and show why `/health` still fails.
+
+Perform exactly the commands above and report the results.
+
+**Response**:
+- Will run the specific failing test with verbose output to capture service container name
+- Will capture the last 400 lines of the service container logs
+- Will not edit any source files during this diagnostic session
+- Will report pytest traceback, container logs, and exit code using attempt_completion
+## Prompt 118 (December 5, 2025)
+
+**Prompt**: Goal #30: Fix missing `/app/.venv` inside service container by removing the `/app` bind-mount (which hides the venv) and rely on the pre-built code baked into the `codestory-celery-worker:test` image.
+
+Patch
+1. In `tests/integration/conftest.py` within the `service_container` fixture:
+   • Change the `volumes=` argument passed to `client.containers.run` from
+     ```python
+     volumes={os.getcwd(): {"bind": "/app", "mode": "rw"}},
+     ```
+     to **either** an empty dict `{}` **or** only mount the Docker socket if still needed:
+     ```python
+     volumes={
+         "/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"},
+     },
+     ```
+     (No project code bind-mount, so image's /app/.venv remains intact.)
+
+   • Keep image `codestory-celery-worker:test` and command list using `/app/.venv/bin/python`.
+
+2. Update `Specifications/status.md`:
+```
+| 2025-06-05 | Integration | Service container /app/.venv hidden by bind-mount | FIX APPLIED | Removed /app bind-mount so image venv is visible |
+```
+
+3. Rerun the failing subset to test:
+```
+uv run pytest -vv tests/integration --maxfail=1
+```
+   Capture first failure (or success).
+
+4. Use `attempt_completion` summarising:
+   • Diff snippet showing volumes change  
+   • status.md first 25 lines  
+   • Result of test run (next failure or success)
+
+Only modify the fixture and status.md.
+
+These instructions override general rules; implement edits, validate, and report.
+
+**Response**:
+- Will update the `service_container` fixture in tests/integration/conftest.py to remove the /app bind-mount
+- Will update Specifications/status.md with the fix status entry
+- Will run the integration tests to validate the fix
+- Will summarize results with diff snippet, status.md excerpt, and test outcome

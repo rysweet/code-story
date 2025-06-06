@@ -12,6 +12,10 @@ from rich.console import Console
 
 from codestory.cli.commands.ingest import ingest, start_ingestion
 
+
+def _cleanup_container(name: str):
+    subprocess.run(["docker", "rm", "-f", name], check=False)
+
 pytestmark = [
     pytest.mark.skipif(
         subprocess.run(["docker", "ps"], capture_output=True).returncode != 0,
@@ -69,118 +73,125 @@ class TestRepositoryMounting:
         container_name = "codestory-mount-test"
         os.path.basename(temp_repository)
         container_path = "/test-mount"
-        subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
-        start_result = subprocess.run(
-            ["docker", "run", "-d", "--name", container_name, "alpine", "sleep", "60"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        print(f"Container start result: {start_result.stdout}")
-        container_check = subprocess.run(
-            [
-                "docker",
-                "ps",
-                "--filter",
-                f"name={container_name}",
-                "--format",
-                "{{.Names}}",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        assert container_name in container_check.stdout, "Test container is not running"
-        print("Test 1: Verifying path doesn't exist without mounting")
-        path_check = subprocess.run(
-            f"docker exec {container_name} sh -c 'test -d {container_path} && echo exists'",
-            shell=True,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert (
-            "exists" not in path_check.stdout
-        ), "Repository path should not be accessible without mounting"
-        print("Test 1 passed: Path not accessible without mounting")
-        subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
+        
+        # Test 1: Container without mount
+        try:
+            start_result = subprocess.run(
+                ["docker", "run", "-d", "--name", container_name, "alpine", "sleep", "60"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            print(f"Container start result: {start_result.stdout}")
+            container_check = subprocess.run(
+                [
+                    "docker",
+                    "ps",
+                    "--filter",
+                    f"name={container_name}",
+                    "--format",
+                    "{{.Names}}",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            assert container_name in container_check.stdout, "Test container is not running"
+            print("Test 1: Verifying path doesn't exist without mounting")
+            path_check = subprocess.run(
+                f"docker exec {container_name} sh -c 'test -d {container_path} && echo exists'",
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            assert (
+                "exists" not in path_check.stdout
+            ), "Repository path should not be accessible without mounting"
+            print("Test 1 passed: Path not accessible without mounting")
+        finally:
+            _cleanup_container(container_name)
+        
+        # Test 2: Container with mount
         print("Test 2: Starting container with repository mounted")
-        mount_result = subprocess.run(
-            [
-                "docker",
-                "run",
-                "-d",
-                "--name",
-                container_name,
-                "-v",
-                f"{temp_repository}:{container_path}",
-                "alpine",
-                "sleep",
-                "60",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        print(f"Mount container start result: {mount_result.stdout}")
-        container_check = subprocess.run(
-            [
-                "docker",
-                "ps",
-                "--filter",
-                f"name={container_name}",
-                "--format",
-                "{{.Names}}",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        assert (
-            container_name in container_check.stdout
-        ), "Test container with mount is not running"
-        print("Verifying path exists with mounting")
-        path_check = subprocess.run(
-            f"docker exec {container_name} sh -c 'test -d {container_path} && echo exists'",
-            shell=True,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert (
-            "exists" in path_check.stdout
-        ), f"Repository path not accessible in container even with mounting: {container_path}"
-        print("Test 2 passed: Path accessible with mounting")
-        ls_result = subprocess.run(
-            ["docker", "exec", container_name, "ls", "-la", container_path],
-            capture_output=True,
-            text=True,
-        )
-        print(f"Directory contents in container: {ls_result.stdout}")
-        assert (
-            "README.md" in ls_result.stdout
-        ), f"Repository not mounted correctly: {ls_result.stdout}"
-        assert (
-            "test_file.py" in ls_result.stdout
-        ), f"Repository not mounted correctly: {ls_result.stdout}"
-        assert (
-            ".mount_test" in ls_result.stdout
-        ), f"Repository not mounted correctly: {ls_result.stdout}"
-        cat_result = subprocess.run(
-            ["docker", "exec", container_name, "cat", f"{container_path}/.mount_test"],
-            capture_output=True,
-            text=True,
-        )
-        assert (
-            "Mount test marker created at" in cat_result.stdout
-        ), f"Could not read mount test file: {cat_result.stdout}"
-        inspect_result = subprocess.run(
-            ["docker", "inspect", container_name, "--format", "{{json .Mounts}}"],
-            capture_output=True,
-            text=True,
-        )
-        assert (
-            temp_repository in inspect_result.stdout
-        ), f"Repository not found in Docker mount configuration: {inspect_result.stdout}"
-        subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
+        try:
+            mount_result = subprocess.run(
+                [
+                    "docker",
+                    "run",
+                    "-d",
+                    "--name",
+                    container_name,
+                    "-v",
+                    f"{temp_repository}:{container_path}",
+                    "alpine",
+                    "sleep",
+                    "60",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            print(f"Mount container start result: {mount_result.stdout}")
+            container_check = subprocess.run(
+                [
+                    "docker",
+                    "ps",
+                    "--filter",
+                    f"name={container_name}",
+                    "--format",
+                    "{{.Names}}",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            assert (
+                container_name in container_check.stdout
+            ), "Test container with mount is not running"
+            print("Verifying path exists with mounting")
+            path_check = subprocess.run(
+                f"docker exec {container_name} sh -c 'test -d {container_path} && echo exists'",
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            assert (
+                "exists" in path_check.stdout
+            ), f"Repository path not accessible in container even with mounting: {container_path}"
+            print("Test 2 passed: Path accessible with mounting")
+            ls_result = subprocess.run(
+                ["docker", "exec", container_name, "ls", "-la", container_path],
+                capture_output=True,
+                text=True,
+            )
+            print(f"Directory contents in container: {ls_result.stdout}")
+            assert (
+                "README.md" in ls_result.stdout
+            ), f"Repository not mounted correctly: {ls_result.stdout}"
+            assert (
+                "test_file.py" in ls_result.stdout
+            ), f"Repository not mounted correctly: {ls_result.stdout}"
+            assert (
+                ".mount_test" in ls_result.stdout
+            ), f"Repository not mounted correctly: {ls_result.stdout}"
+            cat_result = subprocess.run(
+                ["docker", "exec", container_name, "cat", f"{container_path}/.mount_test"],
+                capture_output=True,
+                text=True,
+            )
+            assert (
+                "Mount test marker created at" in cat_result.stdout
+            ), f"Could not read mount test file: {cat_result.stdout}"
+            inspect_result = subprocess.run(
+                ["docker", "inspect", container_name, "--format", "{{json .Mounts}}"],
+                capture_output=True,
+                text=True,
+            )
+            assert (
+                temp_repository in inspect_result.stdout
+            ), f"Repository not found in Docker mount configuration: {inspect_result.stdout}"
+        finally:
+            _cleanup_container(container_name)
 
 
 @pytest.mark.integration
@@ -208,27 +219,30 @@ class TestCliAutoMount:
             "settings": MagicMock(),
         }
         container_name = "codestory-service"
-        subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
-        subprocess.run(
-            ["docker", "run", "-d", "--name", container_name, "alpine", "sleep", "60"],
-            capture_output=True,
-        )
-        container_check = subprocess.run(
-            [
-                "docker",
-                "ps",
-                "--filter",
-                f"name={container_name}",
-                "--format",
-                "{{.Names}}",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        assert container_name in container_check.stdout, "Test container is not running"
         repo_name = os.path.basename(temp_repository)
         container_path = f"/repositories/{repo_name}"
+        
+        # Test 1: Container without mount
         try:
+            subprocess.run(
+                ["docker", "run", "-d", "--name", container_name, "alpine", "sleep", "60"],
+                capture_output=True,
+                check=True,
+            )
+            container_check = subprocess.run(
+                [
+                    "docker",
+                    "ps",
+                    "--filter",
+                    f"name={container_name}",
+                    "--format",
+                    "{{.Names}}",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            assert container_name in container_check.stdout, "Test container is not running"
+            
             with pytest.raises(Exception) as excinfo:
                 from click import Context
 
@@ -250,23 +264,26 @@ class TestCliAutoMount:
             ), f"CLI did not detect missing mount. Output: {output}, Exception: {excinfo.value}"
             print("Test 1 passed: CLI correctly detected unmounted repository")
         finally:
-            subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
-        subprocess.run(
-            [
-                "docker",
-                "run",
-                "-d",
-                "--name",
-                container_name,
-                "-v",
-                f"{temp_repository}:{container_path}",
-                "alpine",
-                "sleep",
-                "60",
-            ],
-            capture_output=True,
-        )
+            _cleanup_container(container_name)
+        
+        # Test 2: Container with mount
         try:
+            subprocess.run(
+                [
+                    "docker",
+                    "run",
+                    "-d",
+                    "--name",
+                    container_name,
+                    "-v",
+                    f"{temp_repository}:{container_path}",
+                    "alpine",
+                    "sleep",
+                    "60",
+                ],
+                capture_output=True,
+                check=True,
+            )
             console = Console(file=StringIO())
             cli_context["console"] = console
             from click import Context
@@ -289,4 +306,4 @@ class TestCliAutoMount:
             ), f"Container path not passed to service: {call_args}"
             print("Test 2 passed: CLI correctly used mounted repository")
         finally:
-            subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
+            _cleanup_container(container_name)
