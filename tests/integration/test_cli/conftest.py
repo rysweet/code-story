@@ -2,11 +2,13 @@
 
 # Reuse shared infrastructure fixtures from integration/conftest.py
 from tests.integration.conftest import (
-    redis_container,
     celery_worker_container,
     neo4j_container,
     service_container as _svc,
 )
+
+# Import Redis container from parent conftest.py (testcontainers version)
+from tests.conftest import redis_container
 
 # Re-export for CLI tests
 service_container = _svc
@@ -48,8 +50,9 @@ from codestory.config import get_settings
 
 @pytest.fixture(autouse=True)
 def set_api_url(monkeypatch):
-    # FastAPI service_container listens on host port 8000
-    monkeypatch.setenv("CODESTORY_API_URL", "http://localhost:8000")
+    # Only set default API URL if not already set by service_container fixture
+    if "CODESTORY_API_URL" not in os.environ:
+        monkeypatch.setenv("CODESTORY_API_URL", "http://localhost:8000")
     # Provide dummy API key env var if CLI requires it
     monkeypatch.setenv("CODESTORY_API_KEY", "dummy-test-key")
 

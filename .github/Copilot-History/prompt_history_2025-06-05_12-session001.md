@@ -25,3 +25,15 @@
 - Neo4j connector specification is now fully synchronized with the implementation
 - All major sections updated including factory function, connector interface, vector search, error handling, metrics, Docker configuration, and user stories
 - Specification accurately reflects current capabilities and architectural decisions of the connector
+
+## Prompt 3 (2025-06-05)
+**Prompt**: I'd like you to propose a rearchitecture of this project that moves away from using docker containers for running all the components. Instead I want a version that would allow for running most of the components on the host, with the single exception of blarify, which must run in a linux container. Please review the project and think carefully about how you would do this and then write a proposal and save it in a spec in a markdown document.
+
+**Response**:
+- Analyzed current Docker-based architecture including docker-compose.yml, Dockerfiles, and service configurations
+- Examined component dependencies and requirements across all modules (service, worker, CLI, GUI, MCP)
+- Reviewed Blarify step implementation and its Docker container requirements
+- Identified current containerized services: Neo4j, Redis, Service API, Celery Worker, GUI, MCP Adapter
+- Created comprehensive rearchitecture proposal for host-native execution with selective containerization
+- Proposed development and production deployment strategies for hybrid architecture
+- Documented migration steps, configuration changes, and testing requirements

@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential curl git && \
+      build-essential curl git netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy project metadata first for layer caching

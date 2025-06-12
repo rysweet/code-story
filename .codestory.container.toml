@@ -7,7 +7,7 @@ log_level = "INFO"
 auth_enabled = false
 
 [neo4j]
-uri = "bolt://neo4j:7687"
+uri = "bolt://codestory-neo4j:7687"
 username = "neo4j"
 password = "password"
 database = "neo4j"
@@ -18,7 +18,7 @@ auto_initialize_schema = true
 force_schema_update = true
 
 [redis]
-uri = "redis://redis:6379"
+uri = "redis://codestory-redis:6379"
 
 [openai]
 endpoint = "https://api.openai.com/v1"

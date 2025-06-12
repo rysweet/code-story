@@ -67,6 +67,11 @@ def setup_gui() -> None:
     if gui_process:
         gui_process.terminate()
         gui_process.wait()
+        # Explicitly close pipes to prevent ResourceWarnings
+        if gui_process.stdout:
+            gui_process.stdout.close()
+        if gui_process.stderr:
+            gui_process.stderr.close()
 
     os.chdir(original_dir)
 

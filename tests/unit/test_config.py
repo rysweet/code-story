@@ -114,6 +114,8 @@ def test_plugins_enabled_valid_comma_separated_env():
 def mock_env() -> None:
     """Fixture to provide a controlled environment for testing."""
     env_vars = {
+        # Test environment flag
+        "CODESTORY_TEST_ENV": "true",
         # Core settings
         "APP_NAME": "code-story",
         "VERSION": "0.1.0",

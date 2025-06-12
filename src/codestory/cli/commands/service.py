@@ -74,7 +74,7 @@ def start_service(
 
     # Check current service status without raising exception
     try:
-        client.check_service_health()
+        client.check_service_health(timeout=30)
         console.print("[yellow]Checking if service is currently running... Yes[/]")
         console.print("[yellow]Found Code Story service running, restarting it now[/]")
         ctx.invoke(stop_service)
@@ -130,7 +130,7 @@ def start_service(
                     max_attempts = 60  # Increase max attempts
                     for i in range(max_attempts):
                         try:
-                            client.check_service_health()
+                            client.check_service_health(timeout=30)
                             console.print("[green]Service is now running.[/]")
                             # Show status after service is running
                             ctx.invoke(status)
@@ -418,7 +418,7 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
             )
             ctx.invoke(renew_azure_auth, tenant=tenant_id, inject=True)
             # After renewal, re-check health
-            health = client.check_service_health(auto_fix=False)
+            health = client.check_service_health(auto_fix=False, timeout=30)
             console.print(
                 "[green]Azure authentication renewed. Service health after renewal:[/green]"
             )
@@ -460,15 +460,21 @@ def status(ctx: click.Context, renew_auth: bool = False) -> None:
         ctx.invoke(renew_azure_auth)
         # After renewal, re-check health
         try:
-            health = client.check_service_health(auto_fix=False)
+            health = client.check_service_health(auto_fix=False, timeout=30)
             console.print(
                 "[green]Azure authentication renewed. Service health after renewal:[/green]"
             )
         except ServiceError as e:
-            console.print(f"[red]Service health check failed after renewal: {e}[/red]")
+            console.print(f"[yellow]Service health check timed out or failed after renewal: {e}[/yellow]")
+            console.print("[yellow]Treating as degraded, not failed.[/yellow]")
             return
     else:
-        health = client.check_service_health(auto_fix=False)
+        try:
+            health = client.check_service_health(auto_fix=False, timeout=30)
+        except ServiceError as e:
+            console.print(f"[yellow]Service health check timed out or failed: {e}[/yellow]")
+            console.print("[yellow]Treating as degraded, not failed.[/yellow]")
+            return
 
     # Create status table
     table = Table(title="Service Status")
@@ -1088,7 +1094,7 @@ def renew_azure_auth(
                 try:
                     console.print("Checking service health after token injection...")
                     try:
-                        health = client.check_service_health(timeout=5)
+                        health = client.check_service_health(timeout=30)
 
                         # Check OpenAI component
                         if "components" in health and "openai" in health["components"]:

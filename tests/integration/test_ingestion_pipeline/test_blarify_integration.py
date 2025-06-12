@@ -45,25 +45,7 @@ def sample_repo() -> None:
         yield str(repo_dir)
 
 
-@pytest.fixture
-def neo4j_connector() -> None:
-    """Create a Neo4j connector for testing."""
-    uri = os.environ["NEO4J_URI"]
-    print(f"Using Neo4j URI: {uri}")
-    connector = Neo4jConnector(
-        uri=uri, username="neo4j", password="password", database="neo4j"
-    )
-    try:
-        connector.execute_query("RETURN 1 as test")
-        print("Successfully connected to Neo4j")
-        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
-        yield connector
-    except Exception as e:
-        print(f"Error connecting to Neo4j: {e}")
-        pytest.fail(f"Could not connect to Neo4j: {e}")
-    finally:
-        with contextlib.suppress(Exception):
-            connector.close()
+# Removed local neo4j_connector fixture - will use the shared one from main conftest.py
 
 
 @pytest.fixture

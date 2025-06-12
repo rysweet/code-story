@@ -390,10 +390,10 @@ class TestHealthAPI:
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
 
-            async def close(self) -> None:
+            async def aclose(self) -> None:
                 pass
 
-        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
+        monkeypatch.setattr(health.redis, "from_url", lambda *args, **kwargs: MockRedisClient())
 
         async def mock_wait_for(coro, timeout):
             return await coro
@@ -424,10 +424,10 @@ class TestHealthAPI:
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
 
-            async def close(self) -> None:
+            async def aclose(self) -> None:
                 pass
 
-        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
+        monkeypatch.setattr(health.redis, "from_url", lambda *args, **kwargs: MockRedisClient())
 
         async def mock_wait_for(coro, timeout):
             return await coro
@@ -458,10 +458,10 @@ class TestHealthAPI:
             async def info(self, section=None):
                 return {"redis_version": "6.0.0", "used_memory_human": "1M"}
 
-            async def close(self) -> None:
+            async def aclose(self) -> None:
                 pass
 
-        monkeypatch.setattr(health.redis, "Redis", lambda **kwargs: MockRedisClient())
+        monkeypatch.setattr(health.redis, "from_url", lambda *args, **kwargs: MockRedisClient())
 
         async def mock_wait_for(coro, timeout):
             return await coro

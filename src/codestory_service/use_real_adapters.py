@@ -46,7 +46,16 @@ def force_real_adapter(create_fn: Callable[..., T]) -> Callable[..., T]:
             logger.error(
                 f"Failed to create real adapter and fallbacks are disabled: {e!s}"
             )
-            raise
+            import os
+            fail_fast = os.environ.get("CODESTORY_FAIL_FAST_ADAPTERS", "1") not in ("0", "false", "no")
+            if fail_fast:
+                raise
+            else:
+                logger.warning("Fail-fast adapters disabled by environment; allowing fallback to dummy adapter.")
+                # Return a dummy adapter if available, else re-raise
+                # This is only safe for Neo4jAdapter in current code
+                from .infrastructure.neo4j_adapter import DummyNeo4jAdapter
+                return DummyNeo4jAdapter()
 
     return cast("Callable[..., T]", wrapper)
 

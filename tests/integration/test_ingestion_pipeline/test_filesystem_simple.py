@@ -15,27 +15,7 @@ from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
 
-@pytest.fixture
-def neo4j_connector() -> None:
-    """Return a Neo4j connector for tests.
-
-    Uses environment variables set by the autouse Neo4j container fixture.
-    """
-
-    settings = get_settings()
-
-    # Create a Neo4j connector using settings from the test environment
-    connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=settings.neo4j.password.get_secret_value(),
-        database=settings.neo4j.database,
-    )
-
-    yield connector
-
-    # Clean up the connector
-    connector.close()
+# Removed local neo4j_connector fixture - will use the shared one from main conftest.py
 
 
 @pytest.mark.timeout(60)

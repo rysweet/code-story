@@ -1,0 +1,8 @@
+Starting ingestion of 
+/tmp/codestory_ingest_eta_test_0b8bddf1-c32e-4c56-8d6b-54f603375307...
+Using direct path (non-container deployment)
+[DEBUG] Ingestion payload: {'source': '/tmp/codestory_ingest_eta_test_0b8bddf1-c32e-4c56-8d6b-54f603375307', 'source_type': 'local_path', 'priority': 'default', 'eta': '2025-06-10T07:55:16.159642'}
+[DEBUG] Ingestion API error response: {"detail":[{"type":"value_error","loc":["body","source"],"msg":"Value error, Local path '/tmp/codestory_ingest_eta_test_0b8bddf1-c32e-4c56-8d6b-54f603375307' does not exist","input":"/tmp/codestory_ingest_eta_test_0b8bddf1-c32e-4c56-8d6b-54f603375307","ctx":{"error":{}}}]}
+Error: Failed to start ingestion: Failed to start ingestion: 422 Client Error: 
+Unprocessable Entity for url: http://localhost:53556/v1/ingest
+Error: Failed to start ingestion: Failed to start ingestion: 422 Client Error: Unprocessable Entity for url: http://localhost:53556/v1/ingest

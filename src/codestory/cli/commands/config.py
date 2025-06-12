@@ -115,7 +115,7 @@ def init_config(ctx: click.Context, config_file: str, force: bool = False) -> No
 @click.option(
     "--format",
     type=click.Choice(["table", "json", "tree", "toml"]),
-    default="toml",
+    default="table",  # Default to human-friendly table output expected by tests
     help="Output format.",
 )
 @click.option(

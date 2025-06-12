@@ -1,7 +1,7 @@
 services:
-  service:
+  cs-service-gw4-9f3e1297-4975-4c09-ab8a-d562091124c6:
     volumes:
-      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpaw_6iub0:/repositories/tmpaw_6iub0:ro
-  worker:
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpquiewzqe:/repositories/tmpquiewzqe:ro
+  codestory-worker:
     volumes:
-      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpaw_6iub0:/repositories/tmpaw_6iub0:ro
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpquiewzqe:/repositories/tmpquiewzqe:ro

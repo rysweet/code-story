@@ -10,6 +10,7 @@ communicate with each other using the service names as hostnames.
 import json
 import subprocess
 import time
+import uuid
 from collections.abc import Generator
 from typing import Any
 
@@ -19,13 +20,17 @@ import pytest
 @pytest.fixture(scope="module")
 def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     """
-    Spin up the Docker Compose project for testing, robustly waiting for all services to be healthy.
+    Spin up the Docker Compose project for testing, using a *unique* docker-compose
+    project name to avoid collisions with leftover containers from earlier runs.
+    Always tears the stack down (with volumes) afterwards.
+
     Yields:
         Dictionary with Docker Compose project information
     """
     import shutil
 
     compose_file = "docker-compose.test.yml"
+    project_name = f"csnet_{uuid.uuid4().hex[:8]}"
     required_services = ["neo4j", "redis", "service", "worker"]
     max_wait = 120  # seconds
     poll_interval = 3
@@ -33,10 +38,34 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     if not shutil.which("docker-compose"):
         pytest.skip("docker-compose is not installed")
 
+    # ------------------------------------------------------------------ proactive cleanup
+    stale_names = [
+        "codestory-service",
+        "codestory-worker",
+        "codestory-neo4j",
+        "codestory-redis",
+    ]
+    for n in stale_names:
+        subprocess.run(["docker", "rm", "-f", n], capture_output=True, text=True)
+
+    # Also ensure any default (unnamed) compose stack from previous runs is removed
+    subprocess.run(
+        ["docker-compose", "-f", compose_file, "down", "-v", "--remove-orphans"],
+        capture_output=True,
+        text=True,
+    )
+
     try:
+        # Ensure any stale stack is removed first
+        subprocess.run(
+            ["docker-compose", "-p", project_name, "-f", compose_file, "down", "-v", "--remove-orphans"],
+            capture_output=True,
+            text=True,
+        )
+
         # Start containers using test compose file
         result = subprocess.run(
-            ["docker-compose", "-f", compose_file, "up", "-d"],
+            ["docker-compose", "-p", project_name, "-f", compose_file, "up", "-d"],
             capture_output=True,
             text=True,
             check=True,
@@ -50,7 +79,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         print("Polling for service health...")
         while time.time() - start < max_wait:
             ps = subprocess.run(
-                ["docker-compose", "-f", compose_file, "ps", "--format", "json"],
+                ["docker-compose", "-p", project_name, "-f", compose_file, "ps", "--format", "json"],
                 capture_output=True,
                 text=True,
             )
@@ -70,7 +99,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         else:
             # Print logs for debugging
             logs = subprocess.run(
-                ["docker-compose", "-f", compose_file, "logs", "--no-color"],
+                ["docker-compose", "-p", project_name, "-f", compose_file, "logs", "--no-color"],
                 capture_output=True,
                 text=True,
             )
@@ -79,7 +108,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
 
         # Get final container info
         result = subprocess.run(
-            ["docker-compose", "-f", compose_file, "ps", "--format", "json"],
+            ["docker-compose", "-p", project_name, "-f", compose_file, "ps", "--format", "json"],
             capture_output=True,
             text=True,
             check=True,
@@ -95,14 +124,14 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         print("Timeout starting Docker containers")
         raise
     finally:
-        # Tear down containers but keep logs
+        # Tear down containers and volumes, keeping logs emitted above
         subprocess.run(
-            ["docker-compose", "-f", compose_file, "logs", "--no-color"],
+            ["docker-compose", "-p", project_name, "-f", compose_file, "logs", "--no-color"],
             capture_output=True,
             text=True,
         )
         subprocess.run(
-            ["docker-compose", "-f", compose_file, "down"],
+            ["docker-compose", "-p", project_name, "-f", compose_file, "down", "-v", "--remove-orphans"],
             capture_output=True,
             text=True,
         )

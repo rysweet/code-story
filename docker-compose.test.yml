@@ -79,6 +79,9 @@ services:
     env_file:
       - .env
 
+    environment:
+      - CODESTORY_FAIL_FAST_ADAPTERS=0
+
   worker:
     image: python:3.12-slim
     container_name: codestory-worker

@@ -242,7 +242,7 @@ async def auth_renew(
                     pass
                 if not tenant_id:
                     try:
-                        from codestory.config.settings import get_settings
+                        from codestory.config import get_settings
 
                         core_settings = get_settings()
                         tenant_id = getattr(
@@ -459,28 +459,48 @@ async def _health_check_impl(
     neo4j_health, celery_health, openai_health = await asyncio.gather(*tasks)
 
     async def check_redis_health() -> dict[str, Any]:
-        settings = get_service_settings()
-        redis_host = getattr(settings, "redis_host", "redis")
-        redis_port = getattr(settings, "redis_port", 6379)
-        redis_db = getattr(settings, "redis_db", 0)
-        logger.info(
-            f"Attempting to connect to Redis at {redis_host}:{redis_port}/{redis_db}"
-        )
-        redis_client = redis.Redis(
-            host=redis_host,
-            port=redis_port,
-            db=redis_db,
+        # Try to get Redis configuration from core settings first
+        try:
+            from codestory.config import get_settings
+            core_settings = get_settings()
+            redis_uri = core_settings.redis.uri
+            logger.info(f"✅ Successfully loaded Redis URI from core settings: {redis_uri}")
+        except Exception as e:
+            logger.error(f"❌ Failed to get Redis URI from core settings: {e}")
+            logger.error(f"❌ Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+            # Fall back to environment variables, then service settings, then hardcoded defaults
+            redis_uri = (
+                os.environ.get("CODESTORY_REDIS__URI") or
+                os.environ.get("REDIS_URL") or
+                os.environ.get("CELERY_BROKER_URL") or
+                os.environ.get("CELERY_RESULT_BACKEND")
+            )
+            if redis_uri:
+                logger.info(f"✅ Using Redis URI from environment variables: {redis_uri}")
+            else:
+                settings = get_service_settings()
+                redis_host = getattr(settings, "redis_host", "redis")
+                redis_port = getattr(settings, "redis_port", 6379)
+                redis_db = getattr(settings, "redis_db", 0)
+                redis_uri = f"redis://{redis_host}:{redis_port}/{redis_db}"
+                logger.warning(f"⚠️  Using Redis URI from service settings fallback: {redis_uri}")
+        
+        logger.info(f"🔗 Final Redis URI being used: {redis_uri}")
+        redis_client = redis.from_url(
+            redis_uri,
             decode_responses=True,
             socket_timeout=2.0,
         )
         try:
             await redis_client.ping()
             info = await redis_client.info(section="server")
-            await redis_client.close()
+            await redis_client.aclose()
             return {
                 "status": "healthy",
                 "details": {
-                    "connection": f"redis://{redis_host}:{redis_port}/{redis_db}",
+                    "connection": redis_uri,
                     "version": info.get("redis_version", "unknown"),
                     "memory": info.get("used_memory_human", "unknown"),
                 },

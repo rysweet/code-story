@@ -317,32 +317,48 @@ class Neo4jConnector:
                 cause=e,
             ) from e
 
-    def close(self) -> None:
-        """Close all connections in the pool."""
-        if hasattr(self, "driver") and self.driver:
-            self.driver.close()
-            logger.debug("Neo4j driver closed")
-
-    def __enter__(self) -> "Neo4jConnector":
-        """Enter the context manager.
+    def get_session(self) -> Any:
+        """Get a Neo4j session for direct operations.
 
         Returns:
-            Neo4jConnector: This instance.
+            neo4j.Session: A Neo4j session configured for the current database
+
+        Raises:
+            ConnectionError: If the session creation fails
+
+        Note:
+            The caller is responsible for closing the session using a context manager
+            or by calling session.close()
         """
+        try:
+            # Special handling for mock driver in tests
+            if isinstance(self.driver, MagicMock):
+                return self.driver.session.return_value
+
+            # Create a session with the database name
+            return self.driver.session(database=self.database)
+        except Exception as e:
+            logger.error(f"Session creation failed: {e!s}")
+            raise ConnectionError(
+                f"Failed to create session: {e!s}",
+                cause=e,
+            ) from e
+
+    # Explicitly close the driver and all sessions
+    def close(self) -> None:
+        """Close the underlying Neo4j driver and all open sessions."""
+        try:
+            self.driver.close()
+            logger.info("Neo4j driver closed successfully")
+        except Exception as e:
+            logger.warning(f"Error closing Neo4j driver: {e!s}")
+
+    def __enter__(self) -> "Neo4jConnector":
+        """Enter context manager for Neo4jConnector."""
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Exit the context manager.
-
-        This method is called when exiting a 'with' block. It ensures
-        that the driver connection is closed properly, even if an exception
-        was raised within the with block.
-
-        Args:
-            exc_type: The exception type, if an exception was raised, otherwise None.
-            exc_val: The exception value, if an exception was raised, otherwise None.
-            exc_tb: The traceback, if an exception was raised, otherwise None.
-        """
+        """Exit context manager by closing the driver."""
         self.close()
 
     @instrument_query(query_type=QueryType.READ)
@@ -874,34 +890,5 @@ class Neo4jConnector:
             raise TransactionError(
                 f"Unexpected error: {e!s}",
                 operation="with_transaction",
-                cause=e,
-            ) from e
-
-    def get_session(self) -> Any:
-        """Get a Neo4j session for direct operations.
-
-        Returns:
-            neo4j.Session: A Neo4j session configured for the current database
-
-        Raises:
-            ConnectionError: If the session creation fails
-
-        Note:
-            The caller is responsible for closing the session using a context manager
-            or by calling session.close()
-        """
-        try:
-            # Special handling for mock driver in tests
-            if isinstance(self.driver, MagicMock):
-                return self.driver.session.return_value
-
-            # Create a session with the database name
-            return self.driver.session(database=self.database)
-
-        except Exception as e:
-            logger.error(f"Failed to create Neo4j session: {e!s}")
-            raise ConnectionError(
-                f"Failed to create Neo4j session: {e!s}",
-                uri=self.uri,
                 cause=e,
             ) from e

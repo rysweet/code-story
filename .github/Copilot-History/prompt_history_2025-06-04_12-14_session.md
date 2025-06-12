@@ -6,3 +6,10 @@
   - Logged command in new shell_history_2025-06-04_12-14_session.md
   - Created this prompt history file per maintenance rules
   - Ready to ensure venv setup and start unit tests
+
+## Prompt 2 (2025-06-06)
+- **Prompt**: Complete the end-to-end test-fix initiative for the CodeStory repository. All unit and integration tests must ultimately pass with zero skips, no warnings, and no mocks/dummy interfaces left in integration tests. Integration tests must perform full setup/teardown of any external resources rather than relying on global pre-conditions. Sequential workflow: 1) Environment cleanup, 2) Unit-test phase, 3) Integration-test phase, 4) Final verification.
+- **Response**:
+  - Updated prompt history file
+  - Starting sequential test-fix workflow per instructions
+  - Beginning with environment cleanup phase

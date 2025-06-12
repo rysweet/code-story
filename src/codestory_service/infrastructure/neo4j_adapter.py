@@ -6,7 +6,7 @@ by the service layer.
 """
 import logging
 import time
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from fastapi import HTTPException, status
 
@@ -51,34 +51,34 @@ class Neo4jAdapter:
         self.connector = connector or Neo4jConnector()
 
     async def check_health(self: Any) -> dict[str, Any]:
-        """Check Neo4j database health.
+        """Check Neo4j database health with retry/backoff for container startup."""
+        import asyncio
 
-        Returns:
-            Dictionary containing health information
-
-        Raises:
-            HTTPException: If the health check fails
-        """
-        try:
-            import asyncio
-
-            loop = asyncio.get_event_loop()
-            connection_info = await loop.run_in_executor(
-                None, self.connector.check_connection
-            )
-            return {
-                "status": "healthy",
-                "details": {
-                    "database": connection_info.get("database", "unknown"),
-                    "components": connection_info.get("components", []),
-                },
-            }
-        except Exception as e:
-            logger.error(f"Neo4j health check failed: {e!s}")
-            return {
-                "status": "unhealthy",
-                "details": {"error": str(e), "type": type(e).__name__},
-            }
+        max_attempts = 30
+        delay = 3
+        last_exc = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                loop = asyncio.get_event_loop()
+                connection_info = await loop.run_in_executor(
+                    None, self.connector.check_connection
+                )
+                return {
+                    "status": "healthy",
+                    "details": {
+                        "database": connection_info.get("database", "unknown"),
+                        "components": connection_info.get("components", []),
+                    },
+                }
+            except Exception as e:
+                last_exc = e
+                logger.warning(f"Neo4j health check attempt {attempt} failed: {e!s}")
+                await asyncio.sleep(delay)
+        logger.error(f"Neo4j health check failed after {max_attempts} attempts: {last_exc!s}")
+        return {
+            "status": "unhealthy",
+            "details": {"error": str(last_exc), "type": type(last_exc).__name__ if last_exc else "Unknown"},
+        }
 
     async def close(self: Any) -> None:
         """Close the Neo4j connection."""
@@ -392,19 +392,28 @@ class DummyNeo4jAdapter(Neo4jAdapter):
         self.connector = DummyNeo4jConnector()
 
 
-async def get_neo4j_adapter() -> Neo4jAdapter:
-    """Factory function to create a Neo4j adapter.
+async def get_neo4j_adapter() -> AsyncGenerator[Neo4jAdapter, None]:
+    """FastAPI dependency that yields a Neo4j adapter and guarantees cleanup.
 
-    This is used as a FastAPI dependency.
-
-    Returns:
-        Neo4jAdapter instance (real or dummy)
+    Converts the previous factory function into an *async generator dependency*
+    so FastAPI will execute the ``finally`` block after the request finishes,
+    ensuring the underlying Neo4j driver is closed and preventing
+    DeprecationWarning about relying on the driver destructor.
     """
+    adapter: Neo4jAdapter | None = None
     try:
         adapter = Neo4jAdapter()
         await adapter.check_health()
-        return adapter
+        yield adapter
     except Exception as e:
         logger.warning(f"Failed to create real Neo4j adapter: {e!s}")
         logger.warning("Falling back to dummy Neo4j adapter for demo purposes")
-        return DummyNeo4jAdapter()
+        dummy_adapter = DummyNeo4jAdapter()
+        yield dummy_adapter
+    finally:
+        # Explicitly close real adapters to avoid driver destructor warnings
+        try:
+            if adapter is not None:
+                await adapter.close()
+        except Exception as close_err:  # pragma: no cover
+            logger.debug(f"Ignoring error during Neo4j adapter close: {close_err!s}")

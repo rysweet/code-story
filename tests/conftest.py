@@ -106,30 +106,7 @@ def _running_integration_tests(config: pytest.Config) -> bool:
         return False
     return "integration" in expr
 
-@pytest.fixture(scope="session")
-def neo4j_container():
-    with Neo4jContainer("neo4j:5.22") as neo4j:
-        uri = neo4j.get_connection_url()
-        os.environ["NEO4J_URI"] = uri
-        os.environ["NEO4J__URI"] = uri
-        os.environ["NEO4J_USERNAME"] = "neo4j"
-        os.environ["NEO4J__USERNAME"] = "neo4j"
-        os.environ["NEO4J_PASSWORD"] = "password"
-        os.environ["NEO4J__PASSWORD"] = "password"
-        os.environ["NEO4J_DATABASE"] = "neo4j"
-        os.environ["NEO4J__DATABASE"] = "neo4j"
-        yield neo4j
-
-@pytest.fixture(scope="session")
-def redis_container():
-    with RedisContainer("redis:7-alpine") as redis:
-        uri = f"redis://{redis.get_container_host_ip()}:{redis.get_exposed_port(6379)}/0"
-        os.environ["REDIS_URI"] = uri
-        os.environ["REDIS__URI"] = uri
-        os.environ["REDIS_URL"] = uri
-        os.environ["CELERY_BROKER_URL"] = uri
-        os.environ["CELERY_RESULT_BACKEND"] = uri
-        yield redis
+# Removed duplicate neo4j_container and redis_container fixtures - they are defined later in the file
 
 import uuid
 
@@ -176,6 +153,7 @@ def all_services(request, neo4j_container, redis_container, celery_worker_contai
         yield
         return
     # This fixture ensures all services are up for the test session
+    print("bringing up nodes...")
     yield
     # Cleanup is handled by the context managers above
 import subprocess
@@ -220,15 +198,17 @@ os.environ["NEO4J_DATABASE"] = "neo4j"
 
 
 @pytest.fixture
-def neo4j_connector() -> None:
+def neo4j_connector(neo4j_container):
     """Create a Neo4j connector for testing with automatic cleanup."""
     from codestory.graphdb.neo4j_connector import Neo4jConnector
     from codestory.graphdb.schema import initialize_schema
 
+    # neo4j_container fixture sets the environment variables
     uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     username = os.getenv("NEO4J_USERNAME", "neo4j")
     password = os.getenv("NEO4J_PASSWORD", "password")
     database = os.getenv("NEO4J_DATABASE", "neo4j")
+    
     connector = Neo4jConnector(
         uri=uri,
         username=username,
@@ -236,11 +216,14 @@ def neo4j_connector() -> None:
         database=database,
     )
     try:
+        # Clean any existing data
         connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        # Initialize schema
         initialize_schema(connector, force=True)
         yield connector
     finally:
         try:
+            # Clean up after test
             connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
         except Exception:
             pass
@@ -330,6 +313,8 @@ def neo4j_container(request):
             uri = neo4j.get_connection_url()
         except Exception as e:
             pytest.fail(f"Neo4j container started but connection URL unavailable: {e}")
+
+        # ------------------------------------------------------------------ set env for tests
         os.environ["NEO4J_URI"] = uri
         os.environ["NEO4J__URI"] = uri
         os.environ["NEO4J_USERNAME"] = "neo4j"
@@ -338,6 +323,30 @@ def neo4j_container(request):
         os.environ["NEO4J__PASSWORD"] = "password"
         os.environ["NEO4J_DATABASE"] = "neo4j"
         os.environ["NEO4J__DATABASE"] = "neo4j"
+
+        # ------------------------------------------------------------------ wait for bolt to become available
+        from neo4j import GraphDatabase  # pylint: disable=import-error
+        import time
+
+        max_wait = 120  # seconds
+        poll_interval = 2
+        deadline = time.time() + max_wait
+        last_err: Exception | None = None
+        while time.time() < deadline:
+            try:
+                driver = GraphDatabase.driver(uri, auth=("neo4j", "password"))
+                with driver.session(database="neo4j") as sess:
+                    sess.run("RETURN 1").consume()
+                driver.close()
+                last_err = None
+                break
+            except Exception as err:  # noqa: BLE001
+                last_err = err
+                time.sleep(poll_interval)
+
+        if last_err is not None:
+            pytest.fail(f"Neo4j at {uri} did not become ready within {max_wait}s: {last_err}")
+
         yield uri
     finally:
         try:
@@ -357,13 +366,63 @@ from testcontainers.redis import RedisContainer
 
 @pytest.fixture(scope="session", autouse=True)
 def redis_container(request):
-    """Spin up a Redis container for the test session and set REDIS_URI env vars, but only for integration tests."""
+    """Spin up a Redis container for the test session on the codestory-test-network and set REDIS_URI env vars, but only for integration tests."""
+    import docker
+    import uuid
+    import time
+
     # Skip container startup unless integration tests are being run
     if not _running_integration_tests(request.config):
         yield None
         return
-    with RedisContainer("redis:7-alpine") as redis:
-        uri = f"redis://{redis.get_container_host_ip()}:{redis.get_exposed_port(6379)}/0"
+
+    client = docker.from_env()
+    network_name = "codestory-test-network"
+    try:
+        client.networks.get(network_name)
+    except docker.errors.NotFound:
+        client.networks.create(network_name, driver="bridge")
+
+    container_name = f"test-redis-{uuid.uuid4()}"
+    image = "redis:7-alpine"
+    ports = {"6379/tcp": None}
+
+    container = client.containers.run(
+        image,
+        name=container_name,
+        ports=ports,
+        detach=True,
+        network=network_name,
+    )
+
+    try:
+        # Wait for Redis to be ready (max 30s)
+        start = time.time()
+        ready = False
+        while time.time() - start < 30:
+            logs = container.logs().decode(errors="ignore")
+            if "Ready to accept connections" in logs:
+                ready = True
+                break
+            time.sleep(1)
+        if not ready:
+            print(f"[redis_container] Redis did not become ready in time. Logs:\n{logs}")
+            container.stop(timeout=3)
+            client.close()
+            raise RuntimeError("Redis container did not become ready in time")
+
+        uri = f"redis://{container_name}:6379/0"
         os.environ["REDIS_URI"] = uri
         os.environ["REDIS__URI"] = uri
         yield uri
+    finally:
+        try:
+            container.stop(timeout=3)
+        except Exception:
+            pass
+        # Commented out to preserve container for debugging
+        # try:
+        #     container.remove(force=True)
+        # except Exception:
+        #     pass
+        client.close()

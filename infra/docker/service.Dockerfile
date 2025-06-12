@@ -45,6 +45,9 @@ FROM python:3.12-slim as production
 
 WORKDIR /app
 
+# Ensure Poetry and uvicorn are in PATH
+ENV PATH="/root/.local/bin:$PATH"
+
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl=7.88.* \
@@ -53,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Explicitly install Azure packages
 RUN pip install azure-identity azure-keyvault-secrets
+RUN pip install uvicorn
 
 # Create a non-root user to run the application
 RUN groupadd -r codestory && useradd -r -g codestory codestory
@@ -61,6 +65,10 @@ RUN groupadd -r codestory && useradd -r -g codestory codestory
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/prompts /app/prompts
+COPY --from=builder /root/.local/bin /root/.local/bin
+
+# Set PYTHONPATH so all src submodules are importable
+ENV PYTHONPATH=/app/src
 
 # Set proper ownership and permissions
 RUN chown -R codestory:codestory /app && \

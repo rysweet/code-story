@@ -1,3 +1,32 @@
+SERVICE CONTAINER ENVIRONMENT VARIABLES:
+AZURE_OPENAI__API_KEY=b892dc164a634fc49bd07bcbbf9d1a76
+AZURE_OPENAI__API_VERSION=2025-01-01-preview
+AZURE_OPENAI__DEPLOYMENT_ID=o3
+AZURE_OPENAI__ENDPOINT=https://ai-adapt-oai-eastus2.openai.azure.com/openai/deployments/o3/chat/completions?api-version=2025-01-01-preview
+AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+CELERY_BROKER_URL=redis://test-redis-582d0b6e-4185-4ed7-a1c9-0a84ea9b03d3:6379/0
+CELERY_RESULT_BACKEND=redis://test-redis-582d0b6e-4185-4ed7-a1c9-0a84ea9b03d3:6379/0
+CODESTORY_CONFIG_FILE=tests/fixtures/test_config.toml
+CODESTORY_NEO4J__HTTP_URL=http://test-neo4j-gw1-3e9b66b9-2ffb-4e0b-aaa2-2aa18f3798d8:7474
+CODESTORY_NEO4J__PASSWORD=password
+CODESTORY_NEO4J__URI=bolt://test-neo4j-gw1-3e9b66b9-2ffb-4e0b-aaa2-2aa18f3798d8:7687
+CODESTORY_NEO4J__USERNAME=neo4j
+CODESTORY_REDIS__URI=redis://test-redis-582d0b6e-4185-4ed7-a1c9-0a84ea9b03d3:6379/0
+GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305
+HOME=/home/codestory
+HOSTNAME=546f3b04b259
+LANG=C.UTF-8
+NEO4J_HTTP_URL=http://test-neo4j-gw1-3e9b66b9-2ffb-4e0b-aaa2-2aa18f3798d8:7474
+NEO4J_PASSWORD=password
+NEO4J_URI=bolt://test-neo4j-gw1-3e9b66b9-2ffb-4e0b-aaa2-2aa18f3798d8:7687
+NEO4J_USERNAME=neo4j
+PATH=/root/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PYTHONPATH=/app/src
+PYTHON_SHA256=c30bb24b7f1e9a19b11b55a546434f74e739bb4c271a3e3a80ff4380d49f7adb
+PYTHON_VERSION=3.12.11
+REDIS_URL=redis://test-redis-582d0b6e-4185-4ed7-a1c9-0a84ea9b03d3:6379/0
+END ENVIRONMENT VARIABLES
+[service startup] test_config.toml contents:
 # Test configuration file for CI environments
 
 app_name = "code-story-test"
@@ -74,4 +103,5 @@ refresh_interval = 30
 keyvault_name = ""
 tenant_id = ""
 client_id = ""
-client_secret = ""
+client_secret = ""[service startup] NEO4J_URI in os.environ: bolt://test-neo4j-gw1-3e9b66b9-2ffb-4e0b-aaa2-2aa18f3798d8:7687
+[service startup] get_settings().neo4j.uri: bolt://test-neo4j-gw1-3e9b66b9-2ffb-4e0b-aaa2-2aa18f3798d8:7687

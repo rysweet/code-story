@@ -142,9 +142,7 @@ def app(
     base_url: str = (
         service_url if service_url else f"http://localhost:{settings.service.port}/v1"
     )
-    client = ServiceClient(
-        base_url=base_url, api_key=api_key, console=console, settings=settings
-    )
+    client = ServiceClient(base_url=base_url, api_key=api_key, settings=settings, console=console)
     ctx.obj["client"] = client
     ctx.obj["console"] = console
     ctx.obj["settings"] = settings

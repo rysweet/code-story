@@ -91,6 +91,13 @@ class OpenAIClient:
         # Validate endpoint
         if not self.endpoint:
             raise AuthenticationError("API endpoint is required")
+        
+        # If endpoint contains full URL path, extract the base URL
+        if "/openai/deployments/" in self.endpoint:
+            logger.info(f"Full URL endpoint detected: {self.endpoint}")
+            # Extract base URL (everything before /openai/deployments/)
+            self.endpoint = self.endpoint.split("/openai/deployments/")[0]
+            logger.info(f"Extracted base endpoint: {self.endpoint}")
 
         # Store default models (also used as deployment names)
         self.embedding_model = embedding_model
@@ -477,7 +484,7 @@ class OpenAIClient:
         Returns:
             True if this is a reasoning model, False otherwise
         """
-        reasoning_models = ["o1", "o1-preview", "o1-mini"]
+        reasoning_models = ["o1", "o1-preview", "o1-mini", "o3"]
         return any(
             reasoning_model in model.lower() for reasoning_model in reasoning_models
         )
