@@ -41,7 +41,7 @@ def get_test_settings() -> Settings:
     )
 
     # Define redis test settings based on environment
-    redis_uri = os.getenv("REDIS_URI", "redis://localhost:6379/0")
+    redis_uri = os.getenv("REDIS__URI", "redis://localhost:6379/0")
 
     redis = RedisSettings(
         uri=redis_uri,

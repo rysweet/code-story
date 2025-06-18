@@ -71,8 +71,10 @@ class ServiceClient:
                     self.base_url = ui_url_str
             else:
                 # Prefer host:port construction for consistency in tests
+                import os
                 host = str(getattr(self.settings.service, "host", "localhost"))
-                port = str(getattr(self.settings.service, "port", 8000))
+                # Use CODESTORY_TEST_PORT if set, else settings, else 8000
+                port = os.environ.get("CODESTORY_TEST_PORT") or str(getattr(self.settings.service, "port", 8000))
                 self.base_url = f"http://{host}:{port}/v1"
         else:
             self.base_url = "http://localhost:8000"

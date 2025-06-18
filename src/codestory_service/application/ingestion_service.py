@@ -384,24 +384,37 @@ class IngestionService:
                     if completed_job_id in dependencies:
                         all_complete = True
                         for dep in dependencies:
-                            status_key = f"codestory:ingestion:latest:{dep}"
-                            dep_event = await self.redis.get(status_key)
-                            if not dep_event:
-                                all_complete = False
-                                break
-                            dep_event_data = json.loads(dep_event)
-                            dep_status = dep_event_data.get("status", None)
-                            if dep_status not in ("completed", JobStatus.COMPLETED):
-                                all_complete = False
-                                break
+                            # First check actual job status from celery adapter
+                            try:
+                                dep_job = await self.celery.get_job_status(dep)
+                                if dep_job.status != JobStatus.COMPLETED:
+                                    all_complete = False
+                                    break
+                            except Exception:
+                                # Fallback to progress event check
+                                status_key = f"codestory:ingestion:latest:{dep}"
+                                dep_event = await self.redis.get(status_key)
+                                if not dep_event:
+                                    all_complete = False
+                                    break
+                                dep_event_data = json.loads(dep_event)
+                                dep_status = dep_event_data.get("status", None)
+                                if dep_status not in ("completed", JobStatus.COMPLETED):
+                                    all_complete = False
+                                    break
                         if all_complete:
+                            # Extract job ID from the waiting key
+                            waiting_job_id = key.split(":")[-1]
                             request_data = job_info["request"]
+                            
+                            # Remove the waiting key
                             await self.redis.delete(key)
-                            logger.info(
-                                f"All dependencies complete for waiting job, enqueuing: {key}"
-                            )
+                            logger.debug(f"Triggered dependent job {waiting_job_id} after dependency {completed_job_id} completed")
+                            
+                            # Create request without dependencies and start the job
                             req = IngestionRequest(**request_data)
-                            await self.start_ingestion(req)
+                            req.dependencies = None  # Remove dependencies since they're now satisfied
+                            await self.celery.start_ingestion(req)
                 except Exception as e:
                     logger.error(
                         f"Error checking/enqueuing dependent job for {completed_job_id}: {e!s}"

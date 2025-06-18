@@ -399,6 +399,9 @@ async def get_neo4j_adapter() -> AsyncGenerator[Neo4jAdapter, None]:
     so FastAPI will execute the ``finally`` block after the request finishes,
     ensuring the underlying Neo4j driver is closed and preventing
     DeprecationWarning about relying on the driver destructor.
+    
+    This function now expects Neo4j to be running in a container and will
+    fall back to a dummy adapter only if connection fails.
     """
     adapter: Neo4jAdapter | None = None
     try:

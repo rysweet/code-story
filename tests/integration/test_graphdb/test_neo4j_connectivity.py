@@ -4,7 +4,7 @@ from typing import Any
 
 This module contains tests to verify that:
 1. The Neo4j connection environment variables are correctly set
-2. The port configuration matches the test docker-compose settings (7688)
+2. The port configuration matches the containerized Neo4j settings (7687)
 """
 
 import os

@@ -259,7 +259,7 @@ def test_summarizer_step_run(
         if repo_result and len(repo_result) > 0:
             repo_id = repo_result[0]["id"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a repository. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (r:Repository) WHERE elementId(r) = $id\n                CREATE (r)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a repository. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (r:Repository) WHERE elementId(r) = $id\n                CREATE (r)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": repo_id},
                 write=True,
             )
@@ -270,7 +270,7 @@ def test_summarizer_step_run(
             dir_id = dir_result["id"]
             dir_result["path"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a directory. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (d:Directory) WHERE elementId(d) = $id\n                CREATE (d)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a directory. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (d:Directory) WHERE elementId(d) = $id\n                CREATE (d)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": dir_id},
                 write=True,
             )
@@ -281,7 +281,7 @@ def test_summarizer_step_run(
             file_id = file_result["id"]
             file_result["path"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a file. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:File) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a file. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:File) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": file_id},
                 write=True,
             )
@@ -292,7 +292,7 @@ def test_summarizer_step_run(
             class_id = class_result["id"]
             class_result["name"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a class. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (c:Class) WHERE elementId(c) = $id\n                CREATE (c)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a class. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (c:Class) WHERE elementId(c) = $id\n                CREATE (c)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": class_id},
                 write=True,
             )
@@ -303,7 +303,7 @@ def test_summarizer_step_run(
             method_id = method_result["id"]
             method_result["name"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a function. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (m:Method) WHERE elementId(m) = $id\n                CREATE (m)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a function. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (m:Method) WHERE elementId(m) = $id\n                CREATE (m)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": method_id},
                 write=True,
             )
@@ -314,7 +314,7 @@ def test_summarizer_step_run(
             function_id = function_result["id"]
             function_result["name"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a function. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:Function) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a function. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:Function) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": function_id},
                 write=True,
             )
@@ -431,7 +431,7 @@ def test_summarizer_step_ingestion_update(
         if repo_result and len(repo_result) > 0:
             repo_id = repo_result[0]["id"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a repository. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (r:Repository) WHERE elementId(r) = $id\n                CREATE (r)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a repository. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (r:Repository) WHERE elementId(r) = $id\n                CREATE (r)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": repo_id},
                 write=True,
             )
@@ -442,7 +442,7 @@ def test_summarizer_step_ingestion_update(
             file_id = file_result["id"]
             file_result["path"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a file. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:File) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a file. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:File) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": file_id},
                 write=True,
             )
@@ -465,7 +465,7 @@ def test_summarizer_step_ingestion_update(
         if new_file_results and len(new_file_results) > 0:
             new_file_id = new_file_results[0]["id"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a NEW file. It explains what the code '\n                          'does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:File) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a NEW file. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:File) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": new_file_id},
                 write=True,
             )
@@ -475,7 +475,7 @@ def test_summarizer_step_ingestion_update(
         if new_function_results and len(new_function_results) > 0:
             function_id = new_function_results[0]["id"]
             neo4j_connector.execute_query(
-                "\n                CREATE (s:Summary {\n                    text: 'This is a generated summary for a NEW function. It explains what '\n                          'the code does and why it exists.',\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:Function) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
+                "\n                CREATE (s:Summary {\n                    text: \"This is a generated summary for a NEW function. It explains what the code does and why it exists.\",\n                    created_at: datetime()\n                })\n                WITH s\n                MATCH (f:Function) WHERE elementId(f) = $id\n                CREATE (f)-[:HAS_SUMMARY]->(s)\n                ",
                 params={"id": function_id},
                 write=True,
             )

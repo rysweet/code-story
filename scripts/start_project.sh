@@ -114,7 +114,7 @@ if [[ ! -f ".env" ]]; then
   cp .env-template .env
   
   # Update Neo4j ports to use non-standard ports
-  sed -i.bak 's/NEO4J__URI=bolt:\/\/localhost:7687/NEO4J__URI=bolt:\/\/localhost:7688/' .env
+  # Neo4j now uses standard containerized port 7687 - no port change needed
   rm -f .env.bak
   
   print_success "Created .env file with non-standard Neo4j ports"
@@ -122,14 +122,10 @@ else
   print_info "Using existing .env file"
   # Check if Neo4j URI uses standard ports
   if grep -q "NEO4J__URI=bolt://localhost:7687" .env; then
-    print_info "Updating Neo4j port in .env to non-standard port..."
-    sed -i.bak 's/NEO4J__URI=bolt:\/\/localhost:7687/NEO4J__URI=bolt:\/\/localhost:7688/' .env
-    rm -f .env.bak
+    # Neo4j now uses standard containerized port 7687 - no port change needed
   # Check if Neo4j URI uses wrong non-standard port
   elif grep -q "NEO4J__URI=bolt://localhost:7689" .env; then
-    print_info "Updating Neo4j port in .env to correct non-standard port..."
-    sed -i.bak 's/NEO4J__URI=bolt:\/\/localhost:7689/NEO4J__URI=bolt:\/\/localhost:7688/' .env
-    rm -f .env.bak
+    # Neo4j now uses standard containerized port 7687 - no port change needed
   fi
 fi
 
@@ -235,7 +231,7 @@ fi
 
 print_header "Environment Ready"
 print_success "Code Story environment is ready for development and testing!"
-print_info "Neo4j is running at: bolt://localhost:7688 (Test DB)"
+print_info "Neo4j is running at: bolt://localhost:7687 (Containerized DB)"
 print_info "Redis is running at: localhost:6379"
 print_info "Celery worker is running for task processing"
 print_info ""

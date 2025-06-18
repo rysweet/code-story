@@ -11,7 +11,7 @@ log_level = "DEBUG"
 # Note: When uri is omitted, Pydantic will require it from environment variables
 username = "neo4j"
 password = "password"
-database = "testdb"
+database = "neo4j"
 
 [redis]
 # Use Docker service name and default port when running in Docker Compose

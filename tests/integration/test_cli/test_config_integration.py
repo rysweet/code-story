@@ -14,7 +14,7 @@ class TestConfigCommands:
     @pytest.mark.integration
     @pytest.mark.require_service
     def test_config_show(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'config show' command with real configuration."""
         result = cli_runner.invoke(app, ["config", "show"])
@@ -27,7 +27,7 @@ class TestConfigCommands:
     @pytest.mark.integration
     @pytest.mark.require_service
     def test_config_show_sensitive(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'config show --sensitive' command with real configuration."""
         result = cli_runner.invoke(app, ["config", "show", "--sensitive"])

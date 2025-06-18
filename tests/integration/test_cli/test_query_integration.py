@@ -8,12 +8,18 @@ from click.testing import CliRunner
 from codestory.cli.main import app
 
 
+import pytest
+
+def is_host_native_mode() -> bool:
+    """Host-native mode is deprecated. All tests now use containerized services."""
+    return False
+
 @pytest.mark.require_service
 class TestQueryCommands:
     """Integration tests for query-related CLI commands."""
 
     def test_query_help(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'query --help' command."""
         result = cli_runner.invoke(app, ["query", "--help"])
@@ -24,7 +30,7 @@ class TestQueryCommands:
         assert "export" in result.output.lower()
 
     def test_query_run_cypher(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'query run' command with simple Cypher query."""
         result = cli_runner.invoke(
@@ -35,9 +41,11 @@ class TestQueryCommands:
         assert "count" in result.output
 
     def test_query_run_with_format(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'query run' with different output formats."""
+        if is_host_native_mode():
+            pytest.skip("Skipping test_query_run_with_format in host-native mode (no Neo4j backend)")
         result = cli_runner.invoke(
             app,
             [
@@ -65,7 +73,7 @@ class TestQueryCommands:
         assert "count" in result.output
 
     def test_query_run_with_limit(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'query run' with result limit."""
         result = cli_runner.invoke(
@@ -75,9 +83,11 @@ class TestQueryCommands:
         assert "limit=3" in result.output.lower()
 
     def test_query_export(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'query export' command."""
+        if is_host_native_mode():
+            pytest.skip("Skipping test_query_export in host-native mode (no Neo4j backend)")
         output_file = "test_export.json"
         try:
             result = cli_runner.invoke(
@@ -96,9 +106,11 @@ class TestQueryCommands:
                 os.remove(output_file)
 
     def test_query_explore(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any]
+        self: Any, cli_runner: CliRunner
     ) -> None:
         """Test 'query explore' command."""
+        if is_host_native_mode():
+            pytest.skip("Skipping test_query_explore in host-native mode (no Neo4j backend)")
         result = cli_runner.invoke(app, ["query", "explore", "--limit", "2"])
         assert result.exit_code == 0
         assert "Graph Explorer" in result.output

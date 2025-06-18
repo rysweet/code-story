@@ -72,11 +72,23 @@ async def get_real_neo4j_adapter() -> Neo4jAdapter:
 
 
 async def get_real_celery_adapter() -> CeleryAdapter:
-    """Create a Celery adapter without fallbacks."""
+    """Create a Celery adapter without fallbacks, but relax in eager mode."""
+    import os
+
     adapter = CeleryAdapter()
-    health = await adapter.check_health()
-    if health["status"] != "healthy":
-        raise RuntimeError(f"Celery adapter not healthy: {health}")
+    # Check for eager mode via config or env
+    eager_mode = (
+        getattr(adapter._app.conf, "task_always_eager", False)
+        or os.getenv("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true")
+    )
+    status, details = await adapter.check_health()
+    if not eager_mode and status != "healthy":
+        raise RuntimeError(f"Celery adapter not healthy: {status} - {details}")
+    # In eager mode, allow startup even if no workers are present
+    if eager_mode and status != "healthy":
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("Eager mode enabled: skipping strict Celery health check (status: %s, details: %s)", status, details)
     return adapter
 
 

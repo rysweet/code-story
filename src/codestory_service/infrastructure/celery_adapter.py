@@ -60,28 +60,77 @@ class CeleryAdapter:
             # Early return if task_always_eager is enabled
             if (self._app.conf.task_always_eager is True or
                 os.getenv("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true")):
-                return "healthy", {"message": "Eager mode enabled, no workers needed"}
-            
+                # Always return all required keys, even in eager mode
+                return "healthy", {
+                    "active_workers": 0,
+                    "registered_workers": 0,
+                    "registered_tasks": 0,
+                    "message": "Eager mode enabled, no workers needed"
+                }
+
             # Perform a simple ping to check if Celery is responsive
             inspector = self._app.control.inspect()
             active_workers = inspector.active()
             registered_workers = inspector.registered()
+            registered_tasks_dict = inspector.registered()  # This is a dict: {worker: [task, ...], ...}
 
-            if not active_workers and not registered_workers:
+            # Write inspector output to a log file for debugging
+            try:
+                with open("debug_celery_service_inspector.log", "a") as f:
+                    f.write(f"[SERVICE] active_workers: {active_workers}\n")
+                    f.write(f"[SERVICE] registered_workers: {registered_workers}\n")
+            except Exception as log_exc:
+                logger.error(f"Failed to write celery service inspector log: {log_exc}")
+
+            # Fixed logic: Consider healthy if we have registered workers OR active workers
+            # Active workers can be None but registered workers should exist
+            has_registered = (
+                registered_workers and
+                isinstance(registered_workers, dict) and
+                len(registered_workers.keys()) > 0
+            )
+
+            has_active = (
+                active_workers and
+                isinstance(active_workers, dict) and
+                len(active_workers.keys()) > 0
+            )
+
+            # Calculate counts
+            worker_count = len(registered_workers.keys()) if has_registered else 0
+            active_count = len(active_workers.keys()) if has_active else 0
+            # registered_tasks: sum of all registered tasks across all workers
+            if registered_tasks_dict and isinstance(registered_tasks_dict, dict):
+                registered_tasks = sum(len(tasks) for tasks in registered_tasks_dict.values())
+            else:
+                registered_tasks = 0
+
+            # Health check passes if we have either registered or active workers
+            if not has_registered and not has_active:
                 return "unhealthy", {
-                    "error": "No active Celery workers found",
+                    "error": "No Celery workers found (neither active nor registered)",
                     "type": "CeleryHealthCheckError",
+                    "active_workers": 0,
+                    "registered_workers": 0,
+                    "registered_tasks": 0,
                 }
 
+            # Consider healthy if we have registered workers (active can be None in some states)
             return "healthy", {
-                "active_workers": len(active_workers) if active_workers else 0,
-                "registered_tasks": len(registered_workers)
-                if registered_workers
-                else 0,
+                "registered_workers": worker_count,
+                "active_workers": active_count,
+                "registered_tasks": registered_tasks,
+                "message": f"Found {worker_count} registered workers, {active_count} active, {registered_tasks} registered tasks",
             }
         except Exception as e:
             logger.error(f"Celery health check failed: {e!s}")
-            return "unhealthy", {"error": str(e), "type": type(e).__name__}
+            return "unhealthy", {
+                "error": str(e),
+                "type": type(e).__name__,
+                "active_workers": 0,
+                "registered_workers": 0,
+                "registered_tasks": 0,
+            }
 
     async def start_ingestion(self, request: IngestionRequest) -> IngestionStarted:
         """Start an ingestion pipeline job.
@@ -566,21 +615,94 @@ class CeleryAdapter:
             ) from e
 
 
-# DummyCeleryAdapter has been removed as Celery is now a required component
-# The service will fail if Celery is not available
+class DummyCeleryAdapter:
+    """Dummy Celery adapter for host-native mode where Celery is not available."""
+    
+    async def check_health(self) -> tuple[str, dict[str, Any]]:
+        """Return healthy status for host-native mode."""
+        return "healthy", {
+            "active_workers": 0,
+            "registered_workers": 0,
+            "registered_tasks": 0,
+            "message": "Host-native mode, Celery not required"
+        }
+    
+    async def start_ingestion(self, request: IngestionRequest) -> IngestionStarted:
+        """Stub implementation for host-native mode."""
+        from uuid import uuid4
+        import time
+        
+        job_id = str(uuid4())
+        return IngestionStarted(
+            job_id=job_id,
+            status=JobStatus.PENDING,
+            source=request.source,
+            steps=request.steps or ["default_pipeline"],
+            message="Host-native mode: ingestion pipeline not available",
+            eta=int(time.time()),
+        )
+    
+    async def get_job_status(self, job_id: str) -> IngestionJob:
+        """Stub implementation for host-native mode."""
+        import time
+        
+        return IngestionJob(
+            job_id=job_id,
+            status=JobStatus.UNKNOWN,
+            source=None,
+            source_type=None,
+            branch=None,
+            created_at=int(time.time()),
+            updated_at=int(time.time()),
+            started_at=None,
+            completed_at=None,
+            duration=None,
+            steps=None,
+            progress=0.0,
+            current_step="Host-native mode",
+            message="Ingestion pipeline not available in host-native mode",
+            result=None,
+            error=None,
+        )
+    
+    async def cancel_job(self, job_id: str) -> IngestionJob:
+        """Stub implementation for host-native mode."""
+        return await self.get_job_status(job_id)
+    
+    async def list_jobs(
+        self, statuses: list[JobStatus] | None = None, limit: int = 10, offset: int = 0
+    ) -> list[IngestionJob]:
+        """Stub implementation for host-native mode."""
+        return []
 
 
-async def get_celery_adapter() -> CeleryAdapter:
+async def get_celery_adapter() -> CeleryAdapter | DummyCeleryAdapter:
     """Factory function to create a Celery adapter.
 
     This is used as a FastAPI dependency.
 
     Returns:
-        CeleryAdapter instance
+        CeleryAdapter instance or DummyCeleryAdapter for host-native mode
 
     Raises:
         RuntimeError: If Celery is not available or not healthy
     """
+    # Check for host-native mode early to avoid Redis connection attempts
+    deployment_mode = os.getenv("DEPLOYMENT_MODE", "").lower()
+    if deployment_mode == "host":
+        logger.info("Host-native mode detected, using DummyCeleryAdapter")
+        return DummyCeleryAdapter()
+    
+    # Check settings-based detection
+    try:
+        from ..settings import get_settings
+        settings = get_settings()
+        if hasattr(settings, 'deployment') and settings.deployment.mode == "host":
+            logger.info("Host-native mode detected via settings, using DummyCeleryAdapter")
+            return DummyCeleryAdapter()
+    except Exception as e:
+        logger.debug(f"Could not check settings for deployment mode: {e}")
+    
     try:
         # Try to create a real adapter
         adapter = CeleryAdapter()

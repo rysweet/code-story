@@ -4,6 +4,6 @@ This package implements a workflow step that runs Blarify to parse code
 and store AST and symbol bindings in Neo4j.
 """
 
-from .step import BlarifyStep
+from .step import BlarifyStep, run_blarify
 
-__all__ = ["BlarifyStep"]
+__all__ = ["BlarifyStep", "run_blarify"]

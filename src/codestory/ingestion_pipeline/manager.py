@@ -116,16 +116,32 @@ class PipelineManager:
         self._validate_steps()
         job_id = str(uuid.uuid4())
         step_configs = self._prepare_step_configs()
+        print(f"DEBUG: Starting orchestrate_pipeline with repository_path={repository_path}")
+        print(f"DEBUG: Step configs: {step_configs}")
         record_job_metrics(StepStatus.RUNNING)
-        task = orchestrate_pipeline.apply_async(
-            args=[repository_path, step_configs, job_id]
-        )
-        self.active_jobs[job_id] = {
-            "task_id": task.id,
-            "repository_path": repository_path,
-            "start_time": time.time(),
-            "status": StepStatus.RUNNING,
-        }
+        # Ensure os is imported at the top of the file
+        import os as _os
+        if _os.environ.get("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true", "yes", "on", "true"):
+            # Eager mode: call orchestrate_pipeline directly
+            print("DEBUG: Eager mode detected, calling orchestrate_pipeline directly")
+            result = orchestrate_pipeline(repository_path, step_configs, job_id)
+            self.active_jobs[job_id] = {
+                "task_id": job_id,
+                "repository_path": repository_path,
+                "start_time": time.time(),
+                "status": StepStatus.COMPLETED if result.get("status") == StepStatus.COMPLETED else StepStatus.FAILED,
+                "result": result,
+            }
+        else:
+            task = orchestrate_pipeline.apply_async(
+                args=[repository_path, step_configs, job_id]
+            )
+            self.active_jobs[job_id] = {
+                "task_id": task.id,
+                "repository_path": repository_path,
+                "start_time": time.time(),
+                "status": StepStatus.RUNNING,
+            }
         logger.info(f"Started ingestion job {job_id} for {repository_path}")
         return job_id
 
@@ -141,9 +157,13 @@ class PipelineManager:
         Raises:
             ValueError: If the job ID is not found
         """
+        import os as _os
         if job_id not in self.active_jobs:
             raise ValueError(f"Job ID not found: {job_id}")
         job_info = self.active_jobs[job_id]
+        if _os.environ.get("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true", "yes", "on", "true"):
+            # Eager mode: return the result directly
+            return job_info.get("result", job_info)
         task_id = job_info["task_id"]
         status_task = get_job_status.apply_async(args=[task_id])
         status_result = cast("dict[str, Any]", status_task.get(timeout=30))

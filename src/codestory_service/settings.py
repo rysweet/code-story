@@ -10,11 +10,47 @@ from typing import Any
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from codestory.config.settings import get_settings
+from codestory.config.settings import get_settings, Settings
+from pathlib import Path
+from pydantic import BaseModel
+import os
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
+
+# --- Host-Native Deployment Settings ---
+
+class DeploymentSettings(BaseModel):
+    mode: str = Field("host", description="Deployment mode: host, docker, hybrid")
+    data_directory: Path = Field(Path.home() / ".codestory")
+    log_directory: Path = Field(Path("/var/log/codestory"))
+    pid_directory: Path = Field(Path("/var/run/codestory"))
+
+class BlarifySettings(BaseModel):
+    docker_image: str = Field("blarapp/blarify:latest")
+    container_network: str = Field("host")
+    volume_mounts: dict[str, str] = Field(default_factory=dict)
+    environment_variables: dict[str, str] = Field(default_factory=dict)
+
+class HostNativeSettings:
+    """Host-native settings wrapper for host deployments (not a Pydantic model)."""
+    def __init__(self, **kwargs):
+        # Compose a Settings instance
+        self.settings = Settings(**kwargs)
+        # Override Neo4j and Redis URIs to localhost for host-native
+        self.settings.neo4j.uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+        print(f"[service startup] NEO4J_URI in os.environ: {os.environ.get('NEO4J_URI')}")
+        print(f"[service startup] Effective Neo4j URI: {self.settings.neo4j.uri}")
+        self.settings.redis.uri = "redis://localhost:6379"
+        self.deployment = DeploymentSettings()
+        self.blarify = BlarifySettings()
+
+    def __getattr__(self, name):
+        # Delegate attribute access to the wrapped Settings instance
+        return getattr(self.settings, name)
+
+# --- END Host-Native Deployment Settings ---
 
 class ServiceSettings(BaseSettings):
     """Service-specific settings that extend core settings.
@@ -148,6 +184,31 @@ def get_core_settings() -> Any:
     return get_settings()
 
 
+def get_settings(path: str | None = None) -> Settings | HostNativeSettings:
+    """
+    Deployment-mode aware settings factory.
+
+    Returns:
+        HostNativeSettings if DEPLOYMENT_MODE=host or path endswith .host.toml,
+        otherwise standard Settings.
+    """
+    mode_env = os.getenv("DEPLOYMENT_MODE", "").lower()
+    if mode_env == "host":
+        return HostNativeSettings(_env_file=path or ".env")
+    if path and path.endswith(".host.toml"):
+        return HostNativeSettings(_env_file=path)
+    return Settings(_env_file=path or ".env")
+
+def get_host_native_settings() -> HostNativeSettings:
+    """
+    Deprecated: Use get_settings() with DEPLOYMENT_MODE=host or path='.codestory.host.toml'.
+    """
+    mode_env = os.environ.get("DEPLOYMENT_MODE", "").lower()
+    if mode_env == "host":
+        return HostNativeSettings()
+    # No longer triggers on file presence.
+    return Settings()
+
 def get_service_settings() -> ServiceSettings:
     """Get service-specific settings.
 
@@ -155,3 +216,12 @@ def get_service_settings() -> ServiceSettings:
         ServiceSettings instance with service-specific configuration
     """
     return ServiceSettings()  # type: ignore[call-arg]  # mypy false positive: Pydantic fields have defaults
+
+__all__ = [
+    "DeploymentSettings",
+    "BlarifySettings",
+    "HostNativeSettings",
+    "get_host_native_settings",
+    "ServiceSettings",
+    "get_service_settings",
+]

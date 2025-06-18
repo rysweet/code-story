@@ -20,7 +20,7 @@ from codestory_filesystem.step import FileSystemStep
 from codestory_summarizer.step import SummarizerStep
 
 # Mark these tests as integration tests
-pytestmark = [pytest.mark.integration]
+pytestmark = [pytest.mark.integration, pytest.mark.require_service]
 
 
 @pytest.fixture

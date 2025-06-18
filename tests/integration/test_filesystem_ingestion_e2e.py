@@ -116,7 +116,7 @@ class FilesystemIngestionTestHelper:
             "# Production environment configuration\ndatabase:\n  host: prod-db.example.com\n  port: 5432\n  name: production_db\n  user: prod_user\n  password: ${DATABASE_PASSWORD}\n  ssl_mode: require\n  pool_size: 20\n\napi:\n  host: 0.0.0.0\n  port: 8080\n  timeout: 60\n  max_requests: 10000\n  rate_limit: 1000\n\nlogging:\n  level: WARNING\n  format: json\n  file: /var/log/app/production.log\n  rotation: daily\n  retention: 30\n\nfeatures:\n  enable_cache: true\n  enable_metrics: true\n  enable_debug: false\n  cache_ttl: 3600\n\nsecurity:\n  secret_key: ${SECRET_KEY}\n  jwt_expiration: 86400\n  cors_origins:\n    - https://app.example.com\n    - https://admin.example.com\n\nmonitoring:\n  enable_health_check: true\n  health_check_path: /health\n  metrics_path: /metrics\n  prometheus_enabled: true\n"
         )
         (self.test_repo_path / "config/.env.example").write_text(
-            "# Environment variables example\nDATABASE_PASSWORD=your_secure_password_here\nSECRET_KEY=your_secret_key_here\nAPI_KEY=your_api_key_here\n\n# Application settings\nAPP_MODE=development\nLOG_LEVEL=DEBUG\nDEBUG=true\n\n# External services\nREDIS_URL=redis://localhost:6379\nELASTICSEARCH_URL=http://localhost:9200\n\n# Email settings\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_USER=your_email@example.com\nSMTP_PASSWORD=your_email_password\n"
+            "# Environment variables example\nDATABASE_PASSWORD=your_secure_password_here\nSECRET_KEY=your_secret_key_here\nAPI_KEY=your_api_key_here\n\n# Application settings\nAPP_MODE=development\nLOG_LEVEL=DEBUG\nDEBUG=true\n\n# External services\nREDIS__URI=redis://localhost:6379\nELASTICSEARCH_URL=http://localhost:9200\n\n# Email settings\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_USER=your_email@example.com\nSMTP_PASSWORD=your_email_password\n"
         )
 
     def _create_data_files(self: Any) -> None:
@@ -378,6 +378,7 @@ class Neo4jTestValidator:
         return False
 
 
+@pytest.mark.require_docker
 @pytest.mark.integration
 @pytest.mark.slow
 class TestFilesystemIngestionE2E:
@@ -407,7 +408,7 @@ class TestFilesystemIngestionE2E:
         """
         import re
 
-        os.environ["REDIS_URL"] = os.environ["REDIS_URL"]
+        os.environ["REDIS__URI"] = os.environ["REDIS__URI"]
         logger.info("Checking CodeStory service container status...")
         # Dynamically determine container names from environment, fallback to defaults
         neo4j_container = os.environ.get("CODESTORY_NEO4J_CONTAINER_NAME")
@@ -448,7 +449,7 @@ class TestFilesystemIngestionE2E:
 
         try:
             ps_proc = subprocess.run(
-                ["docker", "compose", "ps", "--status=running"],
+                ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "ps", "--status=running"],
                 capture_output=True,
                 text=True,
                 timeout=15,
@@ -476,7 +477,7 @@ class TestFilesystemIngestionE2E:
                 logger.error(f"Failed to start services: {result.stderr}")
                 logger.info("Attempting manual docker compose startup...")
                 subprocess.run(
-                    ["docker", "compose", "--env-file", ".env", "up", "-d"],
+                    ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "--env-file", ".env", "up", "-d"],
                     capture_output=True,
                     timeout=120,
                 )
@@ -495,7 +496,7 @@ class TestFilesystemIngestionE2E:
             subprocess.run(["codestory", "stop"], capture_output=True, timeout=60)
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
             subprocess.run(
-                ["docker", "compose", "down", "--remove-orphans"],
+                ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "down", "--remove-orphans"],
                 capture_output=True,
                 timeout=60,
             )
@@ -553,7 +554,7 @@ class TestFilesystemIngestionE2E:
         while time.time() - start_time < max_wait:
             try:
                 ps_proc = subprocess.run(
-                    ["docker", "compose", "ps", "--status=running"],
+                    ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "ps", "--status=running"],
                     capture_output=True,
                     text=True,
                     timeout=10,

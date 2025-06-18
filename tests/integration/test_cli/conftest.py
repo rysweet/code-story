@@ -1,24 +1,12 @@
 """Test fixtures for CLI integration tests."""
 
 # Reuse shared infrastructure fixtures from integration/conftest.py
-from tests.integration.conftest import (
-    celery_worker_container,
-    neo4j_container,
-    service_container as _svc,
-)
+# Container-based fixtures removed: CLI integration tests now use HostNativeSettings/config and local services.
 
-# Import Redis container from parent conftest.py (testcontainers version)
-from tests.conftest import redis_container
-
-# Re-export for CLI tests
-service_container = _svc
+# Container-based redis_container and service_container aliases removed.
+# All CLI integration tests now use local services and environment variables.
 
 import pytest
-
-@pytest.fixture(scope="session")
-def running_service(_svc):  # Alias expected by older CLI tests
-    """Alias for backward-compatibility; returns the started service container name."""
-    return _svc
 
 import os
 import subprocess
@@ -52,7 +40,8 @@ from codestory.config import get_settings
 def set_api_url(monkeypatch):
     # Only set default API URL if not already set by service_container fixture
     if "CODESTORY_API_URL" not in os.environ:
-        monkeypatch.setenv("CODESTORY_API_URL", "http://localhost:8000")
+        port = os.environ.get("CODESTORY_TEST_PORT", "8000")
+        monkeypatch.setenv("CODESTORY_API_URL", f"http://localhost:{port}")
     # Provide dummy API key env var if CLI requires it
     monkeypatch.setenv("CODESTORY_API_KEY", "dummy-test-key")
 

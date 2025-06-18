@@ -14,7 +14,8 @@ os.environ["NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "neo4j"
-os.environ["REDIS__URI"] = os.getenv("REDIS_URI", "redis://localhost:6379/0")
+# Use compose-mapped Redis port (6380) for integration tests
+os.environ["REDIS__URI"] = "redis://localhost:6380/0"
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.llm.models import (
     ChatCompletionResponse,

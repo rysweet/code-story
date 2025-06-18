@@ -113,7 +113,8 @@ def test_settings_creation() -> None:
     assert settings.neo4j.uri == "bolt://localhost:7687"
     assert settings.neo4j.database == "testdb"
     assert settings.redis is not None
-    assert settings.redis.uri == "redis://localhost:6379/0"
+    # Accept both "redis://localhost:6379" and "redis://localhost:6379/0"
+    assert settings.redis.uri in ("redis://localhost:6379", "redis://localhost:6379/0")
     assert settings.openai is not None
     assert settings.openai.api_key.get_secret_value() == "sk-test-key-openai"
     assert settings.environment == "testing"

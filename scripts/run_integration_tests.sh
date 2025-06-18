@@ -160,7 +160,7 @@ start_test_environment() {
 
   # Always clear the database first to ensure a clean state
   print_step "Clearing database..."
-  docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb \
+  docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=neo4j \
     "MATCH (n) DETACH DELETE n;"
 
   print_success "Database cleared"
@@ -169,7 +169,7 @@ start_test_environment() {
   if [[ -f "tests/fixtures/cypher/01_init_schema.cypher" ]]; then
     print_step "Running schema initialization..."
     # Load schema initialization file
-    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb < tests/fixtures/cypher/01_init_schema.cypher
+    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=neo4j < tests/fixtures/cypher/01_init_schema.cypher
 
     if [[ $? -eq 0 ]]; then
       print_success "Schema initialized successfully"
@@ -178,7 +178,7 @@ start_test_environment() {
       for fixture in tests/fixtures/cypher/0[2-9]_*.cypher; do
         if [[ -f "$fixture" ]]; then
           print_step "Loading test data from $fixture..."
-          docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb < "$fixture"
+          docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=neo4j < "$fixture"
 
           if [[ $? -eq 0 ]]; then
             print_success "Test data from $fixture loaded successfully"
@@ -208,16 +208,16 @@ setup_environment_variables() {
   print_header "Setting Up Environment Variables"
   
   # Set Neo4j environment variables
-  export NEO4J_URI="bolt://localhost:7688"
+  export NEO4J_URI="bolt://localhost:7687"
   export NEO4J_USERNAME="neo4j"
   export NEO4J_PASSWORD="password"
-  export NEO4J_DATABASE="testdb"
+  export NEO4J_DATABASE="neo4j"
 
   # Set Neo4j settings for codestory app (double underscore format)
-  export NEO4J__URI="bolt://localhost:7688"
+  export NEO4J__URI="bolt://localhost:7687"
   export NEO4J__USERNAME="neo4j"
   export NEO4J__PASSWORD="password"
-  export NEO4J__DATABASE="testdb"
+  export NEO4J__DATABASE="neo4j"
   
   # Set Redis environment variables
   export REDIS_URI="redis://localhost:6380/0"
@@ -294,7 +294,7 @@ run_tests() {
   PYTEST_ARGS=${@:2}
   
   print_step "Running tests: $TEST_PATH"
-  print_info "Using command: poetry run pytest $TEST_PATH -v --override-ini=\"addopts=\" $PYTEST_ARGS"
+  print_info "Using command: uv run pytest $TEST_PATH -v --override-ini=\"addopts=\" $PYTEST_ARGS"
   
   # Set timeout for tests
   TEST_TIMEOUT=${TEST_TIMEOUT:-60}  # Default to 60 seconds if not specified
@@ -311,7 +311,7 @@ run_tests() {
   print_info "Using timeout: ${TEST_TIMEOUT} seconds"
   
   # Run the tests with timeout
-  poetry run pytest "$TEST_PATH" -v --override-ini="addopts=" --timeout=$TEST_TIMEOUT $PYTEST_ARGS
+  uv run pytest "$TEST_PATH" -v --override-ini="addopts=" --timeout=$TEST_TIMEOUT $PYTEST_ARGS
   
   # Store the exit code for later use
   TEST_EXIT_CODE=$?
@@ -373,6 +373,7 @@ show_usage() {
   echo "Example: $0 tests/integration/test_graphdb --force-restart -c"
   echo "Example: $0 tests/integration/test_ingestion_pipeline -k test_filesystem"
   echo ""
+  echo "All tests are run using 'uv run pytest ...' for full isolation."
 }
 
 # Main function
@@ -382,13 +383,13 @@ main() {
     show_usage
     exit 0
   fi
-  
+
   # Parse arguments
   FORCE_RESTART=""
   CLEANUP=""
   TEST_PATH=""
   PYTEST_ARGS=""
-  
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --force-restart)
@@ -414,24 +415,68 @@ main() {
         ;;
     esac
   done
-  
+
   # Set default test path if not specified
   if [[ -z "$TEST_PATH" ]]; then
     TEST_PATH="tests/integration"
   fi
-  
-  # Run the workflow
-  check_docker
+
   ensure_project_root
   ensure_fixtures_directory
-  start_test_environment $FORCE_RESTART
-  setup_environment_variables
-  ensure_celery_worker
-  run_tests "$TEST_PATH" $PYTEST_ARGS
-  EXIT_CODE=$?
-  cleanup_environment $CLEANUP
-  
-  exit $EXIT_CODE
+
+  # Host-native mode detection
+  if [[ "$DEPLOYMENT_MODE" == "host" ]] || grep -q 'DEPLOYMENT_MODE=host' .env 2>/dev/null || grep -q 'mode.*host' .codestory.host.toml 2>/dev/null; then
+    print_header "Host-Native Mode Detected"
+    print_info "Checking for required host-native services..."
+
+    # Check Neo4j
+    if ! nc -z localhost 7687; then
+      print_error "Neo4j is not running on localhost:7687. Please start Neo4j natively (e.g., 'brew services start neo4j' or 'systemctl start neo4j')."
+      exit 1
+    else
+      print_success "Neo4j is running on localhost:7687"
+    fi
+
+    # Check Redis
+    if ! nc -z localhost 6379; then
+      print_error "Redis is not running on localhost:6379. Please start Redis natively (e.g., 'brew services start redis' or 'systemctl start redis')."
+      exit 1
+    else
+      print_success "Redis is running on localhost:6379"
+    fi
+
+    # Check Celery worker (by process name)
+    if ! pgrep -f "celery.*codestory.ingestion_pipeline" > /dev/null; then
+      print_error "Celery worker is not running. Please start it with: 'celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=info'"
+      exit 1
+    else
+      print_success "Celery worker is running"
+    fi
+
+    # Check Code Story Service (FastAPI)
+    if ! nc -z localhost 8000; then
+      print_error "Code Story Service is not running on localhost:8000. Please start it with: 'uvicorn codestory_service.main:app --host 0.0.0.0 --port 8000'"
+      exit 1
+    else
+      print_success "Code Story Service is running on localhost:8000"
+    fi
+
+    setup_environment_variables
+    run_tests "$TEST_PATH" $PYTEST_ARGS
+    EXIT_CODE=$?
+    cleanup_environment $CLEANUP
+    exit $EXIT_CODE
+  else
+    # Default: container-based test environment
+    check_docker
+    start_test_environment $FORCE_RESTART
+    setup_environment_variables
+    ensure_celery_worker
+    run_tests "$TEST_PATH" $PYTEST_ARGS
+    EXIT_CODE=$?
+    cleanup_environment $CLEANUP
+    exit $EXIT_CODE
+  fi
 }
 
 # Run the main function

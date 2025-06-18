@@ -1,4 +1,8 @@
 import pytest
+import os
+
+if os.environ.get("CODESTORY_TEST_ENV") == "true":
+    pytest.skip("Docker Compose/container network tests are skipped in host-native/HostNativeSettings mode.", allow_module_level=True)
 
 """Integration tests for Docker container network communication.
 
@@ -29,7 +33,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     """
     import shutil
 
-    compose_file = "docker-compose.test.yml"
+    compose_files = ["docker-compose.yml", "docker-compose.test.yml"]
     project_name = f"csnet_{uuid.uuid4().hex[:8]}"
     required_services = ["neo4j", "redis", "service", "worker"]
     max_wait = 120  # seconds
@@ -50,7 +54,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
 
     # Also ensure any default (unnamed) compose stack from previous runs is removed
     subprocess.run(
-        ["docker-compose", "-f", compose_file, "down", "-v", "--remove-orphans"],
+        ["docker-compose", "-f", compose_files[0], "-f", compose_files[1], "down", "-v", "--remove-orphans"],
         capture_output=True,
         text=True,
     )
@@ -58,14 +62,14 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     try:
         # Ensure any stale stack is removed first
         subprocess.run(
-            ["docker-compose", "-p", project_name, "-f", compose_file, "down", "-v", "--remove-orphans"],
+            ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "down", "-v", "--remove-orphans"],
             capture_output=True,
             text=True,
         )
 
-        # Start containers using test compose file
+        # Start containers using both compose files
         result = subprocess.run(
-            ["docker-compose", "-p", project_name, "-f", compose_file, "up", "-d"],
+            ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "up", "-d"],
             capture_output=True,
             text=True,
             check=True,
@@ -79,7 +83,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         print("Polling for service health...")
         while time.time() - start < max_wait:
             ps = subprocess.run(
-                ["docker-compose", "-p", project_name, "-f", compose_file, "ps", "--format", "json"],
+                ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "ps", "--format", "json"],
                 capture_output=True,
                 text=True,
             )
@@ -99,7 +103,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
         else:
             # Print logs for debugging
             logs = subprocess.run(
-                ["docker-compose", "-p", project_name, "-f", compose_file, "logs", "--no-color"],
+                ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "logs", "--no-color"],
                 capture_output=True,
                 text=True,
             )
@@ -108,7 +112,7 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
 
         # Get final container info
         result = subprocess.run(
-            ["docker-compose", "-p", project_name, "-f", compose_file, "ps", "--format", "json"],
+            ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "ps", "--format", "json"],
             capture_output=True,
             text=True,
             check=True,
@@ -126,12 +130,12 @@ def docker_compose_project() -> Generator[dict[str, Any], None, None]:
     finally:
         # Tear down containers and volumes, keeping logs emitted above
         subprocess.run(
-            ["docker-compose", "-p", project_name, "-f", compose_file, "logs", "--no-color"],
+            ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "logs", "--no-color"],
             capture_output=True,
             text=True,
         )
         subprocess.run(
-            ["docker-compose", "-p", project_name, "-f", compose_file, "down", "-v", "--remove-orphans"],
+            ["docker-compose", "-p", project_name, "-f", compose_files[0], "-f", compose_files[1], "down", "-v", "--remove-orphans"],
             capture_output=True,
             text=True,
         )

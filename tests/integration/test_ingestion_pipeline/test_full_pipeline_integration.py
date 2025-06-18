@@ -43,16 +43,66 @@ class TestFullPipelineIntegration(BasePipelineTest):
 
     def test_full_pipeline_execution(self: Any) -> None:
         """Test that the full pipeline creates filesystem nodes in Neo4j."""
-        self.create_filesystem_nodes()
-        repo_count_query = "MATCH (r:Repository) RETURN count(r) as count"
-        repo_count_result = self.neo4j_connector.execute_query(repo_count_query)
-        assert repo_count_result[0]["count"] == 1, "Repository node not found"
-        file_count_query = "MATCH (f:File {name: 'README.md'}) RETURN count(f) as count"
-        file_count_result = self.neo4j_connector.execute_query(file_count_query)
-        assert file_count_result[0]["count"] == 1, "README.md not found in graph"
-        module_query = "MATCH (f:File {name: 'module.py'}) RETURN count(f) as count"
-        module_result = self.neo4j_connector.execute_query(module_query)
-        assert module_result[0]["count"] == 1, "module.py not found in graph"
+        # Only run the pipeline, do not pre-create nodes
+        import os
+
+        # Temporarily set only eager mode environment variables, not test mode
+        import os
+        old_test_env = os.environ.pop("CODESTORY_TEST_ENV", None)
+        os.environ["CELERY_TASK_ALWAYS_EAGER"] = "true"
+        os.environ["CELERY_TASK_STORE_EAGER_RESULT"] = "true"
+        os.environ["CELERY_TASK_EAGER_PROPAGATES"] = "true"
+        try:
+            repo_dir = self.repo_dir
+            job_id = self.pipeline_manager.start_job(repository_path=repo_dir)
+            timeout = 15
+            start_time = time.time()
+            job_status = None
+            while time.time() - start_time < timeout:
+                job_status = self.pipeline_manager.status(job_id)
+                if job_status.get("status") in [
+                    StepStatus.COMPLETED,
+                    StepStatus.FAILED,
+                ]:
+                    break
+                time.sleep(0.5)
+            assert job_status is not None, "Failed to get job status"
+            assert job_status.get("status") == StepStatus.COMPLETED, "Pipeline did not complete successfully"
+
+            # Debug: print repo contents before running pipeline
+            print("Test repo contents before pipeline run:")
+            for root, dirs, files in os.walk(repo_dir):
+                for name in files:
+                    print("FILE:", os.path.join(root, name))
+                for name in dirs:
+                    print("DIR:", os.path.join(root, name))
+
+            repo_count_query = "MATCH (r:Repository) RETURN count(r) as count"
+            repo_count_result = self.neo4j_connector.execute_query(repo_count_query)
+            print("Repository node count:", repo_count_result)
+            assert repo_count_result[0]["count"] == 1, "Repository node not found"
+
+            file_count_query = "MATCH (f:File {name: 'README.md'}) RETURN count(f) as count"
+            file_count_result = self.neo4j_connector.execute_query(file_count_query)
+            print("README.md file node count:", file_count_result)
+
+            # Debug: print all File nodes in the graph
+            all_files = self.neo4j_connector.execute_query("MATCH (f:File) RETURN f.name as name, f.path as path")
+            print("All File nodes in graph:", all_files)
+
+            assert file_count_result[0]["count"] == 1, "README.md not found in graph"
+
+            module_query = "MATCH (f:File {name: 'module.py'}) RETURN count(f) as count"
+            module_result = self.neo4j_connector.execute_query(module_query)
+            print("module.py file node count:", module_result)
+            assert module_result[0]["count"] == 1, "module.py not found in graph"
+        finally:
+            # Restore environment variables
+            if old_test_env is not None:
+                os.environ["CODESTORY_TEST_ENV"] = old_test_env
+            for var in ["CELERY_TASK_ALWAYS_EAGER", "CELERY_TASK_STORE_EAGER_RESULT", "CELERY_TASK_EAGER_PROPAGATES"]:
+                if var in os.environ:
+                    del os.environ[var]
 
     def test_pipeline_with_empty_repo(self: Any) -> None:
         """Test creating a repository node for an empty repository."""

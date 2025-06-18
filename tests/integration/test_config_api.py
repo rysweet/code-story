@@ -17,6 +17,10 @@ from codestory_service.main import app as global_app
 from codestory_service.main import create_app
 
 
+def is_host_native_mode() -> bool:
+    """Host-native mode is deprecated. All tests now use containerized services."""
+    return False
+
 @pytest.fixture(scope="module")
 def neo4j_connector() -> None:
     """Create a Neo4j connector for integration tests."""
@@ -107,6 +111,8 @@ def test_client(neo4j_connector: Any) -> None:
 @pytest.mark.integration
 def test_config_api_simple(test_client: Any) -> None:
     """Test the configuration API endpoints with basic validation."""
+    if is_host_native_mode():
+        pytest.skip("Skipping test_config_api_simple in host-native mode (no Neo4j backend)")
     os.environ["NEO4J_DATABASE"] = "neo4j"
     response = test_client.get("/v1/config")
     assert response.status_code == 200

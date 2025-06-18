@@ -5,9 +5,12 @@ from typing import Any
 import pytest
 import requests
 
-API_BASE = "http://localhost:8000/v1/ingest"
+import os
+port = os.environ.get("CODESTORY_TEST_PORT", "8000")
+API_BASE = f"http://localhost:{port}/v1/ingest"
 
 
+@pytest.mark.require_service
 @pytest.mark.integration
 def test_resource_status_endpoint() -> None:
     """Test that the /resource_status endpoint returns correct structure."""
@@ -37,6 +40,7 @@ def test_resource_status_endpoint() -> None:
             assert stat in metrics[key]
 
 
+@pytest.mark.require_service
 @pytest.mark.integration
 def test_resource_throttling_enforced(monkeypatch: Any) -> None:
     """

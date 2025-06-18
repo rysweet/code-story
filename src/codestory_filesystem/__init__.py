@@ -6,9 +6,9 @@ to AST nodes.
 """
 
 try:
-    from .step import FileSystemStep
+    from .step import FileSystemStep, process_filesystem
 
-    __all__ = ["FileSystemStep"]
+    __all__ = ["FileSystemStep", "process_filesystem"]
 except ImportError:
     # The step module may not be available during testing
     __all__ = []

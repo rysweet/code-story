@@ -40,7 +40,7 @@ def filesystem_dataset(tmp_path):
 def patch_celery_redis():
     import os
     from codestory.ingestion_pipeline.celery_app import app
-    redis_uri = os.environ.get("REDIS_URL") or os.environ.get("REDIS_URI")
+    redis_uri = os.environ.get("REDIS__URI")
     app.conf.update(broker_url=redis_uri, result_backend=redis_uri)
 
 def test_filesystem_step_direct(filesystem_dataset):
@@ -65,7 +65,7 @@ def test_filesystem_step_direct(filesystem_dataset):
     assert result is not None, "Filesystem step should return results"
     assert "status" in result, "Result should contain status"
     assert (
-        result["status"] == "success"
+        result["status"] == "COMPLETED"
     ), f"Step should succeed, got: {result.get('status')}"
     if "files" in result:
         files = result["files"]
@@ -105,7 +105,7 @@ def test_filesystem_step_with_various_file_types(filesystem_dataset):
     from codestory_filesystem.step import process_filesystem
     step_params = {"ignore_patterns": []}
     result = process_filesystem(str(test_repo_path), **step_params)
-    assert result["status"] == "success", "Step should succeed"
+    assert result["status"] == "COMPLETED", "Step should succeed"
     if "files" in result:
         files = result["files"]
         processed_extensions = set()

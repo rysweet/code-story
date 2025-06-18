@@ -17,7 +17,8 @@ from ..infrastructure.celery_adapter import CeleryAdapter, get_celery_adapter
 from ..infrastructure.error_log import get_and_clear_errors
 from ..infrastructure.neo4j_adapter import Neo4jAdapter, get_neo4j_adapter
 from ..infrastructure.openai_adapter import OpenAIAdapter, get_openai_adapter
-from ..settings import get_service_settings
+from ..settings import get_service_settings, get_settings
+from ..infrastructure.host_health import HostServiceHealth
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["health"])
@@ -57,6 +58,15 @@ SERVICE_START_TIME = time.time()
 SERVICE_VERSION = "0.1.0"
 
 
+def get_host_health_provider():
+    """Dependency that provides a HostServiceHealth instance.
+    
+    Returning the *instance* (not the class) avoids an extra call layer in the
+    route handler and plays nicely with tests that override this dependency to
+    return a pre-constructed fake.
+    """
+    return HostServiceHealth()
+
 @router.get(
     "/health",
     response_model=HealthReport,
@@ -78,18 +88,35 @@ async def health_check(
     auto_fix: bool = Query(
         False, description="Automatically attempt to fix Azure authentication issues"
     ),
+    host_health: HostServiceHealth = Depends(get_host_health_provider),
 ) -> HealthReport:
-    """Check the health of the service and its dependencies.
-
-    Args:
-        neo4j: Neo4j adapter instance
-        celery: Celery adapter instance
-        openai: OpenAI adapter instance
-        auto_fix: If True, attempt to automatically fix Azure auth issues
-
-    Returns:
-        HealthReport with health status of the service and its components
-    """
+    """Check the health of the service and its dependencies."""
+    settings = get_settings()
+    if getattr(getattr(settings, "deployment", None), "mode", None) == "host":
+        summary = await host_health.summary()
+        components = {
+            "neo4j": ComponentHealth(status="healthy" if summary["neo4j"] else "unhealthy", details={}),
+            "redis": ComponentHealth(status="healthy" if summary["redis"] else "unhealthy", details={}),
+            "service": ComponentHealth(status="healthy", details={}),
+        }
+        unhealthy_count = sum(1 for c in components.values() if c.status == "unhealthy")
+        if unhealthy_count > 1:
+            overall_status = "unhealthy"
+        elif unhealthy_count == 1:
+            overall_status = "degraded"
+        else:
+            overall_status = "healthy"
+        overall_status_literal = cast(
+            "Literal['healthy', 'degraded', 'unhealthy']", overall_status
+        )
+        return HealthReport(
+            status=overall_status_literal,
+            timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            version=SERVICE_VERSION,
+            uptime=int(time.time() - SERVICE_START_TIME),
+            components=components,
+            error_package=None,
+        )
     import asyncio
 
     logger.info("=== Health Check Started ===")
@@ -471,14 +498,9 @@ async def _health_check_impl(
             import traceback
             logger.error(f"❌ Full traceback: {traceback.format_exc()}")
             # Fall back to environment variables, then service settings, then hardcoded defaults
-            redis_uri = (
-                os.environ.get("CODESTORY_REDIS__URI") or
-                os.environ.get("REDIS_URL") or
-                os.environ.get("CELERY_BROKER_URL") or
-                os.environ.get("CELERY_RESULT_BACKEND")
-            )
+            redis_uri = os.environ.get("REDIS__URI")
             if redis_uri:
-                logger.info(f"✅ Using Redis URI from environment variables: {redis_uri}")
+                logger.info(f"✅ Using Redis URI from environment variable REDIS__URI: {redis_uri}")
             else:
                 settings = get_service_settings()
                 redis_host = getattr(settings, "redis_host", "redis")

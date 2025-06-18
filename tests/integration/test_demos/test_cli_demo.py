@@ -130,13 +130,25 @@ def test_cli_config_show(setup_test_env: Any) -> None:
 
 
 @pytest.mark.integration
+@pytest.mark.require_service
 def test_cli_query_run(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI query run command.
 
-    NOTE: Configuration coordination between test fixture and CLI subprocess is WORKING.
-    Both processes use the same testcontainer URI (verified in logs).
-    Issue is networking/timing between CLI subprocess and testcontainer.
+    NOTE: This test requires the full CodeStory service stack to be running,
+    not just the database. The CLI query command communicates through the service.
     """
+    # Check if CodeStory service is available
+    import subprocess
+    service_status = subprocess.run(
+        ["codestory", "service", "status"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    
+    if service_status.returncode != 0:
+        pytest.skip("CodeStory service is not running. Start with 'codestory service start'")
+
     # Xfail if testcontainer networking is not available
     import socket
     try:
@@ -227,17 +239,8 @@ keyvault_name = ""
             "CODESTORY_TEST_ENV": "true",
         })
 
-        # First, test that the CLI can connect to the database
-        print(f"DEBUG: Testing CLI connection to Neo4j...")
-        connection_test = subprocess.run(
-            ["codestory", "database", "status"],
-            capture_output=True,
-            text=True,
-            check=False,
-            env=subprocess_env,
-        )
-        print(f"DEBUG: Connection test result: {connection_test.returncode}")
-        print(f"DEBUG: Connection test output: {connection_test.stdout}")
+        # Skip database status check since the command doesn't exist
+        print(f"DEBUG: Proceeding directly to query test...")
         
         # Run the query command with retry logic for testcontainer timing
         import time
@@ -285,8 +288,21 @@ keyvault_name = ""
 
 
 @pytest.mark.integration
+@pytest.mark.require_service
 def test_cli_ask(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI ask command."""
+    # Check if CodeStory service is available
+    import subprocess
+    service_status = subprocess.run(
+        ["codestory", "service", "status"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    
+    if service_status.returncode != 0:
+        pytest.skip("CodeStory service is not running. Start with 'codestory service start'")
+    
     # Xfail if OpenAI API key is not set
     import os
     if not os.environ.get("OPENAI_API_KEY") and not os.environ.get("OPENAI__API_KEY"):
@@ -317,8 +333,21 @@ def test_cli_ask(setup_test_env: Any, neo4j_connector: Any) -> None:
 
 
 @pytest.mark.integration
+@pytest.mark.require_service
 def test_cli_visualize(setup_test_env: Any, neo4j_connector: Any) -> None:
     """Test the CLI visualize command."""
+    # Check if CodeStory service is available
+    import subprocess
+    service_status = subprocess.run(
+        ["codestory", "service", "status"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    
+    if service_status.returncode != 0:
+        pytest.skip("CodeStory service is not running. Start with 'codestory service start'")
+    
     # Xfail if required setup is not present (e.g., Neo4j not reachable)
     import socket
     try:
@@ -336,9 +365,9 @@ def test_cli_visualize(setup_test_env: Any, neo4j_connector: Any) -> None:
         write=True,
     )
 
-    # Run the visualize command
+    # Run the visualize command (updated to new CLI structure)
     result = subprocess.run(
-        ["codestory", "visualize", "--path", "visualization.html"],
+        ["codestory", "visualize", "generate", "-o", "visualization.html"],
         capture_output=True,
         text=True,
         check=False,

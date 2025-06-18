@@ -1,44 +1,46 @@
+import sys
+print(f"[service startup] sys.executable: {sys.executable}", flush=True)
+print(f"[service startup] sys.path: {sys.path}", flush=True)
 # DEBUG: Print all environment variables at startup
 import os
-print("SERVICE CONTAINER ENVIRONMENT VARIABLES:")
+print("SERVICE CONTAINER ENVIRONMENT VARIABLES:", flush=True)
 for k, v in sorted(os.environ.items()):
-    print(f"{k}={v}")
-print("END ENVIRONMENT VARIABLES")
-# Write environment and config to a file for debugging
-with open("/app/service_env_debug.txt", "w") as f:
-    f.write("SERVICE CONTAINER ENVIRONMENT VARIABLES:\n")
-    for k, v in sorted(os.environ.items()):
-        f.write(f"{k}={v}\n")
-    f.write("END ENVIRONMENT VARIABLES\n")
-    try:
-        with open("/app/tests/fixtures/test_config.toml") as cf:
-            f.write("[service startup] test_config.toml contents:\n")
-            f.write(cf.read())
-    except Exception as e:
-        f.write(f"[service startup] Could not read test_config.toml: {e}\n")
-    f.write(f"[service startup] NEO4J_URI in os.environ: {os.environ.get('NEO4J_URI')}\n")
-    try:
-        from codestory.config import get_settings
-        f.write(f"[service startup] get_settings().neo4j.uri: {get_settings().neo4j.uri}\n")
-    except Exception as e:
-        f.write(f"[service startup] Error loading settings: {e}\n")
+    print(f"{k}={v}", flush=True)
+print("END ENVIRONMENT VARIABLES", flush=True)
+# (Removed container-only debug file write: /app/service_env_debug.txt)
 import os
-print("[service startup] All environment variables:")
+print("[service startup] All environment variables:", flush=True)
 for k, v in os.environ.items():
-    print(f"  {k}={v}")
+    print(f"  {k}={v}", flush=True)
 
 try:
-    with open("/app/tests/fixtures/test_config.toml") as f:
-        print("[service startup] test_config.toml contents:")
-        print(f.read())
+    # Prefer environment variable, then local, then container path
+    config_paths = []
+    env_path = os.environ.get("TEST_CONFIG_PATH")
+    if env_path:
+        config_paths.append(env_path)
+    config_paths.append("tests/fixtures/test_config.toml")
+    config_paths.append("/app/tests/fixtures/test_config.toml")
+    found = False
+    for path in config_paths:
+        try:
+            with open(path) as f:
+                print(f"[service startup] test_config.toml contents from {path}:", flush=True)
+                print(f.read(), flush=True)
+                found = True
+                break
+        except Exception:
+            continue
+    if not found:
+        print(f"[service startup] Could not read test_config.toml from any known location: {config_paths}", flush=True)
 except Exception as e:
-    print(f"[service startup] Could not read test_config.toml: {e}")
-print(f"[service startup] NEO4J_URI in os.environ: {os.environ.get('NEO4J_URI')}")
+    print(f"[service startup] Unexpected error reading test_config.toml: {e}", flush=True)
+print(f"[service startup] NEO4J_URI in os.environ: {os.environ.get('NEO4J_URI')}", flush=True)
 try:
-    from codestory.config import get_settings
-    print(f"[service startup] get_settings().neo4j.uri: {get_settings().neo4j.uri}")
+    from codestory_service.settings import get_settings
+    print(f"[service startup] get_settings().neo4j.uri: {get_settings().neo4j.uri}", flush=True)
 except Exception as e:
-    print(f"[service startup] Error loading settings: {e}")
+    print(f"[service startup] Error loading settings: {e}", flush=True)
 """Main entry point for Code Story API service."""
 
 import logging

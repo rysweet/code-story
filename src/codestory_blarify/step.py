@@ -473,6 +473,7 @@ def run_blarify(
     incremental = config.get("incremental", False)
 
     # Get Neo4j connection settings
+    import os
     settings = get_settings()
     neo4j_uri = settings.neo4j.uri
     neo4j_username = settings.neo4j.username
@@ -481,24 +482,33 @@ def run_blarify(
     neo4j_password = settings.neo4j.password.get_secret_value()
     neo4j_database = settings.neo4j.database
 
-    # Format Neo4j connection string for Blarify
-    # Check if host has 'bolt://' prefix and remove it
-    host = neo4j_uri.replace("bolt://", "")
+    # Determine if we are in host/native deployment mode
+    deployment_mode = os.environ.get("DEPLOYMENT_MODE") or getattr(getattr(settings, "deployment", {}), "mode", None)
+    is_host_mode = deployment_mode == "host"
 
-    # Handle container networking - if this is a Docker service name, also provide localhost option
-    if ":" not in host and not host.startswith(("localhost", "127.0.0.1")):
-        # This is likely a Docker service name like 'neo4j', try localhost with mapped port
-        neo4j_port = "7689"  # Default mapped port in docker-compose.yml
-        alt_host = f"host.docker.internal:{neo4j_port}"
-        logger.info(f"Using Docker DNS with host.docker.internal: {alt_host}")
+    # Format Neo4j connection string for Blarify
+    if is_host_mode:
+        # Always use localhost for host networking
         neo4j_connection = (
-            f"neo4j://{neo4j_username}:{neo4j_password}@{alt_host}/{neo4j_database}"
+            f"neo4j://{neo4j_username}:{neo4j_password}@localhost:7687/{neo4j_database}"
         )
     else:
-        # Use the configured host directly
-        neo4j_connection = (
-            f"neo4j://{neo4j_username}:{neo4j_password}@{host}/{neo4j_database}"
-        )
+        # Check if host has 'bolt://' prefix and remove it
+        host = neo4j_uri.replace("bolt://", "")
+        # Handle container networking - if this is a Docker service name, also provide localhost option
+        if ":" not in host and not host.startswith(("localhost", "127.0.0.1")):
+            # This is likely a Docker service name like 'neo4j', try localhost with mapped port
+            neo4j_port = "7689"  # Default mapped port in docker-compose.yml
+            alt_host = f"host.docker.internal:{neo4j_port}"
+            logger.info(f"Using Docker DNS with host.docker.internal: {alt_host}")
+            neo4j_connection = (
+                f"neo4j://{neo4j_username}:{neo4j_password}@{alt_host}/{neo4j_database}"
+            )
+        else:
+            # Use the configured host directly
+            neo4j_connection = (
+                f"neo4j://{neo4j_username}:{neo4j_password}@{host}/{neo4j_database}"
+            )
 
     try:
         # Try to use Docker directly
@@ -613,7 +623,7 @@ def run_blarify(
         logger.info(f"Using volume mapping: {repository_path} -> {WORK_DIR}")
 
         # Run the container
-        container = client.containers.run(
+        container_run_kwargs = dict(
             image=docker_image,
             name=container_name,
             command=blarify_cmd,
@@ -621,6 +631,9 @@ def run_blarify(
             detach=True,
             remove=True,
         )
+        if is_host_mode:
+            container_run_kwargs["network_mode"] = "host"
+        container = client.containers.run(**container_run_kwargs)
 
         logger.info(f"Started Blarify container: {container.id}")
 

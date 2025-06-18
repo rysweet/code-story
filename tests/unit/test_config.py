@@ -588,3 +588,37 @@ def test_settings_with_azure_keyvault(mock_env: Any) -> None:
                 pass
             else:
                 raise
+
+import os
+import shutil
+import tempfile
+import pytest
+
+from src.codestory_service.settings import get_host_native_settings, HostNativeSettings
+
+def test_host_native_settings_env(monkeypatch):
+    # Ensure DEPLOYMENT_MODE=host triggers HostNativeSettings
+    monkeypatch.setenv("DEPLOYMENT_MODE", "host")
+    settings = get_host_native_settings()
+    assert isinstance(settings, HostNativeSettings)
+    assert settings.neo4j.uri == "bolt://localhost:7687"
+    assert settings.redis.uri == "redis://localhost:6379"
+    # Clean up environment variable after test
+    monkeypatch.delenv("DEPLOYMENT_MODE", raising=False)
+
+def test_host_native_settings_toml(monkeypatch):
+    # Ensure explicit .host.toml path triggers HostNativeSettings
+    from src.codestory_service.settings import get_settings, HostNativeSettings
+    # Ensure DEPLOYMENT_MODE is not set
+    monkeypatch.delenv("DEPLOYMENT_MODE", raising=False)
+    tmpdir = tempfile.mkdtemp()
+    host_toml = os.path.join(tmpdir, ".codestory.host.toml")
+    with open(".codestory.host.toml", "r") as src, open(host_toml, "w") as dst:
+        dst.write(src.read())
+    try:
+        settings = get_settings(path=host_toml)
+        assert isinstance(settings, HostNativeSettings)
+        assert settings.neo4j.uri == "bolt://localhost:7687"
+        assert settings.redis.uri == "redis://localhost:6379"
+    finally:
+        shutil.rmtree(tmpdir)

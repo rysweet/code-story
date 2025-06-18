@@ -5,7 +5,7 @@ for ingestion pipeline operations.
 """
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -208,12 +208,51 @@ class IngestionStarted(BaseModel):
     job_id: str = Field(..., description="Unique job identifier")
     status: str = Field(JobStatus.RUNNING, description="Initial job status")
     source: str = Field(..., description="Source being ingested")
-    started_at: datetime = Field(default_factory=datetime.now, description="Start time")
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Start time")
     steps: list[str] = Field(..., description="Steps to be executed")
     message: str | None = Field(None, description="Status message")
     eta: int | None = Field(
         None, description="Estimated time of start (unix timestamp)"
     )
+
+    @field_validator("started_at", mode="before")
+    @classmethod
+    def validate_started_at(cls, v: Any) -> datetime:
+        """Validate and convert started_at to datetime.
+        
+        Accepts None, UNIX timestamp int/float, ISO format str, or datetime objects.
+        Converts any provided non-datetime input to a timezone-naïve UTC datetime.
+        If the value is None, substitute datetime.utcnow().
+        
+        Args:
+            v: The input value to validate
+            
+        Returns:
+            A timezone-naïve UTC datetime object
+            
+        Raises:
+            ValueError: If the input cannot be converted to datetime
+        """
+        if v is None:
+            return datetime.now(timezone.utc)
+        
+        if isinstance(v, datetime):
+            return v
+            
+        if isinstance(v, (int, float)):
+            return datetime.utcfromtimestamp(v)
+            
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except ValueError:
+                # Try parsing as timestamp string
+                try:
+                    return datetime.utcfromtimestamp(float(v))
+                except ValueError:
+                    raise ValueError(f"Cannot parse datetime from string: {v}")
+                    
+        raise ValueError(f"Cannot convert {type(v)} to datetime: {v}")
 
     @field_serializer("started_at")
     def serialize_dt(self, dt: datetime, _info: Any) -> str | None:

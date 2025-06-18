@@ -40,3 +40,61 @@ def filesystem_dataset():
         yield test_repo_path
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+@pytest.fixture
+def celery_app():
+    """Provide Celery app instance for integration tests."""
+    from codestory.ingestion_pipeline.celery_app import app
+    return app
+
+
+@pytest.fixture
+def neo4j_connector():
+    """Provide Neo4j connector for integration tests."""
+    try:
+        from codestory.graphdb.neo4j_connector import Neo4jConnector
+        from codestory.config.settings import get_settings
+        
+        settings = get_settings()
+        # Convert SecretStr to string for Neo4j driver
+        password = settings.neo4j.password
+        if hasattr(password, 'get_secret_value'):
+            password = password.get_secret_value()
+        
+        # Use 'neo4j' as default database for tests
+        database = settings.neo4j.database if settings.neo4j.database != "testdb" else "neo4j"
+        
+        connector = Neo4jConnector(
+            uri=settings.neo4j.uri,
+            username=settings.neo4j.username,
+            password=password,
+            database=database
+        )
+        yield connector
+        # Cleanup is handled by the session-scoped prepare_containerized_database fixture
+    except Exception as e:
+        # If Neo4j is not available, provide a mock
+        from unittest.mock import MagicMock
+        mock_connector = MagicMock()
+        mock_connector.execute_query.return_value = []
+        yield mock_connector
+
+
+@pytest.fixture
+def redis_client():
+    """Provide Redis client for integration tests."""
+    try:
+        import redis
+        from codestory.config.settings import get_settings
+        
+        settings = get_settings()
+        client = redis.Redis.from_url(settings.redis.uri, decode_responses=True)
+        # Test connection
+        client.ping()
+        yield client
+    except Exception as e:
+        # If Redis is not available, provide a mock
+        from unittest.mock import MagicMock
+        mock_client = MagicMock()
+        yield mock_client

@@ -58,9 +58,7 @@ def run_test():
             # Use direct connection parameters to connect to the test Neo4j instance
             neo4j_connector = Neo4jConnector(
                 uri="bolt://localhost:"
-                + (
-                    (os.environ.get("CI") == "true" and "7687") or "7688"
-                ),  # Port defined in docker-compose.test.yml
+                + "7687",  # Standard containerized Neo4j port
                 username="neo4j",
                 password="password",
                 database="codestory-test",  # Database defined in docker-compose.test.yml

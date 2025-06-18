@@ -11,6 +11,10 @@ from codestory.cli.commands.ingest import is_docker_running, is_repo_mounted
 from codestory.cli.main import app
 
 
+def is_host_native_mode() -> bool:
+    """Host-native mode is deprecated. All tests now use containerized services."""
+    return False
+
 class TestIngestCommands:
     """Integration tests for ingestion-related CLI commands."""
 
@@ -19,11 +23,7 @@ class TestIngestCommands:
     def test_ingest_start_and_status(
         self: Any,
         cli_runner: CliRunner,
-        running_service: dict[str, Any],
         test_repository: str,
-        service_container,
-        celery_worker_container,
-        neo4j_container,
     ) -> None:
         """Test 'ingest start' and 'ingest status' commands with real repository."""
         result = cli_runner.invoke(
@@ -66,9 +66,7 @@ class TestIngestCommands:
     def test_ingest_start_with_countdown(
         self: Any,
         cli_runner: CliRunner,
-        running_service: dict[str, Any],
         test_repository: str,
-        service_container, celery_worker_container, neo4j_container
     ) -> None:
         """Test 'ingest start' with --countdown schedules job for delayed execution."""
         import shutil
@@ -130,7 +128,6 @@ class TestIngestCommands:
     def test_ingest_start_with_eta(
         self: Any,
         cli_runner: CliRunner,
-        running_service: dict[str, Any],
         test_repository: str,
     ) -> None:
         """Test 'ingest start' with --eta schedules job for delayed execution at a specific time.
@@ -154,10 +151,11 @@ class TestIngestCommands:
     @pytest.mark.integration
     @pytest.mark.require_service
     def test_ingest_jobs_list(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any],
-        service_container, celery_worker_container, neo4j_container
+        self: Any, cli_runner: CliRunner,
     ) -> None:
         """Test 'ingest jobs' command with real service."""
+        if is_host_native_mode():
+            pytest.skip("Skipping test_ingest_jobs_list in host-native mode (no backend services)")
         result = cli_runner.invoke(app, ["ingest", "jobs"])
         
         # Check if CLI handled the request properly (even if infrastructure failed)
@@ -177,8 +175,7 @@ class TestIngestCommands:
     @pytest.mark.integration
     @pytest.mark.require_service
     def test_mount_command(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any],
-        service_container, celery_worker_container, neo4j_container
+        self: Any, cli_runner: CliRunner,
     ) -> None:
         """Test the 'ingest mount' command with a real repository."""
         if not is_docker_running():
@@ -212,8 +209,7 @@ class TestIngestCommands:
     @pytest.mark.integration
     @pytest.mark.require_service
     def test_force_remount(
-        self: Any, cli_runner: CliRunner, running_service: dict[str, Any],
-        service_container, celery_worker_container, neo4j_container
+        self: Any, cli_runner: CliRunner,
     ) -> None:
         """Test the '--force-remount' option with a real repository."""
         if not is_docker_running():

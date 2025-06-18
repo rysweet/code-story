@@ -115,11 +115,21 @@ class Settings(BaseSettings):
     )
 
     def __init__(self, **kwargs):
-        """Initialize settings with Azure OpenAI fallback logic."""
+        """Initialize settings with Azure OpenAI fallback logic and testdb override."""
         super().__init__(**kwargs)
 
         import os
-        if os.environ.get("CODESTORY_TEST_ENV") == "true":
+        test_env = os.environ.get("CODESTORY_TEST_ENV", "").lower() == "true"
+        deployment_mode_test = os.environ.get("DEPLOYMENT_MODE", "").lower() == "test"
+
+        # NOTE: Do NOT auto-switch to "testdb" here; integration fixtures prepare
+        # the default "neo4j" database.  Tests that need an alternate DB should set
+        # NEO4J_DATABASE explicitly.
+
+        if test_env:
+            # In test environment, allow un-prefixed REDIS__URI to override Redis settings
+            if os.environ.get("REDIS__URI"):
+                self.redis.uri = os.environ["REDIS__URI"]
             return  # Skip Azure override logic in test environment
 
         # If Azure OpenAI variables are set, use them for OpenAI settings
@@ -131,11 +141,11 @@ class Settings(BaseSettings):
         if os.environ.get("AZURE_OPENAI__API_VERSION"):
             self.openai.api_version = os.environ["AZURE_OPENAI__API_VERSION"]
         if os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID"):
-            # Use deployment ID for chat and reasoning models
+            # Use deployment ID for chat and reasoning models only
             deployment = os.environ["AZURE_OPENAI__DEPLOYMENT_ID"]
             self.openai.chat_model = deployment
             self.openai.reasoning_model = deployment
-            self.openai.embedding_model = deployment
+            # Do NOT override embedding_model here; let it be set by OPENAI__EMBEDDING_MODEL or default
         if os.environ.get("AZURE_TENANT_ID"):
             self.openai.tenant_id = os.environ["AZURE_TENANT_ID"]
 

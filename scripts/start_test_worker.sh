@@ -32,7 +32,7 @@ print_info "Starting Celery worker for testing with Redis on port 6380..."
 
 # Set environment variables for testing
 export REDIS_URI="redis://localhost:6380/0"
-export NEO4J__URI="bolt://localhost:7688"
+export NEO4J__URI="bolt://localhost:7687"
 export NEO4J__USERNAME="neo4j"
 export NEO4J__PASSWORD="password"
 export NEO4J__DATABASE="codestory-test"

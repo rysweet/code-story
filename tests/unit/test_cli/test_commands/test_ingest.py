@@ -230,9 +230,14 @@ class TestIngestCommands:
             directory_check.returncode = 0
             file_check = MagicMock()
             file_check.stdout = "exists"
-            mock_run.side_effect = [service_check, directory_check, file_check]
-            result = ingest.is_repo_mounted("/fake/repo", mock_console)
-            assert result
+            with patch("os.path.exists") as mock_exists:
+                # Only return True for the README.md test file
+                def exists_side_effect(path):
+                    return path == "/fake/repo/README.md"
+                mock_exists.side_effect = exists_side_effect
+                mock_run.side_effect = [service_check, directory_check, file_check]
+                result = ingest.is_repo_mounted("/fake/repo", mock_console)
+                assert result
 
     def test_setup_repository_mount(self: Any) -> None:
         """Test the setup_repository_mount function."""

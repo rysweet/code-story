@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-This document proposes a rearchitecture of the Code Story project to move from a fully containerized architecture to a hybrid approach where most components run natively on the host system, with only Blarify remaining containerized due to its Linux-specific requirements.
+This document proposes a rearchitecture of the Code Story project to move from a fully containerized architecture to a hybrid approach where storage services (Neo4j, Redis) and specialized components (Blarify) remain containerized for consistency and isolation, while application services (Code Story Service, Celery Workers) run natively on the host system for enhanced development efficiency and debugging capabilities.
 
 ## Current Architecture Analysis
 
@@ -21,72 +21,120 @@ This document proposes a rearchitecture of the Code Story project to move from a
 6. **MCP Adapter** - Model Context Protocol service
 7. **Blarify Step** - Code parsing service (Linux container requirement)
 
+### Proposed Hybrid Architecture
+
+**Containerized Components (via docker-compose):**
+- **Neo4j Database** - Graph database with consistent environment and easy data management
+- **Redis** - Message broker with isolated caching layer
+- **Blarify Step** - Code parsing service (unchanged, Linux container requirement)
+
+**Host-Native Components:**
+- **Code Story Service** - FastAPI web service for direct debugging and IDE integration
+- **Celery Worker** - Background task processing with direct file system access
+- **GUI** - React/TypeScript frontend with hot reloading
+- **MCP Adapter** - Model Context Protocol service for simplified development
+
 ### Current Dependencies and Networking
 
 ```mermaid
 graph TD
-    CLI[CLI] --> Service[Code Story Service :8000]
-    GUI[GUI :80] --> Service
-    MCP[MCP Adapter :8001] --> Service
-    Service --> Neo4j[Neo4j :7474/:7687]
-    Service --> Redis[Redis :6379]
-    Worker[Celery Worker] --> Redis
+    CLI[CLI] --> Service[Code Story Service :8000 - Host]
+    GUI[GUI :80 - Host] --> Service
+    MCP[MCP Adapter :8001 - Host] --> Service
+    Service --> Neo4j[Neo4j Container :7474/:7687]
+    Service --> Redis[Redis Container :6379]
+    Worker[Celery Worker - Host] --> Redis
     Worker --> Neo4j
     Worker --> Blarify[Blarify Container]
     Blarify --> Neo4j
+    
+    subgraph "Docker Compose"
+        Neo4j
+        Redis
+        Blarify
+    end
+    
+    subgraph "Host System"
+        CLI
+        GUI
+        Service
+        Worker
+        MCP
+    end
 ```
 
 ## Proposed Host-Native Architecture
 
 ### Components to Run on Host
 
+### Components to Remain Containerized
+
 #### 1. **Neo4j Database**
-- **Deployment:** Native installation or cloud service
-- **Configuration:** Direct host networking
-- **Benefits:** Better performance, easier debugging, standard operational practices
-- **Installation Options:**
-  - Native installation via package managers (apt, brew, yum)
-  - Neo4j Desktop for development
-  - Neo4j Aura Cloud for production
+- **Deployment:** Docker container via docker-compose
+- **Image:** `neo4j:<latest>-community`
+- **Ports:** 7687 (Bolt), 7474 (HTTP) exposed to host
+- **Configuration:** Environment variables via docker-compose
+- **Benefits:**
+  - Consistent database environment across development/production
+  - Isolated storage with easy backup/restore
+  - No host dependency conflicts
+  - Simplified deployment of stateful services
+- **Environment Variables:**
+  - `NEO4J_URI=bolt://localhost:7687` (host connects to exposed port)
+  - `NEO4J_USERNAME=neo4j`
+  - `NEO4J_PASSWORD` (injected via docker-compose or test fixtures)
 
 #### 2. **Redis**
-- **Deployment:** Native installation or cloud service
-- **Configuration:** Standard host networking
-- **Benefits:** Reduced container overhead, easier monitoring
-- **Installation Options:**
-  - Native installation via package managers
-  - Redis Cloud for production
+- **Deployment:** Docker container via docker-compose
+- **Image:** `redis:<latest>`
+- **Port:** 6379 exposed to host
+- **Configuration:** Standard Redis container setup
+- **Benefits:**
+  - Isolation and consistent caching layer
+  - No version conflicts with host system
+  - Easy data persistence and backup
+- **Environment Variables:**
+  - `REDIS_URI=redis://localhost:6379` (host connects to exposed port)
 
-#### 3. **Code Story Service (FastAPI)**
+#### 3. **Blarify Step**
+- **Deployment:** Docker container (unchanged from current architecture)
+- **Reason:** Linux-specific binary dependencies and toolchain requirements
+- **Integration:** Container communicates with containerized Neo4j via internal Docker network
+- **Configuration:**
+  - `NEO4J_URI=bolt://neo4j:7687` (container-to-container communication)
+  - Environment variables injected via docker-compose
+
+### Components to Run on Host
+
+#### 1. **Code Story Service (FastAPI)**
 - **Deployment:** Python virtual environment on host
 - **Process Management:** systemd, PM2, or direct Python execution
-- **Configuration:** Environment variables and config files
-- **Benefits:** Direct debugging, IDE integration, faster development cycles
+- **Configuration:** Environment variables connecting to containerized databases
+- **Benefits:**
+  - Direct debugging with IDE breakpoints
+  - Hot reloading for faster development cycles
+  - Native Python tooling integration
+- **Database Connections:** Connects to containerized Neo4j/Redis via exposed ports
 
-#### 4. **Celery Worker**
+#### 2. **Celery Worker**
 - **Deployment:** Python virtual environment on host
 - **Process Management:** systemd, supervisor, or direct execution
-- **Configuration:** Shared config with service
-- **Benefits:** Easier debugging, direct file system access
+- **Configuration:** Shared config with service, connects to containerized databases
+- **Benefits:**
+  - Easier debugging and profiling
+  - Direct file system access for repository processing
+  - Native Python debugging tools
 
-#### 5. **GUI (React/TypeScript)**
+#### 3. **GUI (React/TypeScript)**
 - **Development:** Node.js development server on host
 - **Production:** Static files served by nginx/Apache on host or CDN
 - **Benefits:** Hot reloading, easier debugging, standard web deployment
 
-#### 6. **MCP Adapter**
+#### 4. **MCP Adapter**
 - **Deployment:** Python virtual environment on host
 - **Process Management:** systemd or direct execution
-- **Configuration:** Environment variables
+- **Configuration:** Environment variables connecting to host-native services
 - **Benefits:** Easier integration testing, simpler networking
-
-### Components to Remain Containerized
-
-#### 7. **Blarify Step**
-- **Deployment:** Docker container (unchanged)
-- **Reason:** Linux-specific binary dependencies and toolchain requirements
-- **Integration:** Container-to-host communication via network protocols
-- **Configuration:** Environment variables for host service endpoints
 
 ## Detailed Implementation Plan
 
@@ -94,19 +142,13 @@ graph TD
 
 #### Development Environment
 
-1. **Database Installation**
+1. **Container Services Setup**
    ```bash
-   # Neo4j (macOS)
-   brew install neo4j
+   # Start containerized services (Neo4j, Redis, Blarify)
+   docker compose up -d neo4j redis
    
-   # Redis (macOS)  
-   brew install redis
-   
-   # Neo4j (Ubuntu)
-   sudo apt install neo4j
-   
-   # Redis (Ubuntu)
-   sudo apt install redis-server
+   # Verify services are running
+   docker compose ps
    ```
 
 2. **Python Environment Setup**
@@ -125,6 +167,16 @@ graph TD
    npm install
    ```
 
+4. **Service Configuration**
+   ```bash
+   # Copy configuration template for hybrid architecture
+   cp .codestory.host.toml .codestory.toml
+   
+   # Environment variables for host services to connect to containers
+   export NEO4J_URI=bolt://localhost:7687
+   export REDIS_URI=redis://localhost:6379
+   ```
+
 #### Production Environment
 
 1. **Service Management with systemd**
@@ -132,14 +184,19 @@ graph TD
    # /etc/systemd/system/codestory-service.service
    [Unit]
    Description=Code Story API Service
-   After=network.target neo4j.service redis.service
+   After=network.target docker.service
+   Requires=docker.service
    
    [Service]
    Type=simple
    User=codestory
    WorkingDirectory=/opt/codestory
    Environment=PATH=/opt/codestory/.venv/bin
+   Environment=NEO4J_URI=bolt://localhost:7687
+   Environment=REDIS_URI=redis://localhost:6379
+   ExecStartPre=/usr/bin/docker compose up -d neo4j redis
    ExecStart=/opt/codestory/.venv/bin/uvicorn codestory_service.main:app --host 0.0.0.0 --port 8000
+   ExecStopPost=/usr/bin/docker compose stop neo4j redis
    Restart=always
    
    [Install]
@@ -156,52 +213,54 @@ graph TD
 #### Unified Configuration System
 
 ```python
-# Enhanced settings.py
-class HostNativeSettings(BaseSettings):
-    # Database connections use host networking
+# Enhanced settings.py for hybrid architecture
+class HybridArchitectureSettings(BaseSettings):
+    # Host services connect to containerized databases via exposed ports
     neo4j: Neo4jSettings = Field(default_factory=lambda: Neo4jSettings(
-        uri="bolt://localhost:7687"
+        uri="bolt://localhost:7687"  # Host connects to exposed container port
     ))
     redis: RedisSettings = Field(default_factory=lambda: RedisSettings(
-        uri="redis://localhost:6379"
+        uri="redis://localhost:6379"  # Host connects to exposed container port
     ))
     
-    # Blarify container configuration
+    # Blarify container configuration for docker-compose integration
     blarify: BlarifySettings = Field(default_factory=BlarifySettings)
     
-    # Service configuration for host deployment
+    # Service configuration for hybrid deployment
     deployment: DeploymentSettings = Field(default_factory=DeploymentSettings)
 
 class DeploymentSettings(BaseModel):
-    mode: str = Field("host", description="Deployment mode: host, docker, or hybrid")
+    mode: str = Field("hybrid", description="Deployment mode: hybrid (containers + host)")
     data_directory: Path = Field(Path.home() / ".codestory", description="Data directory")
     log_directory: Path = Field(Path("/var/log/codestory"), description="Log directory")
     pid_directory: Path = Field(Path("/var/run/codestory"), description="PID directory")
 
 class BlarifySettings(BaseModel):
     docker_image: str = Field("blarapp/blarify:latest", description="Blarify Docker image")
-    container_network: str = Field("host", description="Container network mode")
+    container_network: str = Field("codestory_default", description="Docker compose network")
     volume_mounts: dict[str, str] = Field(default_factory=dict, description="Volume mounts")
     environment_variables: dict[str, str] = Field(default_factory=dict, description="Environment variables")
+    # Blarify connects to Neo4j via internal container network
+    neo4j_uri: str = Field("bolt://neo4j:7687", description="Neo4j URI for container-to-container communication")
 ```
 
 #### Environment-Specific Configuration
 
 ```toml
-# .codestory.host.toml - Host native configuration
+# .codestory.hybrid.toml - Hybrid architecture configuration
 [general]
 app_name = "code-story"
 version = "0.1.0"
-environment = "host-native"
+environment = "hybrid"
 
 [neo4j]
-uri = "bolt://localhost:7687"
+uri = "bolt://localhost:7687"  # Host connects to exposed container port
 username = "neo4j"
 password = "password"
 database = "neo4j"
 
 [redis]
-uri = "redis://localhost:6379"
+uri = "redis://localhost:6379"  # Host connects to exposed container port
 
 [service]
 host = "0.0.0.0"
@@ -210,8 +269,8 @@ workers = 4
 
 [blarify]
 docker_image = "blarapp/blarify:latest"
-container_network = "host"
-neo4j_uri = "bolt://localhost:7687"  # Host-accessible Neo4j
+container_network = "codestory_default"  # Use docker-compose network
+neo4j_uri = "bolt://neo4j:7687"  # Container-to-container communication
 ```
 
 ### Phase 3: Service Integration
@@ -219,7 +278,7 @@ neo4j_uri = "bolt://localhost:7687"  # Host-accessible Neo4j
 #### Blarify Container Integration
 
 ```python
-# Enhanced BlarifyStep for host integration
+# Enhanced BlarifyStep for hybrid architecture integration
 class BlarifyStep(PipelineStep):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -227,17 +286,17 @@ class BlarifyStep(PipelineStep):
         self.docker_client = docker.from_env()
         
     def run(self, repository_path: str, **config: Any) -> str:
-        """Run Blarify in container with host network access."""
+        """Run Blarify in container with access to containerized Neo4j."""
         
-        # Use host networking for container
+        # Use docker-compose network for container-to-container communication
         container_config = {
             "image": self.settings.blarify.docker_image,
-            "network_mode": "host",  # Access host services directly
+            "network": self.settings.blarify.container_network,  # docker-compose network
             "volumes": {
                 repository_path: {"bind": "/workspace", "mode": "ro"},
             },
             "environment": {
-                "NEO4J_URI": self.settings.neo4j.uri,
+                "NEO4J_URI": self.settings.blarify.neo4j_uri,  # bolt://neo4j:7687
                 "NEO4J_USERNAME": self.settings.neo4j.username,
                 "NEO4J_PASSWORD": self.settings.neo4j.password.get_secret_value() if self.settings.neo4j.password else "",
                 "WORKSPACE_PATH": "/workspace",
@@ -290,14 +349,16 @@ class HostServiceHealth:
 
 1. **Simplified Development Setup**
    ```bash
-   # Start databases
-   brew services start neo4j
-   brew services start redis
+   # Start containerized services
+   docker compose up -d neo4j redis
    
-   # Start services in separate terminals
+   # Start host services in separate terminals
    uvicorn codestory_service.main:app --reload  # API service
    celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=info  # Worker
    npm run dev  # GUI with hot reload
+   
+   # Check container status
+   docker compose ps
    ```
 
 2. **IDE Integration**
@@ -308,19 +369,22 @@ class HostServiceHealth:
 
 3. **Testing Strategy**
    ```python
-   # Test configuration for host environment
+   # Test configuration for hybrid environment
    @pytest.fixture
-   def host_test_config():
+   def hybrid_test_config():
        return {
-           "neo4j": {"uri": "bolt://localhost:7687"},
-           "redis": {"uri": "redis://localhost:6379"},
-           "blarify": {"container_network": "host"},
+           "neo4j": {"uri": "bolt://localhost:7687"},  # Host connects to container
+           "redis": {"uri": "redis://localhost:6379"},  # Host connects to container
+           "blarify": {
+               "container_network": "codestory_default",
+               "neo4j_uri": "bolt://neo4j:7687"  # Container-to-container
+           },
        }
    
-   # Integration tests use host services
-   class TestHostIntegration:
-       def test_end_to_end_ingestion(self, host_test_config):
-           # Test full pipeline with host services
+   # Integration tests use hybrid services
+   class TestHybridIntegration:
+       def test_end_to_end_ingestion(self, hybrid_test_config):
+           # Test full pipeline with containerized storage + host services
            pass
    ```
 
@@ -385,48 +449,53 @@ class HostServiceHealth:
 3. **Monitoring and alerting**
 4. **Rollback procedures**
 
-## Benefits of Host-Native Architecture
+## Benefits of Hybrid Architecture
 
 ### Performance Improvements
 
-1. **Reduced Container Overhead**
-   - Eliminated container networking latency
-   - Direct file system access
-   - Native process scheduling
+1. **Optimized Resource Allocation**
+   - Containerized storage services for consistency and isolation
+   - Host-native application services for reduced latency
+   - Direct file system access for workers processing repositories
 
-2. **Better Resource Utilization**
-   - No container memory overhead
-   - Direct CPU scheduling
-   - Efficient I/O operations
+2. **Better Development Experience**
+   - Direct CPU scheduling for application services
+   - Container isolation for stateful services
+   - Efficient I/O operations for both containers and host
 
 ### Operational Benefits
 
-1. **Simplified Debugging**
-   - Direct IDE integration
-   - Standard debugging tools
-   - Easier log analysis
+1. **Enhanced Debugging Capabilities**
+   - Direct IDE integration for host services
+   - Standard debugging tools for application code
+   - Container isolation for reproducible database environments
 
-2. **Standard Operations**
-   - Familiar service management (systemd)
-   - Standard monitoring tools
-   - Easier backup and recovery
+2. **Balanced Operations**
+   - Familiar service management (systemd) for application services
+   - Container orchestration (docker-compose) for storage services
+   - Simplified backup and recovery for containerized databases
 
 3. **Development Efficiency**
-   - Faster startup times
-   - Hot reloading capabilities
-   - Simplified dependency management
+   - Hot reloading capabilities for host services
+   - Consistent database environments via containers
+   - Simplified dependency management with hybrid approach
 
-### Security Considerations
+### Architecture Benefits
 
-1. **Reduced Attack Surface**
-   - No container runtime vulnerabilities
-   - Standard host security practices
-   - Simplified network security
+1. **Storage Service Consistency**
+   - Neo4j and Redis run in consistent container environments
+   - Easy database backup/restore with container volumes
+   - Isolated storage prevents host dependency conflicts
 
-2. **Enhanced Monitoring**
-   - Standard host monitoring tools
-   - Better visibility into resource usage
-   - Simplified compliance auditing
+2. **Application Service Flexibility**
+   - Direct debugging and profiling of business logic
+   - Native Python tooling integration
+   - Faster development cycles with hot reloading
+
+3. **Network Optimization**
+   - Container-to-container communication for Blarify→Neo4j
+   - Host-to-container communication via exposed ports for services
+   - Simplified networking with docker-compose orchestration
 
 ## Risks and Mitigation
 
@@ -483,20 +552,22 @@ class TestHostNativeIntegration:
 
 ### Development Environment
 ```bash
-# .env.development
+# .env.development - Host services connect to local containers
 NEO4J_URI=bolt://localhost:7687
 REDIS_URI=redis://localhost:6379
-DEPLOYMENT_MODE=host
+DEPLOYMENT_MODE=hybrid
 LOG_LEVEL=DEBUG
+BLARIFY_NEO4J_URI=bolt://neo4j:7687  # Container-to-container communication
 ```
 
 ### Production Environment
 ```bash
-# .env.production
-NEO4J_URI=bolt://prod-neo4j:7687
-REDIS_URI=redis://prod-redis:6379
-DEPLOYMENT_MODE=host
+# .env.production - Host services connect to containerized databases
+NEO4J_URI=bolt://localhost:7687
+REDIS_URI=redis://localhost:6379
+DEPLOYMENT_MODE=hybrid
 LOG_LEVEL=INFO
+BLARIFY_NEO4J_URI=bolt://neo4j:7687  # Container-to-container communication
 ```
 
 ## Monitoring and Observability
@@ -527,9 +598,15 @@ async def health_check():
 
 ## Conclusion
 
-The proposed host-native architecture provides significant benefits in terms of performance, operational simplicity, and development efficiency while maintaining the necessary containerization for Blarify. The migration can be accomplished incrementally with minimal risk through careful planning and thorough testing.
+The proposed hybrid architecture provides significant benefits by strategically containerizing storage services (Neo4j, Redis) and specialized components (Blarify) while running application services (API, Workers) natively on the host. This approach delivers enhanced development efficiency, consistent database environments, and optimized debugging capabilities.
 
-This architecture aligns with modern deployment practices where containerization is used selectively for components that benefit from it, rather than as a universal solution. The result is a more maintainable, performant, and operationally efficient system.
+This architecture aligns with modern deployment practices where containerization is used selectively for components that benefit from isolation and consistency, while host-native deployment is used where development efficiency and debugging capabilities are paramount. The result is a balanced system that maximizes both operational consistency and development productivity.
+
+**Key Advantages:**
+- **Consistent Storage:** Neo4j and Redis containers ensure reliable database environments
+- **Development Efficiency:** Host-native services enable direct debugging and hot reloading
+- **Network Optimization:** Container-to-container communication for Blarify, host-to-container for services
+- **Operational Balance:** Docker-compose for storage, systemd for application services
 
 ## Next Steps
 

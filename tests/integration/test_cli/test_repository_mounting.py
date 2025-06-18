@@ -49,9 +49,9 @@ def temp_repository() -> None:
 @pytest.fixture
 def stop_containers() -> None:
     """Stop Code Story containers before and after tests."""
-    subprocess.run(["docker-compose", "down"], cwd=os.getcwd(), capture_output=True)
+    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "down"], cwd=os.getcwd(), capture_output=True)
     yield
-    subprocess.run(["docker-compose", "down"], cwd=os.getcwd(), capture_output=True)
+    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "down"], cwd=os.getcwd(), capture_output=True)
 
 
 @pytest.fixture

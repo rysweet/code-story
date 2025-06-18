@@ -2,27 +2,26 @@ version: "3.8"
 
 services:
   neo4j:
-    image: neo4j:5.18.0-enterprise
+    image: neo4j:community
     container_name: codestory-neo4j-test
     ports:
       - "7475:7474"  # HTTP - using different port to avoid conflicts
-      - "7688:7687"  # Bolt - using different port to avoid conflicts
+      - "7687:7687"  # Bolt - using standard containerized port
     environment:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
-      - NEO4J_initial_dbms_default__database=testdb
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes  # Required for enterprise edition
+      - NEO4J_initial_dbms_default__database=neo4j
     volumes:
       - neo4j_test_data:/data
       - neo4j_test_logs:/logs
       - ./tests/fixtures/cypher:/import  # Mount fixtures directory for data import
     healthcheck:
-      test: "wget -O /dev/null -q http://localhost:7474 || exit 1"
+      test: ["CMD-SHELL", "wget -O /dev/null -q http://localhost:7474 && (echo 'RETURN 1' | cypher-shell -u neo4j -p password) || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
     restart: on-failure
 
   redis:
@@ -30,6 +29,8 @@ services:
     container_name: codestory-redis-test
     ports:
       - "6380:6379"  # Using different port to avoid conflicts
+    environment:
+      - REDIS__URI=redis://redis:6379/0
     volumes:
       - redis_test_data:/data
     healthcheck:
@@ -40,81 +41,15 @@ services:
       start_period: 5s
     restart: on-failure
 
-  service:
-    image: python:3.12-slim
-    container_name: codestory-service
-    ports:
-      - "8000:8000"
+  blarify:
+    build:
+      context: ./src/codestory_blarify
+      dockerfile: Dockerfile
+    container_name: codestory-blarify-test
     volumes:
-      - .:/app
-      - ~/.azure:/root/.azure
+      - ./src/codestory_blarify:/app
     working_dir: /app
-    command: >
-      bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && \
-      curl -sL https://aka.ms/InstallAzureCLIDeb | bash && \
-      adduser --disabled-password --gecos '' appuser && \
-      chown -R appuser:appuser /app && \
-      mkdir -p /home/appuser/.local/bin && \
-      mkdir -p /home/appuser/.azure && \
-      cp -r /root/.azure/* /home/appuser/.azure/ || true && \
-      chown -R appuser:appuser /home/appuser && \
-      cd /app && bash /app/scripts/setup_container_config.sh && \
-      su appuser -c '
-        python -m venv /app/.venv &&
-        . /app/.venv/bin/activate &&
-        pip install --upgrade pip &&
-        pip install -e . &&
-        pip install azure-identity azure-keyvault-secrets &&
-        cp /app/.codestory.container.toml /app/.codestory.toml &&
-        python /app/patch_adapters.py &&
-        python -m codestory_service.main
-      '"
-    depends_on:
-      neo4j:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      worker:
-        condition: service_healthy
-    env_file:
-      - .env
-
-    environment:
-      - CODESTORY_FAIL_FAST_ADAPTERS=0
-
-  worker:
-    image: python:3.12-slim
-    container_name: codestory-worker
-    volumes:
-      - .:/app
-      - ~/.azure:/root/.azure
-    working_dir: /app
-    command: >
-      bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release && \
-      curl -sL https://aka.ms/InstallAzureCLIDeb | bash && \
-      adduser --disabled-password --gecos '' appuser && \
-      chown -R appuser:appuser /app && \
-      mkdir -p /home/appuser/.local/bin && \
-      mkdir -p /home/appuser/.azure && \
-      cp -r /root/.azure/* /home/appuser/.azure/ || true && \
-      chown -R appuser:appuser /home/appuser && \
-      cd /app && bash /app/scripts/setup_container_config.sh && \
-      su appuser -c '
-        python -m venv /app/.venv &&
-        . /app/.venv/bin/activate &&
-        pip install --upgrade pip &&
-        pip install -e . &&
-        pip install docker azure-identity &&
-        cp /app/.codestory.container.toml /app/.codestory.toml &&
-        cd /app && PYTHONPATH=/app python -m celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=INFO --concurrency=4 -Q ingestion
-      '"
-    depends_on:
-      neo4j:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - .env
+    command: ["sleep", "infinity"]
 
 volumes:
   neo4j_test_data:

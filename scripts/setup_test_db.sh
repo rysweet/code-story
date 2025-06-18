@@ -35,10 +35,10 @@ echo "Clearing database..."
 docker-compose -f docker-compose.test.yml exec -T neo4j cypher-shell -u neo4j -p password "MATCH (n) DETACH DELETE n;" || true
 
 # Export environment variables for tests
-export NEO4J_URI="bolt://localhost:7688"
+export NEO4J_URI="bolt://localhost:7687"
 export NEO4J_USERNAME="neo4j"
 export NEO4J_PASSWORD="password"
-export NEO4J_DATABASE="testdb"
+export NEO4J_DATABASE="neo4j"
 
 echo "Neo4j test environment is ready. Environment variables have been set:"
 echo "NEO4J_URI=$NEO4J_URI"

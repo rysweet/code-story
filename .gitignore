@@ -65,3 +65,12 @@ scripts/test_vector_fallback.py
 # Temporary files
 *.bak
 codestory-graph-*.html
+# Neo4j persistent data (Homebrew/macOS ARM)
+/opt/homebrew/var/neo4j/data/
+/opt/homebrew/var/neo4j/logs/
+# Neo4j persistent data (Homebrew/macOS Intel)
+/usr/local/var/neo4j/data/
+/usr/local/var/neo4j/logs/
+# Neo4j persistent data (Linux, common locations)
+/var/lib/neo4j/data/
+/var/lib/neo4j/logs/

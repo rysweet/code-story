@@ -31,6 +31,13 @@ class BasePipelineTest:
         self.neo4j_connector = neo4j_connector
         self.redis_client = redis_client
         self.celery_app = celery_app
+
+        # Clean up all nodes before each test
+        try:
+            self.neo4j_connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        except Exception:
+            pass
+
         try:
             from codestory_blarify.step import run_blarify
             from codestory_docgrapher.step import run_docgrapher

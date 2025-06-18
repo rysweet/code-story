@@ -72,7 +72,7 @@ jobs:
     needs: lint
     services:
       neo4j:
-        image: neo4j:5.18.0-enterprise
+        image: neo4j:latest-community
         env:
           NEO4J_AUTH: neo4j/password
           NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
@@ -80,11 +80,10 @@ jobs:
           NEO4J_dbms_memory_heap_initial__size: 512m
           NEO4J_dbms_memory_heap_max__size: 1G
           NEO4J_dbms_memory_pagecache_size: 512m
-          NEO4J_initial_dbms_default__database: testdb
+          NEO4J_initial_dbms_default__database: neo4j
           NEO4J_dbms_jvm_additional: -XX:+ExitOnOutOfMemoryError
           NEO4J_server_default__listen__address: 0.0.0.0
           NEO4J_dbms_memory_transaction_max__size: 512M
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
         ports:
           - 7474:7474
           - 7687:7687
@@ -131,7 +130,7 @@ jobs:
           driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
           
           # Execute each statement separately
-          with driver.session(database='testdb') as session:
+          with driver.session(database='neo4j') as session:
               # First clean the database
               print('Cleaning database...')
               session.run('MATCH (n) DETACH DELETE n')
@@ -155,11 +154,11 @@ jobs:
           echo "NEO4J_URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J_USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J_PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J_DATABASE=testdb" >> $GITHUB_ENV
+          echo "NEO4J_DATABASE=neo4j" >> $GITHUB_ENV
           echo "NEO4J__URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J__USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J__PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J__DATABASE=testdb" >> $GITHUB_ENV
+          echo "NEO4J__DATABASE=neo4j" >> $GITHUB_ENV
           echo "REDIS_URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS__URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS_HOST=localhost" >> $GITHUB_ENV
@@ -189,7 +188,7 @@ jobs:
     needs: [test-python, test-gui]
     services:
       neo4j:
-        image: neo4j:5.18.0-enterprise
+        image: neo4j:latest-community
         env:
           NEO4J_AUTH: neo4j/password
           NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
@@ -197,11 +196,10 @@ jobs:
           NEO4J_dbms_memory_heap_initial__size: 512m
           NEO4J_dbms_memory_heap_max__size: 1G
           NEO4J_dbms_memory_pagecache_size: 512m
-          NEO4J_initial_dbms_default__database: testdb
+          NEO4J_initial_dbms_default__database: neo4j
           NEO4J_dbms_jvm_additional: -XX:+ExitOnOutOfMemoryError
           NEO4J_server_default__listen__address: 0.0.0.0
           NEO4J_dbms_memory_transaction_max__size: 512M
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: yes
         ports:
           - 7474:7474
           - 7687:7687
@@ -261,7 +259,7 @@ jobs:
           driver = GraphDatabase.driver(uri, auth=('neo4j', 'password'))
           
           # Execute each statement separately
-          with driver.session(database='testdb') as session:
+          with driver.session(database='neo4j') as session:
               # First clean the database
               print('Cleaning database...')
               session.run('MATCH (n) DETACH DELETE n')
@@ -285,11 +283,11 @@ jobs:
           echo "NEO4J_URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J_USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J_PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J_DATABASE=testdb" >> $GITHUB_ENV
+          echo "NEO4J_DATABASE=neo4j" >> $GITHUB_ENV
           echo "NEO4J__URI=bolt://localhost:7687" >> $GITHUB_ENV
           echo "NEO4J__USERNAME=neo4j" >> $GITHUB_ENV
           echo "NEO4J__PASSWORD=password" >> $GITHUB_ENV
-          echo "NEO4J__DATABASE=testdb" >> $GITHUB_ENV
+          echo "NEO4J__DATABASE=neo4j" >> $GITHUB_ENV
           echo "REDIS_URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS__URI=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "REDIS_HOST=localhost" >> $GITHUB_ENV

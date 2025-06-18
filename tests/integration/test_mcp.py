@@ -21,12 +21,14 @@ def client() -> None:
     """Create a test client for the MCP server."""
     # Set environment variables for testing
     os.environ["AUTH_ENABLED"] = "false"
-    os.environ["CODE_STORY_SERVICE_URL"] = "http://localhost:8000"
+    port = os.environ.get("CODESTORY_TEST_PORT", "8000")
+    os.environ["CODE_STORY_SERVICE_URL"] = f"http://localhost:{port}"
 
     # Override get_mcp_settings to avoid validation error
     with mock.patch("codestory_mcp.server.get_mcp_settings") as mock_get_settings:
         mock_settings = mock.MagicMock()
-        mock_settings.code_story_service_url = "http://localhost:8000"
+        port = os.environ.get("CODESTORY_TEST_PORT", "8000")
+        mock_settings.code_story_service_url = f"http://localhost:{port}"
         mock_settings.auth_enabled = False
         mock_settings.port = 8001
         mock_settings.host = "0.0.0.0"
