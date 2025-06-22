@@ -95,22 +95,22 @@ class KnowledgeGraph:
         """Create Neo4j nodes for documentation documents."""
         for document in self.graph.documents.values():
             query = "\n            MATCH (d:Documentation {path: $path})\n            RETURN d\n            "
-            existing = self.connector.run_query(
-                query, parameters={"path": document.path}, fetch_one=True
+            existing = self.connector.execute_query(
+                query, {"path": document.path}
             )
             if existing:
                 logger.info(f"Documentation node already exists for {document.path}")
                 continue
             query = "\n            CREATE (d:Documentation {\n                path: $path,\n                name: $name,\n                type: $type,\n                timestamp: $timestamp\n            })\n            WITH d\n            MATCH (f:File {path: $path})\n            MERGE (f)-[:HAS_DOCUMENTATION]->(d)\n            RETURN ID(d) as id\n            "
-            result = self.connector.run_query(
+            result = self.connector.execute_query(
                 query,
-                parameters={
+                {
                     "path": document.path,
                     "name": document.name,
                     "type": document.doc_type.value,
                     "timestamp": time.time(),
                 },
-                fetch_one=True,
+                write=True
             )
             if result:
                 logger.debug(f"Created Documentation node for {document.path}")
@@ -121,24 +121,23 @@ class KnowledgeGraph:
 
     def _create_entity_nodes(self: Any) -> None:
         """Create Neo4j nodes for documentation entities."""
+        import json
         for entity in self.graph.entities.values():
-            query = "\n            CREATE (e:DocumentationEntity {\n                id: $id,\n                type: $type,\n                content: $content,\n                file_path: $file_path,\n                source_text: $source_text,\n                line_number: $line_number,\n                metadata: $metadata\n            })\n            WITH e\n            MATCH (d:Documentation {path: $file_path})\n            MERGE (d)-[:CONTAINS]->(e)\n            RETURN ID(e) as id\n            "
-            metadata: dict[Any, Any] = {}
-            for key, value in entity.metadata.items():
-                if isinstance(value, str | int | float | bool):
-                    metadata[key] = value
-            result = self.connector.run_query(
+            query = "\n            CREATE (e:DocumentationEntity {\n                id: $id,\n                type: $type,\n                content: $content,\n                file_path: $file_path,\n                source_text: $source_text,\n                line_number: $line_number,\n                metadata_json: $metadata_json\n            })\n            WITH e\n            MATCH (d:Documentation {path: $file_path})\n            MERGE (d)-[:CONTAINS]->(e)\n            RETURN ID(e) as id\n            "
+            # Convert metadata to JSON string to avoid Neo4j type issues
+            metadata_json = json.dumps(entity.metadata) if entity.metadata else "{}"
+            result = self.connector.execute_query(
                 query,
-                parameters={
+                {
                     "id": entity.id,
                     "type": entity.type.value,
                     "content": entity.content,
                     "file_path": entity.file_path,
                     "source_text": entity.source_text[:1000],
                     "line_number": entity.line_number,
-                    "metadata": metadata,
+                    "metadata_json": metadata_json,
                 },
-                fetch_one=True,
+                write=True
             )
             if result:
                 logger.debug(f"Created DocumentationEntity node for {entity.id}")
@@ -149,6 +148,7 @@ class KnowledgeGraph:
 
     def _create_relationships(self: Any) -> None:
         """Create Neo4j relationships between entities."""
+        import json
         for rel in self.graph.relationships.values():
             if rel.type in [
                 RelationType.CONTAINS,
@@ -156,15 +156,23 @@ class KnowledgeGraph:
                 RelationType.FOLLOWS,
                 RelationType.PART_OF,
             ]:
+                # Filter properties to only include primitive types or convert to JSON
+                safe_properties = {}
+                for key, value in rel.properties.items():
+                    if isinstance(value, (str, int, float, bool, type(None))):
+                        safe_properties[key] = value
+                    else:
+                        safe_properties[f"{key}_json"] = json.dumps(value)
+                
                 query = f"\n                MATCH (s:DocumentationEntity {{id: $source_id}})\n                MATCH (t:DocumentationEntity {{id: $target_id}})\n                MERGE (s)-[r:{rel.type.value}]->(t)\n                SET r += $properties\n                RETURN ID(r) as id\n                "
-                result = self.connector.run_query(
+                result = self.connector.execute_query(
                     query,
-                    parameters={
+                    {
                         "source_id": rel.source_id,
                         "target_id": rel.target_id,
-                        "properties": rel.properties,
+                        "properties": safe_properties,
                     },
-                    fetch_one=True,
+                    write=True
                 )
                 if result:
                     logger.debug(
@@ -175,15 +183,23 @@ class KnowledgeGraph:
                         f"Failed to create relationship {rel.type.value} between documentation entities"
                     )
             elif rel.type in [RelationType.DESCRIBES, RelationType.REFERENCES]:
+                # Filter properties to only include primitive types or convert to JSON
+                safe_properties = {}
+                for key, value in rel.properties.items():
+                    if isinstance(value, (str, int, float, bool, type(None))):
+                        safe_properties[key] = value
+                    else:
+                        safe_properties[f"{key}_json"] = json.dumps(value)
+                
                 query = f"\n                MATCH (s:DocumentationEntity {{id: $source_id}})\n                MATCH (c) WHERE ID(c) = $target_id\n                MERGE (s)-[r:{rel.type.value}]->(c)\n                SET r += $properties\n                RETURN ID(r) as id\n                "
-                result = self.connector.run_query(
+                result = self.connector.execute_query(
                     query,
-                    parameters={
+                    {
                         "source_id": rel.source_id,
                         "target_id": int(rel.target_id),
-                        "properties": rel.properties,
+                        "properties": safe_properties,
                     },
-                    fetch_one=True,
+                    write=True
                 )
                 if result:
                     logger.debug(

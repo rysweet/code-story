@@ -54,20 +54,15 @@ def neo4j_connector():
     """Provide Neo4j connector for integration tests."""
     try:
         from codestory.graphdb.neo4j_connector import Neo4jConnector
-        from codestory.config.settings import get_settings
-        
-        settings = get_settings()
-        # Convert SecretStr to string for Neo4j driver
-        password = settings.neo4j.password
-        if hasattr(password, 'get_secret_value'):
-            password = password.get_secret_value()
-        
-        # Use 'neo4j' as default database for tests
-        database = settings.neo4j.database if settings.neo4j.database != "testdb" else "neo4j"
-        
+        import os
+        uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+        username = os.environ.get("NEO4J_USERNAME", "neo4j")
+        password = os.environ.get("NEO4J_PASSWORD", "password")
+        # Always use the default "neo4j" database for test consistency
+        database = "neo4j"
         connector = Neo4jConnector(
-            uri=settings.neo4j.uri,
-            username=settings.neo4j.username,
+            uri=uri,
+            username=username,
             password=password,
             database=database
         )

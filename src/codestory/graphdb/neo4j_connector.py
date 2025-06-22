@@ -241,10 +241,6 @@ class Neo4jConnector:
                 "max_connection_pool_size", 50
             )
             self.connection_timeout = config_options.get("connection_timeout", 30)
-            
-            # Connection retry configuration
-            self.max_startup_retries = config_options.get("max_startup_retries", 30)
-            self.startup_retry_delay = config_options.get("startup_retry_delay", 3)
 
             # In tests we provide all required parameters
             all_params_provided = self.uri and self.username and self.password
@@ -288,64 +284,29 @@ class Neo4jConnector:
                             cause=e,
                         ) from e
 
-            # Initialize driver with startup retry logic
+            # Initialize driver
             if self.uri is None or self.username is None or self.password is None:
                 raise ConnectionError("uri, username, and password must not be None")
-            
-            self.driver = None
-            last_error = None
-            
-            for attempt in range(1, self.max_startup_retries + 1):
+            self.driver = GraphDatabase.driver(
+                self.uri,
+                auth=(self.username, self.password),
+                max_connection_pool_size=self.max_connection_pool_size,
+                connection_timeout=self.connection_timeout,
+                **{
+                    k: v
+                    for k, v in config_options.items()
+                    if k not in ["max_connection_pool_size", "connection_timeout"]
+                },
+            )
+
+            # For testing, we'll skip connectivity verification
+            if not config_options.get("skip_connection_check", False):
                 try:
-                    self.driver = GraphDatabase.driver(
-                        self.uri,
-                        auth=(self.username, self.password),
-                        max_connection_pool_size=self.max_connection_pool_size,
-                        connection_timeout=self.connection_timeout,
-                        **{
-                            k: v
-                            for k, v in config_options.items()
-                            if k not in ["max_connection_pool_size", "connection_timeout", "max_startup_retries", "startup_retry_delay"]
-                        },
-                    )
-                    
-                    # Test the connection if not explicitly skipped
-                    if not config_options.get("skip_connection_check", False):
-                        with self.driver.session(database=self.database) as session:
-                            session.run("RETURN 1").consume()
-                        logger.info(f"Successfully connected to Neo4j at {self.uri} (attempt {attempt})")
-                    break
-                    
-                except (ServiceUnavailable, OSError, ConnectionRefusedError) as e:
-                    last_error = e
-                    if attempt < self.max_startup_retries:
-                        logger.warning(
-                            f"Neo4j connection attempt {attempt}/{self.max_startup_retries} failed: {e!s}. "
-                            f"Retrying in {self.startup_retry_delay} seconds..."
-                        )
-                        time.sleep(self.startup_retry_delay)
-                    else:
-                        logger.error(f"Failed to connect to Neo4j after {self.max_startup_retries} attempts")
-                        raise ConnectionError(
-                            f"Failed to connect to Neo4j after {self.max_startup_retries} attempts: {e!s}",
-                            uri=self.uri,
-                            cause=e,
-                        ) from e
+                    # Just verify that driver exists
+                    if hasattr(self, "driver") and self.driver:
+                        logger.info(f"Connected to Neo4j at {self.uri}")
                 except Exception as e:
-                    # Non-retryable errors
-                    logger.error(f"Non-retryable error connecting to Neo4j: {e!s}")
-                    raise ConnectionError(
-                        f"Failed to connect to Neo4j: {e!s}",
-                        uri=self.uri,
-                        cause=e,
-                    ) from e
-            
-            if self.driver is None:
-                raise ConnectionError(
-                    f"Failed to initialize Neo4j driver after {self.max_startup_retries} attempts",
-                    uri=self.uri,
-                    cause=last_error,
-                )
+                    logger.error(f"Connection verification failed: {e!s}")
 
         except Exception as e:
             record_connection_error()

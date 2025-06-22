@@ -598,14 +598,85 @@ def orchestrate_pipeline(
                 if step_result.get("status") == StepStatus.FAILED:
                     result["error"] = step_result.get("error", "Unknown error")
             else:
-                # For other steps, return a placeholder result
-                result = {
-                    "step": step_name,
-                    "status": StepStatus.COMPLETED,
-                    "job_id": job_id_value,
-                    "duration": 0.01,
-                    "message": f"Skipped {step_name} step in eager mode",
-                }
+                # For other steps, call the step function directly if available
+                try:
+                    step_module = __import__(f"codestory_{step_name}.step", fromlist=[f"run_{step_name}"])
+                    run_func = getattr(step_module, f"run_{step_name}", None)
+                    if run_func:
+                        # If the step function is a Celery task, call its __wrapped__ method
+                        if hasattr(run_func, "__wrapped__"):
+                            step_result = run_func.__wrapped__(
+                                None,  # self (task context)
+                                repository_path,
+                                **step_config_copy
+                            )
+                        else:
+                            step_result = run_func(
+                                repository_path,
+                                **step_config_copy
+                            )
+                        # If the result is a job_id string, poll the status method for terminal state
+                        if isinstance(step_result, str):
+                            # Try to get the status from the step class
+                            step_class = getattr(step_module, f"{step_name.capitalize()}Step", None)
+                            if step_class:
+                                step_instance = step_class()
+                                for _ in range(30):
+                                    status_info = step_instance.status(step_result)
+                                    if status_info.get("status") in ("COMPLETED", "FAILED"):
+                                        break
+                                    time.sleep(1)
+                                status_val = status_info.get("status", StepStatus.COMPLETED)
+                                result = {
+                                    "step": step_name,
+                                    "status": status_val,
+                                    "job_id": job_id_value,
+                                    "repository_path": repository_path,
+                                    "start_time": time.time(),
+                                    "end_time": time.time(),
+                                    "duration": status_info.get("duration", 0.1),
+                                    "message": status_info.get("message", f"Completed {step_name} step"),
+                                }
+                                if status_val == StepStatus.FAILED:
+                                    result["error"] = status_info.get("error", "Unknown error")
+                            else:
+                                result = {
+                                    "step": step_name,
+                                    "status": StepStatus.COMPLETED,
+                                    "job_id": job_id_value,
+                                    "duration": 0.01,
+                                    "message": f"Completed {step_name} step (no status polling)",
+                                }
+                        else:
+                            result = {
+                                "step": step_name,
+                                "status": step_result.get("status", StepStatus.COMPLETED),
+                                "job_id": job_id_value,
+                                "repository_path": repository_path,
+                                "start_time": time.time(),
+                                "end_time": time.time(),
+                                "duration": step_result.get("duration", 0.1),
+                                "message": step_result.get("message", f"Completed {step_name} step"),
+                            }
+                            if step_result.get("status") == StepStatus.FAILED:
+                                result["error"] = step_result.get("error", "Unknown error")
+                    else:
+                        result = {
+                            "step": step_name,
+                            "status": StepStatus.COMPLETED,
+                            "job_id": job_id_value,
+                            "duration": 0.01,
+                            "message": f"Skipped {step_name} step in eager mode",
+                        }
+                except Exception as e:
+                    result = {
+                        "step": step_name,
+                        "status": StepStatus.FAILED,
+                        "job_id": job_id_value,
+                        "duration": 0.01,
+                        "message": f"Error running {step_name} step in eager mode: {e}",
+                        "error": str(e),
+                    }
             all_results.append(result)
         end_time = time.time()
         duration = end_time - start_time

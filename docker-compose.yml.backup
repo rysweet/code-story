@@ -42,36 +42,51 @@ services:
       timeout: 5s
       retries: 5
   
-  # Celery worker using proper Dockerfile
+  # Add a real Celery worker
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
+    image: python:${PYTHON_VERSION:-3.12-slim}
     container_name: ${CONTAINER_PREFIX:-codestory}-worker
     volumes:
+      - .:/app
       - ${REPOSITORY_PATH:-~/repositories}:/repositories
       - ${REPOSITORY_SOURCE:-$HOME/repositories}:${REPOSITORY_DEST:-/repositories}
-      - ~/.azure:/home/appuser/.azure
+      - ~/.azure:/root/.azure
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
-      - NEO4J_DATABASE=${NEO4J_DATABASE:-neo4j}
-      - REDIS__URI=redis://redis:6379
-      - CODESTORY_REDIS__URI=redis://redis:6379
-      - WORKER_LOGLEVEL=${WORKER_LOGLEVEL:-INFO}
-      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
+    working_dir: /app
+    command: >
+      bash -c "apt-get update && apt-get install -y curl build-essential gnupg lsb-release docker.io &&
+      curl -sL https://aka.ms/InstallAzureCLIDeb | bash &&
+      groupadd -f docker &&
+      adduser --disabled-password --gecos '' appuser &&
+      usermod -aG docker appuser &&
+      chown -R appuser:appuser /app &&
+      mkdir -p /home/appuser/.local/bin &&
+      mkdir -p /home/appuser/.azure &&
+      cp -r /root/.azure/* /home/appuser/.azure/ || true &&
+      chown -R appuser:appuser /home/appuser &&
+      chown root:docker /var/run/docker.sock || true &&
+      chmod 660 /var/run/docker.sock || true &&
+      cd /app && bash /app/scripts/setup_container_config.sh &&
+      su appuser -c '
+        python -m venv /app/.venv &&
+        . /app/.venv/bin/activate &&
+        pip install --upgrade pip &&
+        pip install -e . &&
+        pip install docker azure-identity &&
+        cp /app/.codestory.container.toml /app/.codestory.toml &&
+        echo \"Starting Celery worker...\" &&
+        cd /app && PYTHONPATH=/app python -m celery -A codestory.ingestion_pipeline.celery_app worker --loglevel=${WORKER_LOGLEVEL:-INFO} --concurrency=${WORKER_CONCURRENCY:-4} -Q ingestion
+      '"
     depends_on:
       neo4j:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "/app/.venv/bin/celery -A codestory.ingestion_pipeline.celery_app inspect ping || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "celery -A codestory.ingestion_pipeline.celery_app inspect ping || celery -A codestory.ingestion_pipeline.celery_app inspect ping -d celery@$$(hostname) || exit 1"]
+      interval: 15s
       timeout: 15s
-      retries: 10
+      retries: 15
       start_period: 180s
       
   service:
@@ -89,13 +104,6 @@ services:
       - ${REPOSITORY_SOURCE:-$HOME/repositories}:${REPOSITORY_DEST:-/repositories}
       # Mount Azure credentials
       - ~/.azure:/root/.azure
-    environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - CODESTORY_NEO4J__URI=bolt://neo4j:7687
-      - CODESTORY_NEO4J__USERNAME=neo4j
-      - CODESTORY_NEO4J__PASSWORD=${NEO4J_PASSWORD:-password}
-      - CODESTORY_NEO4J__DATABASE=${NEO4J_DATABASE:-neo4j}
-      - CODESTORY_REDIS__URI=redis://redis:6379
     env_file:
       - .env
     depends_on:

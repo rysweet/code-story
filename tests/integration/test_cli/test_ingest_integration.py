@@ -19,7 +19,6 @@ class TestIngestCommands:
     """Integration tests for ingestion-related CLI commands."""
 
     @pytest.mark.integration
-    @pytest.mark.require_service
     def test_ingest_start_and_status(
         self: Any,
         cli_runner: CliRunner,
@@ -45,7 +44,7 @@ class TestIngestCommands:
             error_patterns = ["Error:", "Failed", "404", "Connection", "timeout", "refused"]
             has_error = any(pattern in result.output for pattern in error_patterns)
             if result.exit_code != 0 and has_error:
-                pytest.skip(f"Infrastructure failure - CLI handled error gracefully. Exit code: {result.exit_code}")
+                pytest.fail(result.stderr or result.stdout or f"Infrastructure failure - CLI error. Exit code: {result.exit_code}")
             else:
                 pytest.fail(f"No 'Job ID:' line found. Exit code: {result.exit_code}, Output: {result.output}")
         
@@ -62,7 +61,6 @@ class TestIngestCommands:
         )
 
     @pytest.mark.integration
-    @pytest.mark.require_service
     def test_ingest_start_with_countdown(
         self: Any,
         cli_runner: CliRunner,
@@ -105,7 +103,7 @@ class TestIngestCommands:
                 error_patterns = ["Error:", "Failed", "404", "Connection", "timeout", "refused"]
                 has_error = any(pattern in result.output for pattern in error_patterns)
                 if result.exit_code != 0 and has_error:
-                    pytest.skip(f"Infrastructure failure - CLI handled error gracefully. Exit code: {result.exit_code}")
+                    pytest.fail(result.stderr or result.stdout or f"Infrastructure failure - CLI error. Exit code: {result.exit_code}")
                 else:
                     pytest.fail(f"No 'Job ID:' line found. Exit code: {result.exit_code}, Output: {result.output}")
             
@@ -124,7 +122,6 @@ class TestIngestCommands:
 
     @pytest.mark.integration
     @pytest.mark.require_service
-    @pytest.mark.skip("Skipped by user direction: --eta (delayed ingestion) cannot be reliably tested in CI or with temp/persistent dirs due to worker process isolation and time mocking limitations.")
     def test_ingest_start_with_eta(
         self: Any,
         cli_runner: CliRunner,
@@ -138,18 +135,23 @@ class TestIngestCommands:
         pass
 
     @pytest.mark.integration
-    def test_ingest_start_command_format(self: Any, cli_runner: CliRunner) -> None:
+    def test_ingest_start_command_format(self: Any, cli_runner) -> None:
         """Test that 'ingest start' uses positional arguments correctly."""
-        invalid_result = cli_runner.invoke(app, ["ingest", "start", "--path", "."])
-        assert invalid_result.exit_code != 0
-        assert "Error: No such option: --path" in invalid_result.output
-        help_result = cli_runner.invoke(app, ["ingest", "start", "--help"])
-        assert help_result.exit_code == 0
-        assert "Usage: app ingest start [OPTIONS] REPOSITORY_PATH" in help_result.output
-        assert "REPOSITORY_PATH" in help_result.output
+        invalid_result = cli_runner(["ingest", "start", "--path", "."])
+        assert invalid_result.returncode != 0
+        assert (
+            "Error: No such option: --path" in invalid_result.stdout
+            or "Error: No such option: --path" in getattr(invalid_result, "stderr", "")
+        )
+        help_result = cli_runner(["ingest", "start", "--help"])
+        assert help_result.returncode == 0
+        assert (
+            "Usage: python -m codestory.cli.main ingest start [OPTIONS] REPOSITORY_PATH" in help_result.stdout
+            or "Usage: app ingest start [OPTIONS] REPOSITORY_PATH" in help_result.stdout
+        )
+        assert "REPOSITORY_PATH" in help_result.stdout
 
     @pytest.mark.integration
-    @pytest.mark.require_service
     def test_ingest_jobs_list(
         self: Any, cli_runner: CliRunner,
     ) -> None:
@@ -160,11 +162,8 @@ class TestIngestCommands:
         
         # Check if CLI handled the request properly (even if infrastructure failed)
         if result.exit_code != 0:
-            # Infrastructure failure - check if CLI handled error gracefully
-            if ("Error:" in result.output or "Failed" in result.output or "404" in result.output or "ServiceError" in result.output):
-                pytest.skip(f"Infrastructure failure - CLI handled error gracefully. Exit code: {result.exit_code}")
-            else:
-                pytest.fail(f"CLI failed without clear error message: {result.output}")
+            # Infrastructure failure - fail the test with CLI output
+            pytest.fail(result.stderr or result.stdout or f"CLI failed. Exit code: {result.exit_code}, Output: {result.output}")
         
         assert result.exit_code == 0
         assert (
@@ -173,7 +172,6 @@ class TestIngestCommands:
         )
 
     @pytest.mark.integration
-    @pytest.mark.require_service
     def test_mount_command(
         self: Any, cli_runner: CliRunner,
     ) -> None:
@@ -192,7 +190,7 @@ class TestIngestCommands:
             if result.exit_code != 0:
                 # Infrastructure failure - check if CLI handled error gracefully
                 if ("Error:" in result.output or "Failed" in result.output or "docker" in result.output.lower()):
-                    pytest.skip("Infrastructure failure - CLI handled error gracefully")
+                    pytest.fail(result.stderr or result.stdout or f"Infrastructure failure - CLI error. Exit code: {result.exit_code}")
                 else:
                     pytest.fail(f"CLI failed without clear error message: {result.output}")
             
@@ -203,11 +201,9 @@ class TestIngestCommands:
             )
             
             # Check if mount worked, but don't fail if infrastructure issues prevented it
-            if not is_repo_mounted(temp_dir):
-                pytest.skip("Mount verification failed - likely due to infrastructure issues")
+            assert is_repo_mounted(temp_dir), "Mount verification failed"
 
     @pytest.mark.integration
-    @pytest.mark.require_service
     def test_force_remount(
         self: Any, cli_runner: CliRunner,
     ) -> None:
@@ -229,7 +225,7 @@ class TestIngestCommands:
             if result.exit_code != 0:
                 # Infrastructure failure - check if CLI handled error gracefully
                 if ("Error:" in result.output or "Failed" in result.output or "docker" in result.output.lower()):
-                    pytest.skip("Infrastructure failure - CLI handled error gracefully")
+                    pytest.fail(result.stderr or result.stdout or f"Infrastructure failure - CLI error. Exit code: {result.exit_code}")
                 else:
                     pytest.fail(f"CLI failed without clear error message: {result.output}")
             
@@ -237,5 +233,4 @@ class TestIngestCommands:
             assert "Successfully mounted" in result.output
             
             # Check if mount worked, but don't fail if infrastructure issues prevented it
-            if not is_repo_mounted(temp_dir):
-                pytest.skip("Mount verification failed - likely due to infrastructure issues")
+            assert is_repo_mounted(temp_dir), "Mount verification failed"

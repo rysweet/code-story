@@ -51,6 +51,7 @@ pnpm-debug.log*
 
 # Docker
 docker-volumes/
+build-context-inspect/
 
 # Runtime files
 .celery.pid

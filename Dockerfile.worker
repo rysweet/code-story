@@ -5,40 +5,42 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential curl git python3-venv virtualenv && \
     rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN useradd -m appuser
-
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy project to /app as root
-COPY . /app
+# Copy only necessary files to /app as root (avoid .git and other unnecessary files)
+COPY pyproject.toml poetry.lock* README.md ./
+COPY src ./src
+COPY tests ./tests
+COPY requirements.txt ./
+COPY scripts ./scripts
+
+# Copy config files
+COPY .codestory.default.toml ./.codestory.default.toml
+
+# Create non-root user before chown
+RUN useradd -u 1000 -m appuser
 
 # Create venv and install Poetry and project dependencies as root (after copy)
 RUN pip install --upgrade pip wheel virtualenv && \
     python3 -m virtualenv --clear /app/.venv && \
-    find /app/.venv && \
-    ls -l /app/.venv/bin && \
     /app/.venv/bin/pip install --upgrade pip wheel && \
     /app/.venv/bin/pip install poetry && \
     /app/.venv/bin/poetry config virtualenvs.create false && \
     /app/.venv/bin/poetry install --no-interaction --no-ansi --with dev --no-root && \
     /app/.venv/bin/pip install -e . && \
     /app/.venv/bin/pip install celery && \
-    ls -l /app/.venv/bin && \
     /app/.venv/bin/python -m celery --version
 
-RUN ls -l /app/.venv
-RUN ls -l /app/.venv/bin
-RUN echo "DEBUG: $(ls -l /app/.venv/bin)"
-RUN file /app/.venv/bin/python || true
-RUN cat /app/.venv/bin/python || true
+# Setup container configuration
+RUN bash scripts/setup_container_config.sh
 
-# Set ownership and switch to non-root user
-RUN chown -R appuser:appuser /app
+# Set ownership of /app as root before switching to appuser
+RUN chown -R 1000:1000 /app
+
 USER appuser
 
 # Default command runs celery worker using venv python

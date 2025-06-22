@@ -121,7 +121,7 @@ class DocumentFinder:
         """
         result: list[Any] = []
         query = "\n        MATCH (f:File)\n        RETURN ID(f) as id, f.path as path, f.name as name, f.extension as extension\n        "
-        files = self.connector.run_query(query, fetch_all=True)
+        files = self.connector.execute_query(query)
         for file_data in files:
             file_path = file_data["path"]
             file_name = file_data["name"].lower()
@@ -176,7 +176,7 @@ class DocumentFinder:
         """
         result: list[Any] = []
         query = '\n        MATCH (f:File)\n        WHERE f.extension IN ["py", "js", "ts", "java", "c", "cpp", "h", "hpp"]\n        RETURN ID(f) as id, f.path as path, f.name as name, f.extension as extension\n        '
-        files = self.connector.run_query(query, fetch_all=True)
+        files = self.connector.execute_query(query)
         for file_data in files:
             file_path = file_data["path"]
             file_extension = file_data.get("extension", "").lower()

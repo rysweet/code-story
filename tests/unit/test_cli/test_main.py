@@ -136,3 +136,29 @@ class TestCliMain:
             assert "Code Story CLI" in result.output
             # Should contain version number (v0.1.0 or similar format)
             assert "v" in result.output
+# Test --host and --port options and their precedence at the module level
+def test_host_and_port_options(cli_runner: CliRunner) -> None:
+    """Test --host and --port options and their precedence."""
+    with patch("codestory.cli.main.ServiceClient") as mock_client_class:
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+        mock_settings = MagicMock()
+        mock_settings.service.host = None
+        mock_settings.service.port = 8000
+        with patch("codestory.cli.main.get_settings", return_value=mock_settings):
+            # --host only
+            cli_runner.invoke(app, ["--host", "127.0.0.1", "ingest", "jobs"])
+            client_args = mock_client_class.call_args[1]
+            assert client_args["base_url"] == "http://127.0.0.1:8000"
+
+            # --port only
+            mock_client_class.reset_mock()
+            cli_runner.invoke(app, ["--port", "9000", "ingest", "jobs"])
+            client_args = mock_client_class.call_args[1]
+            assert client_args["base_url"] == "http://localhost:9000"
+
+            # --host and --port
+            mock_client_class.reset_mock()
+            cli_runner.invoke(app, ["--host", "1.2.3.4", "--port", "9000", "ingest", "jobs"])
+            client_args = mock_client_class.call_args[1]
+            assert client_args["base_url"] == "http://1.2.3.4:9000"

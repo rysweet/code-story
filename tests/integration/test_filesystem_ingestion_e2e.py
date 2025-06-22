@@ -22,6 +22,11 @@ from codestory.cli.main import main as cli_main
 from codestory.config.settings import get_settings
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
+import os
+
+
+
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -267,6 +272,7 @@ class Neo4jTestValidator:
 
     def __init__(self: Any) -> None:
         settings = get_settings()
+        print(f"TEST_DEBUG: settings.neo4j.database = {settings.neo4j.database}")
         self.connector = Neo4jConnector(
             uri=settings.neo4j.uri,
             username=settings.neo4j.username,

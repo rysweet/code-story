@@ -1,7 +1,6 @@
 import multiprocessing
 multiprocessing.set_start_method("fork", force=True)
 import os
-import subprocess
 
 # Load .env file for OpenAI and other credentials
 try:
@@ -10,72 +9,147 @@ try:
 except ImportError:
     pass
 
-def run_celery_worker(celery_cmd, env, cwd):
-    subprocess.run(
-        celery_cmd,
-        stdout=open("celery_worker_stdout.log", "w"),
-        stderr=open("celery_worker_stderr.log", "w"),
-        text=True,
-        env=env,
-        cwd=cwd,
-    )
+import pytest
 
-# ---------------------------------------------------------------------------
-# Environment overrides to ensure all integration tests run self-contained
-# ---------------------------------------------------------------------------
-os.environ["REDIS__URI"] = "redis://localhost:6379/0"
-# Patch environment for Azure OpenAI endpoint/deployment
-os.environ["AZURE_OPENAI__ENDPOINT"] = "https://ai-adapt-oai-eastus2.openai.azure.com"
-os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "o3"
-os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
-os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
-os.environ.setdefault("NEO4J_URI", "bolt://localhost:7687")
-os.environ.setdefault("NEO4J_HTTP_URL", "http://localhost:7475")
-
-# Map double-underscore OpenAI env vars to single-underscore for compatibility
-if "AZURE_OPENAI__ENDPOINT" in os.environ:
-    os.environ["AZURE_OPENAI_ENDPOINT"] = os.environ["AZURE_OPENAI__ENDPOINT"]
-if "AZURE_OPENAI__API_KEY" in os.environ:
-    os.environ["AZURE_OPENAI_KEY"] = os.environ["AZURE_OPENAI__API_KEY"]
-
-# Disable “fail-fast” behaviour in use_real_adapters so tests may fall back
-# to dummy adapters if real services are unavailable.
-os.environ["CODESTORY_FAIL_FAST_ADAPTERS"] = "0"
-
-# ---------------------------------------------------------------------------
-# Helper utilities
-# ---------------------------------------------------------------------------
-import contextlib
-def _remove_container_if_exists(container_name: str, retries: int = 5, delay: float = 1.0):
-    """Remove a Docker container by name if it exists, ignoring errors."""
-    import docker, time
-    client = docker.from_env()
-    try:
-        for c in client.containers.list(all=True, filters={"name": container_name}):
-            with contextlib.suppress(Exception):
-                c.remove(force=True)
-    except Exception:
-        pass
-    for _ in range(retries):
-        if not any(
-            c.name == container_name
-            for c in client.containers.list(all=True, filters={"name": container_name})
-        ):
-            break
-        time.sleep(delay)
-    client.close()
+# Use testcontainers for integration test infrastructure
+from testcontainers.neo4j import Neo4jContainer
+from testcontainers.redis import RedisContainer
 
 import socket
-def _find_free_port() -> int:
-    with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
+import subprocess
+import sys
+import time
+import requests
 
-# ---------------------------------------------------------------------------
+@pytest.fixture(scope="session", autouse=True)
+def test_containers_and_service():
+    """
+    Start Neo4j and Redis using testcontainers, configure environment, and launch the Code Story service and worker for integration tests.
+    """
+    with Neo4jContainer("neo4j:community") as neo4j:
+        bolt_url = f"bolt://{neo4j.get_container_host_ip()}:{neo4j.get_exposed_port(7687)}"
+        os.environ["NEO4J_URI"] = bolt_url
+        os.environ["NEO4J_USERNAME"] = "neo4j"
+        os.environ["NEO4J_PASSWORD"] = "password"
+        os.environ["NEO4J_DATABASE"] = "neo4j"
+        # Also set the settings-compatible env vars for all subprocesses
+        os.environ["CODESTORY_NEO4J__URI"] = bolt_url
+        os.environ["CODESTORY_NEO4J__USERNAME"] = "neo4j"
+        os.environ["CODESTORY_NEO4J__PASSWORD"] = "password"
+        os.environ["CODESTORY_NEO4J__DATABASE"] = "neo4j"
+        print(f"[conftest DEBUG] Set CODESTORY_NEO4J__URI={os.environ['CODESTORY_NEO4J__URI']}")
+        with RedisContainer("redis:7.2.4-alpine") as redis:
+            redis_url = f"redis://{redis.get_container_host_ip()}:{redis.get_exposed_port(6379)}/0"
+            os.environ["REDIS__URI"] = redis_url
+            os.environ["CELERY_BROKER_URL"] = redis_url
+            os.environ["CELERY_RESULT_BACKEND"] = redis_url
+            # Set OpenAI environment variables for service/worker
+            # Set both single-underscore and double-underscore OpenAI env vars for compatibility
+            os.environ["AZURE_OPENAI_ENDPOINT"] = "https://ai-adapt-oai-eastus2.openai.azure.com/"
+            os.environ["AZURE_OPENAI_KEY"] = "b892dc164a634fc49bd07bcbbf9d1a76"
+            os.environ["AZURE_OPENAI_API_VERSION"] = "2025-01-01-preview"
+            os.environ["AZURE_OPENAI_MODEL_CHAT"] = "o3"
+            os.environ["AZURE_OPENAI_MODEL_REASONING"] = "o3"
+            os.environ["AZURE_OPENAI__ENDPOINT"] = "https://ai-adapt-oai-eastus2.openai.azure.com/"
+            os.environ["AZURE_OPENAI__API_KEY"] = "b892dc164a634fc49bd07bcbbf9d1a76"
+            os.environ["AZURE_OPENAI__API_VERSION"] = "2025-01-01-preview"
+            os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "o3"
+            os.environ["AZURE_OPENAI__REASONING_MODEL"] = "o3"
+            # Enable synchronous Celery execution for tests
+            os.environ["CELERY_TASK_ALWAYS_EAGER"] = "False"
+            os.environ["CELERY_TASK_EAGER_PROPAGATES"] = "False"
+
+            # Allocate a free port for the service
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", 0))
+                svc_port = s.getsockname()[1]
+
+            os.environ["CODESTORY_TEST_PORT"] = str(svc_port)
+            os.environ["CODESTORY_TEST_HOST"] = "localhost"
+            os.environ["PORT"] = str(svc_port)
+
+            # Start the Code Story service as a subprocess using uvicorn
+            service_log = f".code_story_session_logs/codestory_service_{svc_port}.log"
+            os.makedirs(".code_story_session_logs", exist_ok=True)
+            # Start the ingestion worker as a subprocess BEFORE the service
+            print(f"[conftest DEBUG] Redis URL: {redis_url}")
+            print(f"[conftest DEBUG] Service port: {svc_port}")
+            worker_log = f".code_story_session_logs/codestory_worker_{svc_port}.log"
+            print(f"[conftest DEBUG] Worker log path: {worker_log}")
+            worker_proc = subprocess.Popen(
+                [
+                    "celery", "-A", "src.codestory.ingestion_pipeline.celery_app", "worker",
+                    "--loglevel=INFO",
+                    "--concurrency=1",
+                    "--queues=ingestion",
+                    "--hostname=worker@%h",
+                    "--pool=solo",
+                ],
+                env=os.environ.copy(),
+                stdout=open(worker_log, "w"),
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                close_fds=True,
+                stdin=subprocess.DEVNULL,
+            )
+
+            # Wait longer for the worker to be ready and log status
+            print("[conftest DEBUG] Waiting for ingestion worker to start...")
+            for i in range(20):
+                if worker_proc.poll() is not None:
+                    print(f"[conftest ERROR] Worker process exited early with code {worker_proc.returncode}")
+                    break
+                time.sleep(1)
+            print("[conftest DEBUG] Worker startup wait complete.")
+
+            # Now start the Code Story service as a subprocess using uvicorn
+            proc = subprocess.Popen(
+                [
+                    sys.executable, "-m", "uvicorn",
+                    "src.codestory_service.main:app",
+                    "--host", "0.0.0.0",
+                    "--port", str(svc_port),
+                ],
+                env=os.environ.copy(),
+                stdout=open(service_log, "w"),
+                stderr=subprocess.STDOUT,
+            )
+
+            # Wait for the service to become healthy
+            health_url = f"http://localhost:{svc_port}/health"
+            for _ in range(60):
+                try:
+                    resp = requests.get(health_url, timeout=1)
+                    if resp.status_code == 200:
+                        break
+                except Exception:
+                    time.sleep(0.5)
+            else:
+                proc.terminate()
+                proc.wait()
+                raise RuntimeError(f"Code Story service did not become healthy on {health_url}")
+
+            yield
+
+            # After test run, check for worker log existence
+            if not os.path.exists(worker_log):
+                print(f"[conftest ERROR] Worker log file not found: {worker_log}")
+
+            proc.terminate()
+            try:
+                proc.wait(timeout=10)
+            except Exception:
+                proc.kill()
+
+            worker_proc.terminate()
+            try:
+                worker_proc.wait(timeout=10)
+            except Exception:
+                worker_proc.kill()
+
 # Pytest hooks – auto-mark integration tests
-# ---------------------------------------------------------------------------
 from pathlib import Path
-import pytest, tempfile, json, time, requests
+import tempfile, json, time, requests
 
 _INTEGRATION_ROOT = Path(__file__).parent.resolve()
 
@@ -84,117 +158,3 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         item_path = Path(str(item.fspath)).resolve()
         if item_path.is_relative_to(_INTEGRATION_ROOT):
             item.add_marker(pytest.mark.integration)
-
-# ---------------------------------------------------------------------------
-# Global, lightweight service bootstrap
-# ---------------------------------------------------------------------------
-def _kill_existing_processes() -> int:
-    """Terminate stray uvicorn / celery processes from earlier test runs."""
-    import psutil, signal, time
-    killed = 0
-    for proc in psutil.process_iter(["pid", "cmdline"]):
-        try:
-            cmd = " ".join(proc.info["cmdline"] or [])
-            if "uvicorn" in cmd or "celery" in cmd:
-                psutil.Process(proc.info["pid"]).terminate()
-                killed += 1
-        except Exception:
-            continue
-    if killed:
-        time.sleep(2)
-    return killed
-
-@pytest.fixture(scope="session", autouse=True)
-def _self_contained_environment():
-    """
-    Sets environment variables and ensures all integration tests run self-contained.
-    Starts/stops codestory-service and codestory-worker as local subprocesses.
-    """
-    print("\n[pytest-setup] Preparing full integration environment")
-    _kill_existing_processes()
-    os.environ["CODESTORY_TEST_ENV"] = "true"
-    # Start codestory-service
-    service_proc = subprocess.Popen(
-        ["uvicorn", "src.codestory_service.main:app", "--host", "127.0.0.1", "--port", "8000"],
-        stdout=open("service_stdout.log", "w"),
-        stderr=open("service_stderr.log", "w"),
-        cwd=os.getcwd(),
-        env=os.environ.copy(),
-    )
-    # Start codestory-worker (Celery)
-    worker_proc = subprocess.Popen(
-        [
-            "celery",
-            "-A",
-            "src.codestory.ingestion_pipeline.celery_app:app",
-            "worker",
-            "-l",
-            "info",
-            "-Q",
-            "high,default,low,ingestion",
-        ],
-        stdout=open("worker_stdout.log", "w"),
-        stderr=open("worker_stderr.log", "w"),
-        cwd=os.getcwd(),
-        env=os.environ.copy(),
-    )
-    yield
-    print("\n[pytest-teardown] Full integration environment finished")
-    _kill_existing_processes()
-    service_proc.terminate()
-    worker_proc.terminate()
-
-# ---------------------------------------------------------------------------
-# Neo4j fixture – loads .cypher files into local / containerised Neo4j
-# ---------------------------------------------------------------------------
-@pytest.fixture(scope="session", autouse=True)
-def prepare_containerized_database():
-    """
-    Load Cypher fixture files into Neo4j if reachable on localhost:7687.
-    Falls back gracefully if Neo4j is not available.
-    """
-    from neo4j import GraphDatabase, basic_auth
-    from neo4j.exceptions import ServiceUnavailable, AuthError
-    cypher_dir = Path(__file__).parent.parent / "fixtures" / "cypher"
-    files = sorted(cypher_dir.glob("*.cypher"))
-    uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-    user = os.getenv("NEO4J_USERNAME", "neo4j")
-    pwd  = os.getenv("NEO4J_PASSWORD", "password")
-
-    try:
-        driver = GraphDatabase.driver(uri, auth=basic_auth(user, pwd), connection_timeout=5)
-        # Test the connection immediately
-        with driver.session() as test_session:
-            test_session.run("RETURN 1")
-    except Exception as e:
-        print(f"[neo4j-fixture] Neo4j not reachable at {uri}: {e}. Continuing without DB.")
-        yield
-        return
-
-    try:
-        with driver.session() as session:
-            session.run("MATCH (n) DETACH DELETE n")
-            for fp in files:
-                cypher_content = fp.read_text(encoding="utf-8")
-                # Split into individual statements; ignore comments and empty strings
-                statements = [
-                    stmt.strip()
-                    for stmt in cypher_content.split(";")
-                    if stmt.strip() and not stmt.strip().startswith("//")
-                ]
-                from neo4j.exceptions import ConstraintError
-                for stmt in statements:
-                    try:
-                        session.execute_write(lambda tx, q=stmt: tx.run(q))
-                    except ConstraintError:
-                        # If fixture loaded once already in another worker, ignore duplicates
-                        print(f"[neo4j-fixture] Skipping duplicate constraint/record for statement: {stmt[:60]}...")
-        print("[neo4j-fixture] Database prepared with test fixtures")
-    except Exception as e:
-        print(f"[neo4j-fixture] Error setting up database fixtures: {e}. Continuing without fixtures.")
-    finally:
-        yield
-        try:
-            driver.close()
-        except Exception:
-            pass

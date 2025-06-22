@@ -43,18 +43,10 @@ class DocumentationGrapherStep(PipelineStep):
     def run(self, repository_path: str, **config: Any) -> str:
         """Run the DocumentationGrapher step.
 
-        Args:
-            repository_path: Path to the repository to process
-            **config: Additional configuration parameters
-                - ignore_patterns: List of patterns to ignore
-                - use_llm: Whether to use LLM for advanced analysis
-
-        Returns:
-            str: Job ID that can be used to check the status
-
-        Raises:
-            ValueError: If the repository path is invalid
+        In eager mode (integration test), run the Celery task synchronously and update status.
         """
+        import os
+
         # Validate repository path
         if not os.path.isdir(repository_path):
             raise ValueError(
@@ -67,6 +59,30 @@ class DocumentationGrapherStep(PipelineStep):
         # Extract configuration
         ignore_patterns = config.get("ignore_patterns", [])
         use_llm = config.get("use_llm", True)
+
+        # If in eager mode, run the Celery task synchronously and update status
+        import os
+        if os.environ.get("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true", "yes", "on"):
+            from codestory_docgrapher.step import run_docgrapher
+            result = run_docgrapher(
+                repository_path=repository_path,
+                job_id=job_id,
+                ignore_patterns=ignore_patterns,
+                use_llm=use_llm,
+                config=config,
+            )
+            self.active_jobs[job_id] = {
+                "task_id": "eager-mode",
+                "repository_path": repository_path,
+                "start_time": time.time(),
+                "status": result.get("status", StepStatus.COMPLETED),
+                "config": config,
+                "result": result,
+            }
+            logger.info(
+                f"Started DocumentationGrapher job {job_id} for repository: {repository_path} (eager mode)"
+            )
+            return job_id
 
         # Start the Celery task using current_app.send_task with the fully qualified task name
         from celery import current_app
@@ -272,7 +288,7 @@ def run_docgrapher(
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the DocumentationGrapher workflow step as a Celery task.
-
+    
     Args:
         self: Celery task instance
         repository_path: Path to the repository to process
@@ -292,28 +308,49 @@ def run_docgrapher(
     # Check if running in update mode
     config.get("update_mode", False)  # Used by subclasses
 
-    # Create Neo4j connector
-    settings = get_settings()
-    connector = Neo4jConnector(
-        uri=settings.neo4j.uri,
-        username=settings.neo4j.username,
-        password=(
-            settings.neo4j.password.get_secret_value()
-            if settings.neo4j.password is not None
-            else ""
-        ),
-        database=settings.neo4j.database,
-    )
+    # Create Neo4j connector, prefer config overrides for test isolation
+    config = config or {}
+    neo4j_uri = config.get("neo4j_uri")
+    neo4j_username = config.get("neo4j_username")
+    neo4j_password = config.get("neo4j_password")
+    neo4j_database = config.get("neo4j_database")
+    if neo4j_uri and neo4j_username and neo4j_password and neo4j_database:
+        connector = Neo4jConnector(
+            uri=neo4j_uri,
+            username=neo4j_username,
+            password=neo4j_password,
+            database=neo4j_database,
+        )
+    else:
+        settings = get_settings()
+        connector = Neo4jConnector(
+            uri=settings.neo4j.uri,
+            username=settings.neo4j.username,
+            password=(
+                settings.neo4j.password.get_secret_value()
+                if settings.neo4j.password is not None
+                else ""
+            ),
+            database=settings.neo4j.database,
+        )
 
     try:
-        # Notify of progress
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 0.0,
-                "message": "Finding documentation files...",
-            },
+        # Check if we're in eager mode (self will be a real task instance if not)
+        in_eager_mode = (
+            self is None or
+            not hasattr(self, 'update_state') or
+            os.environ.get("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true", "yes", "on")
         )
+        
+        # Notify of progress (only if not in eager mode)
+        if not in_eager_mode:
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "progress": 0.0,
+                    "message": "Finding documentation files...",
+                },
+            )
 
         # Find documentation files
         document_finder = DocumentFinder(connector, repository_path)
@@ -326,14 +363,15 @@ def run_docgrapher(
         tracker = ProgressTracker(knowledge_graph.graph)
         tracker.set_total_documents(len(doc_files))
 
-        # Update progress
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 5.0,
-                "message": f"Found {len(doc_files)} documentation files to process",
-            },
-        )
+        # Update progress (only if not in eager mode)
+        if not in_eager_mode:
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "progress": 5.0,
+                    "message": f"Found {len(doc_files)} documentation files to process",
+                },
+            )
 
         # Process each documentation file
         for doc_file in doc_files:
@@ -364,34 +402,37 @@ def run_docgrapher(
             # Update progress
             if tracker.should_update():
                 progress_message = tracker.update_progress()
-                self.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "progress": tracker.get_progress(),
-                        "message": progress_message,
-                    },
-                )
+                if not in_eager_mode:
+                    self.update_state(
+                        state="PROGRESS",
+                        meta={
+                            "progress": tracker.get_progress(),
+                            "message": progress_message,
+                        },
+                    )
 
-        # Update progress
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 75.0,
-                "message": "Linking documentation to code entities...",
-            },
-        )
+        # Update progress (only if not in eager mode)
+        if not in_eager_mode:
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "progress": 75.0,
+                    "message": "Linking documentation to code entities...",
+                },
+            )
 
         # Link documentation to code entities
         knowledge_graph.link_to_code_entities()
 
-        # Update progress
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 90.0,
-                "message": "Storing documentation graph in Neo4j...",
-            },
-        )
+        # Update progress (only if not in eager mode)
+        if not in_eager_mode:
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "progress": 90.0,
+                    "message": "Storing documentation graph in Neo4j...",
+                },
+            )
 
         # Store graph in Neo4j
         knowledge_graph.store_in_neo4j()

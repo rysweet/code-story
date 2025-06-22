@@ -23,7 +23,7 @@ from codestory.config.settings import (
 
 def create_test_settings() -> Any:
     """Create a fully-initialized settings object for tests."""
-    neo4j = Neo4jSettings(uri="bolt://localhost:7687", username="neo4j", password="password", database="testdb")  # type: ignore[arg-type,call-arg]
+    neo4j = Neo4jSettings(uri="bolt://localhost:7687", username="neo4j", password="password", database="neo4j")  # type: ignore[arg-type,call-arg]
     redis = RedisSettings(uri="redis://localhost:6379/0")
     openai = OpenAISettings(api_key=SecretStr("sk-test-key-openai"), endpoint="https://api.openai.com/v1", embedding_model="text-embedding-3-small", chat_model="gpt-4o", reasoning_model="gpt-4o")  # type: ignore[call-arg]
     azure_openai = AzureOpenAISettings(
@@ -101,7 +101,7 @@ def setup_test_settings() -> Any:
     )
     new_patch.start()
     os.environ["CODESTORY_TEST_ENV"] = "true"
-    os.environ["NEO4J_DATABASE"] = "testdb"
+    os.environ["NEO4J_DATABASE"] = "neo4j"
     return (settings_patch, new_patch)
 
 
@@ -111,7 +111,7 @@ def test_settings_creation() -> None:
     assert settings is not None
     assert settings.neo4j is not None
     assert settings.neo4j.uri == "bolt://localhost:7687"
-    assert settings.neo4j.database == "testdb"
+    assert settings.neo4j.database == "neo4j"
     assert settings.redis is not None
     # Accept both "redis://localhost:6379" and "redis://localhost:6379/0"
     assert settings.redis.uri in ("redis://localhost:6379", "redis://localhost:6379/0")

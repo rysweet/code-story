@@ -59,6 +59,7 @@ class OpenAIClient:
         timeout: float = 60.0,
         max_retries: int = 5,
         retry_backoff_factor: float = 2.0,
+        api_key: str | None = None,
         **config_options: Any,
     ) -> None:
         """Initialize client with Azure OpenAI credentials and options.
@@ -92,12 +93,8 @@ class OpenAIClient:
         if not self.endpoint:
             raise AuthenticationError("API endpoint is required")
         
-        # If endpoint contains full URL path, extract the base URL
-        if "/openai/deployments/" in self.endpoint:
-            logger.info(f"Full URL endpoint detected: {self.endpoint}")
-            # Extract base URL (everything before /openai/deployments/)
-            self.endpoint = self.endpoint.split("/openai/deployments/")[0]
-            logger.info(f"Extracted base endpoint: {self.endpoint}")
+        # Use the endpoint as-is (do not parse or construct)
+        # No-op: do not modify self.endpoint
 
         # Store default models (also used as deployment names)
         self.embedding_model = embedding_model
@@ -285,6 +282,8 @@ class OpenAIClient:
             "timeout": self.timeout,
             "max_retries": 0,  # We handle retries ourselves
         }
+        if api_key:
+            client_params["api_key"] = api_key
         # Do NOT add 'engine' or 'deployment_id' to client_params; pass per-request only
         if not deployment_id_env:
             logger.warning(

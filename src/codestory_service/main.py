@@ -7,6 +7,11 @@ print("SERVICE CONTAINER ENVIRONMENT VARIABLES:", flush=True)
 for k, v in sorted(os.environ.items()):
     print(f"{k}={v}", flush=True)
 print("END ENVIRONMENT VARIABLES", flush=True)
+print("OPENAI ENV VARS:", flush=True)
+for k, v in sorted(os.environ.items()):
+    if "OPENAI" in k or "AZURE" in k:
+        print(f"{k}={v}", flush=True)
+print("END OPENAI ENV VARS", flush=True)
 # (Removed container-only debug file write: /app/service_env_debug.txt)
 import os
 print("[service startup] All environment variables:", flush=True)

@@ -169,16 +169,14 @@ class OpenAIAdapter:
             # Create or use provided client
             logger.info("Initializing OpenAI client...")
             try:
+                # Use endpoint, api_key, and deployment/model as in the working SDK sample
                 self.client = client or OpenAIClient(
-                    endpoint=os.environ.get("AZURE_OPENAI__ENDPOINT"),
-                    embedding_model=os.environ.get(
-                        "OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"
-                    ),
-                    chat_model=os.environ.get("OPENAI__CHAT_MODEL", "gpt-4o"),
-                    reasoning_model=os.environ.get("OPENAI__REASONING_MODEL", "gpt-4o"),
-                    api_version=os.environ.get(
-                        "AZURE_OPENAI__API_VERSION", "2025-03-01-preview"
-                    ),
+                    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT") or os.environ.get("AZURE_OPENAI__ENDPOINT"),
+                    embedding_model=os.environ.get("AZURE_OPENAI_MODEL_EMBEDDING") or os.environ.get("AZURE_OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"),
+                    chat_model=os.environ.get("AZURE_OPENAI_MODEL_CHAT") or os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID") or os.environ.get("AZURE_OPENAI__CHAT_MODEL", "gpt-4.1"),
+                    reasoning_model=os.environ.get("AZURE_OPENAI_MODEL_REASONING") or os.environ.get("AZURE_OPENAI__REASONING_MODEL", "gpt-4.1"),
+                    api_version=os.environ.get("AZURE_OPENAI_API_VERSION") or os.environ.get("AZURE_OPENAI__API_VERSION", "2025-01-01-preview"),
+                    api_key=os.environ.get("AZURE_OPENAI_KEY") or os.environ.get("AZURE_OPENAI__API_KEY"),
                 )
                 logger.info("OpenAI client initialized successfully.")
                 logger.info(
@@ -285,9 +283,17 @@ class OpenAIAdapter:
         """
         try:
             # Get the actual deployment model from environment first, then fallback to client default
-            test_model = (
-                os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID") or self.client.chat_model
-            )
+            # Parse endpoint for deployment ID if needed
+            endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "")
+            deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID")
+            if not deployment_id and "/openai/deployments/" in endpoint:
+                # Extract deployment ID from endpoint
+                try:
+                    deployment_id = endpoint.split("/openai/deployments/")[1].split("/")[0]
+                    logger.info(f"Extracted deployment_id from endpoint: {deployment_id}")
+                except Exception:
+                    deployment_id = None
+            test_model = deployment_id or self.client.chat_model
             test_message = "Hello! This is a health check."
 
             logger.info(f"Health check using model: {test_model}")
@@ -317,12 +323,14 @@ class OpenAIAdapter:
                 logger.info(
                     "Using max_completion_tokens=10 for reasoning model (no temperature)"
                 )
+                logger.info(f"Health check OpenAI call: model={test_model}, max_completion_tokens=10")
                 response = await self.client.chat_async(
                     messages, model=test_model, max_completion_tokens=10
                 )
             else:
                 # For regular models, use max_tokens and temperature
                 logger.info("Using max_tokens=10 and temperature=0.1 for regular model")
+                logger.info(f"Health check OpenAI call: model={test_model}, max_tokens=10, temperature=0.1")
                 response = await self.client.chat_async(
                     messages, model=test_model, max_tokens=10, temperature=0.1
                 )

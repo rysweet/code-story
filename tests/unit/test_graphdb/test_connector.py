@@ -75,7 +75,7 @@ def test_init() -> None:
             uri="bolt://test:7687",
             username="user",
             password="pass",
-            database="testdb",
+            database="neo4j",
             max_connection_lifetime=300,
             max_connection_pool_size=50,
             skip_connection_check=True,
@@ -84,7 +84,7 @@ def test_init() -> None:
         assert connector.uri == "bolt://test:7687"
         assert connector.username == "user"
         assert connector.password == "pass"
-        assert connector.database == "testdb"
+        assert connector.database == "neo4j"
         assert connector.max_connection_pool_size == 50
 
 

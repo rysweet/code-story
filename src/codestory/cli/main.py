@@ -125,11 +125,26 @@ class CodeStoryCommandGroup(DYMGroup):
     envvar="CODESTORY_SERVICE_URL",
 )
 @click.option(
+    "--host",
+    default=None,
+    help="Backend service host (alias for part of --service-url)",
+)
+@click.option(
+    "--port",
+    default=None,
+    type=int,
+    help="Backend service port (alias for part of --service-url)",
+)
+@click.option(
     "--api-key", help="API key for authentication.", envvar="CODESTORY_API_KEY"
 )
 @click.pass_context
 def app(
-    ctx: click.Context, service_url: Optional[str] = None, api_key: Optional[str] = None
+    ctx: click.Context,
+    service_url: Optional[str] = None,
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    api_key: Optional[str] = None,
 ) -> None:
     """
     Code Story CLI application.
@@ -139,9 +154,18 @@ def app(
     """
     ctx.ensure_object(dict)
     settings = get_settings()
-    base_url: str = (
-        service_url if service_url else f"http://localhost:{settings.service.port}/v1"
-    )
+    # Precedence:
+    # 1. If service_url is provided, use as-is.
+    # 2. Else, if host or port is provided, build service_url.
+    # 3. Else, fall back to config/env-based default.
+    if service_url:
+        base_url = service_url
+    elif host is not None or port is not None:
+        _host = host or settings.service.host or "localhost"
+        _port = port or settings.service.port or 8000
+        base_url = f"http://{_host}:{_port}"
+    else:
+        base_url = f"http://localhost:{settings.service.port}/v1"
     client = ServiceClient(base_url=base_url, api_key=api_key, settings=settings, console=console)
     ctx.obj["client"] = client
     ctx.obj["console"] = console

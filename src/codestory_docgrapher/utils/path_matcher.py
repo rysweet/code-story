@@ -41,19 +41,19 @@ class PathMatcher:
     def _load_repository_structure(self) -> None:
         """Load repository structure from Neo4j."""
         query = "\n        MATCH (f:File)\n        RETURN f.path as path\n        "
-        files = self.connector.run_query(query, fetch_all=True)  # type: ignore[attr-defined]
+        files = self.connector.execute_query(query)  # type: ignore[attr-defined]
         self.file_paths = {record["path"] for record in files}
         query = "\n        MATCH (d:Directory)\n        RETURN d.path as path\n        "
-        dirs = self.connector.run_query(query, fetch_all=True)  # type: ignore[attr-defined]
+        dirs = self.connector.execute_query(query)  # type: ignore[attr-defined]
         self.dir_paths = {record["path"] for record in dirs}
         query = "\n        MATCH (c:Class)\n        RETURN c.name as name, c.qualified_name as qualified_name\n        "
-        classes = self.connector.run_query(query, fetch_all=True)  # type: ignore[attr-defined]
+        classes = self.connector.execute_query(query)  # type: ignore[attr-defined]
         self.class_names = {record["name"] for record in classes}
         self.qualified_class_names = {
             record["qualified_name"] for record in classes if record["qualified_name"]
         }
         query = "\n        MATCH (f:Function)\n        RETURN f.name as name, f.qualified_name as qualified_name\n        "
-        funcs = self.connector.run_query(query, fetch_all=True)  # type: ignore[attr-defined]
+        funcs = self.connector.execute_query(query)  # type: ignore[attr-defined]
         self.func_names = {record["name"] for record in funcs}
         self.qualified_func_names = {
             record["qualified_name"] for record in funcs if record["qualified_name"]
@@ -125,16 +125,16 @@ class PathMatcher:
         """
         if class_reference in self.class_names:
             query = "\n            MATCH (c:Class)\n            WHERE c.name = $name\n            RETURN ID(c) as id\n            "
-            result = self.connector.run_query(query, parameters={"name": class_reference}, fetch_one=True)  # type: ignore[attr-defined]
+            result = self.connector.execute_query(query, {"name": class_reference})  # type: ignore[attr-defined]
             if result:
                 return str(result["id"])
         if class_reference in self.qualified_class_names:
             query = "\n            MATCH (c:Class)\n            WHERE c.qualified_name = $name\n            RETURN ID(c) as id\n            "
-            result = self.connector.run_query(query, parameters={"name": class_reference}, fetch_one=True)  # type: ignore[attr-defined]
+            result = self.connector.execute_query(query, {"name": class_reference})  # type: ignore[attr-defined]
             if result:
                 return str(result["id"])
         query = "\n        MATCH (c:Class)\n        WHERE c.qualified_name ENDS WITH $name\n        RETURN ID(c) as id\n        "
-        result = self.connector.run_query(query, parameters={"name": class_reference}, fetch_one=True)  # type: ignore[attr-defined]
+        result = self.connector.execute_query(query, {"name": class_reference})  # type: ignore[attr-defined]
         if result:
             return str(result["id"])
         return None
@@ -151,16 +151,16 @@ class PathMatcher:
         function_reference = function_reference.rstrip("()")
         if function_reference in self.func_names:
             query = "\n            MATCH (f:Function)\n            WHERE f.name = $name\n            RETURN ID(f) as id\n            UNION\n            MATCH (m:Method)\n            WHERE m.name = $name\n            RETURN ID(m) as id\n            "
-            result = self.connector.run_query(query, parameters={"name": function_reference}, fetch_one=True)  # type: ignore[attr-defined]
+            result = self.connector.execute_query(query, {"name": function_reference})  # type: ignore[attr-defined]
             if result:
                 return str(result["id"])
         if function_reference in self.qualified_func_names:
             query = "\n            MATCH (f:Function)\n            WHERE f.qualified_name = $name\n            RETURN ID(f) as id\n            UNION\n            MATCH (m:Method)\n            WHERE m.qualified_name = $name\n            RETURN ID(m) as id\n            "
-            result = self.connector.run_query(query, parameters={"name": function_reference}, fetch_one=True)  # type: ignore[attr-defined]
+            result = self.connector.execute_query(query, {"name": function_reference})  # type: ignore[attr-defined]
             if result:
                 return str(result["id"])
         query = "\n        MATCH (f:Function)\n        WHERE f.qualified_name ENDS WITH $name\n        RETURN ID(f) as id\n        UNION\n        MATCH (m:Method)\n        WHERE m.qualified_name ENDS WITH $name\n        RETURN ID(m) as id\n        "
-        result = self.connector.run_query(query, parameters={"name": function_reference}, fetch_one=True)  # type: ignore[attr-defined]
+        result = self.connector.execute_query(query, {"name": function_reference})  # type: ignore[attr-defined]
         if result:
             return str(result["id"])
         return None

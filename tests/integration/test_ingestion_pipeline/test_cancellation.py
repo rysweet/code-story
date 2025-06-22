@@ -60,9 +60,9 @@ def start_test_job(test_dir: str = None) -> Any:
     return job_id
 
 
-def test_cancel_running_job(ingestion_service: Any) -> None:
+def test_cancel_running_job(ingestion_service: Any, test_repo_dir: str) -> None:
     """Test cancelling a job that's currently running (in test mode, job completes quickly)."""
-    job_id = start_test_job()
+    job_id = start_test_job(test_repo_dir)
     time.sleep(2)
     cancel_response = client.post(f"/v1/ingest/{job_id}/cancel")
     assert cancel_response.status_code == 200
@@ -72,9 +72,9 @@ def test_cancel_running_job(ingestion_service: Any) -> None:
     assert status in [JobStatus.COMPLETED, JobStatus.CANCELLED]
 
 
-def test_cancel_pending_job(ingestion_service: Any) -> None:
+def test_cancel_pending_job(ingestion_service: Any, test_repo_dir: str) -> None:
     """Test cancelling a job that's pending (in test mode, job completes quickly)."""
-    job_id = start_test_job()
+    job_id = start_test_job(test_repo_dir)
     cancel_response = client.post(f"/v1/ingest/{job_id}/cancel")
     assert cancel_response.status_code == 200
     
