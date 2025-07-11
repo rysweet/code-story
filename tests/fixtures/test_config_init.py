@@ -15,6 +15,7 @@ os.environ["NEO4J__URI"] = "bolt://localhost:7687"
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "neo4j"
+os.environ["CODESTORY_NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 os.environ["REDIS__URI"] = "redis://localhost:6379/0"
 os.environ["OPENAI__API_KEY"] = "sk-test-key-openai"
 os.environ["OPENAI__EMBEDDING_MODEL"] = "text-embedding-3-small"

@@ -13,7 +13,8 @@ def celery_eager(monkeypatch):
     monkeypatch.setenv("CELERY_TASK_ALWAYS_EAGER", "1")
     monkeypatch.setenv("CELERY_TASK_EAGER_PROPAGATES", "1")
 # Patch the Celery app config directly for eager mode
-    from codestory.ingestion_pipeline.celery_app import app
+    from codestory.ingestion_pipeline.celery_app import get_celery_app
+    app = get_celery_app()
     app.conf.task_always_eager = True
     app.conf.task_eager_propagates = True
 @pytest.fixture
@@ -39,8 +40,9 @@ def filesystem_dataset(tmp_path):
 @pytest.fixture(autouse=True, scope="module")
 def patch_celery_redis():
     import os
-    from codestory.ingestion_pipeline.celery_app import app
+    from codestory.ingestion_pipeline.celery_app import get_celery_app
     redis_uri = os.environ.get("REDIS__URI")
+    app = get_celery_app()
     app.conf.update(broker_url=redis_uri, result_backend=redis_uri)
 
 def test_filesystem_step_direct(filesystem_dataset):

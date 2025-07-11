@@ -11,11 +11,15 @@ import pytest
 from codestory.config.settings import Neo4jSettings
 from codestory.ingestion_pipeline.step import StepStatus, generate_job_id
 
-os.environ["NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+neo4j_uri = os.environ.get("NEO4J_URI")
+if not neo4j_uri:
+    import pytest
+    pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
+os.environ["NEO4J__URI"] = neo4j_uri
 os.environ["NEO4J__USERNAME"] = "neo4j"
 os.environ["NEO4J__PASSWORD"] = "password"
 os.environ["NEO4J__DATABASE"] = "neo4j"
-TEST_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+TEST_URI = neo4j_uri
 TEST_USERNAME = "neo4j"
 TEST_PASSWORD = "password"
 TEST_DATABASE = "neo4j"

@@ -12,7 +12,7 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from codestory.ingestion_pipeline.celery_app import app as celery_app
+from codestory.ingestion_pipeline.celery_app import get_celery_app
 from codestory.ingestion_pipeline.tasks import (
     orchestrate_pipeline as run_ingestion_pipeline,
 )
@@ -48,7 +48,8 @@ class CeleryAdapter:
 
     def __init__(self) -> None:
         """Initialize the Celery adapter."""
-        self._app = celery_app
+        from codestory.ingestion_pipeline.celery_app import get_celery_app
+        self._app = get_celery_app()
 
     async def check_health(self) -> tuple[str, dict[str, Any]]:
         """Check Celery worker health.
@@ -106,7 +107,15 @@ class CeleryAdapter:
                 registered_tasks = 0
 
             # Health check passes if we have either registered or active workers
-            if not has_registered and not has_active:
+            # Consider healthy if we have any registered workers, even if active_workers is empty
+            if has_registered:
+                return "healthy", {
+                    "registered_workers": worker_count,
+                    "active_workers": active_count,
+                    "registered_tasks": registered_tasks,
+                    "message": f"Found {worker_count} registered workers, {active_count} active, {registered_tasks} registered tasks",
+                }
+            if not has_active:
                 return "unhealthy", {
                     "error": "No Celery workers found (neither active nor registered)",
                     "type": "CeleryHealthCheckError",
@@ -115,12 +124,22 @@ class CeleryAdapter:
                     "registered_tasks": 0,
                 }
 
-            # Consider healthy if we have registered workers (active can be None in some states)
-            return "healthy", {
-                "registered_workers": worker_count,
-                "active_workers": active_count,
-                "registered_tasks": registered_tasks,
-                "message": f"Found {worker_count} registered workers, {active_count} active, {registered_tasks} registered tasks",
+            # Fallback: if we have active workers but no registered, still consider healthy
+            if has_active:
+                return "healthy", {
+                    "registered_workers": worker_count,
+                    "active_workers": active_count,
+                    "registered_tasks": registered_tasks,
+                    "message": f"Found {active_count} active workers (no registered workers), {registered_tasks} registered tasks",
+                }
+
+            # If neither, unhealthy
+            return "unhealthy", {
+                "error": "No Celery workers found (neither active nor registered)",
+                "type": "CeleryHealthCheckError",
+                "active_workers": 0,
+                "registered_workers": 0,
+                "registered_tasks": 0,
             }
         except Exception as e:
             logger.error(f"Celery health check failed: {e!s}")

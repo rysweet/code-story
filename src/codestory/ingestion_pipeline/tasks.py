@@ -17,15 +17,40 @@ from celery import chain
 from celery import group as celery_group
 from celery.result import AsyncResult
 
-from .celery_app import app
 from .step import StepStatus
+
+# Import get_celery_app but don't call it at import time
+from .celery_app import get_celery_app
+
+# Module-level variable to hold the app instance once initialized
+_app_instance = None
+
+def _get_app():
+    """Get the Celery app instance lazily."""
+    global _app_instance
+    if _app_instance is None:
+        _app_instance = get_celery_app()
+    return _app_instance
+
+
+# Register tasks with Celery when the app is actually needed
+def _register_tasks():
+    """Register all tasks with the Celery app."""
+    app = _get_app()
+    
+    # Register tasks manually since we removed decorators
+    app.task(run_step, name="codestory.ingestion_pipeline.tasks.run_step", bind=True)
+    app.task(orchestrate_pipeline, name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)
+    app.task(get_job_status, name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)
+    app.task(stop_job, name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)
+
+
 from .utils import record_job_metrics, record_step_metrics
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.run_step", bind=True)  # type: ignore[misc]
 def run_step(
     self: Any,
     repository_path: str,
@@ -150,7 +175,7 @@ def run_step(
 
         # Log what we're trying to do
         logger.debug(f"Dispatching to task: {task_name}")
-        logger.debug(f"Available tasks: {[t for t in app.tasks if step_name in t]}")
+        logger.debug(f"Available tasks: {[t for t in _get_app().tasks if step_name in t]}")
 
         # Prepare configuration for the step task - with parameter filtering
         step_config_copy = step_config.copy()
@@ -234,7 +259,7 @@ def run_step(
         else:
             try:
                 # Pass repository_path as the first positional argument
-                step_task = app.send_task(
+                step_task = _get_app().send_task(
                     task_name,
                     args=[repository_path],  # Pass repository_path as first arg
                     kwargs=step_config_copy,
@@ -263,7 +288,7 @@ def run_step(
 
             # FIXED: Don't use .get() inside a task as this is a known anti-pattern
             # Instead, use the AsyncResult to check the task status without blocking
-            async_result = AsyncResult(step_task.id, app=app)
+            async_result = AsyncResult(step_task.id, app=_get_app())
             # Poll for completion with a timeout
             timeout = step_config.get("timeout", 1800)  # 30 minutes default timeout
             start_poll = time.time()
@@ -469,7 +494,6 @@ def run_step(
     return result
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.orchestrate_pipeline", bind=True)  # type: ignore[misc]
 def orchestrate_pipeline(
     self: Any, repository_path: str, step_configs: list[dict[str, Any]], job_id: str
 ) -> dict[str, Any]:
@@ -749,7 +773,7 @@ def orchestrate_pipeline(
 
         # FIXED: Don't use .get() inside a task as this is a known anti-pattern
         # Instead, use polling to check for completion
-        async_result = AsyncResult(chain_result.id, app=app)
+        async_result = AsyncResult(chain_result.id, app=_get_app())
         timeout = 1800  # 30 minutes default timeout for the entire pipeline
         start_poll = time.time()
         all_results = None
@@ -893,7 +917,6 @@ def orchestrate_pipeline(
     return result
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.get_job_status", bind=True)  # type: ignore[misc]
 def get_job_status(self: Any, task_id: str) -> dict[str, Any]:
     """Get the status of a running job.
 
@@ -905,7 +928,7 @@ def get_job_status(self: Any, task_id: str) -> dict[str, Any]:
         Dict[str, Any]: Status information
     """
     try:
-        result = AsyncResult(task_id, app=app)
+        result = AsyncResult(task_id, app=_get_app())
 
         if result.ready():
             if result.successful():
@@ -933,7 +956,6 @@ def get_job_status(self: Any, task_id: str) -> dict[str, Any]:
         }
 
 
-@app.task(name="codestory.ingestion_pipeline.tasks.stop_job", bind=True)  # type: ignore[misc]
 def stop_job(self: Any, task_id: str) -> dict[str, Any]:
     """Stop a running job.
 
@@ -945,11 +967,11 @@ def stop_job(self: Any, task_id: str) -> dict[str, Any]:
         Dict[str, Any]: Status information
     """
     try:
-        result = AsyncResult(task_id, app=app)
+        result = AsyncResult(task_id, app=_get_app())
 
         if not result.ready():
             # Revoke the task (terminate=True means it will be killed if running)
-            app.control.revoke(task_id, terminate=True)
+            _get_app().control.revoke(task_id, terminate=True)
             return {
                 "status": StepStatus.STOPPED,
                 "message": f"Job {task_id} has been stopped",

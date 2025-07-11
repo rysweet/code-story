@@ -1,8 +1,22 @@
+import os
+print(f"[main.py startup] CODESTORY_SERVICE__PORT={os.environ.get('CODESTORY_SERVICE__PORT')}, PORT={os.environ.get('PORT')}, CODESTORY_TEST_PORT={os.environ.get('CODESTORY_TEST_PORT')}", flush=True)
+print("[service startup] main.py loaded (VERY TOP)", flush=True)
+import os
+print(f"[service startup] CODESTORY_SERVICE__PORT in os.environ: {os.environ.get('CODESTORY_SERVICE__PORT')}", flush=True)
+print(f"[DEBUG] CODESTORY_SERVICE__PORT={os.environ.get('CODESTORY_SERVICE__PORT')}, PORT={os.environ.get('PORT')}")
+from codestory.config.settings import get_settings
+print(f"[DEBUG] get_settings().service.port={get_settings().service.port}")
+print("[service startup] ENVIRONMENT VARIABLES (TOP):", flush=True)
+for k, v in sorted(os.environ.items()):
+    print(f"{k}={v}", flush=True)
+from codestory.config.settings import get_settings
+print(f"[service startup] get_settings().service.port (TOP): {get_settings().service.port}", flush=True)
 import sys
 print(f"[service startup] sys.executable: {sys.executable}", flush=True)
 print(f"[service startup] sys.path: {sys.path}", flush=True)
 # DEBUG: Print all environment variables at startup
 import os
+import time
 print("SERVICE CONTAINER ENVIRONMENT VARIABLES:", flush=True)
 for k, v in sorted(os.environ.items()):
     print(f"{k}={v}", flush=True)
@@ -14,9 +28,11 @@ for k, v in sorted(os.environ.items()):
 print("END OPENAI ENV VARS", flush=True)
 # (Removed container-only debug file write: /app/service_env_debug.txt)
 import os
+print(f"[DEBUG] CODESTORY_NEO4J__URI at startup: {os.environ.get('CODESTORY_NEO4J__URI')}")
 print("[service startup] All environment variables:", flush=True)
-for k, v in os.environ.items():
-    print(f"  {k}={v}", flush=True)
+for k, v in sorted(os.environ.items()):
+    print(f"{k}={v}", flush=True)
+# Health check: wait for Neo4j to be ready before starting the backend
 
 try:
     # Prefer environment variable, then local, then container path
@@ -40,10 +56,11 @@ try:
         print(f"[service startup] Could not read test_config.toml from any known location: {config_paths}", flush=True)
 except Exception as e:
     print(f"[service startup] Unexpected error reading test_config.toml: {e}", flush=True)
-print(f"[service startup] NEO4J_URI in os.environ: {os.environ.get('NEO4J_URI')}", flush=True)
+print(f"[service startup] CODESTORY_NEO4J__URI in os.environ: {os.environ.get('CODESTORY_NEO4J__URI')}", flush=True)
 try:
     from codestory_service.settings import get_settings
     print(f"[service startup] get_settings().neo4j.uri: {get_settings().neo4j.uri}", flush=True)
+    print(f"[service startup] get_settings().service.port: {get_settings().service.port}", flush=True)
 except Exception as e:
     print(f"[service startup] Error loading settings: {e}", flush=True)
 """Main entry point for Code Story API service."""
@@ -86,6 +103,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    print("[main.py] lifespan() context manager entered", flush=True)
     """Application lifespan context manager.
 
     This handles startup and shutdown for the service, including
@@ -145,6 +163,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> FastAPI:
+    print("[main.py] create_app() called", flush=True)
     """Create the FastAPI application.
 
     Returns:
@@ -270,11 +289,109 @@ def create_app() -> FastAPI:
 
 
 # Create the application instance
+# Always create the app at the top level for ASGI servers
 app = create_app()
 
 # Add this block to run the server when this module is executed directly
 if __name__ == "__main__":
+    import sys
+    print(f"[service startup] sys.executable: {sys.executable}", flush=True)
+    print(f"[service startup] sys.path: {sys.path}", flush=True)
+    # DEBUG: Print all environment variables at startup
+    import os
+    import time
+    print("SERVICE CONTAINER ENVIRONMENT VARIABLES:", flush=True)
+    for k, v in sorted(os.environ.items()):
+        print(f"{k}={v}", flush=True)
+    print("END ENVIRONMENT VARIABLES", flush=True)
+    print("OPENAI ENV VARS:", flush=True)
+    for k, v in sorted(os.environ.items()):
+        if "OPENAI" in k or "AZURE" in k:
+            print(f"{k}={v}", flush=True)
+    print("END OPENAI ENV VARS", flush=True)
+    # (Removed container-only debug file write: /app/service_env_debug.txt)
+    print(f"[DEBUG] CODESTORY_NEO4J__URI at startup: {os.environ.get('CODESTORY_NEO4J__URI')}")
+    print("[service startup] All environment variables:", flush=True)
+    # Health check: wait for Neo4j to be ready before starting the backend
+    try:
+        # Prefer environment variable, then local, then container path
+        config_paths = []
+        env_path = os.environ.get("TEST_CONFIG_PATH")
+        if env_path:
+            config_paths.append(env_path)
+        config_paths.append("tests/fixtures/test_config.toml")
+        config_paths.append("/app/tests/fixtures/test_config.toml")
+        found = False
+        for path in config_paths:
+            try:
+                with open(path) as f:
+                    print(f"[service startup] test_config.toml contents from {path}:", flush=True)
+                    print(f.read(), flush=True)
+                    found = True
+                    break
+            except Exception:
+                continue
+        if not found:
+            print(f"[service startup] Could not read test_config.toml from any known location: {config_paths}", flush=True)
+    except Exception as e:
+        print(f"[service startup] Unexpected error reading test_config.toml: {e}", flush=True)
+    print(f"[service startup] CODESTORY_NEO4J__URI in os.environ: {os.environ.get('CODESTORY_NEO4J__URI')}", flush=True)
+    try:
+        from codestory_service.settings import get_settings
+        print(f"[service startup] get_settings().neo4j.uri: {get_settings().neo4j.uri}", flush=True)
+    except Exception as e:
+        print(f"[service startup] Error loading settings: {e}", flush=True)
+
+    # Health check: wait for Neo4j to be ready before starting the backend
+    try:
+        from neo4j import GraphDatabase
+        from neo4j.exceptions import ServiceUnavailable
+        uri = os.environ.get("CODESTORY_NEO4J__URI") or os.environ.get("NEO4J_URI")
+        username = os.environ.get("CODESTORY_NEO4J__USERNAME") or os.environ.get("NEO4J_USERNAME", "neo4j")
+        password = os.environ.get("CODESTORY_NEO4J__PASSWORD") or os.environ.get("NEO4J_PASSWORD") or "password"
+        print(f"[main.py] Health check: Using uri={uri}, username={username}, password={password}")
+        for attempt in range(30):
+            try:
+                driver = GraphDatabase.driver(uri, auth=(username, password))
+                with driver.session() as session:
+                    result = session.run("RETURN 1 AS ready")
+                    if result.single()["ready"] == 1:
+                        print("[main.py] Neo4j is ready.")
+                        break
+            except ServiceUnavailable as e:
+                print(f"[main.py] Waiting for Neo4j to be ready... ({e})")
+                time.sleep(1)
+        else:
+            print("[main.py] Neo4j did not become ready in time.")
+            sys.exit(1)
+        driver.close()
+    except Exception as e:
+        print(f"[main.py] Error during Neo4j health check: {e}")
+        sys.exit(1)
+
     import uvicorn
+
+    # --- Wait for Redis to be ready before starting the backend ---
+    try:
+        import redis
+        redis_uri = os.environ.get("CODESTORY_REDIS__URI") or os.environ.get("REDIS__URI") or "redis://localhost:6379/0"
+        print(f"[main.py] Health check: Using redis_uri={redis_uri}")
+        for attempt in range(30):
+            try:
+                client = redis.Redis.from_url(redis_uri, socket_connect_timeout=2)
+                client.ping()
+                print("[main.py] Redis is ready.")
+                break
+            except Exception as e:
+                print(f"[main.py] Waiting for Redis to be ready... ({e})")
+                time.sleep(1)
+        else:
+            print("[main.py] Redis did not become ready in time.")
+            sys.exit(1)
+        client.close()
+    except Exception as e:
+        print(f"[main.py] Error during Redis health check: {e}")
+        sys.exit(1)
 
     from codestory.config.settings import get_settings
 
@@ -282,4 +399,13 @@ if __name__ == "__main__":
     host = core_settings.service.host
     port = core_settings.service.port
     print(f"Starting service on {host}:{port}...")
+    print("[service startup] BACKEND FULLY STARTED AND READY TO SERVE REQUESTS", flush=True)
+    import threading
+    def print_ready():
+        import time
+        for _ in range(30):
+            print("[service startup] (heartbeat) BACKEND IS RUNNING", flush=True)
+            time.sleep(2)
+    threading.Thread(target=print_ready, daemon=True).start()
+    print("[service startup] If you see this message, the backend process is about to call uvicorn.run()", flush=True)
     uvicorn.run("src.codestory_service.main:app", host=host, port=port, reload=False)

@@ -21,15 +21,36 @@ from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings.sources import PydanticBaseSettingsSource
 
+from pydantic_settings import BaseSettings as PydanticBaseSettings
 # --- Pydantic models for each config section ---
 
-class Neo4jSettings(BaseModel):
-    uri: str = Field("bolt://localhost:7687", description="Neo4j connection URI")
+class Neo4jSettings(PydanticBaseSettings):
+    # The Neo4j URI must be set via the CODESTORY_NEO4J__URI environment variable. No fallback/default allowed.
+    uri: Optional[str] = Field(None, description="Neo4j connection URI (REQUIRED, must be set via CODESTORY_NEO4J__URI)")
+
+    @classmethod
+    def validate_uri(cls, value):
+        import os
+        if value is not None:
+            return value
+        env_uri = os.environ.get("CODESTORY_NEO4J__URI") or os.environ.get("NEO4J__URI") or os.environ.get("NEO4J_URI")
+        if env_uri:
+            return env_uri
+        raise ValueError("Neo4j connection URI is required. Set CODESTORY_NEO4J__URI or NEO4J_URI in the environment.")
     username: str = Field("neo4j", description="Neo4j username")
     password: Optional[SecretStr] = Field(None, description="Neo4j password")
     database: str = Field("neo4j", description="Neo4j database name")
     connection_timeout: int = Field(30, description="Connection timeout in seconds")
     max_connection_pool_size: int = Field(50, description="Maximum size of the connection pool")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print(f"[Neo4jSettings.__init__] uri={self.uri}", flush=True)
+
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        env_nested_delimiter="__"
+    )
 
 class RedisSettings(BaseModel):
     uri: str = Field("redis://localhost:6379", description="Redis connection URI")
@@ -52,12 +73,23 @@ class AzureOpenAISettings(BaseModel):
     deployment_id: str = Field("gpt-4o", description="Deployment ID")
     api_version: str = Field("2024-05-01", description="API version")
 
-class ServiceSettings(BaseModel):
+from pydantic_settings import BaseSettings as PydanticBaseSettings
+
+class ServiceSettings(PydanticBaseSettings):
     host: str = Field("0.0.0.0", description="Service host")
     port: int = Field(8000, description="Service port")
     workers: int = Field(4, description="Number of worker processes")
     log_level: str = Field("INFO", description="Logging level")
     worker_concurrency: int = Field(4, description="Celery worker concurrency")
+    enable_telemetry: bool = Field(True, description="Enable telemetry")
+    dev_mode: bool = Field(True, description="Development mode")
+    environment: str = Field("development", description="Environment")
+
+    model_config = SettingsConfigDict(
+        extra="ignore",
+        env_prefix="",
+        env_nested_delimiter="__"
+    )
 
 class IngestionSettings(BaseModel):
     config_path: str = Field("pipeline_config.yml", description="Pipeline config file")
@@ -86,7 +118,7 @@ class AzureSettings(BaseModel):
 
 # --- Main Settings class ---
 
-class Settings(BaseSettings):
+class Settings(PydanticBaseSettings):
     app_name: str = Field("code-story", description="Application name")
     version: str = Field("0.1.0", description="Application version")
     environment: str = Field("development", description="Environment")
@@ -107,18 +139,73 @@ class Settings(BaseSettings):
     _CONFIG_FILE: str = ".codestory.toml"
 
     model_config = SettingsConfigDict(
-        env_prefix="CODESTORY_",
+        env_prefix="",
         env_file=".env",
         env_nested_delimiter="__",
         case_sensitive=False,
         extra="ignore",
     )
 
+
+
     def __init__(self, **kwargs):
         """Initialize settings with Azure OpenAI fallback logic and testdb override."""
+        import os
+        print("[Settings.__init__] ENVIRONMENT VARIABLES AT INIT:", flush=True)
+        for k, v in sorted(os.environ.items()):
+            print(f"{k}={v}", flush=True)
+        print(f"[Settings.__init__] CODESTORY_NEO4J__URI={os.environ.get('CODESTORY_NEO4J__URI')}", flush=True)
         super().__init__(**kwargs)
+        import os
+        # Always set Neo4j password from environment if present
+        if os.environ.get("CODESTORY_NEO4J__PASSWORD"):
+            from pydantic import SecretStr
+            self.neo4j.password = SecretStr(os.environ["CODESTORY_NEO4J__PASSWORD"])
+        # --- PATCH: Always set service.port from CODESTORY_SERVICE__PORT if present ---
+        if os.environ.get("CODESTORY_SERVICE__PORT"):
+            try:
+                self.service.port = int(os.environ["CODESTORY_SERVICE__PORT"])
+            except Exception:
+                pass
+        print(f"[DEBUG][Settings.__init__] CODESTORY_SERVICE__PORT={os.environ.get('CODESTORY_SERVICE__PORT')}, PORT={os.environ.get('PORT')}, self.service.port={self.service.port}")
+        print(f"[DEBUG][Settings.__init__] CODESTORY_NEO4J__URI={os.environ.get('CODESTORY_NEO4J__URI')}, self.neo4j.uri={self.neo4j.uri}")
+        print(f"[DEBUG][Settings.__init__] Settings sources order: env > TOML > .env > defaults", flush=True)
+        # Always set Neo4j password from environment if present
+        if os.environ.get("CODESTORY_NEO4J__PASSWORD"):
+            from pydantic import SecretStr
+            self.neo4j.password = SecretStr(os.environ["CODESTORY_NEO4J__PASSWORD"])
+        # Always set Neo4j password from environment if present
+        if os.environ.get("CODESTORY_NEO4J__PASSWORD"):
+            from pydantic import SecretStr
+            self.neo4j.password = SecretStr(os.environ["CODESTORY_NEO4J__PASSWORD"])
+        # Always set Neo4j password from environment if present
+        if os.environ.get("CODESTORY_NEO4J__PASSWORD"):
+            from pydantic import SecretStr
+            self.neo4j.password = SecretStr(os.environ["CODESTORY_NEO4J__PASSWORD"])
+
+        import logging
+        logger = logging.getLogger(__name__)
 
         import os
+        # Always prioritize dynamic Neo4j URI from environment in all modes
+        neo4j_uri = (
+            os.environ.get("CODESTORY_NEO4J__URI")
+            or os.environ.get("NEO4J__URI")
+            or os.environ.get("NEO4J_URI")
+        )
+        if neo4j_uri:
+            self.neo4j.uri = neo4j_uri
+            import logging
+            logging.getLogger(__name__).info(f"[settings.py] Effective Neo4j URI: {self.neo4j.uri}")
+        # Fallback to TOML/.env if none of the above are set
+        if not self.neo4j.uri:
+            raise RuntimeError(
+                "Neo4j URI is required but was not found in any of the following environment variables: "
+                "CODESTORY_NEO4J__URI, NEO4J__URI, NEO4J_URI, nor in TOML/.env config. "
+                "Please set one of these environment variables or provide the URI in your configuration."
+            )
+        logger.info(f"[CodeStory Config] Neo4j URI resolved to: {self.neo4j.uri}")
+
         test_env = os.environ.get("CODESTORY_TEST_ENV", "").lower() == "true"
         deployment_mode_test = os.environ.get("DEPLOYMENT_MODE", "").lower() == "test"
 
@@ -127,9 +214,13 @@ class Settings(BaseSettings):
         # NEO4J_DATABASE explicitly.
 
         if test_env:
-            # In test environment, allow un-prefixed REDIS__URI to override Redis settings
-            if os.environ.get("REDIS__URI"):
-                self.redis.uri = os.environ["REDIS__URI"]
+            # In test environment, always prioritize CODESTORY_REDIS__URI and REDIS__URI from environment
+            redis_uri = (
+                os.environ.get("CODESTORY_REDIS__URI")
+                or os.environ.get("REDIS__URI")
+            )
+            if redis_uri:
+                self.redis.uri = redis_uri
             return  # Skip Azure override logic in test environment
 
         # If Azure OpenAI variables are set, use them for OpenAI settings
@@ -148,7 +239,6 @@ class Settings(BaseSettings):
             # Do NOT override embedding_model here; let it be set by OPENAI__EMBEDDING_MODEL or default
         if os.environ.get("AZURE_TENANT_ID"):
             self.openai.tenant_id = os.environ["AZURE_TENANT_ID"]
-
     @classmethod
     def settings_customise_sources(
         cls,
@@ -159,6 +249,7 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         """Customize the order of settings sources."""
+
         # Custom TOML config source
         class TomlConfigSettingsSource(PydanticBaseSettingsSource):
             def get_field_value(self, field_info: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
@@ -177,6 +268,9 @@ class Settings(BaseSettings):
                 try:
                     with open(toml_path, "rb") as f:
                         toml_data = tomli.load(f)
+                        print(f"[TOMLConfig] Loaded TOML from {toml_path}: {toml_data}", flush=True)
+                        if "neo4j" in toml_data:
+                            print(f"[TOMLConfig] TOML neo4j section: {toml_data['neo4j']}", flush=True)
                 except Exception:
                     return None, field_name, False
                 
@@ -235,17 +329,15 @@ class Settings(BaseSettings):
                             items.append((new_key, v))
                     return dict(items)
                 
-                result = dict(toml_data)  # Start with original nested structure
-                result.update(flatten(toml_data))  # Add flattened keys for env compatibility
-                return result
+                return flatten(toml_data)
 
         toml_settings = TomlConfigSettingsSource(settings_cls)
         
-        # TOML config should take precedence over environment variables
+        # ENV should take precedence over TOML config
         return (
             init_settings,
-            toml_settings,      # TOML first after init
-            env_settings,
+            env_settings,       # ENV overrides TOML
+            toml_settings,      # TOML after ENV
             dotenv_settings,
             file_secret_settings,
         )

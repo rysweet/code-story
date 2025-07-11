@@ -5,7 +5,7 @@ import sys
 from typing import Any
 
 from ..config.settings import get_settings
-from .celery_app import app
+from .celery_app import get_celery_app
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -30,7 +30,7 @@ def main() -> None:
             logger.warning("Running as root - this is not recommended in production!")
         logger.info("Starting worker with arguments: %s", " ".join(args))
         sys.argv = ["celery", *args]
-        app.start()
+        get_celery_app().start()
     except Exception as e:
         logger.error(f"Failed to start Celery worker: {e}")
         sys.exit(1)

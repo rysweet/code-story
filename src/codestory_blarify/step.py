@@ -54,7 +54,13 @@ class BlarifyStep(PipelineStep):
 
         # Try to initialize Docker client
         try:
-            self.docker_client: Optional[DockerClient] = docker.from_env()
+            # Try to create Docker client without credentials first to avoid docker-credential-desktop errors
+            try:
+                self.docker_client: Optional[DockerClient] = docker.DockerClient(base_url='unix://var/run/docker.sock')
+            except Exception:
+                # Fallback to docker.from_env() if direct socket connection fails
+                self.docker_client = docker.from_env()
+            
             # Test Docker connection
             self.docker_client.ping()
             logger.info("Docker client initialized successfully")
@@ -489,36 +495,29 @@ def run_blarify(
     # Format Neo4j connection string for Blarify
     if is_host_mode:
         # Always use localhost for host networking
-        neo4j_connection = (
-            f"neo4j://{neo4j_username}:{neo4j_password}@localhost:7687/{neo4j_database}"
-        )
-    else:
-        # Check if host has 'bolt://' prefix and remove it
-        host = neo4j_uri.replace("bolt://", "")
-        # Handle container networking - if this is a Docker service name, also provide localhost option
-        if ":" not in host and not host.startswith(("localhost", "127.0.0.1")):
-            # This is likely a Docker service name like 'neo4j', try localhost with mapped port
-            neo4j_port = "7689"  # Default mapped port in docker-compose.yml
-            alt_host = f"host.docker.internal:{neo4j_port}"
-            logger.info(f"Using Docker DNS with host.docker.internal: {alt_host}")
-            neo4j_connection = (
-                f"neo4j://{neo4j_username}:{neo4j_password}@{alt_host}/{neo4j_database}"
-            )
-        else:
-            # Use the configured host directly
-            neo4j_connection = (
-                f"neo4j://{neo4j_username}:{neo4j_password}@{host}/{neo4j_database}"
-            )
+        # Always use the Neo4j URI from settings, which is loaded from the CODESTORY_NEO4J__URI environment variable.
+        # Do not hardcode host/port; rely on configuration/environment.
+        neo4j_connection = neo4j_uri.replace("bolt://", "neo4j://").replace("neo4j://", f"neo4j://{neo4j_username}:{neo4j_password}@", 1) + f"/{neo4j_database}"
 
     try:
-        # Try to use Docker directly
-        with docker.from_env() as client:
+        # Try to use Docker directly, avoiding credential errors
+        try:
+            # Use low-level API client to avoid docker-credential-desktop errors
+            from docker import APIClient
+            client = APIClient(base_url='unix://var/run/docker.sock')
+            client.ping()  # Test connection
+            # Create high-level client for convenience operations
+            docker_client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+        except Exception:
+            # Fallback to docker.from_env() if direct socket connection fails
+            client = docker.from_env()
+            docker_client = client
 
-            # Make sure the repository path exists
-            if not os.path.isdir(repository_path):
-                raise ValueError(
-                    f"Repository path is not a valid directory: {repository_path}"
-                )
+        # Make sure the repository path exists
+        if not os.path.isdir(repository_path):
+            raise ValueError(
+                f"Repository path is not a valid directory: {repository_path}"
+            )
 
         # Check if we're running inside Docker and modify paths accordingly
         container_repository_path = repository_path
@@ -553,7 +552,7 @@ def run_blarify(
 
         # Check if the repository path is already mounted in any running container
         try:
-            running_containers = client.containers.list()
+            running_containers = docker_client.containers.list()
             for container in running_containers:
                 if (
                     container.name == "codestory-worker"
@@ -588,7 +587,7 @@ def run_blarify(
 
         # Pull the Docker image
         try:
-            client.images.pull(docker_image)
+            docker_client.images.pull(docker_image)
             logger.info(f"Pulled Docker image: {docker_image}")
         except DockerException as e:
             logger.warning(
@@ -633,7 +632,7 @@ def run_blarify(
         )
         if is_host_mode:
             container_run_kwargs["network_mode"] = "host"
-        container = client.containers.run(**container_run_kwargs)
+        container = docker_client.containers.run(**container_run_kwargs)
 
         logger.info(f"Started Blarify container: {container.id}")
 
@@ -739,57 +738,22 @@ def run_blarify(
 
         # Connect to Neo4j and verify data
         try:
-            # Try localhost first if in Docker container
-            if ":" not in host and not host.startswith(("localhost", "127.0.0.1")):
-                try:
-                    # Try with localhost
-                    localhost_uri = "bolt://localhost:7689"
-                    connector = Neo4jConnector(
-                        uri=localhost_uri,
-                        username=settings.neo4j.username,
-                        password=(
-                            settings.neo4j.password.get_secret_value()
-                            if settings.neo4j.password is not None
-                            else (_ for _ in ()).throw(
-                                ValueError("Neo4j password is not set in settings")
-                            )
-                        ),
-                        database=settings.neo4j.database,
+            # Always use the Neo4j URI from settings/environment for verification.
+            connector = Neo4jConnector(
+                uri=settings.neo4j.uri,
+                username=settings.neo4j.username,
+                password=(
+                    settings.neo4j.password.get_secret_value()
+                    if settings.neo4j.password is not None
+                    else (_ for _ in ()).throw(
+                        ValueError("Neo4j password is not set in settings")
                     )
-                    logger.info(
-                        f"Connected to Neo4j using localhost override: {localhost_uri}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to connect to Neo4j using localhost: {e}, falling back "
-                        f"to original URI"
-                    )
-                    connector = Neo4jConnector(
-                        uri=settings.neo4j.uri,
-                        username=settings.neo4j.username,
-                        password=(
-                            settings.neo4j.password.get_secret_value()
-                            if settings.neo4j.password is not None
-                            else (_ for _ in ()).throw(
-                                ValueError("Neo4j password is not set in settings")
-                            )
-                        ),
-                        database=settings.neo4j.database,
-                    )
-            else:
-                # Use the original URI
-                connector = Neo4jConnector(
-                    uri=settings.neo4j.uri,
-                    username=settings.neo4j.username,
-                    password=(
-                        settings.neo4j.password.get_secret_value()
-                        if settings.neo4j.password is not None
-                        else (_ for _ in ()).throw(
-                            ValueError("Neo4j password is not set in settings")
-                        )
-                    ),
-                    database=settings.neo4j.database,
-                )
+                ),
+                database=settings.neo4j.database,
+            )
+            logger.info(
+                f"Connected to Neo4j using configured URI: {settings.neo4j.uri}"
+            )
 
             # Check for AST nodes
             ast_count = connector.execute_query(

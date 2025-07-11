@@ -10,16 +10,7 @@ from pydantic import SecretStr
 class ServiceError(Exception):
     """Exception raised for errors in the service client."""
 
-def get_settings():
-    """Get settings - stub for tests."""
-    from unittest.mock import MagicMock
-    mock_settings = MagicMock()
-    mock_service = MagicMock()
-    mock_service.port = 8000
-    mock_service.host = "localhost"
-    mock_service.api_key = None
-    mock_settings.service = mock_service
-    return mock_settings
+from codestory.config import get_settings
 
 class ServiceClient:
     """
@@ -71,18 +62,18 @@ class ServiceClient:
                     self.base_url = ui_url_str
             else:
                 # Prefer host:port construction for consistency in tests
-                import os
-                host = str(getattr(self.settings.service, "host", "localhost"))
-                # Use CODESTORY_TEST_PORT if set, else settings, else 8000
-                port = os.environ.get("CODESTORY_TEST_PORT") or str(getattr(self.settings.service, "port", 8000))
-                self.base_url = f"http://{host}:{port}/v1"
-        else:
-            self.base_url = "http://localhost:8000"
-            
+               import os
+               # Always prefer CODESTORY_SERVICE_URL if set
+               service_url = os.environ.get("CODESTORY_SERVICE_URL")
+               if service_url:
+                   self.base_url = service_url
+               else:
+                   host = str(getattr(self.settings.service, "host", "localhost"))
+                   # Use CODESTORY_TEST_PORT if set, else settings, else 8000
+                   port = os.environ.get("CODESTORY_TEST_PORT") or str(getattr(self.settings.service, "port", 8000))
+                   self.base_url = f"http://{host}:{port}/v1"
         # Create httpx client for tests - ensure base_url is a string
         client_base_url = str(self.base_url)
-        if client_base_url.endswith('/v1'):
-            client_base_url = client_base_url.rstrip('/v1')
         self.client = httpx.Client(base_url=client_base_url)
 
     def _get_headers(self) -> dict[str, str]:
@@ -172,6 +163,7 @@ class ServiceClient:
         payload.update(kwargs)
         payload = {k: v for k, v in payload.items() if v is not None}
         
+        print(f"[DEBUG] CLI sending payload to /ingest: {payload}")
         try:
             response = self.client.post("/ingest", json=payload)
             response.raise_for_status()

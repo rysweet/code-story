@@ -1,3 +1,8 @@
+import pytest
+
+pytestmark = pytest.mark.usefixtures("test_containers_and_service")
+
+print(f"[IMPORT-TIME] CODESTORY_NEO4J__URI={__import__('os').environ.get('CODESTORY_NEO4J__URI')}, NEO4J_URI={__import__('os').environ.get('NEO4J_URI')}")
 from typing import Any
 
 "Test for the config API."
@@ -13,44 +18,32 @@ from fastapi.testclient import TestClient
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.graphdb.schema import initialize_schema
 from codestory_service.infrastructure.msal_validator import get_current_user
-from codestory_service.main import app as global_app
-from codestory_service.main import create_app
+# Delay import of settings-dependent modules until after environment is set up by fixtures
+# from codestory_service.main import app as global_app
+# from codestory_service.main import create_app
 
 
 def is_host_native_mode() -> bool:
     """Host-native mode is deprecated. All tests now use containerized services."""
     return False
 
-@pytest.fixture(scope="module")
-def neo4j_connector() -> None:
-    """Create a Neo4j connector for integration tests."""
-    connector = Neo4jConnector(
-        uri=os.environ["NEO4J_URI"],
-        username="neo4j",
-        password="password",
-        database="neo4j",
-    )
-    try:
-        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
-        initialize_schema(connector, force=True)
-        print("Successfully connected to Neo4j test database")
-        yield connector
-    except Exception as e:
-        pytest.fail(f"Failed to connect to Neo4j test database: {e!s}")
-    finally:
-        connector.close()
+# Removed custom neo4j_connector fixture; use environment provided by conftest.py
 
 
 @pytest.fixture
-def test_client(neo4j_connector: Any) -> None:
-    """Create a test client for the FastAPI application."""
+def test_client() -> None:
+    """Create a test client for the FastAPI application.
+
+    """
     os.environ["CODESTORY_SERVICE_DEV_MODE"] = "true"
     os.environ["CODESTORY_SERVICE_AUTH_ENABLED"] = "false"
     os.environ["NEO4J_DATABASE"] = "neo4j"
     os.environ["CS_NEO4J_DATABASE"] = "neo4j"
-    neo4j_uri = os.environ["NEO4J_URI"]
-    os.environ["NEO4J_URI"] = neo4j_uri
-    os.environ["CS_NEO4J_URI"] = neo4j_uri
+    neo4j_uri = os.environ.get("CODESTORY_NEO4J__URI") or os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        pytest.fail(
+            "Neo4j URI must be set in environment variable CODESTORY_NEO4J__URI or NEO4J_URI for integration tests."
+        )
     os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["CS_NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
@@ -68,6 +61,26 @@ def test_client(neo4j_connector: Any) -> None:
     async def get_test_user():
         return test_user
 
+    # Delayed import after environment is set up
+    from codestory_service.main import app as global_app
+    from codestory_service.main import create_app
+
+    # Initialize schema after environment is ready
+    connector = Neo4jConnector(
+        uri=neo4j_uri,
+        username="neo4j",
+        password="password",
+        database="neo4j",
+    )
+    try:
+        connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+        initialize_schema(connector, force=True)
+        print("Successfully connected to Neo4j test database")
+    except Exception as e:
+        pytest.fail(f"Failed to connect to Neo4j test database: {e!s}")
+    finally:
+        connector.close()
+
     original_auth_dependency = global_app.dependency_overrides.get(
         get_current_user, None
     )
@@ -75,8 +88,6 @@ def test_client(neo4j_connector: Any) -> None:
 
     @asynccontextmanager
     async def test_lifespan(app) -> None:
-        neo4j_connector.database = "neo4j"
-        app.state.db = neo4j_connector
         yield
 
     app = create_app()

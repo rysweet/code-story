@@ -26,7 +26,24 @@ class OpenAIServiceAdapter:
         Args:
             client: Optional OpenAI client
         """
-        self.client = client or OpenAIClient()
+        from codestory_mcp.utils.config import get_azure_openai_config
+        import logging
+
+        logger = logging.getLogger(__name__)
+        config = get_azure_openai_config()
+        logger.info(f"[Azure OpenAI Config] endpoint={config['endpoint']}")
+        logger.info(f"[Azure OpenAI Config] deployment_id={config['deployment_id']}")
+        logger.info(f"[Azure OpenAI Config] api_version={config['api_version']}")
+        logger.info(f"[Azure OpenAI Config] full_uri={config['full_uri']}")
+        logger.info(f"API Key configured: {'Yes' if config['api_key'] else 'No'}")
+
+        self.client = client or OpenAIClient(
+            endpoint=config["endpoint"],
+            chat_model=config["deployment_id"],
+            reasoning_model=config["deployment_id"],
+            api_version=config["api_version"],
+            api_key=config["api_key"],
+        )
         self.metrics = get_metrics()
 
     async def generate_code_summary(

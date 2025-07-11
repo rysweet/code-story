@@ -10,15 +10,30 @@ from celery import Celery
 
 from ..config.settings import get_settings
 
+# --- DEBUG: Print environment and Redis URI at Celery worker startup ---
+import os
+print("[celery_app] ENVIRONMENT VARIABLES AT STARTUP:", flush=True)
+for k, v in sorted(os.environ.items()):
+    print(f"{k}={v}", flush=True)
+try:
+    settings = get_settings()
+    print(f"[celery_app] get_settings().redis.uri: {settings.redis.uri}", flush=True)
+except Exception as e:
+    print(f"[celery_app] Error loading settings: {e}", flush=True)
+# ----------------------------------------------------------------------
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Get settings
-settings = get_settings()
 import os
-logger.info(f"[celery_app] settings.redis.uri: {getattr(settings, 'redis', None) and settings.redis.uri}")
-logger.info(f"[celery_app] os.environ.get('REDIS_URL'): {os.environ.get('REDIS_URL')}")
 
+print(f"[celery_app] CELERY_TASK_ALWAYS_EAGER={os.environ.get('CELERY_TASK_ALWAYS_EAGER')}", flush=True)
+try:
+    from celery import Celery as _Celery
+    _app = _Celery("debug")
+    print(f"[celery_app] app.conf.task_always_eager={getattr(_app.conf, 'task_always_eager', None)}", flush=True)
+except Exception as e:
+    print(f"[celery_app] Error creating debug Celery app: {e}", flush=True)
 
 def create_celery_app() -> Celery:
     """Create and configure the Celery application.
@@ -26,6 +41,8 @@ def create_celery_app() -> Celery:
     Returns:
         Celery: Configured Celery application
     """
+    # Always get settings at the start
+    settings = get_settings()
     # Check if we're in eager mode (integration tests)
     eager_mode = os.getenv("CELERY_TASK_ALWAYS_EAGER", "").lower() in ("1", "true")
     
@@ -108,10 +125,52 @@ def create_celery_app() -> Celery:
         logger.warning(f"Failed to import some step task modules: {e}")
 
     # Log configuration
-    logger.info(f"Celery app created with broker: {settings.redis.uri}")
+    logger.info(
+        f"Celery app instantiated with broker_url: {broker_url}, "
+        f"backend_url: {backend_url}, "
+        f"eager_mode: {eager_mode}"
+    )
 
     return app
 
 
-# Create the celery app instance
-app = create_celery_app()
+# Lazy singleton for celery app instance
+_celery_app_instance = None
+
+def get_celery_app() -> Celery:
+   global _celery_app_instance
+   if _celery_app_instance is None:
+       _celery_app_instance = create_celery_app()
+   return _celery_app_instance
+
+# --------------------------------------------------------------------------- #
+# Export a default Celery application instance for CLI discovery.
+# This allows the command:
+#   python -m celery -A codestory.ingestion_pipeline.celery_app:app worker ...
+# to locate the application. Without this alias, workers cannot start, which
+# breaks backend service startup and integration tests.
+# --------------------------------------------------------------------------- #
+
+# Create a lazy proxy that only instantiates the Celery app when accessed
+class _LazyApp:
+    """Lazy proxy for Celery app to avoid import-time instantiation."""
+    def __init__(self):
+        self._app = None
+    
+    def __getattr__(self, name):
+        if self._app is None:
+            self._app = get_celery_app()
+        return getattr(self._app, name)
+    
+    def __call__(self, *args, **kwargs):
+        if self._app is None:
+            self._app = get_celery_app()
+        return self._app(*args, **kwargs)
+
+# NOTE: get_celery_app() is cheap due to the singleton guard above.
+app = _LazyApp()
+
+__all__ = ["get_celery_app", "app"]
+
+# --- DEBUG: Print registered Celery tasks at startup (when app is accessed) ---
+# Note: This will now only execute when the app is actually used, not at import time

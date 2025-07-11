@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.usefixtures("test_containers_and_service")
+
 from typing import Any
 
 """Integration test for Neo4j connectivity.

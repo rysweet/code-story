@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.usefixtures("test_containers_and_service")
+
 """Integration tests for Neo4j connector using a test container."""
 
 import os

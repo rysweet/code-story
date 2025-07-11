@@ -38,11 +38,22 @@ class HostNativeSettings:
     def __init__(self, **kwargs):
         # Compose a Settings instance
         self.settings = Settings(**kwargs)
-        # Override Neo4j and Redis URIs to localhost for host-native
-        self.settings.neo4j.uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-        print(f"[service startup] NEO4J_URI in os.environ: {os.environ.get('NEO4J_URI')}")
+        # Override Neo4j URI: require CODESTORY_NEO4J__URI, no fallback or default allowed
+        self.settings.neo4j.uri = os.environ["CODESTORY_NEO4J__URI"]
+        print(f"[service startup] CODESTORY_NEO4J__URI in os.environ: {os.environ.get('CODESTORY_NEO4J__URI')}")
         print(f"[service startup] Effective Neo4j URI: {self.settings.neo4j.uri}")
-        self.settings.redis.uri = "redis://localhost:6379"
+        # Always use dynamic Redis URI from environment if available
+        redis_uri = (
+            os.environ.get("CODESTORY_REDIS__URI")
+            or os.environ.get("REDIS__URI")
+            or os.environ.get("REDIS_URI")
+        )
+        if redis_uri:
+            self.settings.redis.uri = redis_uri
+            print(f"[service startup] Effective Redis URI: {self.settings.redis.uri}")
+        else:
+            self.settings.redis.uri = "redis://localhost:6379"
+            print("[service startup] No dynamic Redis URI found, using default: redis://localhost:6379")
         self.deployment = DeploymentSettings()
         self.blarify = BlarifySettings()
 

@@ -160,7 +160,7 @@ start_test_environment() {
 
   # Always clear the database first to ensure a clean state
   print_step "Clearing database..."
-  docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=neo4j \
+  docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb \
     "MATCH (n) DETACH DELETE n;"
 
   print_success "Database cleared"
@@ -169,7 +169,7 @@ start_test_environment() {
   if [[ -f "tests/fixtures/cypher/01_init_schema.cypher" ]]; then
     print_step "Running schema initialization..."
     # Load schema initialization file
-    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=neo4j < tests/fixtures/cypher/01_init_schema.cypher
+    docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb < tests/fixtures/cypher/01_init_schema.cypher
 
     if [[ $? -eq 0 ]]; then
       print_success "Schema initialized successfully"
@@ -178,7 +178,7 @@ start_test_environment() {
       for fixture in tests/fixtures/cypher/0[2-9]_*.cypher; do
         if [[ -f "$fixture" ]]; then
           print_step "Loading test data from $fixture..."
-          docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=neo4j < "$fixture"
+          docker exec -i codestory-neo4j-test cypher-shell -u neo4j -p password --database=testdb < "$fixture"
 
           if [[ $? -eq 0 ]]; then
             print_success "Test data from $fixture loaded successfully"
@@ -206,45 +206,72 @@ start_test_environment() {
 # Function to set up environment variables for tests
 setup_environment_variables() {
   print_header "Setting Up Environment Variables"
-  
-  # Set Neo4j environment variables
-  export NEO4J_URI="bolt://localhost:7687"
-  export NEO4J_USERNAME="neo4j"
-  export NEO4J_PASSWORD="password"
-  export NEO4J_DATABASE="neo4j"
+
+  # Source dynamically generated Neo4j environment if present
+  if [[ -f ".neo4j_test_env" ]]; then
+    print_info "Sourcing .neo4j_test_env for Neo4j environment variables"
+    source .neo4j_test_env
+  fi
+
+  # Set Neo4j environment variables (fallback/defaults)
+  export NEO4J_URI="${NEO4J_URI:-bolt://localhost:7687}"
+  export NEO4J_USERNAME="${NEO4J_USERNAME:-neo4j}"
+  export NEO4J_PASSWORD="${NEO4J_PASSWORD:-password}"
+  export NEO4J_DATABASE="${NEO4J_DATABASE:-testdb}"
 
   # Set Neo4j settings for codestory app (double underscore format)
-  export NEO4J__URI="bolt://localhost:7687"
-  export NEO4J__USERNAME="neo4j"
-  export NEO4J__PASSWORD="password"
-  export NEO4J__DATABASE="neo4j"
-  
+  export NEO4J__URI="$NEO4J_URI"
+  export NEO4J__USERNAME="$NEO4J_USERNAME"
+  export NEO4J__PASSWORD="$NEO4J_PASSWORD"
+  export NEO4J__DATABASE="$NEO4J_DATABASE"
+  export CODESTORY_NEO4J__DATABASE="$NEO4J_DATABASE"
+
+  # Set CODESTORY_NEO4J__URI for service container (always dynamic for tests)
+  export CODESTORY_NEO4J__URI="$NEO4J_URI"
+
   # Set Redis environment variables
   export REDIS_URI="redis://localhost:6380/0"
   export REDIS__URI="redis://localhost:6380/0"
-  
+
   # Set Celery environment variables
   export CELERY_BROKER_URL="redis://localhost:6380/0"
   export CELERY_RESULT_BACKEND="redis://localhost:6380/0"
   export CELERY_TASK_ALWAYS_EAGER="True"
   export CELERY_TASK_EAGER_PROPAGATES="True"
-  
+
   # Set OpenAI mock credentials for tests
   export OPENAI_API_KEY="sk-test-key-openai"
   export OPENAI__API_KEY="sk-test-key-openai"
   export OPENAI__EMBEDDING_MODEL="text-embedding-3-small"
   export OPENAI__CHAT_MODEL="gpt-4o"
   export OPENAI__REASONING_MODEL="gpt-4o"
-  
+
   # Set Python path to include src directory
   export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
-  
+
   print_success "Environment variables set"
-  
+
   # Print the most important variables for debugging
   print_info "NEO4J_URI = $NEO4J_URI"
   print_info "REDIS_URI = $REDIS_URI"
   print_info "PYTHONPATH = $PYTHONPATH"
+}
+
+# Function to check that Neo4j URI is set to a dynamic localhost URI
+check_dynamic_neo4j_uri() {
+  print_header "Validating Neo4j URI"
+  # Use NEO4J_URI, fallback to CODESTORY_NEO4J__URI if not set
+  local uri="${NEO4J_URI:-$CODESTORY_NEO4J__URI}"
+  print_info "Checking Neo4j URI: $uri"
+  if [[ -z "$uri" ]]; then
+    print_error "NEO4J_URI is not set in the environment."
+    exit 1
+  fi
+  if [[ ! "$uri" =~ ^bolt://localhost:[0-9]+$ ]]; then
+    print_error "NEO4J_URI must be set to a dynamic localhost URI (e.g., bolt://localhost:7687). Current value: $uri"
+    exit 1
+  fi
+  print_success "Neo4j URI is set to a dynamic localhost URI: $uri"
 }
 
 # Function to ensure a local Celery worker is running if needed
@@ -269,7 +296,7 @@ ensure_celery_worker() {
       
       # Start Celery in the background with correct import path
       poetry run celery -A codestory.ingestion_pipeline.celery_app:app worker \
-        -l info -Q ingestion --detach \
+        -l info -Q high,default,ingestion,low --detach \
         --logfile="$(pwd)/logs/celery_test.log" \
         --pidfile="$CELERY_PID_FILE"
       
@@ -310,6 +337,8 @@ run_tests() {
   
   print_info "Using timeout: ${TEST_TIMEOUT} seconds"
   
+  # Print CODESTORY_NEO4J__URI for diagnostics
+  echo "CODESTORY_NEO4J__URI=$CODESTORY_NEO4J__URI"
   # Run the tests with timeout
   uv run pytest "$TEST_PATH" -v --override-ini="addopts=" --timeout=$TEST_TIMEOUT $PYTEST_ARGS
   
@@ -462,6 +491,24 @@ main() {
     fi
 
     setup_environment_variables
+    check_dynamic_neo4j_uri
+    # Wait for backend service to be healthy before running tests
+    print_step "Waiting for backend service to be healthy..."
+    HEALTH_URL="http://localhost:${CODESTORY_TEST_PORT}/v1/health"
+    retries=0
+    max_retries=30
+    while ! curl -sf "$HEALTH_URL" > /dev/null; do
+      if [[ $retries -eq $max_retries ]]; then
+        print_error "Backend service did not become healthy within the timeout period"
+        exit 1
+      fi
+      retries=$((retries+1))
+      echo -ne "${YELLOW}Waiting for backend service to be healthy... ($retries/$max_retries)${NC}\r"
+      sleep 2
+    done
+    echo ""
+    print_success "Backend service is healthy"
+
     run_tests "$TEST_PATH" $PYTEST_ARGS
     EXIT_CODE=$?
     cleanup_environment $CLEANUP
@@ -471,7 +518,20 @@ main() {
     check_docker
     start_test_environment $FORCE_RESTART
     setup_environment_variables
+    check_dynamic_neo4j_uri
     ensure_celery_worker
+
+    # Export the dynamic service port for CLI subprocesses
+    # Find the port from the running service container (assumes only one exposed)
+    SERVICE_PORT=$(docker-compose -f docker-compose.test.yml port service 8000 | awk -F: '{print $2}' | head -n1)
+    if [[ -z "$SERVICE_PORT" ]]; then
+      print_error "Could not determine dynamic port for backend service. Is the service running and healthy?"
+      docker-compose -f docker-compose.test.yml ps
+      exit 1
+    fi
+    export CODESTORY_TEST_PORT="$SERVICE_PORT"
+    echo "Exported CODESTORY_TEST_PORT=$CODESTORY_TEST_PORT"
+
     run_tests "$TEST_PATH" $PYTEST_ARGS
     EXIT_CODE=$?
     cleanup_environment $CLEANUP

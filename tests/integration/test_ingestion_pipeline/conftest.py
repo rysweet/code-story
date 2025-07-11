@@ -45,8 +45,8 @@ def filesystem_dataset():
 @pytest.fixture
 def celery_app():
     """Provide Celery app instance for integration tests."""
-    from codestory.ingestion_pipeline.celery_app import app
-    return app
+    from codestory.ingestion_pipeline.celery_app import get_celery_app
+    return get_celery_app()
 
 
 @pytest.fixture
@@ -55,7 +55,10 @@ def neo4j_connector():
     try:
         from codestory.graphdb.neo4j_connector import Neo4jConnector
         import os
-        uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+        uri = os.environ.get("NEO4J_URI")
+        if not uri:
+            import pytest
+            pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
         username = os.environ.get("NEO4J_USERNAME", "neo4j")
         password = os.environ.get("NEO4J_PASSWORD", "password")
         # Always use the default "neo4j" database for test consistency

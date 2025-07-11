@@ -287,6 +287,7 @@ class Neo4jConnector:
             # Initialize driver
             if self.uri is None or self.username is None or self.password is None:
                 raise ConnectionError("uri, username, and password must not be None")
+            print(f"[neo4j_connector] Connecting with uri={self.uri}, username={self.username}, password={self.password}")
             self.driver = GraphDatabase.driver(
                 self.uri,
                 auth=(self.username, self.password),
@@ -388,6 +389,11 @@ class Neo4jConnector:
             query_type = QueryType.WRITE if write else QueryType.READ
             logger.debug(f"Executing {query_type.value} query: {query}")
 
+            # DIAGNOSTIC LOGGING: Print connection details before query execution
+            logger.info(
+                f"[DIAG] Neo4jConnector.execute_query: uri={self.uri}, username={self.username}, database={self.database}"
+            )
+
             # Special handling for mock driver in tests
             if isinstance(self.driver, MagicMock):
                 # Return directly from mock in tests
@@ -414,7 +420,11 @@ class Neo4jConnector:
                 session.close()
 
         except Neo4jDriverError as e:
-            logger.error(f"Neo4j query error: {e!s}")
+            import traceback
+            logger.error(f"[DIAG] Neo4j query error: {e!s}\n{traceback.format_exc()}")
+            logger.error(
+                f"[DIAG] Connection details at error: uri={getattr(self, 'uri', None)}, username={getattr(self, 'username', None)}, database={getattr(self, 'database', None)}"
+            )
             raise QueryError(
                 f"Query execution failed: {e!s}",
                 query=query,
@@ -422,7 +432,11 @@ class Neo4jConnector:
                 cause=e,
             ) from e
         except Exception as e:
-            logger.error(f"Unexpected error executing query: {e!s}")
+            import traceback
+            logger.error(f"[DIAG] Unexpected error executing query: {e!s}\n{traceback.format_exc()}")
+            logger.error(
+                f"[DIAG] Connection details at error: uri={getattr(self, 'uri', None)}, username={getattr(self, 'username', None)}, database={getattr(self, 'database', None)}"
+            )
             raise QueryError(
                 f"Unexpected error: {e!s}",
                 query=query,

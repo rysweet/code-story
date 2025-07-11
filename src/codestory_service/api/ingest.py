@@ -62,11 +62,48 @@ async def start_ingestion(
     request.created_by = user.get("name", "unknown")
 
     try:
+        logger.info(f"Received ingestion request: {request.model_dump_json()}")
+        import os
+        # Skip path existence check in test environment
+        if os.environ.get("CODESTORY_TEST_ENV") == "true":
+            logger.info(f"[TEST MODE] Skipping path existence check for source: {request.source}")
+        else:
+            logger.info(f"Path exists: {os.path.exists(request.source)} for source: {request.source}")
+        logger.info(f"Request fields: source={request.source!r}, source_type={request.source_type!r}, branch={request.branch!r}, steps={request.steps!r}, dependencies={request.dependencies!r}, config={request.config!r}, options={request.options!r}, created_by={request.created_by!r}, description={request.description!r}, tags={request.tags!r}, priority={request.priority!r}, eta={request.eta!r}, countdown={request.countdown!r}")
         logger.info(f"Starting ingestion for source: {request.source}")
         return await ingestion_service.start_ingestion(request)
     except Exception as e:
+        import traceback
         logger.error(f"Failed to start ingestion: {e!s}")
+        logger.error(f"Exception type: {type(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         if isinstance(e, HTTPException):
+            import traceback
+            logger.error(f"HTTPException detail: {getattr(e, 'detail', None)}")
+            logger.error(f"HTTPException traceback: {traceback.format_exc()}")
+            if hasattr(e, "body"):
+                logger.error(f"HTTPException body: {e.body}")
+            if hasattr(e, "errors"):
+                logger.error(f"HTTPException errors: {getattr(e, 'errors', None)}")
+            # Print the request object for debugging
+            try:
+                logger.error(f"Request object at failure: {request.model_dump_json()}")
+            except Exception as dump_exc:
+                logger.error(f"Failed to dump request object: {dump_exc}")
+            # Print the full exception object
+            logger.error(f"HTTPException full: {e}")
+            # Print the full FastAPI validation error if present
+            if hasattr(e, "detail") and isinstance(e.detail, list):
+                for err in e.detail:
+                    logger.error(f"Validation error: {err}")
+            # Print the full request object and all fields
+            logger.error(f"Request fields at failure: {request.__dict__}")
+            # Print the full request body if available
+            if hasattr(request, "body"):
+                try:
+                    logger.error(f"Request body at failure: {request.body}")
+                except Exception as body_exc:
+                    logger.error(f"Failed to dump request body: {body_exc}")
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

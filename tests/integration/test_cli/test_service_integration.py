@@ -27,7 +27,12 @@ class TestServiceCommands:
             pytest.skip("Skipping test_service_status in host-native mode (no backend services)")
         # service_container fixture ensures the Code Story service is running
         print(f"[DEBUG] CODESTORY_SERVICE_URL in os.environ: {os.environ.get('CODESTORY_SERVICE_URL', 'NOT SET')}")
-        result = cli_runner.invoke(app, ["service", "status"])
+        env = os.environ.copy()
+        # Prefer dynamic port if set
+        port = env.get("CODESTORY_SERVICE__PORT") or env.get("PORT") or env.get("CODESTORY_TEST_PORT")
+        if port:
+            env["CODESTORY_SERVICE__PORT"] = str(port)
+        result = cli_runner.invoke(app, ["service", "status"], env=env)
         print(f"[DEBUG] Exit code: {result.exit_code}")
         print(f"[DEBUG] Output: {result.output}")
         if result.exception:
@@ -44,7 +49,11 @@ class TestServiceCommands:
         """Test 'service status' command with verbose output."""
         if is_host_native_mode():
             pytest.skip("Skipping test_service_status_verbose in host-native mode (no backend services)")
-        result = cli_runner.invoke(app, ["service", "status"])
+        env = os.environ.copy()
+        port = env.get("CODESTORY_SERVICE__PORT") or env.get("PORT") or env.get("CODESTORY_TEST_PORT")
+        if port:
+            env["CODESTORY_SERVICE__PORT"] = str(port)
+        result = cli_runner.invoke(app, ["service", "status"], env=env)
         assert result.exit_code == 0
         assert "Service Status" in result.output
         assert "healthy" in result.output.lower()
@@ -57,7 +66,11 @@ class TestServiceCommands:
         """Test 'ui' command with a running service."""
         # Note: This command will try to open a browser, which will fail in CI
         # but should complete successfully without raising an exception
-        result = cli_runner.invoke(app, ["ui"])
+        env = os.environ.copy()
+        port = env.get("CODESTORY_SERVICE__PORT") or env.get("PORT") or env.get("CODESTORY_TEST_PORT")
+        if port:
+            env["CODESTORY_SERVICE__PORT"] = str(port)
+        result = cli_runner.invoke(app, ["ui"], env=env)
         assert result.exit_code == 0
         assert "Opening Code Story GUI in browser" in result.output
         assert "GUI opened in browser" in result.output

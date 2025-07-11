@@ -40,6 +40,14 @@ export NEO4J_USERNAME="neo4j"
 export NEO4J_PASSWORD="password"
 export NEO4J_DATABASE="neo4j"
 
+# Write environment variables to a file for sourcing by the main test process
+cat > .neo4j_test_env <<EOF
+export NEO4J_URI="bolt://localhost:7687"
+export NEO4J_USERNAME="neo4j"
+export NEO4J_PASSWORD="password"
+export NEO4J_DATABASE="neo4j"
+EOF
+
 echo "Neo4j test environment is ready. Environment variables have been set:"
 echo "NEO4J_URI=$NEO4J_URI"
 echo "NEO4J_USERNAME=$NEO4J_USERNAME"

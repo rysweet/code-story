@@ -30,7 +30,10 @@ def setup_test_env(request: Any) -> None:
         test_dir.mkdir(exist_ok=True)
 
         # Set environment variables for testing
-        os.environ["NEO4J_URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+        neo4j_uri = os.environ.get("NEO4J_URI")
+        if not neo4j_uri:
+            pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
+        os.environ["NEO4J_URI"] = neo4j_uri
         os.environ["NEO4J_USERNAME"] = "neo4j"
         os.environ["NEO4J_PASSWORD"] = "password"
         os.environ["NEO4J_DATABASE"] = "neo4j"
@@ -165,7 +168,9 @@ def test_cli_query_run(setup_test_env: Any, neo4j_connector: Any) -> None:
     )
 
     # Get the container URI and credentials to pass to the CLI command
-    neo4j_uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
     neo4j_username = os.environ.get("NEO4J_USERNAME", "neo4j")
     neo4j_password = os.environ.get("NEO4J_PASSWORD", "password")
     neo4j_database = os.environ.get("NEO4J_DATABASE", "neo4j")

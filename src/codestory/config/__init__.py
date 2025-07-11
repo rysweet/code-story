@@ -15,7 +15,8 @@ Usage:
 
     # Update a setting
     from codestory.config import update_config
-    update_config("neo4j.uri", "bolt://neo4j:7687", persist_to="env")
+    import os
+    update_config("neo4j.uri", os.environ["CODESTORY_NEO4J__URI"], persist_to="env")
 """
 
 from .exceptions import (

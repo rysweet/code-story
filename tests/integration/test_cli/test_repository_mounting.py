@@ -46,13 +46,6 @@ def temp_repository() -> None:
         yield temp_dir
 
 
-@pytest.fixture
-def stop_containers() -> None:
-    """Stop Code Story containers before and after tests."""
-    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "down"], cwd=os.getcwd(), capture_output=True)
-    yield
-    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "down"], cwd=os.getcwd(), capture_output=True)
-
 
 @pytest.fixture
 def cli_runner() -> Any:
@@ -60,6 +53,7 @@ def cli_runner() -> Any:
     return CliRunner()
 
 
+@pytest.mark.skip(reason="Deprecated: direct Docker tests are replaced by fixture-based integration tests.")
 class TestRepositoryMounting:
     """Integration tests for repository mounting."""
 
@@ -196,6 +190,7 @@ class TestRepositoryMounting:
 
 @pytest.mark.integration
 @pytest.mark.docker
+@pytest.mark.skip(reason="Deprecated: direct Docker tests are replaced by fixture-based integration tests.")
 class TestCliAutoMount:
     """CLI integration tests for auto mounting with ingest command."""
 

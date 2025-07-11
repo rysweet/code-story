@@ -214,8 +214,9 @@ def create_env_template(
     if include_comments:
         lines.append("# Neo4j settings")
     lines.append(
+        # In real/test environments, set this using the CODESTORY_NEO4J__URI environment variable.
         "NEO4J__URI=bolt://localhost:7687"
-    )  # Hard-coded to match test expectations
+    )  # Hard-coded to match test expectations; override with env var in real/test environments
     lines.append(f"NEO4J__USERNAME={settings.neo4j.username}")
     lines.append("NEO4J__PASSWORD=your-password-here")
     lines.append("")

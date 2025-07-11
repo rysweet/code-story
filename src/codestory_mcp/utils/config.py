@@ -129,3 +129,91 @@ def get_mcp_settings() -> MCPSettings:
         MCP settings instance
     """
     return MCPSettings()  # type: ignore[call-arg]  # TODO: Pydantic BaseSettings with defaults
+import os
+import logging
+from codestory.config.settings import get_settings
+
+def get_azure_openai_config() -> dict:
+    """
+    Assemble Azure OpenAI endpoint, deployment ID, API version, and API key from environment or config.
+    Returns a dict with all relevant config and the fully assembled endpoint URI.
+    """
+    logger = logging.getLogger(__name__)
+
+    # Priority: env vars (double underscore), then single underscore, then config
+    env = os.environ
+
+    # Endpoint
+    endpoint = (
+        env.get("AZURE_OPENAI__ENDPOINT")
+        or env.get("AZURE_OPENAI_ENDPOINT")
+        or None
+    )
+    # Deployment ID
+    deployment_id = (
+        env.get("AZURE_OPENAI__DEPLOYMENT_ID")
+        or env.get("AZURE_OPENAI_MODEL_CHAT")
+        or env.get("AZURE_OPENAI_DEPLOYMENT_ID")
+        or None
+    )
+    # API version
+    api_version = (
+        env.get("AZURE_OPENAI__API_VERSION")
+        or env.get("AZURE_OPENAI_API_VERSION")
+        or None
+    )
+    # API key
+    api_key = (
+        env.get("AZURE_OPENAI__API_KEY")
+        or env.get("AZURE_OPENAI_KEY")
+        or env.get("OPENAI__API_KEY")
+        or env.get("OPENAI_API_KEY")
+        or None
+    )
+
+    # Fallback to config if not set
+    settings = get_settings()
+    if not endpoint:
+        endpoint = getattr(settings.openai, "endpoint", None)
+    if not deployment_id:
+        deployment_id = getattr(settings.openai, "chat_model", None)
+    if not api_version:
+        api_version = getattr(settings.openai, "api_version", None)
+    if not api_key:
+        api_key = getattr(settings.openai, "api_key", None)
+        if api_key is not None and hasattr(api_key, "get_secret_value"):
+            api_key = api_key.get_secret_value()
+
+    # Validate required fields
+    missing = []
+    if not endpoint:
+        missing.append("endpoint")
+    if not deployment_id:
+        missing.append("deployment_id")
+    if not api_version:
+        missing.append("api_version")
+    if not api_key:
+        missing.append("api_key")
+    if missing:
+        logger.error(f"Missing Azure OpenAI config values: {missing}")
+        raise RuntimeError(f"Missing Azure OpenAI config values: {missing}")
+
+    # Assemble full endpoint URI for chat completions
+    # Example: https://ai-adapt-oai-eastus2.openai.azure.com/openai/deployments/gpt-4.1/chat/completions?api-version=2025-01-01-preview
+    if endpoint.endswith("/"):
+        endpoint = endpoint.rstrip("/")
+    full_uri = f"{endpoint}/openai/deployments/{deployment_id}/chat/completions?api-version={api_version}"
+
+    # Log all config values (except api_key)
+    logger.debug(f"[Azure OpenAI Config] endpoint={endpoint}")
+    logger.debug(f"[Azure OpenAI Config] deployment_id={deployment_id}")
+    logger.debug(f"[Azure OpenAI Config] api_version={api_version}")
+    logger.debug(f"[Azure OpenAI Config] full_uri={full_uri}")
+
+    return {
+        "endpoint": endpoint,
+        "deployment_id": deployment_id,
+        "api_version": api_version,
+        "api_key": api_key,
+        "full_uri": full_uri,
+    }

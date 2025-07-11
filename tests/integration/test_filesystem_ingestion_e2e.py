@@ -233,12 +233,16 @@ class FilesystemIngestionTestHelper:
         logger.info(f"Executing CLI command: {' '.join(command)}")
         self.start_time = time.time()
         try:
+            env = os.environ.copy()
+            print(f"[capture_cli_logs] NEO4J_URI in env: {env.get('NEO4J_URI')}")
+            print(f"[capture_cli_logs] CODESTORY_NEO4J__URI in env: {env.get('CODESTORY_NEO4J__URI')}")
             result = subprocess.run(
                 command,
                 cwd=self.test_repo_path,
                 capture_output=True,
                 text=True,
                 timeout=300,
+                env=env,
             )
             self.end_time = time.time()
             execution_time = self.end_time - self.start_time
@@ -391,205 +395,30 @@ class TestFilesystemIngestionE2E:
     """Comprehensive end-to-end tests for filesystem ingestion."""
 
     @pytest.fixture(autouse=True)
-    async def setup_and_cleanup(self: Any) -> None:
+    def require_test_containers(self, test_containers_and_service):
+        """Ensure testcontainer-based services are running for all tests in this class."""
+        pass
+
+    @pytest.fixture(autouse=True)
+    async def setup_and_cleanup(self: Any, test_containers_and_service) -> None:
         """Set up test environment and clean up afterwards."""
         self.temp_dir = tempfile.mkdtemp(prefix="codestory_fs_test_")
         self.test_repo_path = Path(self.temp_dir)
         logger.info(f"Created test directory: {self.temp_dir}")
         self.helper = FilesystemIngestionTestHelper(self.test_repo_path)
         self.validator = Neo4jTestValidator()
-        await self._start_codestory_services()
+        # All service setup/teardown is now handled by testcontainer-based fixtures.
         yield
-        await self._stop_codestory_services()
         try:
             shutil.rmtree(self.temp_dir)
             logger.info(f"Cleaned up test directory: {self.temp_dir}")
         except Exception as e:
             logger.warning(f"Failed to clean up test directory: {e}")
 
-    async def _start_codestory_services(self: Any) -> None:
-        """Start CodeStory services for testing.
-
-        Refactored to skip starting the stack if all required containers are already running and healthy.
-        """
-        import re
-
-        os.environ["REDIS__URI"] = os.environ["REDIS__URI"]
-        logger.info("Checking CodeStory service container status...")
-        # Dynamically determine container names from environment, fallback to defaults
-        neo4j_container = os.environ.get("CODESTORY_NEO4J_CONTAINER_NAME")
-        redis_container = os.environ.get("CODESTORY_REDIS_CONTAINER_NAME")
-        worker_container = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
-        service_container = os.environ.get("CODESTORY_SERVICE_CONTAINER_NAME")
-
-        required_services = {
-            "neo4j": [neo4j_container] if neo4j_container else ["neo4j", "codestory-neo4j"],
-            "redis": [redis_container] if redis_container else ["redis", "codestory-redis"],
-            "worker": [worker_container],
-            "service": [service_container] if service_container else ["service", "codestory-service"],
-        }
-        healthy_services = set()
-
-        def parse_ps_output(output: str):
-            found = set()
-            for line in output.splitlines():
-                for svc, patterns in required_services.items():
-                    if svc == "service":
-                        if any(pat in line for pat in patterns) and (
-                            (
-                                "Up" in line
-                                and (
-                                    "(healthy)" in line or "(health: starting)" in line
-                                )
-                            )
-                            or "Started" in line
-                        ):
-                            found.add(svc)
-                    elif (
-                        any(pat in line for pat in patterns)
-                        and "Up" in line
-                        and ("(healthy)" in line)
-                    ):
-                        found.add(svc)
-            return found
-
-        try:
-            ps_proc = subprocess.run(
-                ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "ps", "--status=running"],
-                capture_output=True,
-                text=True,
-                timeout=15,
-            )
-            if ps_proc.returncode == 0:
-                healthy_services = parse_ps_output(ps_proc.stdout)
-        except Exception as e:
-            logger.warning(f"Could not check docker compose status: {e}")
-        if healthy_services == set(required_services.keys()):
-            logger.info(
-                "All required CodeStory containers are already running and healthy. Skipping stack startup."
-            )
-            await self._wait_for_services_ready(skip_worker=True)
-            return
-        logger.info("Not all containers are healthy. Restarting stack...")
-        try:
-            subprocess.run(["codestory", "stop"], capture_output=True, timeout=30)
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            pass
-        try:
-            result = subprocess.run(
-                ["codestory", "start"], capture_output=True, text=True, timeout=300
-            )
-            if result.returncode != 0:
-                logger.error(f"Failed to start services: {result.stderr}")
-                logger.info("Attempting manual docker compose startup...")
-                subprocess.run(
-                    ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "--env-file", ".env", "up", "-d"],
-                    capture_output=True,
-                    timeout=120,
-                )
-            await self._wait_for_services_ready(skip_worker=True)
-        except subprocess.TimeoutExpired:
-            logger.error("Service startup timed out")
-            raise
-        except Exception as e:
-            logger.error(f"Error starting services: {e}")
-            raise
-
-    async def _stop_codestory_services(self: Any) -> None:
-        """Stop CodeStory services after testing."""
-        logger.info("Stopping CodeStory services...")
-        try:
-            subprocess.run(["codestory", "stop"], capture_output=True, timeout=60)
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            subprocess.run(
-                ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "down", "--remove-orphans"],
-                capture_output=True,
-                timeout=60,
-            )
-
-    async def _wait_for_services_ready(self: Any, max_wait: Any = 120, skip_worker: bool = False) -> None:
-        """Wait for all required services to be running and healthy.
-
-        Args:
-            max_wait: Maximum seconds to wait for readiness.
-            skip_worker: If True, do not require the worker container to be healthy.
-        """
-        import re
-
-        logger.info("Waiting for all CodeStory containers to be running and healthy...")
-        import os
-        # Dynamically determine container names from environment, fallback to defaults
-        neo4j_container = os.environ.get("CODESTORY_NEO4J_CONTAINER_NAME")
-        redis_container = os.environ.get("CODESTORY_REDIS_CONTAINER_NAME")
-        worker_container = os.environ.get("CODESTORY_WORKER_CONTAINER_NAME", "codestory-worker")
-        service_container = os.environ.get("CODESTORY_SERVICE_CONTAINER_NAME")
-
-        required_services = {
-            "neo4j": [neo4j_container] if neo4j_container else ["neo4j", "codestory-neo4j"],
-            "redis": [redis_container] if redis_container else ["redis", "codestory-redis"],
-            "service": [service_container] if service_container else ["service", "codestory-service"],
-        }
-        if not skip_worker:
-            required_services["worker"] = [worker_container]
-
-        def parse_ps_output(output: str):
-            found = set()
-            for line in output.splitlines():
-                for svc, patterns in required_services.items():
-                    if svc == "service":
-                        if any(pat in line for pat in patterns) and (
-                            (
-                                "Up" in line
-                                and (
-                                    "(healthy)" in line or "(health: starting)" in line
-                                )
-                            )
-                            or "Started" in line
-                        ):
-                            found.add(svc)
-                    elif (
-                        any(pat in line for pat in patterns)
-                        and "Up" in line
-                        and ("(healthy)" in line)
-                    ):
-                        found.add(svc)
-            return found
-
-        start_time = time.time()
-        healthy_services = set()
-        while time.time() - start_time < max_wait:
-            try:
-                ps_proc = subprocess.run(
-                    ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml", "ps", "--status=running"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                if ps_proc.returncode == 0:
-                    healthy_services = parse_ps_output(ps_proc.stdout)
-                    missing = set(required_services.keys()) - healthy_services
-                    if missing:
-                        logger.warning(f"Still waiting for containers: {sorted(missing)}")
-                    else:
-                        logger.info("All required containers are running and healthy.")
-                        return
-            except Exception as e:
-                logger.warning(f"Error checking container health: {e}")
-            await asyncio.sleep(2)
-        docker_result = subprocess.run(
-            ["docker", "ps", "-a"], capture_output=True, text=True
-        )
-        logger.error(
-            f"Services not ready after {max_wait}s. Missing: {sorted(set(required_services.keys()) - healthy_services)}. Docker status:\n{docker_result.stdout}"
-        )
-        try:
-            service_logs = subprocess.run(
-                ["docker", "logs", service_container or "codestory-service"], capture_output=True, text=True
-            )
-            logger.error(f"Service logs:\n{service_logs.stdout}\n{service_logs.stderr}")
-        except Exception:
-            pass
-        raise TimeoutError(f"Services not ready after {max_wait} seconds. Missing: {sorted(set(required_services.keys()) - healthy_services)}")
+    # All Compose-based service management logic removed.
+    # The testcontainer-based fixtures for Neo4j, Redis, and service should be used instead.
+    # Setup and cleanup should rely on those fixtures, not Compose or codestory CLI.
+    # If additional setup is needed, use the testcontainer fixture pattern.
 
     async def test_comprehensive_filesystem_ingestion(self: Any) -> None:
         """Test comprehensive filesystem ingestion with realistic repository."""

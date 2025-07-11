@@ -40,7 +40,7 @@ def update_env(key: str, value: str, env_file: str | None = None) -> None:
     set_key(env_file, key.upper(), str(value), quote_mode="always")
 
     # Reload environment variables
-    load_dotenv(env_file, override=True)
+    load_dotenv(env_file, override=False)
 
 
 def update_toml(
@@ -133,7 +133,8 @@ def update_config(
         persist_to: Where to persist the change ('env', 'toml', or None for in-memory only)
 
     Example:
-        >>> update_config('neo4j.uri', 'bolt://neo4j:7687', 'env')
+        >>> import os
+        >>> update_config('neo4j.uri', os.environ.get('CODESTORY_NEO4J__URI', 'bolt://localhost:7687'), 'env')
         >>> update_config('openai.temperature', 0.7, 'toml')
 
     Raises:

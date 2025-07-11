@@ -123,81 +123,34 @@ class OpenAIAdapter:
         Raises:
             HTTPException: If connecting to OpenAI fails
         """
-        # Log environment variables (without sensitive values)
-        endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "NOT_SET")
-        deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID", "NOT_SET")
-        api_version = os.environ.get("AZURE_OPENAI__API_VERSION", "NOT_SET")
-        tenant_id = os.environ.get("AZURE_TENANT_ID") or os.environ.get(
-            "AZURE_OPENAI__TENANT_ID", "NOT_SET"
-        )
-
-        logger.info(f"Azure OpenAI Endpoint: {endpoint}")
-        logger.info(f"Azure OpenAI Deployment ID: {deployment_id}")
-        logger.info(f"Azure OpenAI API Version: {api_version}")
-        logger.info(f"Azure Tenant ID: {tenant_id}")
-
-        # Check if API key is set (but don't log the actual value)
-        api_key = os.environ.get("AZURE_OPENAI__API_KEY") or os.environ.get(
-            "OPENAI__API_KEY"
-        )
-        logger.info(f"API Key configured: {'Yes' if api_key else 'No'}")
-
-        # Check Azure CLI authentication status
-        try:
-            import subprocess
-
-            result = subprocess.run(
-                ["az", "account", "show", "--query", "user.name", "-o", "tsv"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0:
-                logger.info(f"Azure CLI authenticated as: {result.stdout.strip()}")
-            else:
-                logger.warning(f"Azure CLI not authenticated: {result.stderr.strip()}")
-        except Exception as e:
-            logger.warning(f"Could not check Azure CLI status: {e}")
-
-        # Check current working directory and container info
-        logger.info(f"Current working directory: {os.getcwd()}")
-        logger.info(
-            f"Running in container: {'Yes' if os.path.exists('/.dockerenv') else 'No'}"
-        )
+        from codestory_mcp.utils.config import get_azure_openai_config
 
         try:
-            # Create or use provided client
-            logger.info("Initializing OpenAI client...")
-            try:
-                # Use endpoint, api_key, and deployment/model as in the working SDK sample
-                self.client = client or OpenAIClient(
-                    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT") or os.environ.get("AZURE_OPENAI__ENDPOINT"),
-                    embedding_model=os.environ.get("AZURE_OPENAI_MODEL_EMBEDDING") or os.environ.get("AZURE_OPENAI__EMBEDDING_MODEL", "text-embedding-3-small"),
-                    chat_model=os.environ.get("AZURE_OPENAI_MODEL_CHAT") or os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID") or os.environ.get("AZURE_OPENAI__CHAT_MODEL", "gpt-4.1"),
-                    reasoning_model=os.environ.get("AZURE_OPENAI_MODEL_REASONING") or os.environ.get("AZURE_OPENAI__REASONING_MODEL", "gpt-4.1"),
-                    api_version=os.environ.get("AZURE_OPENAI_API_VERSION") or os.environ.get("AZURE_OPENAI__API_VERSION", "2025-01-01-preview"),
-                    api_key=os.environ.get("AZURE_OPENAI_KEY") or os.environ.get("AZURE_OPENAI__API_KEY"),
-                )
-                logger.info("OpenAI client initialized successfully.")
-                logger.info(
-                    f"Client details: Endpoint={self.client.endpoint}, ChatModel={self.client.chat_model}, EmbeddingModel={self.client.embedding_model}, ReasoningModel={self.client.reasoning_model}"
-                )
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
-                raise
-
-            # Log client configuration details
-            logger.info(f"Chat model: {getattr(self.client, 'chat_model', 'NOT_SET')}")
+            config = get_azure_openai_config()
+            logger.info(f"[Azure OpenAI Config] endpoint={config['endpoint']}")
+            logger.info(f"[Azure OpenAI Config] deployment_id={config['deployment_id']}")
+            logger.info(f"[Azure OpenAI Config] api_version={config['api_version']}")
+            logger.info(f"[Azure OpenAI Config] full_uri={config['full_uri']}")
+            logger.info(f"API Key configured: {'Yes' if config['api_key'] else 'No'}")
+            logger.info(f"Current working directory: {os.getcwd()}")
             logger.info(
-                f"Embedding model: {getattr(self.client, 'embedding_model', 'NOT_SET')}"
-            )
-            logger.info(
-                f"Reasoning model: {getattr(self.client, 'reasoning_model', 'NOT_SET')}"
+                f"Running in container: {'Yes' if os.path.exists('/.dockerenv') else 'No'}"
             )
 
+            # Use config for all OpenAIClient parameters
+            self.client = client or OpenAIClient(
+                endpoint=config["endpoint"],
+                chat_model=config["deployment_id"],
+                reasoning_model=config["deployment_id"],
+                api_version=config["api_version"],
+                api_key=config["api_key"],
+            )
+            logger.info("OpenAI client initialized successfully.")
+            logger.info(
+                f"Client details: Endpoint={self.client.endpoint}, ChatModel={self.client.chat_model}, EmbeddingModel={getattr(self.client, 'embedding_model', 'NOT_SET')}, ReasoningModel={self.client.reasoning_model}"
+            )
         except AuthenticationError as e:
             logger.error(f"OpenAI authentication error during initialization: {e!s}")
-            # Try to extract tenant info from error
             tenant_from_error = extract_tenant_id_from_error(str(e))
             if tenant_from_error:
                 logger.error(f"Tenant ID from error: {tenant_from_error}")
@@ -209,7 +162,6 @@ class OpenAIAdapter:
             logger.error(f"Failed to initialize OpenAI client: {e!s}")
             logger.error(f"Error type: {type(e).__name__}")
 
-            # Log additional debug info for common issues
             if "404" in str(e):
                 logger.error(
                     "404 error suggests endpoint or deployment configuration issue"
@@ -276,37 +228,24 @@ class OpenAIAdapter:
             ) from e
 
     async def check_health(self) -> dict[str, Any]:
-        """Check OpenAI API health.
+        """Check OpenAI API health. Never bypassed; always performed for correctness."""
+        from codestory_mcp.utils.config import get_azure_openai_config
 
-        Returns:
-            Dictionary containing health information
-        """
         try:
-            # Get the actual deployment model from environment first, then fallback to client default
-            # Parse endpoint for deployment ID if needed
-            endpoint = os.environ.get("AZURE_OPENAI__ENDPOINT", "")
-            deployment_id = os.environ.get("AZURE_OPENAI__DEPLOYMENT_ID")
-            if not deployment_id and "/openai/deployments/" in endpoint:
-                # Extract deployment ID from endpoint
-                try:
-                    deployment_id = endpoint.split("/openai/deployments/")[1].split("/")[0]
-                    logger.info(f"Extracted deployment_id from endpoint: {deployment_id}")
-                except Exception:
-                    deployment_id = None
-            test_model = deployment_id or self.client.chat_model
+            config = get_azure_openai_config()
+            logger.info(f"[HEALTH CHECK] endpoint={config['endpoint']}, deployment_id={config['deployment_id']}, api_version={config['api_version']}, full_uri={config['full_uri']}, api_key={'set' if config['api_key'] else 'not set'}")
+            test_model = config["deployment_id"] or self.client.chat_model
             test_message = "Hello! This is a health check."
 
             logger.info(f"Health check using model: {test_model}")
             logger.info(f"Test message: {test_message}")
 
-            # Check if this is a reasoning model and adjust parameters accordingly
             is_reasoning_model = any(
                 reasoning_model in test_model.lower()
                 for reasoning_model in ["o1", "o1-preview", "o1-mini"]
             )
             logger.info(f"Is reasoning model: {is_reasoning_model}")
 
-            # Use the client's chat_async method which handles reasoning models properly
             from codestory.llm.models import ChatMessage, ChatRole
 
             messages = [
@@ -319,7 +258,6 @@ class OpenAIAdapter:
             logger.info("Sending health check request via OpenAI client...")
 
             if is_reasoning_model:
-                # For reasoning models, use max_completion_tokens and no temperature
                 logger.info(
                     "Using max_completion_tokens=10 for reasoning model (no temperature)"
                 )
@@ -328,7 +266,6 @@ class OpenAIAdapter:
                     messages, model=test_model, max_completion_tokens=10
                 )
             else:
-                # For regular models, use max_tokens and temperature
                 logger.info("Using max_tokens=10 and temperature=0.1 for regular model")
                 logger.info(f"Health check OpenAI call: model={test_model}, max_tokens=10, temperature=0.1")
                 response = await self.client.chat_async(
@@ -339,7 +276,6 @@ class OpenAIAdapter:
             logger.info(f"Response ID: {getattr(response, 'id', 'N/A')}")
             logger.info(f"Response model: {getattr(response, 'model', 'N/A')}")
 
-            # If we get here, the API is healthy
             available_models = [
                 self.client.embedding_model,
                 self.client.chat_model,
@@ -347,7 +283,6 @@ class OpenAIAdapter:
             ]
             available_models = [m for m in list(set(available_models)) if m is not None]
 
-            # Determine status: require embedding and chat models at minimum
             if self.client.embedding_model and self.client.chat_model:
                 status = "healthy"
             else:
@@ -366,6 +301,7 @@ class OpenAIAdapter:
                         self.client.reasoning_model or "unknown",
                     ],
                     "api_version": getattr(self.client, "api_version", "latest"),
+                    "full_uri": config["full_uri"],
                 },
             }
 
@@ -482,9 +418,11 @@ import asyncio
 
 async def get_openai_adapter() -> "OpenAIAdapter":
     """Factory function to get a singleton OpenAIAdapter instance, with health check."""
+    import os
     global _openai_adapter_instance
     if _openai_adapter_instance is None:
         adapter = OpenAIAdapter()
-        await adapter.check_health()  # Will raise if not healthy
+        if os.environ.get("DISABLE_OPENAI_HEALTHCHECK") != "1":
+            await adapter.check_health()  # Will raise if not healthy
         _openai_adapter_instance = adapter
     return _openai_adapter_instance

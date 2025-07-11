@@ -5,6 +5,7 @@ building on the core Neo4jConnector with additional functionality required
 by the service layer.
 """
 import logging
+import os
 import time
 from typing import Any, AsyncGenerator
 
@@ -48,6 +49,11 @@ class Neo4jAdapter:
         Raises:
             ConnectionError: If connection to Neo4j fails
         """
+        import logging
+        logging.basicConfig(level=logging.DEBUG)
+        print(f'[Neo4jAdapter.__init__] CODESTORY_NEO4J__URI={os.environ.get("CODESTORY_NEO4J__URI")}, NEO4J_URI={os.environ.get("NEO4J_URI")}, NEO4J__URI={os.environ.get("NEO4J__URI")}')
+        from codestory.config.settings import get_settings
+        print(f'[Neo4jAdapter.__init__] get_settings().neo4j.uri={get_settings().neo4j.uri}')
         self.connector = connector or Neo4jConnector()
 
     async def check_health(self: Any) -> dict[str, Any]:

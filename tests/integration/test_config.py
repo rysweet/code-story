@@ -1,3 +1,4 @@
+import pytest
 """Integration test configuration and utilities.
 
 This module provides configuration for the integration tests, including
@@ -31,7 +32,9 @@ def get_test_settings() -> Settings:
         Settings: Test-configured settings instance
     """
     # Define neo4j test settings
-    neo4j_uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
 
     neo4j = Neo4jSettings(  # type: ignore[call-arg]
         uri=neo4j_uri,

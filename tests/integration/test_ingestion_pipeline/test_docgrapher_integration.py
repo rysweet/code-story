@@ -1,8 +1,12 @@
+import pytest
 # Set environment variables BEFORE any project imports
 import os
 os.environ["PYTHONUNBUFFERED"] = "1"
 if "NEO4J_URI" not in os.environ:
-    os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
+    os.environ["NEO4J_URI"] = neo4j_uri
 os.environ["CODESTORY_NEO4J__URI"] = os.environ["NEO4J_URI"]
 os.environ["CODESTORY_NEO4J__USERNAME"] = "neo4j"
 os.environ["CODESTORY_NEO4J__PASSWORD"] = "password"
@@ -25,7 +29,10 @@ import pytest
 
 # Use the NEO4J_URI from the test container setup, don't override it
 if "NEO4J_URI" not in os.environ:
-    os.environ["NEO4J_URI"] = "bolt://localhost:7687"  # Fallback for non-containerized tests
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        pytest.fail("NEO4J_URI must be set by the testcontainer fixture.")
+    os.environ["NEO4J_URI"] = neo4j_uri
     
 # Map to the correct format expected by the settings system
 os.environ["CODESTORY_NEO4J__URI"] = os.environ["NEO4J_URI"]

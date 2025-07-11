@@ -134,8 +134,9 @@ def celery_config() -> Any:
 @pytest.fixture(scope="function")
 def celery_app() -> Any:
     """Provide a Celery app configured for unit testing."""
-    from codestory.ingestion_pipeline.celery_app import app
+    from codestory.ingestion_pipeline.celery_app import get_celery_app
 
+    app = get_celery_app()
     app.conf.update(
         broker_url="memory://",
         result_backend="rpc://",

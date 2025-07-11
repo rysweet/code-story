@@ -9,10 +9,6 @@ from pathlib import Path
 import docker
 import pytest
 
-os.environ["NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-os.environ["NEO4J__USERNAME"] = "neo4j"
-os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "neo4j"
 import contextlib
 
 from codestory.graphdb.neo4j_connector import Neo4jConnector
@@ -54,11 +50,26 @@ def ensure_blarify_image() -> None:
 
     This is a strict requirement as we want to test with real components.
     """
+    import os
+    import tempfile
+    
+    # Set environment variables to disable Docker credential helpers
+    os.environ['DOCKER_CONFIG'] = '/tmp/docker-no-creds'
+    
     try:
-        client = docker.from_env()
+        # Create a temporary docker config that doesn't use credential helpers
+        docker_config_dir = '/tmp/docker-no-creds'
+        os.makedirs(docker_config_dir, exist_ok=True)
+        config_file = os.path.join(docker_config_dir, 'config.json')
+        with open(config_file, 'w') as f:
+            f.write('{"auths": {}}')
+        
+        # Create Docker client
+        client = docker.DockerClient(base_url='unix://var/run/docker.sock')
         print("Checking Docker availability...")
         client.ping()
         print("Docker is available")
+        
         blarify_image_names = ["blarapp/blarify:latest", "codestory/blarify:latest"]
         for img_name in blarify_image_names:
             try:
@@ -68,17 +79,9 @@ def ensure_blarify_image() -> None:
                     return img_name  # type: ignore[return-value]
             except Exception as e:
                 print(f"Error checking for {img_name}: {e}")
-        print("No Blarify image found locally, attempting to pull...")
-        for img_name in blarify_image_names:
-            try:
-                client.images.pull(img_name)
-                print(f"Successfully pulled {img_name}")
-                return img_name  # type: ignore[return-value]
-            except Exception as e:
-                print(f"Failed to pull {img_name}: {e}")
+        
+        # Skip pulling and go straight to building a test image
         print("Building minimal Blarify-compatible image for testing...")
-        import os
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             dockerfile_path = os.path.join(tmp_dir, "Dockerfile")
@@ -89,6 +92,7 @@ def ensure_blarify_image() -> None:
             test_image_name = "codestory-blarify-test:latest"
             print(f"Building test image: {test_image_name}")
             try:
+                # Build image using high-level API
                 client.images.build(path=tmp_dir, tag=test_image_name, rm=True)
                 print(f"Successfully built test Blarify image: {test_image_name}")
                 return test_image_name  # type: ignore[return-value]
@@ -98,6 +102,10 @@ def ensure_blarify_image() -> None:
     except Exception as e:
         print(f"Docker not available: {e}")
         pytest.fail(f"Docker not available for testing: {e}")
+    finally:
+        # Clean up environment variable
+        if 'DOCKER_CONFIG' in os.environ:
+            del os.environ['DOCKER_CONFIG']
 
 
 @pytest.fixture(scope="function")

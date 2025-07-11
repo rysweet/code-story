@@ -1,5 +1,17 @@
+print("[DEBUG] src/codestory/cli/main.py: script started", flush=True)
 """Main CLI application for Code Story."""
 import sys
+import os
+
+# --- DEBUG: Print environment and Neo4j URI at CLI startup ---
+print("[cli/main.py] ENVIRONMENT VARIABLES AT STARTUP:", flush=True)
+for k, v in sorted(os.environ.items()):
+    print(f"{k}={v}", flush=True)
+print(f"[cli/main.py] CODESTORY_NEO4J__URI={os.environ.get('CODESTORY_NEO4J__URI')}", flush=True)
+print(f"[cli/main.py] CODESTORY_CONFIG_FILE={os.environ.get('CODESTORY_CONFIG_FILE')}", flush=True)
+print(f"[cli/main.py] CWD={os.getcwd()}", flush=True)
+# -------------------------------------------------------------
+
 import types
 from typing import (
     IO,
@@ -263,6 +275,18 @@ app.main = _wrap_click_command(app)
 
 def main() -> None:
     """Entry point for the CLI application."""
+    import os
+    from codestory.config import get_settings
+
+    # --- DEBUG: Print environment and settings at CLI startup ---
+    print("[DEBUG][CLI main] CODESTORY_SERVICE__PORT:", os.environ.get("CODESTORY_SERVICE__PORT"))
+    print("[DEBUG][CLI main] PORT:", os.environ.get("PORT"))
+    print("[DEBUG][CLI main] CODESTORY_TEST_PORT:", os.environ.get("CODESTORY_TEST_PORT"))
+    print("[DEBUG][CLI main] get_settings().service.port:", get_settings().service.port)
+    # Optionally print the full environment for troubleshooting
+    # print("[DEBUG][CLI main] FULL ENV:", dict(os.environ))
+    # -----------------------------------------------------------
+
     original_error_callback = click.exceptions.UsageError.show
 
     def custom_error_callback(

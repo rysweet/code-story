@@ -13,7 +13,9 @@ class TestConfigCommands:
         self: Any, cli_runner
     ) -> None:
         """Test 'config show' command with real configuration."""
-        result = cli_runner(["config", "show"])
+        import os
+        env = os.environ.copy()
+        result = cli_runner(["config", "show"], env=env)
         assert result.returncode == 0
         assert "Configuration" in result.stdout
         assert "service" in result.stdout.lower()
@@ -25,7 +27,9 @@ class TestConfigCommands:
         self: Any, cli_runner
     ) -> None:
         """Test 'config show --sensitive' command with real configuration."""
-        result = cli_runner(["config", "show", "--sensitive"])
+        import os
+        env = os.environ.copy()
+        result = cli_runner(["config", "show", "--sensitive"], env=env)
         assert result.returncode == 0
         assert "Configuration" in result.stdout
         settings = get_settings()

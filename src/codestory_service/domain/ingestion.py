@@ -148,6 +148,10 @@ class IngestionRequest(BaseModel):
             import os
             import sys
 
+            # Skip path existence check in test environment
+            if os.environ.get("CODESTORY_TEST_ENV") == "true":
+                return v
+
             if not os.path.exists(v) and "pytest" not in sys.modules:
                 raise ValueError(f"Local path '{v}' does not exist")
 

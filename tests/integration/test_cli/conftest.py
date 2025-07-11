@@ -18,7 +18,17 @@ class ExtendedCliRunner(CliRunner):
     def __call__(self, args=None, **kwargs):  # type: ignore[override]
         if args is None:
             args = []
-        return self.invoke(self._app, args, **kwargs)
+        # Always inject CODESTORY_SERVICE_URL and CODESTORY_SERVICE__PORT from os.environ if present
+        env = kwargs.pop("env", None)
+        service_url = os.environ.get("CODESTORY_SERVICE_URL")
+        test_port = os.environ.get("CODESTORY_TEST_PORT")
+        if service_url or test_port:
+            env = dict(env) if env else os.environ.copy()
+            if service_url:
+                env["CODESTORY_SERVICE_URL"] = service_url
+            if test_port:
+                env["CODESTORY_SERVICE__PORT"] = test_port
+        return self.invoke(self._app, args, env=env, **kwargs)
 
 @pytest.fixture(autouse=True)
 def patch_external_dependencies(monkeypatch):
@@ -128,16 +138,27 @@ def cli_runner() -> ExtendedCliRunner:
 
 @pytest.fixture
 def test_repository(tmp_path: Path) -> str:
-    """Create a temporary directory that looks like a minimal repo.
-
-    The tests only require a directory path they can iterate over and pass
-    to `ingest start`. We create a few placeholder files to mimic a repo.
-    """
+    """Create a temporary directory that looks like a minimal repo and symlink it to /repositories/repo."""
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
     # Minimal file set – adjust as needed by future tests.
     (repo_root / "README.md").write_text("# Example repository\n")
     (repo_root / "main.py").write_text("print('hello world')\n")
+    # Create /repositories if it doesn't exist
+    container_repos = Path("/repositories")
+    try:
+        container_repos.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass  # Ignore if not running as root or in container
+    # Symlink /repositories/repo to the temp repo
+    container_repo_path = container_repos / "repo"
+    try:
+        if not container_repo_path.exists():
+            container_repo_path.symlink_to(repo_root, target_is_directory=True)
+    except Exception:
+        pass  # Ignore if not running as root or in container
     return str(repo_root)
+
+# Removed: populate_neo4j_for_query_tests
 
 __all__ = ["cli_runner", "test_repository"]

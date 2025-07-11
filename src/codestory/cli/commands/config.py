@@ -52,7 +52,7 @@ def init_config(ctx: click.Context, config_file: str, force: bool = False) -> No
     # Create a reliable default config that doesn't depend on Settings()
     default_config = {
         "neo4j": {
-            "uri": "bolt://localhost:7687",
+            "uri": os.environ.get("CODESTORY_NEO4J__URI"),
             "username": "neo4j",
             "password": "password",
             "database": "neo4j",
@@ -167,7 +167,7 @@ def _get_default_config_data() -> dict[str, Any]:
     """Get default configuration data."""
     return {
         "neo4j": {
-            "uri": "bolt://localhost:7687",
+            "uri": os.environ.get("CODESTORY_NEO4J__URI"),
             "username": "neo4j",
             "database": "neo4j",
             "connection_timeout": 30,

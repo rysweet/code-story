@@ -6,7 +6,8 @@ application and can be discovered by the worker.
 
 import pytest
 
-from codestory.ingestion_pipeline.celery_app import app as celery_app
+from codestory.ingestion_pipeline.celery_app import get_celery_app
+celery_app = get_celery_app()
 from codestory_filesystem.step import FileSystemStep
 
 
