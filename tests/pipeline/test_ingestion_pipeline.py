@@ -1,13 +1,6 @@
 import pytest
+import asyncio
 
-def test_import_ingestion_pipeline():
-    """
-    Test that importing IngestionPipeline from codestory.pipeline fails (expected until implemented).
-    """
-    with pytest.raises(ImportError):
-        from codestory.pipeline import IngestionPipeline  # noqa: F401
-
-@pytest.mark.skip(reason="Interface tests will fail until IngestionPipeline is implemented")
 class TestIngestionPipelineInterface:
     def test_steps_attribute(self):
         from codestory.pipeline import IngestionPipeline
@@ -15,14 +8,22 @@ class TestIngestionPipelineInterface:
         assert hasattr(pipeline, "steps")
         assert isinstance(pipeline.steps, list)
 
-    def test_run_method(self):
-        from codestory.pipeline import IngestionPipeline
-        pipeline = IngestionPipeline()
-        assert hasattr(pipeline, "run")
-        # Should be a coroutine or method; actual type check will be refined after implementation
-
     def test_incremental_flag(self):
         from codestory.pipeline import IngestionPipeline
         pipeline = IngestionPipeline()
         assert hasattr(pipeline, "incremental")
-        # Should be a bool or property; actual type check will be refined after implementation
+        assert isinstance(pipeline.incremental, bool)
+
+    def test_run_method(self):
+        from codestory.pipeline import IngestionPipeline
+        pipeline = IngestionPipeline()
+        assert hasattr(pipeline, "run")
+        # Should be a coroutine function
+        assert asyncio.iscoroutinefunction(pipeline.run)
+
+    @pytest.mark.asyncio
+    async def test_run_raises_not_implemented(self):
+        from codestory.pipeline import IngestionPipeline
+        pipeline = IngestionPipeline()
+        with pytest.raises(NotImplementedError, match="Pipeline steps not wired yet"):
+            await pipeline.run("dummy_path")

@@ -47,3 +47,5 @@ show_missing = true
 skip_covered = true
 [tool.pytest.ini_options]
 addopts = "-q"
+[tool.setuptools.packages.find]
+where = ["codestory"]
