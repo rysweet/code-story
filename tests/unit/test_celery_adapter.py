@@ -1,7 +1,7 @@
 """Unit tests for CeleryAdapter."""
 
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
+from tests.conftest import get_test_config
 
 import pytest
 
@@ -54,22 +54,23 @@ class TestCeleryAdapter:
         celery_adapter._app.conf.task_always_eager = False
         
         # Set environment variable
-        with patch.dict(os.environ, {"CELERY_TASK_ALWAYS_EAGER": "1"}):
-            # Mock the inspect method to ensure it's not called
-            mock_inspect = MagicMock()
-            celery_adapter._app.control.inspect = mock_inspect
-            
-            # Call check_health
-            status, details = await celery_adapter.check_health()
-            
-            # Assert early return with healthy status
-            assert status == "healthy"
-            assert details["active_workers"] == 0
-            assert details["registered_workers"] == 0
-            assert details["registered_tasks"] == 0
-            assert "message" in details
-            # Assert that inspect was not called
-            mock_inspect.assert_not_called()
+        config = get_test_config()
+        config.set("CELERY_TASK_ALWAYS_EAGER", "1")
+        # Mock the inspect method to ensure it's not called
+        mock_inspect = MagicMock()
+        celery_adapter._app.control.inspect = mock_inspect
+        
+        # Call check_health
+        status, details = await celery_adapter.check_health()
+        
+        # Assert early return with healthy status
+        assert status == "healthy"
+        assert details["active_workers"] == 0
+        assert details["registered_workers"] == 0
+        assert details["registered_tasks"] == 0
+        assert "message" in details
+        # Assert that inspect was not called
+        mock_inspect.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_check_health_with_eager_mode_env_true_string(self, celery_adapter):
@@ -78,22 +79,23 @@ class TestCeleryAdapter:
         celery_adapter._app.conf.task_always_eager = False
         
         # Set environment variable to 'true'
-        with patch.dict(os.environ, {"CELERY_TASK_ALWAYS_EAGER": "true"}):
-            # Mock the inspect method to ensure it's not called
-            mock_inspect = MagicMock()
-            celery_adapter._app.control.inspect = mock_inspect
-            
-            # Call check_health
-            status, details = await celery_adapter.check_health()
-            
-            # Assert early return with healthy status
-            assert status == "healthy"
-            assert details["active_workers"] == 0
-            assert details["registered_workers"] == 0
-            assert details["registered_tasks"] == 0
-            assert "message" in details
-            # Assert that inspect was not called
-            mock_inspect.assert_not_called()
+        config = get_test_config()
+        config.set("CELERY_TASK_ALWAYS_EAGER", "true")
+        # Mock the inspect method to ensure it's not called
+        mock_inspect = MagicMock()
+        celery_adapter._app.control.inspect = mock_inspect
+        
+        # Call check_health
+        status, details = await celery_adapter.check_health()
+        
+        # Assert early return with healthy status
+        assert status == "healthy"
+        assert details["active_workers"] == 0
+        assert details["registered_workers"] == 0
+        assert details["registered_tasks"] == 0
+        assert "message" in details
+        # Assert that inspect was not called
+        mock_inspect.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_check_health_without_eager_mode_calls_inspect(self, celery_adapter):
@@ -102,32 +104,33 @@ class TestCeleryAdapter:
         celery_adapter._app.conf.task_always_eager = False
 
         # Clear environment variable
-        with patch.dict(os.environ, {}, clear=True):
-            # Mock successful inspect response
-            mock_inspector = MagicMock()
-            mock_inspector.active.return_value = {"worker1": []}
-            mock_inspector.registered.return_value = {"worker1": ["task1"]}
-            celery_adapter._app.control.inspect.return_value = mock_inspector
+        config = get_test_config()
+        config.set("CELERY_TASK_ALWAYS_EAGER", "")
+        # Mock successful inspect response
+        mock_inspector = MagicMock()
+        mock_inspector.active.return_value = {"worker1": []}
+        mock_inspector.registered.return_value = {"worker1": ["task1"]}
+        celery_adapter._app.control.inspect.return_value = mock_inspector
 
-            # Call check_health
-            status, details = await celery_adapter.check_health()
+        # Call check_health
+        status, details = await celery_adapter.check_health()
 
-            # Assert inspect was called
-            celery_adapter._app.control.inspect.assert_called_once()
-            mock_inspector.active.assert_called_once()
-            assert mock_inspector.registered.call_count == 2
+        # Assert inspect was called
+        celery_adapter._app.control.inspect.assert_called_once()
+        mock_inspector.active.assert_called_once()
+        assert mock_inspector.registered.call_count == 2
 
-            # Assert healthy response and all required keys/types
-            assert status == "healthy"
-            assert set(details.keys()) >= {"active_workers", "registered_workers", "registered_tasks", "message"}
-            assert isinstance(details["active_workers"], int)
-            assert isinstance(details["registered_workers"], int)
-            assert isinstance(details["registered_tasks"], int)
-            # Values should match the mock
-            assert details["active_workers"] == 1
-            assert details["registered_workers"] == 1
-            assert details["registered_tasks"] == 1
-            assert isinstance(details["message"], str)
+        # Assert healthy response and all required keys/types
+        assert status == "healthy"
+        assert set(details.keys()) >= {"active_workers", "registered_workers", "registered_tasks", "message"}
+        assert isinstance(details["active_workers"], int)
+        assert isinstance(details["registered_workers"], int)
+        assert isinstance(details["registered_tasks"], int)
+        # Values should match the mock
+        assert details["active_workers"] == 1
+        assert details["registered_workers"] == 1
+        assert details["registered_tasks"] == 1
+        assert isinstance(details["message"], str)
 import sys
 import types
 import asyncio
@@ -155,7 +158,8 @@ async def test_get_real_celery_adapter_eager_mode_skips_strict_health(monkeypatc
     )
 
     # Patch os.getenv to simulate CELERY_TASK_ALWAYS_EAGER=1
-    monkeypatch.setenv("CELERY_TASK_ALWAYS_EAGER", "1")
+    config = get_test_config()
+    config.set("CELERY_TASK_ALWAYS_EAGER", "1")
 
     # Should not raise, even though health is "unhealthy"
     adapter = await get_real_celery_adapter()

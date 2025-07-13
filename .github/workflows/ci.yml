@@ -82,6 +82,15 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      - name: Cache Poetry virtualenv and wheel cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry/virtualenvs
+            ~/.cache/pypoetry/cache
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ steps.setup-python.outputs.python-version }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -92,15 +101,22 @@ jobs:
         run: |
           poetry install --no-interaction --extras azure
           poetry run pip install email-validator
+      - name: Cache pytest cache
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: pytest-cache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            pytest-cache-${{ runner.os }}-
       - name: Run unit tests
         run: poetry run pytest tests/unit -v || echo "Python tests completed with some failures"
       - name: Generate coverage report
-        run: poetry run pytest tests/unit -v || echo "Python tests completed with some failures" --cov=src --cov-report=xml
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        run: poetry run pytest tests/unit -v --cov=src --cov-report=xml || echo "Python tests completed with some failures"
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
         with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+          name: coverage-unit
+          path: coverage.xml
 
   test-gui:
     name: GUI Tests
@@ -147,6 +163,15 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      - name: Cache Poetry virtualenv and wheel cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry/virtualenvs
+            ~/.cache/pypoetry/cache
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ steps.setup-python.outputs.python-version }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -157,9 +182,70 @@ jobs:
         run: |
           poetry install --no-interaction --extras azure
           poetry run pip install email-validator
+      - name: Cache pytest cache
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: pytest-cache-${{ runner.os }}-integration-${{ matrix.test_path }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            pytest-cache-${{ runner.os }}-integration-
       - name: Run integration test module
         env:
           CI: "true"
         run: |
           chmod +x scripts/run_integration_tests.sh
-          scripts/run_integration_tests.sh ${{ matrix.test_path }}
+          scripts/run_integration_tests.sh ${{ matrix.test_path }} --cov=src --cov-report=xml
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration-${{ matrix.test_path }}
+          path: coverage.xml
+  e2e-filesystem-ingestion:
+    name: E2E Filesystem Ingestion Test
+    runs-on: ubuntu-latest
+    needs: [test-python, test-gui]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Cache Poetry virtualenv and wheel cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry/virtualenvs
+            ~/.cache/pypoetry/cache
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ steps.setup-python.outputs.python-version }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --extras azure
+          poetry run pip install email-validator
+      - name: Cache pytest cache
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: pytest-cache-${{ runner.os }}-e2e-filesystem-ingestion-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            pytest-cache-${{ runner.os }}-e2e-filesystem-ingestion-
+      - name: Run E2E Filesystem Ingestion Test
+        env:
+          CI: "true"
+        run: |
+          chmod +x scripts/run_integration_tests.sh
+          scripts/run_integration_tests.sh tests/integration/test_filesystem_ingestion_e2e.py --cov=src --cov-report=xml
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e-filesystem-ingestion
+          path: coverage.xml

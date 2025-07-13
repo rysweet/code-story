@@ -1,15 +1,16 @@
-import os
 import pytest
 from fastapi.testclient import TestClient
+from tests.conftest import get_test_config
 
-# Set required env vars for settings
-os.environ["NEO4J_URI"] = "bolt://localhost:7687"
-os.environ["CODESTORY_NEO4J__URI"] = "bolt://localhost:7687"
-os.environ["REDIS__URI"] = "redis://localhost:6379"
-os.environ["CODESTORY_REDIS__URI"] = "redis://localhost:6379"
-os.environ["CELERY_BROKER_URL"] = "redis://localhost:6379"
-os.environ["CELERY_RESULT_BACKEND"] = "redis://localhost:6379"
-os.environ["DEPLOYMENT_MODE"] = "host"
+# Set required env vars for settings using centralized config
+config = get_test_config()
+config.set("NEO4J_URI", "bolt://localhost:7687")
+config.set("CODESTORY_NEO4J__URI", "bolt://localhost:7687")
+config.set("REDIS__URI", "redis://localhost:6379")
+config.set("CODESTORY_REDIS__URI", "redis://localhost:6379")
+config.set("CELERY_BROKER_URL", "redis://localhost:6379")
+config.set("CELERY_RESULT_BACKEND", "redis://localhost:6379")
+config.set("DEPLOYMENT_MODE", "host")
 
 from unittest.mock import patch
 from codestory_service.infrastructure.celery_adapter import DummyCeleryAdapter, get_celery_adapter

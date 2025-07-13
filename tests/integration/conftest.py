@@ -12,4 +12,7 @@ reside in the project root conftest.py to ensure standardization and reusability
 
 This file may contain only integration-specific pytest hooks or utilities that do
 not manage containers or environment variables.
+
+# [DEPRECATED] All integration-specific resource fixtures are now forbidden.
+# Any such fixtures should be removed or commented out to enforce robust resource isolation.
 """

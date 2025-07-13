@@ -2,10 +2,10 @@ from typing import Any
 
 """Unit tests for the MCP Adapter configuration."""
 
-import os
 from unittest import mock
 
 import pytest
+from tests.conftest import get_test_config
 
 from codestory_mcp.utils.config import MCPSettings, get_mcp_settings
 
@@ -83,19 +83,20 @@ def test_audience_validator() -> None:
 )
 def test_settings_from_env(env_vars: Any, expected: Any) -> None:
     """Test loading settings from environment variables."""
-    with mock.patch.dict(os.environ, env_vars, clear=True):
-        settings = MCPSettings()  # type: ignore[call-arg]
+    config = get_test_config()
+    for k, v in env_vars.items():
+        config.set(k, v)
+    settings = MCPSettings()  # type: ignore[call-arg]
 
-        for key, value in expected.items():
-            assert getattr(settings, key) == value
+    for key, value in expected.items():
+        assert getattr(settings, key) == value
 
 
 def test_get_mcp_settings_singleton() -> None:
     """Test that get_mcp_settings returns a singleton."""
-    with mock.patch.dict(
-        os.environ, {"CODE_STORY_SERVICE_URL": "http://localhost:8000"}, clear=True
-    ):
-        settings1 = get_mcp_settings()
-        settings2 = get_mcp_settings()
+    config = get_test_config()
+    config.set("CODE_STORY_SERVICE_URL", "http://localhost:8000")
+    settings1 = get_mcp_settings()
+    settings2 = get_mcp_settings()
 
-        assert settings1 is settings2
+    assert settings1 is settings2

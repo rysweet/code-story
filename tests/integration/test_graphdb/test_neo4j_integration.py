@@ -21,20 +21,28 @@ from codestory.graphdb.neo4j_connector import Neo4jConnector
 # Use standardized test data factories for node creation
 from tests.test_factories import FileNodeFactory, DirectoryNodeFactory
 
-def test_connection(neo4j_connector: Neo4jConnector) -> None:
-    """Test basic connection to Neo4j."""
-    # Simple query to verify connection
+def test_connection(unified_test_env) -> None:
+    """Test basic connection to Neo4j using unified_test_env."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
     result = neo4j_connector.execute_query("RETURN 1 as num")
     assert result[0]["num"] == 1
+    neo4j_connector.close()
 
-
-def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
+def test_create_and_retrieve_nodes(unified_test_env) -> None:
     """
-    Test creating and retrieving nodes in a single transaction.
-
-    Uses standardized test data factories for node creation.
-    See: tests/test_factories.py
+    Test creating and retrieving nodes in a single transaction using unified_test_env.
     """
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
 
     file_node = FileNodeFactory.build()
     dir_node = DirectoryNodeFactory.build()
@@ -79,14 +87,12 @@ def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
         rel_params = {"dir_path": dir_node.path, "file_path": file_node.path}
         tx.run(rel_query, rel_params)
 
-    # Use a single transaction for all operations
     session = neo4j_connector.driver.session(database=neo4j_connector.database)
     try:
         session.execute_write(create_nodes_and_relationship)
     finally:
         session.close()
 
-    # Retrieve and verify file node
     result = neo4j_connector.execute_query(
         "MATCH (f:File {path: $path}) RETURN f", {"path": file_node.path}
     )
@@ -95,7 +101,6 @@ def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
     assert result[0]["f"]["name"] == file_node.name
     assert result[0]["f"]["extension"] == file_node.extension
 
-    # Retrieve and verify relationship
     result = neo4j_connector.execute_query(
         """
         MATCH (d:Directory {path: $dir_path})-[r:CONTAINS]->(f:File {path: $file_path})
@@ -105,11 +110,18 @@ def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
     )
     assert len(result) == 1
     assert result[0]["rel_type"] == "CONTAINS"
+    neo4j_connector.close()
 
 
-def test_transaction_management(neo4j_connector: Neo4jConnector) -> None:
-    """Test transaction management with execute_many."""
-    # Create test queries
+def test_transaction_management(unified_test_env) -> None:
+    """Test transaction management with execute_many using unified_test_env."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
+
     queries = [
         "CREATE (n:Test {id: $id, name: $name}) RETURN n",
         "CREATE (n:Test {id: $id, name: $name}) RETURN n",
@@ -122,20 +134,25 @@ def test_transaction_management(neo4j_connector: Neo4jConnector) -> None:
         {"id": 3, "name": "Test 3"},
     ]
 
-    # Execute queries in a single transaction
     results = neo4j_connector.execute_many(queries, params_list, write=True)
     assert len(results) == 3
 
-    # Verify all nodes were created
     count_result = neo4j_connector.execute_query(
         "MATCH (n:Test) RETURN count(n) AS count"
     )
     assert count_result[0]["count"] == 3
+    neo4j_connector.close()
 
 
-def test_transaction_rollback(neo4j_connector: Neo4jConnector) -> None:
-    """Test transaction rollback on error."""
-    # Create test queries with an intentional error in the middle
+def test_transaction_rollback(unified_test_env) -> None:
+    """Test transaction rollback on error using unified_test_env."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector, TransactionError
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
+
     queries = [
         "CREATE (n:TestRollback {id: $id}) RETURN n",
         "CREATE (n:TestRollback {id: $id}) RETURN INVALID_FUNCTION()",  # Error
@@ -144,20 +161,25 @@ def test_transaction_rollback(neo4j_connector: Neo4jConnector) -> None:
 
     params_list = [{"id": 1}, {"id": 2}, {"id": 3}]
 
-    # Execute queries - should fail and roll back
     with pytest.raises(TransactionError):
         neo4j_connector.execute_many(queries, params_list, write=True)
 
-    # Verify no nodes were created (transaction rolled back)
     count_result = neo4j_connector.execute_query(
         "MATCH (n:TestRollback) RETURN count(n) AS count"
     )
     assert count_result[0]["count"] == 0
+    neo4j_connector.close()
 
 
-def test_schema_verification(neo4j_connector: Neo4jConnector) -> None:
-    """Test schema verification functionality."""
-    # Create constraints directly for this test
+def test_schema_verification(unified_test_env) -> None:
+    """Test schema verification functionality using unified_test_env."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
+
     neo4j_connector.execute_query(
         "CREATE CONSTRAINT file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE",
         write=True,
@@ -173,7 +195,6 @@ def test_schema_verification(neo4j_connector: Neo4jConnector) -> None:
         write=True,
     )
 
-    # Check that the constraints exist
     constraints_result = neo4j_connector.execute_query("SHOW CONSTRAINTS")
     for constraint in constraints_result:
         if constraint.get("name") == "file_path":
@@ -183,17 +204,23 @@ def test_schema_verification(neo4j_connector: Neo4jConnector) -> None:
             assert constraint.get("labelsOrTypes")[0] == "Directory"
             assert constraint.get("properties")[0] == "path"
 
-    # Check that the index exists
     indexes_result = neo4j_connector.execute_query("SHOW INDEXES")
     for index in indexes_result:
         if index.get("name") == "file_extension_idx":
             assert index.get("labelsOrTypes")[0] == "File"
             assert index.get("properties")[0] == "extension"
+    neo4j_connector.close()
 
 
-def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
-    """Test vector similarity search functionality using Neo4j GDS."""
-    # First verify GDS plugin is available - this test requires GDS
+def test_vector_search(unified_test_env) -> None:
+    """Test vector similarity search functionality using Neo4j GDS and unified_test_env."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
+
     try:
         check_query = "RETURN gds.version() AS version"
         result = neo4j_connector.execute_query(check_query)
@@ -203,18 +230,15 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
             f"Graph Data Science plugin not available: {e!s}. This test requires GDS plugin."
         )
 
-    # Create test nodes with embeddings
     embedding1 = [0.1, 0.2, 0.3, 0.4]
     embedding2 = [0.5, 0.6, 0.7, 0.8]
     embedding3 = [0.9, 0.8, 0.7, 0.6]
 
-    # Clear any existing nodes first
     neo4j_connector.execute_query(
         "MATCH (n:VectorNode) DETACH DELETE n",
         write=True,
     )
 
-    # Create nodes with test embeddings
     neo4j_connector.execute_query(
         """
         CREATE (n:VectorNode {name: 'Node1', embedding: $embedding})
@@ -239,17 +263,14 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         write=True,
     )
 
-    # First drop any existing index with the same name to avoid conflicts
     try:
         neo4j_connector.execute_query(
             "DROP INDEX node_embedding IF EXISTS",
             write=True,
         )
     except Exception as e:
-        # Ignore errors when dropping index
         print(f"Warning: Failed to drop existing index: {e!s}")
 
-    # Create the vector index
     neo4j_connector.execute_query(
         """
         CREATE VECTOR INDEX node_embedding
@@ -262,11 +283,8 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
     """,
         write=True,
     )
-    # Wait for index to be fully available
     time.sleep(2)
 
-    # Test similarity search
-    # Query with embedding similar to Node3
     query_embedding = [0.95, 0.85, 0.75, 0.65]
 
     results = neo4j_connector.semantic_search(
@@ -276,12 +294,8 @@ def test_vector_search(neo4j_connector: Neo4jConnector) -> None:
         limit=3,
     )
 
-    # Assert results contain all nodes, sorted by similarity
     assert len(results) == 3
-
-    # First result should be Node3 (most similar)
     assert results[0]["n"]["name"] == "Node3"
-
-    # Results should be sorted by score (descending)
     for i in range(len(results) - 1):
         assert results[i]["score"] >= results[i + 1]["score"]
+    neo4j_connector.close()

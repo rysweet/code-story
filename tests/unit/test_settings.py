@@ -1,8 +1,8 @@
 from typing import Any
 
 "Tests for settings module and a direct settings provider.\n\nThis module contains tests for the settings module and also provides\na direct settings provider for use in tests.\n"
-import os
 from unittest.mock import patch
+from tests.conftest import get_test_config
 
 from pydantic import SecretStr
 
@@ -100,8 +100,9 @@ def setup_test_settings() -> Any:
         "codestory.config.settings.Settings.__new__", return_value=test_settings
     )
     new_patch.start()
-    os.environ["CODESTORY_TEST_ENV"] = "true"
-    os.environ["NEO4J_DATABASE"] = "neo4j"
+    config = get_test_config()
+    config.set("CODESTORY_TEST_ENV", "true")
+    config.set("NEO4J_DATABASE", "neo4j")
     return (settings_patch, new_patch)
 
 

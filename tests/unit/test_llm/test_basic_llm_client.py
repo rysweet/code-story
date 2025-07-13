@@ -1,12 +1,13 @@
-import os
 from openai import AzureOpenAI
+from tests.conftest import get_test_config
 
 def test_basic_llm_client_chat():
     print("RUNNING test_basic_llm_client_chat")
-    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
-    api_key = os.environ.get("AZURE_OPENAI_KEY")
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION")
-    deployment = os.environ.get("AZURE_OPENAI_MODEL_CHAT")
+    config = get_test_config()
+    endpoint = config.get("AZURE_OPENAI_ENDPOINT")
+    api_key = config.get("AZURE_OPENAI_KEY")
+    api_version = config.get("AZURE_OPENAI_API_VERSION")
+    deployment = config.get("AZURE_OPENAI_MODEL_CHAT")
     print(f"ENDPOINT: {endpoint}")
     print(f"DEPLOYMENT: {deployment}")
     print(f"API_VERSION: {api_version}")

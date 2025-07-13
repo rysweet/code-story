@@ -1,9 +1,9 @@
 """Tests for the configuration module."""
 
-import os
 import tempfile
 from typing import Any
 from unittest.mock import MagicMock, patch
+from tests.conftest import get_test_config
 
 import pytest
 from pydantic import SecretStr
@@ -20,33 +20,27 @@ from codestory.config.exceptions import SettingNotFoundError
 
 def test_plugins_enabled_invalid_env_raises_validation_error():
     """Test that invalid PLUGINS__ENABLED env var raises ValidationError."""
+    config = get_test_config()
+    config.set("CODESTORY_CONFIG_FILE", "tests/fixtures/test_config.toml")
+    config.set("PLUGINS__ENABLED", "notalist")
+    config.set("NEO4J__URI", "bolt://localhost:7687")
+    config.set("NEO4J__USERNAME", "neo4j")
+    config.set("NEO4J__PASSWORD", "password")
+    config.set("REDIS__URI", "redis://localhost:6379")
+    config.set("OPENAI__API_KEY", "test-key")
+    config.set("AZURE_OPENAI__DEPLOYMENT_ID", "gpt-4o")
+    config.set("AZURE_OPENAI__API_VERSION", "2024-05-01")
+    config.set("AZURE__KEYVAULT_NAME", "test-keyvault")
+    config.set("AZURE__TENANT_ID", "test-tenant")
+    config.set("SERVICE__HOST", "0.0.0.0")
+    config.set("SERVICE__PORT", "8000")
+    config.set("INGESTION__CONFIG_PATH", "pipeline_config.yml")
+    config.set("INGESTION__CHUNK_SIZE", "1024")
+    config.set("TELEMETRY__METRICS_PORT", "9090")
+    config.set("TELEMETRY__LOG_FORMAT", "json")
+    config.set("INTERFACE__THEME", "dark")
+    config.set("INTERFACE__DEFAULT_VIEW", "graph")
     with (
-        patch.dict(
-            os.environ,
-            {
-                "CODESTORY_CONFIG_FILE": "tests/fixtures/test_config.toml",
-                "PLUGINS__ENABLED": "notalist",  # Not a JSON list, not comma-separated
-                # Add required fields to avoid unrelated validation errors
-                "NEO4J__URI": "bolt://localhost:7687",
-                "NEO4J__USERNAME": "neo4j",
-                "NEO4J__PASSWORD": "password",
-                "REDIS__URI": "redis://localhost:6379",
-                "OPENAI__API_KEY": "test-key",
-                "AZURE_OPENAI__DEPLOYMENT_ID": "gpt-4o",
-                "AZURE_OPENAI__API_VERSION": "2024-05-01",
-                "AZURE__KEYVAULT_NAME": "test-keyvault",
-                "AZURE__TENANT_ID": "test-tenant",
-                "SERVICE__HOST": "0.0.0.0",
-                "SERVICE__PORT": "8000",
-                "INGESTION__CONFIG_PATH": "pipeline_config.yml",
-                "INGESTION__CHUNK_SIZE": "1024",
-                "TELEMETRY__METRICS_PORT": "9090",
-                "TELEMETRY__LOG_FORMAT": "json",
-                "INTERFACE__THEME": "dark",
-                "INTERFACE__DEFAULT_VIEW": "graph",
-            },
-            clear=True,
-        ),
         patch(
             "src.codestory.config.settings.Settings._CONFIG_FILE", "nonexistent.toml"
         ),

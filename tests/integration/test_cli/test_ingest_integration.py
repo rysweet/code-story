@@ -13,6 +13,7 @@ from click.testing import CliRunner
 from codestory.cli.commands.ingest import is_docker_running, is_repo_mounted
 from codestory.cli.main import app
 
+from tests.conftest import get_test_config
 
 import requests
 
@@ -27,7 +28,7 @@ def is_host_native_mode() -> bool:
     """Host-native mode is deprecated. All tests now use containerized services."""
     return False
 
-@pytest.mark.usefixtures("test_containers_and_service")
+@pytest.mark.usefixtures("unified_test_env")
 class TestIngestCommands:
     """Integration tests for ingestion-related CLI commands."""
 
@@ -36,10 +37,11 @@ class TestIngestCommands:
         monkeypatch.setattr("os.path.exists", lambda path: True)
 
     @pytest.fixture(autouse=True)
-    def _set_service_url(self, test_containers_and_service):
-        """Set CODESTORY_SERVICE_URL for all tests in this class."""
-        svc_port = test_containers_and_service
-        os.environ["CODESTORY_SERVICE_URL"] = f"http://localhost:{svc_port}/v1"
+    def _set_service_url(self, unified_test_env):
+        """Set CODESTORY_SERVICE_URL for all tests in this class using unified_test_env."""
+        # Centralized config: no direct os.environ manipulation
+        # The config object will be used in each test to provide env
+        pass
 
     @pytest.mark.integration
     def test_ingest_start_and_status(
@@ -48,27 +50,23 @@ class TestIngestCommands:
         test_repository: str,
     ) -> None:
         """Test 'ingest start' and 'ingest status' commands with real repository."""
-        import os
-        # Use the service URL as set by the test_containers_and_service fixture
-        print(f"[DEBUG] FULL ENV: {dict(os.environ)}")
-        print(f"[DEBUG] CODESTORY_SERVICE_URL={os.environ.get('CODESTORY_SERVICE_URL')}")
+        # Use the service URL as set by the centralized test config
+        config = get_test_config()
+        env = config.as_env_dict() if hasattr(config, "as_env_dict") else dict(config)
+        print(f"[DEBUG] FULL ENV: {env}")
+        print(f"[DEBUG] CODESTORY_SERVICE_URL={env.get('CODESTORY_SERVICE_URL')}")
         check_ingest_endpoint()
-        import copy
-        env = copy.deepcopy(os.environ)
-        svc_url = os.environ.get("CODESTORY_SERVICE_URL")
-        if svc_url is not None:
-            env["CODESTORY_SERVICE_URL"] = svc_url
         result = cli_runner.invoke(
             app, ["ingest", "start", test_repository, "--no-progress"], env=env
         )
-        
+
         # Debug: Always print the actual CLI output
         print(f"CLI exit code: {result.exit_code}")
         print(f"CLI output:\n{result.output}")
-        
+
         # Check if CLI handled the request properly (even if infrastructure failed)
         assert "Starting ingestion" in result.output
-        
+
         # Find job ID line, but handle case where infrastructure failed
         # Accept both "Job ID:" and "Ingestion job started with ID:" formats
         job_id_lines = [
@@ -108,16 +106,17 @@ class TestIngestCommands:
         test_repository: str,
     ) -> None:
         """Test 'ingest start' with --countdown schedules job for delayed execution."""
-        import os
-        print(f"[DEBUG] CODESTORY_SERVICE_URL={os.environ.get('CODESTORY_SERVICE_URL')}")
+        config = get_test_config()
+        env = config.as_env_dict() if hasattr(config, "as_env_dict") else dict(config)
+        print(f"[DEBUG] CODESTORY_SERVICE_URL={env.get('CODESTORY_SERVICE_URL')}")
         check_ingest_endpoint()
         import shutil
         import tempfile
-        import os
 
         # Use a temp dir that persists for the duration of the test
         with tempfile.TemporaryDirectory() as temp_dir:
             # Copy the test_repository contents into the persistent temp_dir
+            import os
             if os.path.isdir(test_repository):
                 for root, dirs, files in os.walk(test_repository):
                     rel_root = os.path.relpath(root, test_repository)
@@ -127,24 +126,19 @@ class TestIngestCommands:
                         shutil.copy2(os.path.join(root, file), os.path.join(dest_root, file))
             repo_path = temp_dir
 
-            import copy
-            env = copy.deepcopy(os.environ)
-            svc_url = os.environ.get("CODESTORY_SERVICE_URL")
-            if svc_url is not None:
-                env["CODESTORY_SERVICE_URL"] = svc_url
             result = cli_runner.invoke(
                 app,
                 ["ingest", "start", repo_path, "--no-progress", "--countdown", "5"],
                 env=env,
             )
-            
+
             # Check if CLI handled the request properly (even if infrastructure failed)
             assert "Starting ingestion" in result.output
-            
+
             # Debug: Always print the actual CLI output
             print(f"CLI exit code: {result.exit_code}")
             print(f"CLI output:\n{result.output}")
-            
+
             # Find job ID line, but handle case where infrastructure failed
             # Accept both "Job ID:" and "Ingestion job started with ID:" formats
             job_id_lines = [
@@ -214,23 +208,19 @@ class TestIngestCommands:
         self: Any, cli_runner: CliRunner,
     ) -> None:
         """Test 'ingest jobs' command with real service."""
-        import os
-        print(f"[DEBUG] CODESTORY_SERVICE_URL={os.environ.get('CODESTORY_SERVICE_URL')}")
+        config = get_test_config()
+        env = config.as_env_dict() if hasattr(config, "as_env_dict") else dict(config)
+        print(f"[DEBUG] CODESTORY_SERVICE_URL={env.get('CODESTORY_SERVICE_URL')}")
         check_ingest_endpoint()
-        import copy
-        env = copy.deepcopy(os.environ)
         if is_host_native_mode():
             pytest.skip("Skipping test_ingest_jobs_list in host-native mode (no backend services)")
-        svc_url = os.environ.get("CODESTORY_SERVICE_URL")
-        if svc_url is not None:
-            env["CODESTORY_SERVICE_URL"] = svc_url
         result = cli_runner.invoke(app, ["ingest", "jobs"], env=env)
-        
+
         # Check if CLI handled the request properly (even if infrastructure failed)
         if result.exit_code != 0:
             # Infrastructure failure - fail the test with CLI output
             pytest.fail(result.stderr or result.stdout or f"CLI failed. Exit code: {result.exit_code}, Output: {result.output}")
-        
+
         assert result.exit_code == 0
         assert (
             "Ingestion Jobs" in result.output

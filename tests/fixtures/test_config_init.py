@@ -1,36 +1,37 @@
 from typing import Any
 
 "Initialize test configuration for test environments.\n\nThis module is intended to be imported by test fixtures to ensure\ntest configuration is properly initialized and loaded.\n"
-import os
 from pathlib import Path
+from tests.conftest import get_test_config
 
-os.environ["CODESTORY_TEST_ENV"] = "true"
-os.environ["NEO4J_DATABASE"] = "neo4j"
-os.environ["NEO4J_URI"] = "bolt://localhost:7687"
-os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "password"
-os.environ["REDIS_URI"] = "redis://localhost:6379/0"
-os.environ["OPENAI_API_KEY"] = "sk-test-key-openai"
-os.environ["NEO4J__URI"] = "bolt://localhost:7687"
-os.environ["NEO4J__USERNAME"] = "neo4j"
-os.environ["NEO4J__PASSWORD"] = "password"
-os.environ["NEO4J__DATABASE"] = "neo4j"
-os.environ["CODESTORY_NEO4J__URI"] = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-os.environ["REDIS__URI"] = "redis://localhost:6379/0"
-os.environ["OPENAI__API_KEY"] = "sk-test-key-openai"
-os.environ["OPENAI__EMBEDDING_MODEL"] = "text-embedding-3-small"
-os.environ["OPENAI__CHAT_MODEL"] = "gpt-4o"
-os.environ["OPENAI__REASONING_MODEL"] = "gpt-4o"
-os.environ["AZURE_OPENAI__API_KEY"] = "test-azure-key"
-os.environ["AZURE_OPENAI__ENDPOINT"] = "<your-endpoint>"
-os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "gpt-4o"
-os.environ["SERVICE__HOST"] = "127.0.0.1"
-os.environ["SERVICE__PORT"] = "8000"
-os.environ["INGESTION__CONFIG_PATH"] = "pipeline_config.yml"
-os.environ["PLUGINS__ENABLED"] = '["filesystem"]'
-os.environ["TELEMETRY__METRICS_PORT"] = "9090"
-os.environ["INTERFACE__THEME"] = "light"
-os.environ["AZURE__KEYVAULT_NAME"] = "test-key-vault"
+config = get_test_config()
+config.set("CODESTORY_TEST_ENV", "true")
+config.set("NEO4J_DATABASE", "neo4j")
+config.set("NEO4J_URI", "bolt://localhost:7687")
+config.set("NEO4J_USERNAME", "neo4j")
+config.set("NEO4J_PASSWORD", "password")
+config.set("REDIS_URI", "redis://localhost:6379/0")
+config.set("OPENAI_API_KEY", "sk-test-key-openai")
+config.set("NEO4J__URI", "bolt://localhost:7687")
+config.set("NEO4J__USERNAME", "neo4j")
+config.set("NEO4J__PASSWORD", "password")
+config.set("NEO4J__DATABASE", "neo4j")
+config.set("CODESTORY_NEO4J__URI", config.get("NEO4J_URI", "bolt://localhost:7687"))
+config.set("REDIS__URI", "redis://localhost:6379/0")
+config.set("OPENAI__API_KEY", "sk-test-key-openai")
+config.set("OPENAI__EMBEDDING_MODEL", "text-embedding-3-small")
+config.set("OPENAI__CHAT_MODEL", "gpt-4o")
+config.set("OPENAI__REASONING_MODEL", "gpt-4o")
+config.set("AZURE_OPENAI__API_KEY", "test-azure-key")
+config.set("AZURE_OPENAI__ENDPOINT", "<your-endpoint>")
+config.set("AZURE_OPENAI__DEPLOYMENT_ID", "gpt-4o")
+config.set("SERVICE__HOST", "127.0.0.1")
+config.set("SERVICE__PORT", "8000")
+config.set("INGESTION__CONFIG_PATH", "pipeline_config.yml")
+config.set("PLUGINS__ENABLED", '["filesystem"]')
+config.set("TELEMETRY__METRICS_PORT", "9090")
+config.set("INTERFACE__THEME", "light")
+config.set("AZURE__KEYVAULT_NAME", "test-key-vault")
 
 
 def create_test_config_file() -> Any:

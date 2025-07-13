@@ -86,7 +86,7 @@ def ensure_blarify_image() -> None:
     
     # Set environment variables to disable Docker credential helpers
     config = get_test_config()
-    os.environ['DOCKER_CONFIG'] = '/tmp/docker-no-creds'
+    config.set('DOCKER_CONFIG', '/tmp/docker-no-creds')
     
     try:
         # Create a temporary docker config that doesn't use credential helpers
@@ -135,9 +135,9 @@ def ensure_blarify_image() -> None:
         print(f"Docker not available: {e}")
         pytest.fail(f"Docker not available for testing: {e}")
     finally:
+        pass
         # Clean up environment variable
-        if 'DOCKER_CONFIG' in os.environ:
-            del os.environ['DOCKER_CONFIG']
+        # No manual cleanup needed; config manager handles overrides
 
 
 @pytest.fixture(scope="function")
@@ -157,57 +157,25 @@ def test_blarify_step_run(
     sample_repo: Any,
     ensure_blarify_image: Any,
     blarify_celery_app: Any,
-    test_containers_and_service: Any,
+    unified_test_env: Any,
 ) -> None:
+    """
+    Test that the Blarify step can process a repository and create AST nodes in Neo4j using unified_test_env.
+    """
     from codestory.graphdb.neo4j_connector import Neo4jConnector
-    # Use the URIs from the unified fixture
-    uri = test_containers_and_service["neo4j_uri"]
-    username = "neo4j"
-    password = "password"
-    database = "neo4j"
-    print(f"[test_blarify_step_run] Using Neo4j URI: {uri}")
+
+    uri = unified_test_env["NEO4J__URI"] if "NEO4J__URI" in unified_test_env else unified_test_env["NEO4J_URI"]
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+
     neo4j_connector = Neo4jConnector(
         uri=uri,
         username=username,
         password=password,
         database=database
     )
-    print(f"[test_blarify_step_run] Instantiated Neo4jConnector with uri={neo4j_connector.uri}")
-    """Test that the Blarify step can process a repository and create AST nodes in Neo4j."""
     blarify_image = ensure_blarify_image
-    print(f"Using Blarify image: {blarify_image}")
-    # Print all Neo4j-related environment variables for debugging
-    print("=== Neo4j Environment Variables ===")
-    for k, v in os.environ.items():
-        if "NEO4J" in k.upper():
-            print(f"{k}={v}")
-    print("=== End Neo4j Environment Variables ===")
-    # Print the value of neo4j_connector.uri and call stack
-    print(f"[test_blarify_step_run] neo4j_connector.uri: {getattr(neo4j_connector, 'uri', None)}")
-    import inspect
-    print(f"[test_blarify_step_run] Call stack: {inspect.stack()}")
-    # Print all running Docker containers and their port mappings
-    try:
-        import docker
-        client = docker.from_env()
-        client.ping()
-        print("Docker daemon is accessible")
-    except Exception as e:
-        print(f"Docker daemon not accessible: {e}")
-        print("We'll continue testing with mocks since Neo4j is working correctly")
-    # If Neo4j is not working, print error and continue
-    # (This block is for debugging Docker/Neo4j connectivity)
-    # Patch Neo4j URI for Docker-in-Docker reachability if needed
-    import platform
-    import re
-    config = get_test_config()
-    neo4j_uri = config.get("NEO4J_URI")
-    if neo4j_uri and ("localhost" in neo4j_uri or "127.0.0.1" in neo4j_uri):
-        if platform.system() in ("Darwin", "Windows"):
-            patched_uri = re.sub(r"localhost|127\.0\.0\.1", "host.docker.internal", neo4j_uri)
-            config.set("NEO4J_URI", patched_uri)
-            config.set("CODESTORY_NEO4J__URI", patched_uri)
-        # On Linux, user may need to set up host networking or use the correct host IP
 
     step = BlarifyStep(docker_image=blarify_image)
     job_id = None
@@ -218,25 +186,15 @@ def test_blarify_step_run(
             timeout=300,
         )
         assert job_id is not None
-        assert isinstance(
-            job_id, str
-        ), f"Expected job_id to be a string, got {type(job_id)}"
-        assert (
-            job_id in step.active_jobs
-        ), f"Job ID {job_id} not found in active_jobs: {step.active_jobs.keys()}"
-        print("Waiting for Blarify job to complete...")
+        assert isinstance(job_id, str)
+        assert job_id in step.active_jobs
         start_time = time.time()
-        config = get_test_config()
-        timeout = 300 if config.get("CI") == "true" else 120
+        timeout = 300 if unified_test_env.get("CI") == "true" else 120
         last_status = None
         check_interval = 5
-        print(
-            f"Using timeout of {timeout} seconds and check interval of {check_interval} seconds"
-        )
         while time.time() - start_time < timeout:
             job_status = step.status(job_id)
             if last_status != job_status.get("status"):
-                print(f"Job status: {job_status}")
                 last_status = job_status.get("status")
             if job_status.get("status") in [
                 StepStatus.COMPLETED,
@@ -244,78 +202,32 @@ def test_blarify_step_run(
                 StepStatus.STOPPED,
             ]:
                 break
-            progress = job_status.get("progress", 0)
-            if progress and progress > 0:
-                print(f"Progress: {progress:.1f}%")
-            if (
-                get_test_config().get("CI") == "true"
-                and step.docker_client
-                and (time.time() - start_time > 60)
-            ):
-                container_name = f"{DEFAULT_CONTAINER_NAME_PREFIX}{job_id}"
-                try:
-                    containers = step.docker_client.containers.list(
-                        filters={"name": container_name}
-                    )
-                    if not containers:
-                        print(
-                            f"Container {container_name} is not running, stopping test"
-                        )
-                        break
-                except Exception as e:
-                    print(f"Error checking container status: {e}")
             time.sleep(check_interval)
         job_status = step.status(job_id)
-        print(f"Final job status: {job_status}")
-        assert isinstance(
-            job_status, dict
-        ), f"Expected status to be a dict, got {type(job_status)}"
-        assert (
-            "status" in job_status
-        ), f"Expected 'status' key in job_status, got keys: {job_status.keys()}"
+        assert isinstance(job_status, dict)
+        assert "status" in job_status
         ast_count = neo4j_connector.execute_query(
             "MATCH (n:AST) RETURN count(n) as count"
         )[0].get("count", 0)
-        print(f"Found {ast_count} AST nodes in Neo4j")
         if job_status["status"] == StepStatus.COMPLETED:
-            assert (
-                ast_count > 0
-            ), "Expected at least one AST node to be created in Neo4j"
+            assert ast_count > 0, "Expected at least one AST node to be created in Neo4j"
             repo_count = neo4j_connector.execute_query(
                 "MATCH (r:Repository) RETURN count(r) as count"
             )[0].get("count", 0)
-            print(f"Found {repo_count} Repository nodes in Neo4j")
-            assert (
-                repo_count > 0
-            ), "Expected at least one Repository node to be created in Neo4j"
+            assert repo_count > 0, "Expected at least one Repository node to be created in Neo4j"
             ast_nodes = neo4j_connector.execute_query(
                 "MATCH (n:AST) RETURN n.name, n.type, n.path LIMIT 5"
             )
-            print(f"Sample AST nodes: {ast_nodes}")
             for node in ast_nodes:
-                assert (
-                    "n.name" in node
-                ), f"Expected AST node to have 'name' property, got: {node}"
-                assert (
-                    "n.type" in node
-                ), f"Expected AST node to have 'type' property, got: {node}"
-                assert (
-                    "n.path" in node
-                ), f"Expected AST node to have 'path' property, got: {node}"
+                assert "n.name" in node
+                assert "n.type" in node
+                assert "n.path" in node
         else:
-            print(
-                f"BlarifyStep execution failed, but this might be due to known Docker socket issue. Error: {job_status.get('error', '')}"
-            )
-            if ast_count > 0:
-                print(
-                    "Integration test passing on direct Docker connectivity test results"
-                )
-            else:
+            if ast_count == 0:
                 pytest.skip(
                     "Docker daemon socket issue detected, valid BlarifyStep test not possible"
                 )
         stop_result = step.stop(job_id)
-        print(f"Stop result: {stop_result}")
         assert stop_result is not None
         assert isinstance(stop_result, dict)
         assert "status" in stop_result

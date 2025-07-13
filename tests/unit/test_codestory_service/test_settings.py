@@ -3,8 +3,8 @@
 This module contains tests for the service-specific settings implementation.
 """
 
-import os
 from unittest import mock
+from tests.conftest import get_test_config
 
 from codestory_service.settings import ServiceSettings, get_service_settings
 
@@ -34,16 +34,18 @@ def test_service_settings_from_env() -> None:
         "CODESTORY_SERVICE_METRICS_ENABLED": "false",
     }
 
-    with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()  # type: ignore[call-arg]
+    config = get_test_config()
+    for k, v in env_vars.items():
+        config.set(k, v)
+    settings = ServiceSettings()  # type: ignore[call-arg]
 
-        # Check that values from environment variables were used
-        assert settings.title == "Custom API Title"
-        assert settings.api_prefix == "/api/v2"
-        assert settings.cors_origins == ["example.com", "localhost"]
-        assert settings.auth_enabled is True
-        assert settings.dev_mode is False
-        assert settings.metrics_enabled is False
+    # Check that values from environment variables were used
+    assert settings.title == "Custom API Title"
+    assert settings.api_prefix == "/api/v2"
+    assert settings.cors_origins == ["example.com", "localhost"]
+    assert settings.auth_enabled is True
+    assert settings.dev_mode is False
+    assert settings.metrics_enabled is False
 
 
 def test_service_settings_cors_origins_parsing() -> None:
@@ -52,29 +54,35 @@ def test_service_settings_cors_origins_parsing() -> None:
     env_vars = {
         "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com", "api.example.org", "localhost:3000"]',
     }
-    with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()  # type: ignore[call-arg]
-        assert settings.cors_origins == [
-            "example.com",
-            "api.example.org",
-            "localhost:3000",
-        ]
+    config = get_test_config()
+    for k, v in env_vars.items():
+        config.set(k, v)
+    settings = ServiceSettings()  # type: ignore[call-arg]
+    assert settings.cors_origins == [
+        "example.com",
+        "api.example.org",
+        "localhost:3000",
+    ]
 
     # Test with a single origin in JSON format
     env_vars = {
         "CODESTORY_SERVICE_CORS_ORIGINS": '["example.com"]',
     }
-    with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()  # type: ignore[call-arg]
-        assert settings.cors_origins == ["example.com"]
+    config = get_test_config()
+    for k, v in env_vars.items():
+        config.set(k, v)
+    settings = ServiceSettings()  # type: ignore[call-arg]
+    assert settings.cors_origins == ["example.com"]
 
     # Test with a single wildcard in JSON format
     env_vars = {
         "CODESTORY_SERVICE_CORS_ORIGINS": '["*"]',
     }
-    with mock.patch.dict(os.environ, env_vars):
-        settings = ServiceSettings()  # type: ignore[call-arg]
-        assert settings.cors_origins == ["*"]
+    config = get_test_config()
+    for k, v in env_vars.items():
+        config.set(k, v)
+    settings = ServiceSettings()  # type: ignore[call-arg]
+    assert settings.cors_origins == ["*"]
 
 
 def test_service_settings_cors_origins_validation() -> None:
@@ -92,13 +100,15 @@ def test_service_settings_cors_origins_validation() -> None:
             "CODESTORY_SERVICE_CORS_ORIGINS": '["*"]',
         }
 
-        with mock.patch.dict(os.environ, env_vars):
-            with mock.patch("codestory_service.settings.logger") as mock_logger:
-                ServiceSettings()  # type: ignore[call-arg]
+        config = get_test_config()
+        for k, v in env_vars.items():
+            config.set(k, v)
+        with mock.patch("codestory_service.settings.logger") as mock_logger:
+            ServiceSettings()  # type: ignore[call-arg]
 
-                # Check that a warning was logged
-                mock_logger.warning.assert_called_once()
-                assert "security risk" in mock_logger.warning.call_args[0][0]
+            # Check that a warning was logged
+            mock_logger.warning.assert_called_once()
+            assert "security risk" in mock_logger.warning.call_args[0][0]
 
 
 def test_get_service_settings() -> None:

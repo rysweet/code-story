@@ -162,19 +162,30 @@ def sample_repo() -> None:
 @pytest.mark.neo4j
 @pytest.mark.celery
 @pytest.mark.timeout(60)
-def test_filesystem_step_run(
-    sample_repo: Any, neo4j_connector: Any, celery_app: Any
-) -> None:
-    """Test that the filesystem step can process a repository."""
-    print("*** IMPORTANT: TEST IS ACTUALLY RUNNING ***")
-    step = FileSystemStep()
-    print(f"Step created: {step}")
+def test_filesystem_step_run(sample_repo: Any, unified_test_env) -> None:
+    """Test that the filesystem step can process a repository using unified_test_env."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    from codestory.ingestion_pipeline.celery_app import get_celery_app
+    import os
+
+    # Set up Neo4j connector from unified_test_env
+    uri = unified_test_env.get("NEO4J__URI") or unified_test_env.get("NEO4J_URI")
+    username = unified_test_env.get("NEO4J__USERNAME", "neo4j")
+    password = unified_test_env.get("NEO4J__PASSWORD", "password")
+    database = unified_test_env.get("NEO4J__DATABASE", "neo4j")
+    neo4j_connector = Neo4jConnector(uri=uri, username=username, password=password, database=database)
+
+    # Set up Celery app from unified_test_env
+    os.environ["REDIS_URI"] = unified_test_env.get("REDIS_URI", "redis://localhost:6380/0")
+    os.environ["REDIS__URI"] = unified_test_env.get("REDIS__URI", "redis://localhost:6380/0")
+    os.environ["CELERY_BROKER_URL"] = unified_test_env.get("CELERY_BROKER_URL", os.environ["REDIS_URI"])
+    os.environ["CELERY_RESULT_BACKEND"] = unified_test_env.get("CELERY_RESULT_BACKEND", os.environ["REDIS_URI"])
+    os.environ["CELERY_TASK_ALWAYS_EAGER"] = "true"
+    celery_app = get_celery_app()
     celery_app.conf.task_always_eager = True
     celery_app.conf.task_eager_propagates = True
-    print(f"Neo4j URI: {neo4j_connector.uri}")
-    print(f"Neo4j database: {neo4j_connector.database}")
-    print(f"Sample repo path: {sample_repo}")
-    print(f"Celery task_always_eager: {celery_app.conf.task_always_eager}")
+
+    step = FileSystemStep()
     job_id = generate_job_id()
 
     def mock_run(self, repository_path: Any, **config):
@@ -200,7 +211,6 @@ def test_filesystem_step_run(
         )
         assert returned_job_id == job_id, "Job ID mismatch"
     status = step.active_jobs[job_id]
-    print(f"Job status: {status}")
     assert (
         status["status"] == StepStatus.COMPLETED
     ), f"Job failed: {status.get('error')}"
@@ -231,6 +241,7 @@ def test_filesystem_step_run(
         "MATCH (d:Directory {path: 'src/__pycache__'}) RETURN d"
     )
     assert len(pycache_dir) == 0, "__pycache__ directory was not ignored"
+    neo4j_connector.close()
 
 
 @pytest.mark.integration

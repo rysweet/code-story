@@ -23,12 +23,14 @@ from codestory.llm.models import ChatMessage, ChatRole
 def set_azure_openai_env():
     # These values should be valid for your Azure OpenAI test environment.
     # If you want to override, set them here or via CI secrets.
-    os.environ["AZURE_OPENAI__ENDPOINT"] = "https://ai-adapt-oai-eastus2.openai.azure.com/"
-    os.environ["AZURE_OPENAI__API_KEY"] = "b892dc164a634fc49bd07bcbbf9d1a76"
-    os.environ["AZURE_OPENAI__API_VERSION"] = "2025-01-01-preview"
-    os.environ["AZURE_OPENAI__EMBEDDING_MODEL"] = "text-embedding-ada-002"
-    os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "gpt-4.1"
-    os.environ["AZURE_OPENAI__REASONING_MODEL"] = "o3"
+    from tests.conftest import get_test_config
+    config = get_test_config()
+    config.set("AZURE_OPENAI__ENDPOINT", "https://ai-adapt-oai-eastus2.openai.azure.com/")
+    config.set("AZURE_OPENAI__API_KEY", "b892dc164a634fc49bd07bcbbf9d1a76")
+    config.set("AZURE_OPENAI__API_VERSION", "2025-01-01-preview")
+    config.set("AZURE_OPENAI__EMBEDDING_MODEL", "text-embedding-ada-002")
+    config.set("AZURE_OPENAI__DEPLOYMENT_ID", "gpt-4.1")
+    config.set("AZURE_OPENAI__REASONING_MODEL", "o3")
     # Add any other required env vars here
     yield
 
