@@ -1,51 +1,51 @@
 import pytest
+import asyncio
 
-@pytest.mark.skip(reason="Import should now succeed per contract; instantiation raises NotImplementedError")
-def test_import_mcp_adapter_raises_importerror():
-    """
-    The MCPAdapter should not be importable until implemented.
-    This test asserts that attempting to import MCPAdapter raises ImportError.
-    """
-    with pytest.raises(ImportError):
-        from codestory.mcp import MCPAdapter  # noqa: F401
+import pytest_asyncio
 
-@pytest.mark.skip(reason="MCPAdapter interface contract not implemented yet")
-def test_mcp_adapter_interface_contract():
-    """
-    Contract: MCPAdapter(graph_service: GraphService) exposes async methods:
-      - searchGraph
-      - summarizeNode
-      - pathTo
-      - similarCode
-    Each method returns dict or list as per design spec.
-    """
-    # This test will be implemented once MCPAdapter exists.
-    pass
+from codestory.mcp import MCPAdapter
 
-@pytest.mark.skip(reason="MCPAdapter.searchGraph contract not implemented yet")
-def test_mcp_adapter_search_graph_contract():
-    """
-    Contract: MCPAdapter.searchGraph returns expected dict/list shape.
-    """
-    pass
+class DummyGraphService:
+    async def execute(self, cypher, **params):
+        return [{"result": "ok", "cypher": cypher, "params": params}]
 
-@pytest.mark.skip(reason="MCPAdapter.summarizeNode contract not implemented yet")
-def test_mcp_adapter_summarize_node_contract():
-    """
-    Contract: MCPAdapter.summarizeNode returns expected dict shape.
-    """
-    pass
+@pytest_asyncio.fixture
+def mcp_adapter():
+    return MCPAdapter(DummyGraphService())
 
-@pytest.mark.skip(reason="MCPAdapter.pathTo contract not implemented yet")
-def test_mcp_adapter_path_to_contract():
-    """
-    Contract: MCPAdapter.pathTo returns expected list/dict shape.
-    """
-    pass
+def test_mcp_adapter_instantiation():
+    adapter = MCPAdapter(DummyGraphService())
+    assert isinstance(adapter, MCPAdapter)
 
-@pytest.mark.skip(reason="MCPAdapter.similarCode contract not implemented yet")
-def test_mcp_adapter_similar_code_contract():
-    """
-    Contract: MCPAdapter.similarCode returns expected list/dict shape.
-    """
-    pass
+@pytest.mark.asyncio
+async def test_search_graph_returns_expected_list(mcp_adapter):
+    cypher = "MATCH (n) RETURN n"
+    params = {"foo": "bar"}
+    result = await mcp_adapter.searchGraph(cypher, **params)
+    assert isinstance(result, list)
+    assert result and isinstance(result[0], dict)
+    assert result[0]["cypher"] == cypher
+    assert result[0]["params"] == params
+
+@pytest.mark.asyncio
+async def test_summarize_node_returns_stub(mcp_adapter):
+    node_id = "123"
+    summary = await mcp_adapter.summarizeNode(node_id)
+    assert isinstance(summary, str)
+    assert node_id in summary
+
+@pytest.mark.asyncio
+async def test_path_to_returns_stub(mcp_adapter):
+    src, dst = "A", "B"
+    path = await mcp_adapter.pathTo(src, dst)
+    assert isinstance(path, list)
+    assert path[0] == src
+    assert path[-1] == dst
+    assert "…" in path
+
+@pytest.mark.asyncio
+async def test_similar_code_returns_empty_list(mcp_adapter):
+    node_id = "123"
+    result = await mcp_adapter.similarCode(node_id)
+    assert isinstance(result, list)
+    assert result == []
