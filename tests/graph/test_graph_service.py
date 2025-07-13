@@ -10,11 +10,38 @@ Tests for the GraphService contract in codestory.graph.
 
 import pytest
 
-def test_import_graph_service_raises_importerror():
-    """Importing GraphService should fail until implemented."""
-    with pytest.raises(ImportError):
-        from codestory.graph import GraphService  # noqa: F401
+def test_import_graph_service_import_succeeds():
+    """Importing GraphService should succeed now that it is implemented."""
+    from codestory.graph import GraphService  # noqa: F401
+    assert True
 
+import os
+
+import pytest
+
+@pytest.mark.asyncio
+def test_graph_service_handshake_runtimeerror():
+    """
+    Using GraphService with invalid credentials/host should raise RuntimeError on handshake.
+    Skips if NEO4J_PASSWORD is not set (to avoid hardcoding secrets).
+    """
+    from codestory.graph import GraphService
+
+    password = os.environ.get("NEO4J_PASSWORD")
+    if not password:
+        pytest.skip("NEO4J_PASSWORD must be set for this test.")
+
+    # Use intentionally invalid credentials/host to trigger handshake failure
+    svc = GraphService("bolt://localhost:7687", "neo4j", "invalid_password")
+    with pytest.raises(RuntimeError):
+        # The handshake will fail and should raise RuntimeError from execute
+        import asyncio
+        async def try_connect():
+            async with svc:
+                pass
+        asyncio.run(try_connect())
+
+# --- Interface contract tests remain skipped below ---
 @pytest.mark.skip(reason="GraphService interface contract not yet implemented")
 @pytest.mark.asyncio
 async def test_graph_service_context_manager_contract():
