@@ -23,6 +23,8 @@ dev = [
   "pyright",
   "pre-commit"
 ]
+[project.scripts]
+codestory = "codestory.cli.app:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
