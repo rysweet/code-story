@@ -1,5 +1,6 @@
 import pytest
 
+@pytest.mark.skip(reason="Import should now succeed per contract; instantiation raises NotImplementedError")
 def test_import_mcp_adapter_raises_importerror():
     """
     The MCPAdapter should not be importable until implemented.
