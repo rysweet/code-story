@@ -3,7 +3,6 @@
 ## Overview & Architecture
 - Convert any codebase into a richly-linked knowledge graph plus natural-language summaries that developers can query through:
   - CLI with a rich command-line interface  
-  - React+Redux GUI with 3D force-directed visualization  
   - LLM agents via Model Context Protocol (MCP)
 
 ## CLI
@@ -15,40 +14,23 @@
   - MCP tool calls for semantic search, path finding, summaries (`codestory query <mcp>`)  
   - Natural-language queries (`codestory ask <query>`)  
 - Show or update configuration settings (`codestory config show`, `codestory config <key=value>`)  
-- Open the GUI in a browser (`codestory ui`)  
-- Output an HTML visualization of the graph with color-coded key and 3D force-directed layout  
 - Provide clear help and error messages for each command  
 
-## GUI
-- Single-page React+Redux application that:
-  - Renders a 3D force-directed graph of the code knowledge graph  
-  - Displays node and edge metadata on hover and click  
-  - Offers an ingestion dashboard to start runs and monitor real-time progress  
-  - Provides a dynamic configuration editor bound to `.env` and `.codestory.toml`  
-  - Includes an MCP Playground to issue tool calls and view JSON results  
-  - Features a natural-language query interface for graph questions  
-  - Adapts responsively to desktop and mobile screens  
-  - Wraps all CLI features in a user-friendly interface without direct CLI invocation  
-
 ## Ingestion Pipeline
-- Execute workflow steps in the order specified by a configuration file  
-- Start, stop, cancel, and monitor ingestion jobs via API and CLI  
-- Support plugin-based workflow steps for extensibility  
-- Retry failed steps or entire workflows with configurable back-off policies  
-- Offer an “Ingestion Update” mode for incremental graph updates without rerunning all steps  
-- Schedule jobs for future execution with `eta` or `countdown` parameters  
-- Accept priority levels and enforce priority queueing for task execution  
-- Define and respect dependencies between workflow steps  
-- Report detailed logging, metrics, and real-time progress updates over WebSocket  
-- Throttle resource usage via a Redis-backed token bucket to prevent overload  
-- Automatically detect and mount repositories in Docker environments, mapping host paths to containers  
+- Extensible pipeline with multiple steps:
+  - **Blarify**: Parse codebase into AST and symbol bindings  
+  - **FileSystem**: Traverse filesystem, create nodes, link to AST  
+  - **Summarizer**: Generate natural-language summaries for nodes  
+  - **Documentation Grapher**: Parse documentation files and link entities  
+- Each step supports incremental updates, idempotent operations, and progress reporting  
+- Pipeline can be run in parallel with configurable concurrency limits
 
 ## Blarify Workflow Step
 - Parse the codebase using the Blarify tool to generate AST and symbol bindings  
 - Store parsed AST in the Graph Service  
 - Support incremental updates for changed files  
 - Estimate job status based on parsing progress  
-- Run in Docker locally or in Azure Container Apps  
+- not compatible with windows or macos - must run in a linux container if on those platforms
 
 ## FileSystem Workflow Step
 - Recursively traverse repository filesystem and apply ignore patterns  
@@ -73,17 +55,16 @@
 - Support cancellation and report progress  
 
 ## Graph Database Service
-- Provide a self-hosted Neo4j 5.x backend with semantic index and vector search  
+- Provide a self-hosted Neo4j 5.x backend with semantic index, vector search, and apoc procedures
 - Initialize and manage schema, constraints, indexes, and vector indexes  
 - Offer synchronous and asynchronous query interfaces with automatic connection pooling  
 - Expose Prometheus metrics for query performance and connection health  
 - Support native vector similarity search for semantic embeddings  
-- Facilitate container-based local development and Azure Container Apps deployment  
+- Facilitate container-based local development
 
 ## AI Client
 - Provide async/sync access to Azure OpenAI for completions, chat, and embeddings  
 - Implement retry logic with exponential back-off for rate limits  
-- Expose Prometheus metrics and OpenTelemetry traces  
 - Support multiple models for different tasks (completions, chat, embeddings)  
 - Allow parameter configuration for model selection and back-off policies  
 
@@ -94,14 +75,6 @@
 - Support hot-reloading of configuration without service restart  
 - Persist configuration changes back to `.env` or `.codestory.toml`  
 - Organize settings into component-specific sections  
-
-## Code Story Service
-- Expose REST API for ingestion management (`/v1/ingest`), graph queries (`/v1/query`), and natural-language ask (`/v1/ask`)  
-- Provide configuration CRUD endpoints (`/v1/config`) and service control hooks (`/v1/service/start`, `/v1/service/stop`)  
-- Stream real-time ingestion progress via WebSocket (`/ws/status/{job_id}`)  
-- Implement authentication with Microsoft Entra ID or token-based local dev mode  
-- Return JSON:API compliant payloads with `data`, `meta`, and `errors` sections  
-- Expose health check (`/v1/health`) and Prometheus metrics (`/metrics`)  
 
 ## MCP Adapter
 - Implement a Model Context Protocol server exposing tools:
@@ -114,12 +87,9 @@
 - Map tool calls to efficient Graph Service operations and format results as MCP-compatible JSON  
 - Collect usage metrics and enforce rate limits  
 
-## Infrastructure
-- Provide infrastructure-as-code for local development (Docker Compose) and cloud deployment (Azure Container Apps)  
-- Define container configurations, networking, persistent volumes, health checks, and secrets management  
-- Support service-to-service authentication and secure protocols across environments  
-- Enable observability with centralized logging, metrics, and distributed tracing  
-- Facilitate scalable infrastructure with appropriate resource allocations and scaling rules  
+## Infrastructure and Testing
+- ensure that the tests are always self-contained - they must manage their own dependencies and not rely on external services, preconditions, or state
+- this means that tests must use shared fixtures for managing dependencies and must ensure that configuration is set up correctly when components are in containerized environments
 
 ## Documentation
 - Generate API reference documentation from code docstrings for Python and TypeScript/JavaScript  
