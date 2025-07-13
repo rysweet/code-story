@@ -10,21 +10,32 @@ Tests included:
 - Reasoning model parameter handling
 - Client configuration and initialization
 """
-
 import os
 
 import pytest
-from dotenv import load_dotenv
 from openai import AzureOpenAI
 
 from codestory.llm.client import OpenAIClient
 from codestory.llm.models import ChatMessage, ChatRole
 
+# --- Self-contained Azure OpenAI environment setup for all tests in this module ---
+@pytest.fixture(autouse=True, scope="module")
+def set_azure_openai_env():
+    # These values should be valid for your Azure OpenAI test environment.
+    # If you want to override, set them here or via CI secrets.
+    os.environ["AZURE_OPENAI__ENDPOINT"] = "https://ai-adapt-oai-eastus2.openai.azure.com/"
+    os.environ["AZURE_OPENAI__API_KEY"] = "b892dc164a634fc49bd07bcbbf9d1a76"
+    os.environ["AZURE_OPENAI__API_VERSION"] = "2025-01-01-preview"
+    os.environ["AZURE_OPENAI__EMBEDDING_MODEL"] = "text-embedding-ada-002"
+    os.environ["AZURE_OPENAI__DEPLOYMENT_ID"] = "gpt-4.1"
+    os.environ["AZURE_OPENAI__REASONING_MODEL"] = "o3"
+    # Add any other required env vars here
+    yield
+
+
 
 def test_direct_sdk_embedding():
-    from dotenv import load_dotenv
     from openai import AzureOpenAI
-    load_dotenv()
     endpoint = os.environ["AZURE_OPENAI__ENDPOINT"]
     api_key = os.environ["AZURE_OPENAI__API_KEY"]
     deployment = os.environ["AZURE_OPENAI__EMBEDDING_MODEL"]
@@ -251,7 +262,6 @@ def test_embedding(client: Any) -> None:
     """
 @pytest.mark.integration
 def test_direct_sdk_embedding_in_worker():
-    load_dotenv()
     endpoint = os.environ["AZURE_OPENAI__ENDPOINT"]
     api_key = os.environ["AZURE_OPENAI__API_KEY"]
     deployment = os.environ["AZURE_OPENAI__EMBEDDING_MODEL"]

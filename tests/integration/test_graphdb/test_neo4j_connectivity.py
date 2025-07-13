@@ -1,6 +1,9 @@
+# specs: specs/06-ingestion-pipeline/ingestion-pipeline.md
+# code rules: .roo/rules-code/08-unified-test-infra.md, .roo/rules-code/04-testing-requirements.md
+
 import pytest
 
-pytestmark = pytest.mark.usefixtures("test_containers_and_service")
+pytestmark = pytest.mark.usefixtures("unified_test_env")
 
 from typing import Any
 

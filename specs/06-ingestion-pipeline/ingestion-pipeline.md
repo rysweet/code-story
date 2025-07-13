@@ -384,5 +384,208 @@ To avoid parameter conflicts between different pipeline steps, the CeleryAdapter
 | As a user, I want repositories to be automatically mounted when using Docker so that I don't need to manually configure volume mounts. | • CLI automatically detects when repository mounting is needed.<br>• Repositories are mounted correctly in Docker containers.<br>• Users don't need to manually edit docker-compose files. |
 | As a developer, I want clear errors when repository mounting fails so that I can easily diagnose and fix mounting issues. | • Clear error messages explain mounting problems.<br>• Specific troubleshooting steps are provided.<br>• Detailed diagnostic information is available when needed. |
 
+## 6.9 Test Patterns
+
+The ingestion pipeline employs unified test infrastructure patterns that ensure reliability, parallelizability, and self-containment. This section documents the recommended test patterns and provides examples for implementing robust integration tests.
+
+### 6.9.1 Unified Test Architecture
+
+**Anti-patterns Replaced:**
+- Hardcoded service ports causing test interference
+- External dependencies requiring manual setup
+- Mock-heavy tests that don't validate real functionality
+- Inconsistent fixture usage across test modules
+
+**New Pattern Benefits:**
+- Dynamic port allocation prevents test conflicts
+- Testcontainers provide real service dependencies
+- Centralized fixture management ensures consistency
+- Environment isolation prevents cross-test contamination
+
+### 6.9.2 Test Infrastructure Pattern
+
+```python
+import pytest
+from typing import Any
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+from codestory_blarify.step import BlarifyStep
+
+pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
+
+def test_pipeline_step_integration(
+    neo4j_testcontainer: str,
+    redis_testcontainer: str,
+    test_containers_and_service: dict,
+    sample_repo: str
+) -> None:
+    """Example integration test using unified fixture pattern."""
+    # Neo4j connector automatically configured with testcontainer
+    connector = Neo4jConnector(
+        uri=neo4j_testcontainer,
+        username="neo4j",
+        password="password",
+        database="neo4j"
+    )
+    
+    # Clean state for test isolation
+    connector.execute_query("MATCH (n) DETACH DELETE n", write=True)
+    
+    # Test pipeline step with real dependencies
+    step = BlarifyStep()
+    job_id = step.run(
+        repository_path=sample_repo,
+        ignore_patterns=[".git/", "__pycache__/"]
+    )
+    
+    # Validate results using real Neo4j queries
+    ast_count = connector.execute_query(
+        "MATCH (n:AST) RETURN count(n) as count"
+    )[0].get("count", 0)
+    
+    assert ast_count > 0, "Expected AST nodes to be created"
+```
+
+### 6.9.3 Environment Management Pattern
+
+**Environment Variable Priority:**
+1. `CODESTORY_*__*` (highest precedence)
+2. `NEO4J_*`, `REDIS_*` (medium precedence)
+3. Default values (lowest precedence)
+
+```python
+@pytest.fixture(scope="session")
+def pipeline_test_environment(test_containers_and_service):
+    """Configure environment for pipeline tests."""
+    import os
+    
+    # Set all required environment variables
+    test_env = {
+        "CODESTORY_NEO4J__URI": test_containers_and_service["neo4j_uri"],
+        "CODESTORY_NEO4J__USERNAME": "neo4j",
+        "CODESTORY_NEO4J__PASSWORD": "password",
+        "CODESTORY_NEO4J__DATABASE": "neo4j",
+        "CODESTORY_REDIS__URI": test_containers_and_service["redis_url"],
+        "CELERY_BROKER_URL": test_containers_and_service["redis_url"],
+        "CELERY_RESULT_BACKEND": test_containers_and_service["redis_url"],
+        "DISABLE_OPENAI_HEALTHCHECK": "1"
+    }
+    
+    # Apply environment variables
+    for key, value in test_env.items():
+        os.environ[key] = value
+    
+    # Force settings cache refresh
+    from codestory.config.settings import refresh_settings
+    refresh_settings()
+    
+    yield test_env
+```
+
+### 6.9.4 Container Orchestration Pattern
+
+```python
+@pytest.fixture(scope="function")
+def redis_testcontainer():
+    """Provide Redis testcontainer with dynamic port allocation."""
+    from testcontainers.redis import RedisContainer
+    
+    with RedisContainer("redis:7.2.4-alpine") as redis:
+        redis_host = "localhost"
+        redis_port = redis.get_exposed_port(6379)
+        redis_url = f"redis://{redis_host}:{redis_port}/0"
+        
+        # Configure environment for all processes
+        os.environ["REDIS_URL"] = redis_url
+        os.environ["CELERY_BROKER_URL"] = redis_url
+        os.environ["CELERY_RESULT_BACKEND"] = redis_url
+        
+        # Verify Redis connectivity
+        import redis as redis_py
+        client = redis_py.from_url(redis_url)
+        assert client.ping(), "Redis container not ready"
+        
+        yield redis_url
+```
+
+### 6.9.5 Health Check Pattern
+
+```python
+def wait_for_service_ready(service_url: str, timeout: int = 60) -> None:
+    """Wait for service to be ready with exponential backoff."""
+    import time
+    import requests
+    
+    for attempt in range(timeout):
+        try:
+            response = requests.get(f"{service_url}/health", timeout=2)
+            if response.status_code == 200:
+                return
+        except requests.RequestException:
+            pass
+        time.sleep(min(2 ** (attempt // 10), 5))  # Exponential backoff
+    
+    raise RuntimeError(f"Service at {service_url} not ready after {timeout}s")
+
+def test_service_integration(test_containers_and_service):
+    """Test pattern with service health verification."""
+    service_url = test_containers_and_service["service_url"]
+    
+    # Ensure service is ready before testing
+    wait_for_service_ready(service_url)
+    
+    # Proceed with actual test logic
+    response = requests.post(f"{service_url}/v1/ingest/start", json={
+        "repository_path": "/test/repo"
+    })
+    
+    assert response.status_code == 202
+```
+
+### 6.9.6 Parallel Test Safety
+
+**Key Principles:**
+- Each test gets its own testcontainer instances with unique ports
+- No shared state between tests
+- Aggressive cleanup between test runs
+- Resource isolation through environment variables
+
+```python
+@pytest.fixture(scope="session", autouse=True)
+def ensure_test_isolation():
+    """Ensure clean test environment with no interference."""
+    import subprocess
+    import docker
+    
+    # Clean up any existing test containers
+    try:
+        client = docker.from_env()
+        test_containers = client.containers.list(
+            filters={"name": "codestory-test-*"}
+        )
+        for container in test_containers:
+            container.remove(force=True)
+    except Exception as e:
+        print(f"Container cleanup warning: {e}")
+    
+    yield
+    
+    # Post-test cleanup
+    try:
+        # Remove test volumes and networks
+        subprocess.run(
+            ["docker", "system", "prune", "-f", "--filter", "label=test"],
+            capture_output=True
+        )
+    except Exception as e:
+        print(f"Post-test cleanup warning: {e}")
+```
+
+For more details on the test infrastructure implementation and CI/CD matrix pattern, see:
+- [Main Test Infrastructure Overview](../Main.md#test-infrastructure-architecture)
+- [Infrastructure Test Strategy](../15-infra/infra.md#test-infrastructure)
+- [Test Validation Report](../test-validation-report.md)
+- [CI/CD Troubleshooting Guide](../../docs/developer_guides/ci_cd_troubleshooting.md)
+- [Unified Test Infra Rules](../../.roo/rules-code/08-unified-test-infra.md)
+
 ---
 

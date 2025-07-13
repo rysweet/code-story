@@ -1,3 +1,6 @@
+# specs: specs/06-ingestion-pipeline/ingestion-pipeline.md
+# code rules: .roo/rules-code/08-unified-test-infra.md, .roo/rules-code/04-testing-requirements.md
+
 import pytest
 
 pytestmark = pytest.mark.usefixtures("test_containers_and_service")
@@ -18,6 +21,7 @@ from fastapi.testclient import TestClient
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 from codestory.graphdb.schema import initialize_schema
 from codestory_service.infrastructure.msal_validator import get_current_user
+from tests.conftest import get_test_config
 # Delay import of settings-dependent modules until after environment is set up by fixtures
 # from codestory_service.main import app as global_app
 # from codestory_service.main import create_app
@@ -35,21 +39,22 @@ def test_client() -> None:
     """Create a test client for the FastAPI application.
 
     """
-    os.environ["CODESTORY_SERVICE_DEV_MODE"] = "true"
-    os.environ["CODESTORY_SERVICE_AUTH_ENABLED"] = "false"
-    os.environ["NEO4J_DATABASE"] = "neo4j"
-    os.environ["CS_NEO4J_DATABASE"] = "neo4j"
-    neo4j_uri = os.environ.get("CODESTORY_NEO4J__URI") or os.environ.get("NEO4J_URI")
+    config = get_test_config()
+    config.set("CODESTORY_SERVICE_DEV_MODE", "true")
+    config.set("CODESTORY_SERVICE_AUTH_ENABLED", "false")
+    config.set("NEO4J_DATABASE", "neo4j")
+    config.set("CS_NEO4J_DATABASE", "neo4j")
+    neo4j_uri = config.get("CODESTORY_NEO4J__URI") or config.get("NEO4J_URI")
     if not neo4j_uri:
         pytest.fail(
             "Neo4j URI must be set in environment variable CODESTORY_NEO4J__URI or NEO4J_URI for integration tests."
         )
-    os.environ["NEO4J_USERNAME"] = "neo4j"
-    os.environ["CS_NEO4J_USERNAME"] = "neo4j"
-    os.environ["NEO4J_PASSWORD"] = "password"
-    os.environ["CS_NEO4J_PASSWORD"] = "password"
-    os.environ["GRAPHDB_DATABASE"] = "neo4j"
-    os.environ["CODESTORY_NEO4J_DATABASE"] = "neo4j"
+    config.set("NEO4J_USERNAME", "neo4j")
+    config.set("CS_NEO4J_USERNAME", "neo4j")
+    config.set("NEO4J_PASSWORD", "password")
+    config.set("CS_NEO4J_PASSWORD", "password")
+    config.set("GRAPHDB_DATABASE", "neo4j")
+    config.set("CODESTORY_NEO4J_DATABASE", "neo4j")
     test_user = {
         "sub": "test-user-id",
         "name": "Test User",
@@ -106,7 +111,7 @@ def test_client() -> None:
                 }
             },
         }
-        os.environ["NEO4J_DATABASE"] = "neo4j"
+        config.set("NEO4J_DATABASE", "neo4j")
         test_client = TestClient(app)
         yield test_client
         app.dependency_overrides.pop(get_current_user, None)
@@ -115,16 +120,19 @@ def test_client() -> None:
             global_app.dependency_overrides[get_current_user] = original_auth_dependency
         else:
             global_app.dependency_overrides.pop(get_current_user, None)
-        os.environ.pop("CODESTORY_SERVICE_DEV_MODE", None)
-        os.environ.pop("CODESTORY_SERVICE_AUTH_ENABLED", None)
+        # Optionally clear overrides if needed
+        config.set("CODESTORY_SERVICE_DEV_MODE", "")
+        config.set("CODESTORY_SERVICE_AUTH_ENABLED", "")
 
 
 @pytest.mark.integration
 def test_config_api_simple(test_client: Any) -> None:
     """Test the configuration API endpoints with basic validation."""
+    from tests.conftest import get_test_config
+    config = get_test_config()
     if is_host_native_mode():
         pytest.skip("Skipping test_config_api_simple in host-native mode (no Neo4j backend)")
-    os.environ["NEO4J_DATABASE"] = "neo4j"
+    config.set("NEO4J_DATABASE", "neo4j")
     response = test_client.get("/v1/config")
     assert response.status_code == 200
     data = response.json()

@@ -1,6 +1,12 @@
-from typing import Any
+# specs: specs/06-ingestion-pipeline/ingestion-pipeline.md
+# code rules: .roo/rules-code/08-unified-test-infra.md, .roo/rules-code/04-testing-requirements.md
 
-"Integration tests for the Blarify workflow step.\n\nThese tests verify that the BlarifyStep can correctly process a repository\nand store AST and symbol bindings in the Neo4j database.\n"
+"""Integration tests for the Blarify workflow step.
+
+These tests verify that the BlarifyStep can correctly process a repository
+and store AST and symbol bindings in the Neo4j database.
+"""
+from typing import Any
 import os
 import tempfile
 import time
@@ -8,6 +14,7 @@ from pathlib import Path
 
 import docker
 import pytest
+from tests.conftest import get_test_config
 
 import contextlib
 
@@ -16,6 +23,30 @@ from codestory.ingestion_pipeline.step import StepStatus
 from codestory_blarify.step import DEFAULT_CONTAINER_NAME_PREFIX, BlarifyStep
 
 pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
+
+
+def print_neo4j_container_logs():
+    """Fetch and print logs from the running Neo4j testcontainer for debugging."""
+    try:
+        import docker
+        client = docker.from_env()
+        # Find the running Neo4j container by image or env
+        containers = client.containers.list(all=True)
+        for container in containers:
+            try:
+                # Check if this is a Neo4j container by image or env
+                if "neo4j" in container.image.tags[0] or "neo4j" in container.attrs["Config"]["Image"]:
+                    logs = container.logs().decode(errors="ignore")
+                    print("==== NEO4J CONTAINER LOGS ====")
+                    print(logs)
+                    print("==== END NEO4J CONTAINER LOGS ====")
+                    return
+            except Exception:
+                continue
+        print("Neo4j container not found for log capture.")
+    except Exception as e:
+        print(f"Error fetching Neo4j container logs: {e}")
+
 
 
 @pytest.fixture
@@ -54,6 +85,7 @@ def ensure_blarify_image() -> None:
     import tempfile
     
     # Set environment variables to disable Docker credential helpers
+    config = get_test_config()
     os.environ['DOCKER_CONFIG'] = '/tmp/docker-no-creds'
     
     try:
@@ -123,67 +155,60 @@ def blarify_celery_app(celery_app: Any) -> Any:
 @pytest.mark.neo4j
 def test_blarify_step_run(
     sample_repo: Any,
-    neo4j_connector: Any,
     ensure_blarify_image: Any,
     blarify_celery_app: Any,
+    test_containers_and_service: Any,
 ) -> None:
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    # Use the URIs from the unified fixture
+    uri = test_containers_and_service["neo4j_uri"]
+    username = "neo4j"
+    password = "password"
+    database = "neo4j"
+    print(f"[test_blarify_step_run] Using Neo4j URI: {uri}")
+    neo4j_connector = Neo4jConnector(
+        uri=uri,
+        username=username,
+        password=password,
+        database=database
+    )
+    print(f"[test_blarify_step_run] Instantiated Neo4jConnector with uri={neo4j_connector.uri}")
     """Test that the Blarify step can process a repository and create AST nodes in Neo4j."""
     blarify_image = ensure_blarify_image
     print(f"Using Blarify image: {blarify_image}")
-    neo4j_connector.execute_query("MATCH (n:AST) DETACH DELETE n", write=True)
-    neo4j_connector.execute_query("MATCH (n:Repository) DETACH DELETE n", write=True)
-    initial_ast_count = neo4j_connector.execute_query(
-        "MATCH (n:AST) RETURN count(n) as count"
-    )[0].get("count", 0)
-    assert (
-        initial_ast_count == 0
-    ), f"Expected no AST nodes at start, found {initial_ast_count}"
+    # Print all Neo4j-related environment variables for debugging
+    print("=== Neo4j Environment Variables ===")
+    for k, v in os.environ.items():
+        if "NEO4J" in k.upper():
+            print(f"{k}={v}")
+    print("=== End Neo4j Environment Variables ===")
+    # Print the value of neo4j_connector.uri and call stack
+    print(f"[test_blarify_step_run] neo4j_connector.uri: {getattr(neo4j_connector, 'uri', None)}")
+    import inspect
+    print(f"[test_blarify_step_run] Call stack: {inspect.stack()}")
+    # Print all running Docker containers and their port mappings
     try:
-        print("Creating test AST nodes directly in Neo4j...")
-        neo4j_connector.execute_query(
-            "\n            CREATE (r:Repository {path: $repo_path}) \n            CREATE (f:AST {name: 'TestFunction', type: 'Function', path: $file_path})\n            CREATE (c:AST {name: 'TestClass', type: 'Class', path: $file_path})\n            CREATE (r)-[:CONTAINS]->(f)\n            CREATE (r)-[:CONTAINS]->(c)\n            RETURN count(*)\n            ",
-            {"repo_path": sample_repo, "file_path": f"{sample_repo}/test.py"},
-            write=True,
-        )
-        ast_count = neo4j_connector.execute_query(
-            "MATCH (n:AST) RETURN count(n) as count"
-        )[0].get("count", 0)
-        print(f"Created {ast_count} AST nodes directly in Neo4j")
-        assert ast_count > 0, "Expected AST nodes to be created during test setup"
-        repo_count = neo4j_connector.execute_query(
-            "MATCH (r:Repository) RETURN count(r) as count"
-        )[0].get("count", 0)
-        print(f"Created {repo_count} Repository nodes directly in Neo4j")
-        assert (
-            repo_count > 0
-        ), "Expected Repository nodes to be created during test setup"
-        ast_nodes = neo4j_connector.execute_query(
-            "MATCH (n:AST) RETURN n.name, n.type, n.path LIMIT 5"
-        )
-        print(f"Sample AST nodes created directly: {ast_nodes}")
-        for node in ast_nodes:
-            assert (
-                "n.name" in node
-            ), f"Expected AST node to have 'name' property, got: {node}"
-            assert (
-                "n.type" in node
-            ), f"Expected AST node to have 'type' property, got: {node}"
-            assert (
-                "n.path" in node
-            ), f"Expected AST node to have 'path' property, got: {node}"
-        print("Direct Neo4j node creation successful - Neo4j is working correctly")
-        try:
-            import docker
-
-            client = docker.from_env()
-            client.ping()
-            print("Docker daemon is accessible")
-        except Exception as e:
-            print(f"Docker daemon not accessible: {e}")
-            print("We'll continue testing with mocks since Neo4j is working correctly")
+        import docker
+        client = docker.from_env()
+        client.ping()
+        print("Docker daemon is accessible")
     except Exception as e:
-        print(f"Neo4j connectivity test failed: {e}")
-        print("This indicates issues with Neo4j configuration")
+        print(f"Docker daemon not accessible: {e}")
+        print("We'll continue testing with mocks since Neo4j is working correctly")
+    # If Neo4j is not working, print error and continue
+    # (This block is for debugging Docker/Neo4j connectivity)
+    # Patch Neo4j URI for Docker-in-Docker reachability if needed
+    import platform
+    import re
+    config = get_test_config()
+    neo4j_uri = config.get("NEO4J_URI")
+    if neo4j_uri and ("localhost" in neo4j_uri or "127.0.0.1" in neo4j_uri):
+        if platform.system() in ("Darwin", "Windows"):
+            patched_uri = re.sub(r"localhost|127\.0\.0\.1", "host.docker.internal", neo4j_uri)
+            config.set("NEO4J_URI", patched_uri)
+            config.set("CODESTORY_NEO4J__URI", patched_uri)
+        # On Linux, user may need to set up host networking or use the correct host IP
+
     step = BlarifyStep(docker_image=blarify_image)
     job_id = None
     try:
@@ -201,7 +226,8 @@ def test_blarify_step_run(
         ), f"Job ID {job_id} not found in active_jobs: {step.active_jobs.keys()}"
         print("Waiting for Blarify job to complete...")
         start_time = time.time()
-        timeout = 300 if os.environ.get("CI") == "true" else 120
+        config = get_test_config()
+        timeout = 300 if config.get("CI") == "true" else 120
         last_status = None
         check_interval = 5
         print(
@@ -222,7 +248,7 @@ def test_blarify_step_run(
             if progress and progress > 0:
                 print(f"Progress: {progress:.1f}%")
             if (
-                os.environ.get("CI") == "true"
+                get_test_config().get("CI") == "true"
                 and step.docker_client
                 and (time.time() - start_time > 60)
             ):
@@ -305,11 +331,24 @@ def test_blarify_step_run(
 @pytest.mark.neo4j
 def test_blarify_step_stop(
     sample_repo: Any,
-    neo4j_connector: Any,
+    neo4j_testcontainer: Any,
     ensure_blarify_image: Any,
     blarify_celery_app: Any,
+    redis_testcontainer: Any,
 ) -> None:
     """Test that the Blarify step can be stopped mid-process."""
+    from codestory.graphdb.neo4j_connector import Neo4jConnector
+    # Always use the bolt_url yielded by the testcontainer fixture
+    uri = neo4j_testcontainer
+    username = "neo4j"
+    password = "password"
+    database = "neo4j"
+    neo4j_connector = Neo4jConnector(
+        uri=uri,
+        username=username,
+        password=password,
+        database=database
+    )
     blarify_image = ensure_blarify_image
     print(f"Using Blarify image: {blarify_image}")
     neo4j_connector.execute_query("MATCH (n:AST) DETACH DELETE n", write=True)

@@ -1,6 +1,9 @@
+# specs: specs/06-ingestion-pipeline/ingestion-pipeline.md
+# code rules: .roo/rules-code/08-unified-test-infra.md, .roo/rules-code/04-testing-requirements.md
+
 import pytest
 
-pytestmark = pytest.mark.usefixtures("test_containers_and_service")
+pytestmark = pytest.mark.usefixtures("unified_test_env")
 
 """Integration tests for Neo4j connector using a test container."""
 
@@ -15,6 +18,8 @@ from codestory.graphdb.exceptions import (
 from codestory.graphdb.models import DirectoryNode, FileNode
 from codestory.graphdb.neo4j_connector import Neo4jConnector
 
+# Use standardized test data factories for node creation
+from tests.test_factories import FileNodeFactory, DirectoryNodeFactory
 
 def test_connection(neo4j_connector: Neo4jConnector) -> None:
     """Test basic connection to Neo4j."""
@@ -24,15 +29,15 @@ def test_connection(neo4j_connector: Neo4jConnector) -> None:
 
 
 def test_create_and_retrieve_nodes(neo4j_connector: Neo4jConnector) -> None:
-    """Test creating and retrieving nodes in a single transaction."""
-    file_node = FileNode(
-        path="/test/file.py",
-        name="file.py",
-        extension="py",
-        size=1024,
-        content="print('hello')",
-    )
-    dir_node = DirectoryNode(path="/test", name="test")
+    """
+    Test creating and retrieving nodes in a single transaction.
+
+    Uses standardized test data factories for node creation.
+    See: tests/test_factories.py
+    """
+
+    file_node = FileNodeFactory.build()
+    dir_node = DirectoryNodeFactory.build()
 
     def create_nodes_and_relationship(tx):
         file_query = """

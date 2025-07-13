@@ -1,3 +1,6 @@
+# specs: specs/06-ingestion-pipeline/ingestion-pipeline.md
+# code rules: .roo/rules-code/08-unified-test-infra.md, .roo/rules-code/04-testing-requirements.md
+
 """Integration tests for CLI ingestion commands."""
 import os
 import tempfile

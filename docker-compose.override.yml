@@ -1,7 +1,7 @@
 services:
   codestory-service:
     volumes:
-      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpm3e7g0r5:/repositories/tmpm3e7g0r5:ro
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmp8msl1tjs:/repositories/tmp8msl1tjs:ro
   codestory-worker:
     volumes:
-      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmpm3e7g0r5:/repositories/tmpm3e7g0r5:ro
+      - /var/folders/h5/cvgpmjrd26l2vbpk9cymp__40000gn/T/tmp8msl1tjs:/repositories/tmp8msl1tjs:ro

@@ -38,6 +38,105 @@ See [Ingestion Pipeline](./06-ingestion-pipeline/ingestion-pipeline.md) and [Cod
 
 ---
 
+## Test Infrastructure Architecture
+
+The Code Story system employs a unified test infrastructure architecture designed for reliability, parallelizability, and self-containment. This architecture replaces previous anti-patterns with a modern, testcontainer-based approach that ensures consistent testing across all environments.
+
+### Rationale
+
+**Previous Anti-patterns Replaced:**
+- Hardcoded service ports causing conflicts between parallel tests
+- External service dependencies requiring manual setup
+- Tests failing due to environment-specific configurations
+- Inconsistent fixture patterns across test modules
+- Mock-heavy integration tests that didn't validate real functionality
+
+**New Unified Approach:**
+- Self-contained tests using testcontainers for all external dependencies
+- Dynamic port allocation to enable parallel test execution
+- Centralized fixture management in [`tests/integration/conftest.py`](../tests/integration/conftest.py)
+- Real service integration without mocks for authentic validation
+- Environment variable management ensuring test isolation
+
+### Test Infrastructure Flow
+
+```mermaid
+graph TD
+    A[Test Session Start] --> B[Preflight Container Checks]
+    B --> C[Aggressive Docker Cleanup]
+    C --> D[Neo4j Testcontainer Start]
+    D --> E[Redis Testcontainer Start]
+    E --> F[Dynamic Port Allocation]
+    F --> G[Environment Variable Setup]
+    G --> H[Service Health Checks]
+    H --> I[Background Service Launch]
+    I --> |Celery Worker| J[Worker Process]
+    I --> |FastAPI Service| K[API Service]
+    J --> L[Test Execution]
+    K --> L
+    L --> M[Service Cleanup]
+    M --> N[Container Cleanup]
+    
+    subgraph "Shared Fixtures"
+        O[neo4j_testcontainer]
+        P[redis_testcontainer]
+        Q[test_containers_and_service]
+    end
+    
+    subgraph "Per-Test Fixtures"
+        R[neo4j_connector]
+        S[celery_app]
+        T[redis_client]
+    end
+    
+    D --> O
+    E --> P
+    I --> Q
+    L --> R
+    L --> S
+    L --> T
+```
+
+### Code Example: Unified Test Pattern
+
+```python
+import pytest
+from codestory.graphdb.neo4j_connector import Neo4jConnector
+
+pytestmark = [pytest.mark.integration, pytest.mark.neo4j]
+
+def test_repository_ingestion(
+    neo4j_testcontainer: str,
+    redis_testcontainer: str,
+    test_containers_and_service: dict
+) -> None:
+    """Example showing unified test pattern usage."""
+    # Neo4j connector automatically uses testcontainer URI
+    connector = Neo4jConnector(
+        uri=neo4j_testcontainer,
+        username="neo4j",
+        password="password",
+        database="neo4j"
+    )
+    
+    # Test operations use real services with dynamic ports
+    result = connector.execute_query(
+        "CREATE (r:Repository {name: $name}) RETURN r",
+        {"name": "test-repo"},
+        write=True
+    )
+    
+    assert len(result) == 1
+    assert result[0]["r"]["name"] == "test-repo"
+```
+
+For detailed implementation patterns, see:
+- [Ingestion Pipeline Test Patterns](./06-ingestion-pipeline/ingestion-pipeline.md#test-patterns)
+- [Infrastructure Test Strategy](./15-infra/infra.md#test-infrastructure)
+- [Test Validation Report](./test-validation-report.md#unified-test-architecture)
+
+---
+
 ## Component Dependencies
 
 ```mermaid

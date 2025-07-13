@@ -2,6 +2,26 @@
 
 This guide helps developers troubleshoot common issues with the CI/CD pipeline for the Code Story project.
 
+**Cross-links:**
+- specs: [specs/06-ingestion-pipeline/ingestion-pipeline.md](../../specs/06-ingestion-pipeline/ingestion-pipeline.md)
+- code rules: [.roo/rules-code/08-unified-test-infra.md](../../.roo/rules-code/08-unified-test-infra.md), [.roo/rules-code/04-testing-requirements.md](../../.roo/rules-code/04-testing-requirements.md)
+- workflow: [.github/workflows/ci.yml](../../.github/workflows/ci.yml)
+## Parallel Test Execution Standard
+
+All integration and end-to-end (E2E) tests in Code Story are executed in parallel with full resource isolation. This is achieved by:
+
+- Using a matrix job strategy in CI, where each integration test module runs in its own job for maximum parallelism and isolation.
+- Relying on the unified session-scoped fixture ([`tests/conftest.py`](../../tests/conftest.py)), which starts dedicated containers (Neo4j, Redis, etc.) with dynamically allocated ports for each test process or worker.
+- Ensuring all environment variables and service endpoints are injected dynamically, with no hardcoded ports or shared state.
+- Guaranteeing that no test module, fixture, or script manages containers or services directly—everything is handled by the unified fixture.
+
+**References:**  
+- [Unified Test Infrastructure Rules](../../.roo/rules-code/08-unified-test-infra.md)  
+- [CI Workflow](../../.github/workflows/ci.yml)  
+- [Main Spec](../../specs/Main.md)
+
+For details, see the "Integration/E2E Test Matrix Pattern" and "Workflow YAML Configuration" sections below.
+
 ## Common Python Test Issues
 
 ### Missing Dependencies
@@ -76,8 +96,38 @@ Make sure your package.json correctly specifies the test environment:
 Our CI pipeline consists of the following jobs:
 
 1. **Lint**: Runs linting on both Python and JavaScript/TypeScript code
-2. **Python Tests**: Runs unit tests for Python code with Neo4j and Redis services
+2. **Python Tests**: Runs unit tests for Python code
 3. **GUI Tests**: Runs tests for the React-based GUI
+4. **Integration Tests (Matrix)**: Runs each integration/E2E test module in parallel, each in a fully isolated environment using the unified test fixture and dynamic ports
+
+---
+
+## Integration/E2E Test Matrix Pattern
+
+All integration and end-to-end (E2E) tests are executed in parallel using a matrix job strategy in `.github/workflows/ci.yml`. Each matrix job runs a single test module (or group) in a fully isolated environment, leveraging the unified session-scoped fixture defined in [`tests/conftest.py`](../../tests/conftest.py).
+
+**Key features:**
+- **Resource Isolation:** Each job starts its own Neo4j and Redis containers with dynamically allocated ports, managed by the unified fixture.
+- **Dynamic Environment:** All required environment variables are injected by the fixture, ensuring no hardcoded ports or static configuration.
+- **Automatic Health Checks:** The fixture waits for all services to be healthy before running tests.
+- **Timeouts:** Each matrix job has a job-level timeout to prevent CI hangs.
+- **No Service Definitions in Workflow:** The workflow does not define services directly; all service management is handled by the fixture.
+
+**References:**
+- [Unified Test Infrastructure Rules](../../.roo/rules-code/08-unified-test-infra.md)
+- [Main Spec](../../specs/Main.md)
+- [CI Workflow](../../.github/workflows/ci.yml)
+
+**Troubleshooting Matrix Jobs:**
+- If a matrix job fails, check the logs for that specific test module.
+- Ensure your test does not assume static ports or shared state.
+- If you add a new integration test module, add its path to the `test_path` matrix in the workflow.
+- For debugging, you can run a single test module locally using:
+  ```bash
+  scripts/run_integration_tests.sh tests/integration/<your_test_module>.py
+  ```
+
+---
 
 ## Workflow YAML Configuration
 

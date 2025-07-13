@@ -259,15 +259,265 @@ The Bicep templates define Azure resources including:
 | As a developer, I want to see logs and metrics from all services so that I can troubleshoot issues. | • Logs are centralized in Log Analytics.<br>• Metrics are available via Prometheus endpoints.<br>• Distributed traces connect requests across services.<br>• Query tools are available for log analysis. |
 | As a developer, I want to extend the infrastructure with new services so that I can add features to the system. | • Infrastructure code is modular and well-documented.<br>• Adding new services requires minimal changes to existing code.<br>• Documentation explains the process for adding services.<br>• Templates exist for common service types. |
 
-## 15.6 Testing Strategy
+## 15.6 Test Infrastructure
+
+The infrastructure module provides comprehensive test infrastructure support with container lifecycle management and CI/CD integration for reliable, parallelizable testing.
+
+### 15.6.1 Test Infrastructure Architecture
+
+**Anti-patterns Replaced:**
+- Manual Docker Compose setup requiring pre-existing services
+- Hardcoded ports causing test conflicts in parallel execution
+- Inconsistent test environments across local and CI
+- Tests depending on external infrastructure state
+
+**New Unified Pattern:**
+- Testcontainers for dynamic, isolated service instances
+- Centralized fixture management in [`tests/integration/conftest.py`](../../tests/integration/conftest.py)
+- Container lifecycle automation with health checks
+- Environment isolation preventing cross-test contamination
+
+### 15.6.2 Container Lifecycle Management
+
+```python
+@pytest.fixture(scope="session")
+def test_containers_and_service():
+    """Session-scoped fixture managing complete test infrastructure."""
+    # Dynamic container allocation
+    neo4j_container = Neo4jContainer("neo4j:5.19")
+    redis_container = RedisContainer("redis:7.2.4")
+    
+    # Health check integration
+    neo4j_container.with_env("NEO4J_AUTH", "neo4j/password")
+    
+    # Start containers with automatic port mapping
+    neo4j = neo4j_container.start()
+    redis = redis_container.start()
+    
+    # Extract dynamic connection details
+    neo4j_uri = f"bolt://localhost:{neo4j.get_exposed_port(7687)}"
+    redis_uri = f"redis://localhost:{redis.get_exposed_port(6379)}/0"
+    
+    # Configure environment for all test processes
+    os.environ["CODESTORY_NEO4J__URI"] = neo4j_uri
+    os.environ["CODESTORY_REDIS__URI"] = redis_uri
+    
+    # Verify service readiness
+    wait_for_services_ready(neo4j_uri, redis_uri)
+    
+    yield {
+        "neo4j_uri": neo4j_uri,
+        "redis_uri": redis_uri,
+        "service_url": f"http://localhost:{service_port}/v1"
+    }
+    
+    # Automatic cleanup
+    neo4j.stop()
+    redis.stop()
+```
+
+### 15.6.3 CI/CD Integration for Tests
+
+**Docker-in-Docker Strategy:**
+```yaml
+# .github/workflows/test.yml
+name: Integration Tests
+on: [push, pull_request]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Test Environment
+        run: |
+          # Install UV package manager
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
+          
+          # Install dependencies
+          uv sync --dev
+          
+          # Verify Docker availability
+          docker info
+      
+      - name: Run Integration Tests
+        run: |
+          # Run tests with testcontainers
+          uv run pytest tests/integration/ \
+            -v \
+            --tb=short \
+            --timeout=300 \
+            -n auto
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: true
+          DOCKER_HOST: unix:///var/run/docker.sock
+```
+
+### 15.6.4 Test Environment Configuration
+
+**Environment Priority Order:**
+1. Test fixture environment variables (highest)
+2. `CODESTORY_*__*` prefixed variables
+3. `NEO4J_*`, `REDIS_*` standard variables
+4. Default configuration values (lowest)
+
+```python
+@pytest.fixture(scope="session", autouse=True)
+def configure_test_environment():
+    """Configure test-specific environment settings."""
+    test_config = {
+        # Disable external API calls during testing
+        "DISABLE_OPENAI_HEALTHCHECK": "1",
+        "AZURE_OPENAI_API_KEY": "test-key",
+        
+        # Configure test-specific timeouts
+        "CELERY_TASK_ALWAYS_EAGER": "False",
+        "CELERY_TASK_EAGER_PROPAGATES": "False",
+        
+        # Enable debug logging for tests
+        "LOG_LEVEL": "DEBUG",
+        "STRUCTLOG_DEBUG": "1"
+    }
+    
+    for key, value in test_config.items():
+        os.environ[key] = value
+    
+    yield
+    
+    # Cleanup test environment
+    for key in test_config:
+        os.environ.pop(key, None)
+```
+
+### 15.6.5 Container Health Verification
+
+```python
+def wait_for_services_ready(neo4j_uri: str, redis_uri: str, timeout: int = 60):
+    """Verify all services are ready before proceeding with tests."""
+    import time
+    import socket
+    from neo4j import GraphDatabase
+    import redis as redis_py
+    
+    # Parse connection details
+    neo4j_host, neo4j_port = parse_bolt_uri(neo4j_uri)
+    redis_host, redis_port = parse_redis_uri(redis_uri)
+    
+    # TCP connectivity check
+    for host, port in [(neo4j_host, neo4j_port), (redis_host, redis_port)]:
+        for _ in range(timeout):
+            try:
+                with socket.create_connection((host, port), timeout=2):
+                    break
+            except ConnectionRefusedError:
+                time.sleep(1)
+        else:
+            raise RuntimeError(f"Service at {host}:{port} not ready")
+    
+    # Application-level health checks
+    driver = GraphDatabase.driver(neo4j_uri, auth=("neo4j", "password"))
+    try:
+        with driver.session() as session:
+            session.run("RETURN 1").single()
+    finally:
+        driver.close()
+    
+    redis_client = redis_py.from_url(redis_uri)
+    assert redis_client.ping(), "Redis not responding to ping"
+```
+
+### 15.6.6 Parallel Test Execution
+
+**Resource Isolation Strategy:**
+- Each test worker gets unique testcontainer instances
+- Dynamic port allocation prevents conflicts
+- Separate Docker networks per test session
+- Independent environment variable scoping
+
+```python
+@pytest.fixture(scope="session", autouse=True)
+def aggressive_container_cleanup():
+    """Ensure clean slate for each test session."""
+    import subprocess
+    
+    # Remove all test-related containers
+    try:
+        result = subprocess.run([
+            "docker", "ps", "-aq",
+            "--filter", "label=testcontainers"
+        ], capture_output=True, text=True)
+        
+        if result.stdout.strip():
+            subprocess.run([
+                "docker", "rm", "-f"
+            ] + result.stdout.strip().split())
+    except Exception as e:
+        print(f"Container cleanup warning: {e}")
+    
+    yield
+    
+    # Post-session cleanup
+    subprocess.run([
+        "docker", "system", "prune", "-f",
+        "--filter", "label=testcontainers"
+    ], capture_output=True)
+```
+
+### 15.6.7 Integration with Docker Compose
+
+**Test-Specific Compose Configuration:**
+```yaml
+# docker-compose.test.yml
+version: "3.8"
+services:
+  neo4j:
+    image: neo4j:community
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_dbms_default__database=testdb
+    ports:
+      - "7475:7474"  # Different ports to avoid conflicts
+      - "7687:7687"
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p password 'RETURN 1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+
+  redis:
+    image: redis:7.2.4-alpine
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+```
+
+For detailed test patterns and examples, see:
+- [Main Test Infrastructure Overview](../Main.md#test-infrastructure-architecture)
+- [Ingestion Pipeline Test Patterns](../06-ingestion-pipeline/ingestion-pipeline.md#test-patterns)
+- [Test Validation Report](../test-validation-report.md)
+
+## 15.7 Testing Strategy
 
 - **Local Validation** - Verify all services start correctly using Docker Compose and can communicate with each other.
 - **Azure Deployment Testing** - Deploy to a test environment in Azure and validate service connectivity and functionality.
 - **Load Testing** - Test system behavior under load to validate scaling configurations.
 - **Security Testing** - Verify secret management and service-to-service authentication.
 - **Chaos Testing** - Simulate service failures to ensure resilience and proper recovery.
+- **Integration Testing** - Use testcontainers for self-contained, parallelizable integration tests.
+- **CI/CD Testing** - Automated testing in GitHub Actions with Docker-in-Docker support.
 
-## 15.7 Acceptance Criteria
+## 15.8 Acceptance Criteria
 
 - `./infra/scripts/start.sh` successfully starts all services locally with proper networking and volume mounts.
 - `azd up` successfully deploys all components to Azure Container Apps with proper configuration.
@@ -276,5 +526,8 @@ The Bicep templates define Azure resources including:
 - Observability tools provide visibility into system health and performance.
 - Services recover automatically from temporary failures.
 - Documentation clearly explains how to use and extend the infrastructure.
+- **Test infrastructure enables parallel, isolated integration tests without external dependencies.**
+- **CI/CD pipelines successfully run all tests with testcontainer-based infrastructure.**
+- **Container lifecycle management provides consistent environments across local and CI execution.**
 
 ---
