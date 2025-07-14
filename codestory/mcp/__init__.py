@@ -3,11 +3,14 @@ from typing import Any, List
 
 from codestory.graph import GraphService
 
+
 class MCPAdapter:  # noqa: D101
     def __init__(self, graph_service: GraphService) -> None:
         self.graph_service = graph_service
 
-    async def searchGraph(self, cypher: str, **params: Any) -> List[dict[str, Any]]:  # noqa: N802
+    async def searchGraph(
+        self, cypher: str, **params: Any
+    ) -> List[dict[str, Any]]:  # noqa: N802
         """
         Execute an arbitrary Cypher query and return list of dictionaries.
         """
@@ -31,5 +34,6 @@ class MCPAdapter:  # noqa: D101
         Placeholder similar code search.
         """
         return []
+
 
 __all__ = ["MCPAdapter"]

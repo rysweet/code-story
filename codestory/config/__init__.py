@@ -17,6 +17,7 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 from functools import lru_cache
 
+
 class Settings(BaseSettings):
     """
     Pydantic settings for CodeStory Neo4j connection.
@@ -28,6 +29,7 @@ class Settings(BaseSettings):
 
     Loads from environment or .env file (if present).
     """
+
     neo4j_uri: str = Field(..., env="NEO4J_URI")
     neo4j_user: str = Field(..., env="NEO4J_USER")
     neo4j_password: str = Field(..., env="NEO4J_PASSWORD")
@@ -36,11 +38,13 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
+
 @lru_cache()
 def get_settings() -> Settings:
     """
     Returns a singleton instance of Settings.
     """
     return Settings()
+
 
 __all__ = ["Settings", "get_settings"]

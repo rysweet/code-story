@@ -9,15 +9,15 @@ Tests for the GraphService contract in codestory.graph.
 """
 
 import pytest
+import os
+
 
 def test_import_graph_service_import_succeeds():
     """Importing GraphService should succeed now that it is implemented."""
     from codestory.graph import GraphService  # noqa: F401
+
     assert True
 
-import os
-
-import pytest
 
 @pytest.mark.asyncio
 def test_graph_service_handshake_runtimeerror():
@@ -36,10 +36,13 @@ def test_graph_service_handshake_runtimeerror():
     with pytest.raises(RuntimeError):
         # The handshake will fail and should raise RuntimeError from execute
         import asyncio
+
         async def try_connect():
             async with svc:
                 pass
+
         asyncio.run(try_connect())
+
 
 # --- Interface contract tests remain skipped below ---
 @pytest.mark.skip(reason="GraphService interface contract not yet implemented")
@@ -57,6 +60,7 @@ async def test_graph_service_context_manager_contract():
     #     assert hasattr(svc, "driver")
     pass
 
+
 @pytest.mark.skip(reason="GraphService.execute contract not yet implemented")
 def test_graph_service_execute_contract():
     """
@@ -69,6 +73,7 @@ def test_graph_service_execute_contract():
     # assert all(isinstance(row, dict) for row in result)
     pass
 
+
 @pytest.mark.skip(reason="GraphService.close contract not yet implemented")
 def test_graph_service_close_contract():
     """
@@ -78,6 +83,7 @@ def test_graph_service_close_contract():
     # svc = GraphService("bolt://localhost:7687", "neo4j", "secret")
     # svc.close()
     pass
+
 
 @pytest.mark.skip(reason="GraphService.driver attribute contract not yet implemented")
 def test_graph_service_driver_attribute_contract():

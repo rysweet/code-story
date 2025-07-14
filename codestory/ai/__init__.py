@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Any, List
+from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
-from codestory.config import Settings, get_settings  # type: ignore
+from pydantic import ValidationError
+from codestory.config import get_settings  # type: ignore
+
 
 class AIClient:
     """
@@ -29,5 +30,6 @@ class AIClient:
 
     def embed(self, text: str) -> list[float]:
         raise NotImplementedError("Embedding not implemented yet.")
+
 
 __all__ = ["AIClient"]

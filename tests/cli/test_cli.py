@@ -1,13 +1,16 @@
 import pytest
 from typer.testing import CliRunner
 
+
 def test_cli_app_is_typer_instance():
     """
     If codestory.cli.app exists, it should expose a Typer app instance.
     """
     app_mod = pytest.importorskip("codestory.cli.app")
     import typer
+
     assert isinstance(app_mod.app, typer.Typer)
+
 
 def test_cli_main_exits_zero():
     """

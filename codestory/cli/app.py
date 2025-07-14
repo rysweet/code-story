@@ -2,6 +2,7 @@ import typer
 
 app = typer.Typer(help="CodeStory command-line interface")
 
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """
