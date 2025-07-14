@@ -11,6 +11,7 @@
 - Significant feedback patterns MUST be reported to Orchestrator using the standardized format.
 - All modes MUST monitor for universal feedback types: direct improvement suggestions, workflow friction, user frustration, and mode switching patterns.
 - Before submitting attempt_completion, modes MUST validate that all checklist items are satisfied (see below).
+- Every attempt_completion MUST be immediately followed by a write to the session's reflection file (`.github/prompt-history/reflection--{session-name}.md`) containing the full Feedback Summary and all required sections, regardless of task type or outcome. This is non-negotiable and must be enforced for every attempt_completion event.
 
 ## Enforcement and Implementation
 
