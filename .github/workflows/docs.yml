@@ -30,8 +30,6 @@ jobs:
       - name: Check links (lychee)
         run: uv run lychee --config lychee.toml --no-progress docs/**/*.md README.md
 
-      - name: Check documentation links
-        run: uv run mkdocs linkcheck
 
       - name: Upload site artifact
         uses: actions/upload-artifact@v4

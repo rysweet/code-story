@@ -23,6 +23,16 @@ dev = [
   "pyright",
   "pre-commit"
 ]
+docs = [
+  "mkdocs-material",
+  "mkdocs-literate-nav",
+  "mkdocs-section-index",
+  "mkdocs-git-revision-date-localized-plugin",
+  "mkdocstrings[python]",
+  "mike",
+  "lychee"
+]
+
 [project.scripts]
 codestory = "codestory.cli.app:main"
 
