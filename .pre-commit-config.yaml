@@ -31,5 +31,5 @@ repos:
           - --config
           - lychee.toml
           - --no-progress
-          - docs/**/*.md
-          - README.md
+        env:
+          GITHUB_TOKEN: ${GITHUB_TOKEN}
