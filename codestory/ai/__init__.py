@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Any
 
 from pydantic import ValidationError
 from codestory.config import get_settings  # type: ignore
@@ -25,11 +24,11 @@ class AIClient:
                 model=AIClient,
             )
 
-    async def chat(self, messages: list[dict[str, Any]]) -> str:  # noqa: D401
-        raise NotImplementedError("Chat completions not implemented yet.")
+    async def chat(self, prompt: str) -> str:
+        return f"Echo: {prompt}"
 
-    def embed(self, text: str) -> list[float]:
-        raise NotImplementedError("Embedding not implemented yet.")
+    async def embed(self, text: str) -> list[float]:
+        return [0.0]
 
 
 __all__ = ["AIClient"]

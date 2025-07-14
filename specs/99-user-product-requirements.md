@@ -96,4 +96,4 @@
 - Provide user guides for CLI and GUI usage, including installation, workflows, and troubleshooting  
 - Document architecture, component interactions, data flow, and design decisions with diagrams  
 - Offer developer guides for environment setup, extension, testing, and contribution processes  
-- Include tutorials, examples, and a searchable documentation portal with cross-linking
+- Include tutorials, examples, and an end to end demo walkthorugh that uses this codebase as an example

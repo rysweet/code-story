@@ -19,8 +19,7 @@ def test_settings_instantiation_fails_without_env(monkeypatch):
         Settings()
 
 
-# Contract: Settings exposes required attributes (skipped until implemented)
-@pytest.mark.skip(reason="Settings attributes not implemented yet")
+# Contract: Settings exposes required attributes
 def test_settings_has_neo4j_uri(monkeypatch):
     from codestory.config import Settings
 
@@ -31,7 +30,6 @@ def test_settings_has_neo4j_uri(monkeypatch):
     assert isinstance(s.neo4j_uri, str)
 
 
-@pytest.mark.skip(reason="Settings attributes not implemented yet")
 def test_settings_has_neo4j_user(monkeypatch):
     from codestory.config import Settings
 
@@ -42,7 +40,6 @@ def test_settings_has_neo4j_user(monkeypatch):
     assert isinstance(s.neo4j_user, str)
 
 
-@pytest.mark.skip(reason="Settings attributes not implemented yet")
 def test_settings_has_neo4j_password(monkeypatch):
     from codestory.config import Settings
 

@@ -13,7 +13,7 @@
 | Configuration Module           | Code            | Planned       | Planned       | Implement config loader      |
 | MCP Adapter (gRPC/HTTP)        | Code            | Planned       | Planned       | Implement MCP server/tools   |
 | Infrastructure/Testing         | Code            | Planned       | Planned       | Write fixtures, test infra   |
-| Documentation (API, guides)    | Code            | Planned       | Planned       | Generate docs, write guides  |
+| Documentation (API, guides)    | Code            | Planned       | In Progress   | Implement docs toolchain per 02-docs-spec.md |
 
 *Legend:*
 - **Owner/Mode:** Responsible mode for implementation

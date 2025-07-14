@@ -1,3 +1,7 @@
+import sys
+import pathlib
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 # This package contains tests for the codestory project.
 # CLI contract: see tests/cli/test_cli.py for initial CLI interface contract and enforcement.
 # Settings contract: see tests/config/test_settings.py for configuration contract and enforcement.

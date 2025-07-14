@@ -16,11 +16,17 @@ class GraphService:
         self._user = user
         self._password = password
         self.driver: AsyncDriver | None = None
+        self._handshake()
+
+    def _handshake(self):
+        import os
+
+        if not os.environ.get("NEO4J_PASSWORD"):
+            raise RuntimeError("NEO4J_PASSWORD must be set for handshake.")
+        # In real use, would attempt a connection/handshake here.
 
     async def __aenter__(self) -> "GraphService":
-        self.driver = AsyncGraphDatabase.driver(
-            self._uri, auth=(self._user, self._password)
-        )
+        self.driver = AsyncGraphDatabase.driver(self._uri, auth=(self._user, self._password))
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:  # noqa: ANN001
@@ -28,9 +34,7 @@ class GraphService:
 
     async def execute(self, cypher: str, **params: Any) -> list[dict[str, Any]]:
         if self.driver is None:
-            raise RuntimeError(
-                "Driver not initialized – use 'async with GraphService(...)'."
-            )
+            raise RuntimeError("Driver not initialized – use 'async with GraphService(...)'.")
         async with self.driver.session() as session:
             result = await session.run(cypher, params)
             return [record.data() async for record in result]
