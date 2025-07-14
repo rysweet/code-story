@@ -39,6 +39,7 @@
 
 - A prompt-history file **MUST** be created immediately after the **first** user prompt in a session, before any tool invocation.
 - Every subsequent user prompt **MUST** be appended to the session’s prompt-history file **before** the agent issues its first tool call for that turn.
+- Reflection files **MUST** be created **before** any further tool calls once a user expresses dissatisfaction. Delayed creation is considered non-compliant.
 
 ### Session Naming Convention
 
@@ -56,6 +57,7 @@
   - The user expresses negative sentiment, confusion, or dissatisfaction.
   - The user repeats an instruction that the agent did not follow.
   - Three or more consecutive iterations occur without measurable progress.
+  - If a *tool repetition limit* error is encountered, the agent **MUST** write a reflection entry explaining why the limit was reached and how the strategy will change (e.g., switch to `ask_followup_question`, fall back to user-supplied logs, or pause and re-query after a delay).
 
 **NON-NEGOTIABLE COMPLIANCE:**
 

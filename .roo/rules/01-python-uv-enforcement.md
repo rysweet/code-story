@@ -10,3 +10,4 @@
 - All package management for Python must be performed with `uv`.
 - Do not use `pip`, `pipx`, or `python` directly outside of `uv`.
 - All scripts and automation must enforce this rule.
+- In CI workflows, `uv venv` **must** be executed *before* any `uv pip install …` step to guarantee an isolated environment.
