@@ -1,0 +1,30 @@
+[default]
+cache = ".lychee-cache"
+exclude = [
+  # Localhost and loopback for local dev/test links
+  "https://localhost",
+  "http://127.0.0.1",
+
+  # Docs page not yet published, referenced for config completeness
+  "https://docs.gitguardian.com/ggshield-docs/configuration/ignore",
+  "https://docs.gitguardian.com/ggshield-docs/configuration/ignore/",
+
+  # Vanity/marketing link, not a real LinkedIn page
+  "https://www.linkedin.com/Dealsbe",
+  "https://linkedin.com/Dealsbe",
+
+  # App icon links, not present on external site (PWA icons)
+  "regex:^https://dealsbe\\.com/media/pwa/\\d+x\\d+\\.png$",
+
+  # Placeholder org repo, not a real public repo
+  "https://github.com/your-org/codestory",
+  "https://github.com/your-org/codestory/",
+
+  # Feature branch files, not present in public repo
+  "https://github.com/your-org/codestory/blob/feature/codestory-scaffold/specs/01-design-spec.md",
+  "https://github.com/your-org/codestory/blob/feature/codestory-scaffold/specs/01-design-spec.md/",
+  "https://github.com/your-org/codestory/blob/feature/codestory-scaffold/.env.example",
+  "https://github.com/your-org/codestory/blob/feature/codestory-scaffold/.env.example/"
+]
+max_retries = 2
+timeout = 15

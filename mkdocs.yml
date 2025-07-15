@@ -1,0 +1,43 @@
+site_name: CodeStory
+repo_url: https://github.com/your-org/codestory  # TODO: Set actual repo URL
+
+theme:
+  name: material
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [codestory]
+          options:
+            show_root_heading: true
+            show_source: true
+            docstring_style: google
+  - mike
+  - git-revision-date-localized
+  - section-index
+  - literate-nav
+  # - link-checker  # Temporarily disabled: not available in PyPI for local build
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Overview: guides/overview.md
+      - Quickstart: guides/quickstart.md
+      - CLI: guides/cli.md
+      - Configuration: guides/configuration.md
+  - Contributing: contributing.md
+  - Reference:
+      - API Reference: reference/README.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-org/codestory
