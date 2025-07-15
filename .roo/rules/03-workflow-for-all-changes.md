@@ -18,3 +18,6 @@
 10. Once tests and pre-commit pass, commit and push the work to the branch.
 11. After push, create or update the PR with a summary of changes (using `gh`).
 12. After a push to a PR, run `scripts/check_ci_status.sh` to check CI status. Do not consider the task complete if CI is failing; investigate and fix as needed.
+13. Whenever a diagnostics-only instruction is completed (e.g., gathering CI logs) and the root cause is identified, the agent **MUST**:
+    1. Transition immediately to remediation steps *unless the user explicitly restricts scope to diagnostics*.
+    2. Update the todo list to mark diagnostics complete and remediation in progress.
