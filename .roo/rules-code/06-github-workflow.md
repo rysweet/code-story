@@ -29,7 +29,7 @@
 
 - You should not be using the autogen package, use autogen-core
 - Do not use autogen-agentchat, only autogen-core
-- Any modules that are using pyautogen should be corrected/rewritten to use autogen-core
+- Any modules that are using ag2 should be corrected/rewritten to use autogen-core
 - For the implementation, you will need to use Azure credentials to access the Azure OpenAI API using Tenant: 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
 - You will need to do a commit after each step of the implementation
 - If a step of the implementation is not clear, please ask for clarification
